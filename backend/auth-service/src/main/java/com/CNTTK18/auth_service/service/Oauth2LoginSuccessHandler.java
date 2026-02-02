@@ -36,7 +36,7 @@ public class Oauth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String username = oAuth2User.getAttribute("name");
         Users user =
-                userRepository.findByUserName(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String accessToken = jwtService.generateToken(username, Role.USER, user.getId());
         String redirectUrl = frontendUrl + "?token=" + accessToken;

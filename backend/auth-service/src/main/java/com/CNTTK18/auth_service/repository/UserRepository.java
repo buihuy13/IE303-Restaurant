@@ -15,11 +15,11 @@ import com.CNTTK18.auth_service.model.Users;
 
 @Repository
 public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecificationExecutor<Users> {
-    Optional<Users> findByUserName(String username);
+    Optional<Users> findByUsername(String username);
 
     Optional<Users> findByEmail(String email);
 
-    Optional<Users> findByVerficationCode(String code);
+    Optional<Users> findByVerificationCode(UUID code);
 
     @Query("SELECT u FROM Users u WHERE u.enabled = false " + "AND u.createdAt <= :thresholdDate")
     List<Users> findInactiveAccountsOlderThan(@Param("thresholdDate") Instant thresholdDate);

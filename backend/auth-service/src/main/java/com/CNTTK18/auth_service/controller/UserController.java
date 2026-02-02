@@ -75,7 +75,7 @@ public class UserController {
     @Tag(name = "Get")
     @Operation(summary = "Confirm account")
     @GetMapping("/confirmation")
-    public ResponseEntity<Void> confirmUser(@RequestParam String code) throws SQLIntegrityConstraintViolationException {
+    public ResponseEntity<Void> confirmUser(@RequestParam UUID code) throws SQLIntegrityConstraintViolationException {
         userService.activateAccount(code);
         return ResponseEntity.ok().build();
     }

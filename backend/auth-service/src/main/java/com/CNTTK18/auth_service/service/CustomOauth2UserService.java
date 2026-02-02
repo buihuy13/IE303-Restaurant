@@ -32,7 +32,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
-        Optional<Users> userFound = userRepository.findByUserName(name);
+        Optional<Users> userFound = userRepository.findByUsername(name);
         if (userFound.isEmpty()) {
             Users user = Users.builder()
                     .id(UUID.randomUUID())

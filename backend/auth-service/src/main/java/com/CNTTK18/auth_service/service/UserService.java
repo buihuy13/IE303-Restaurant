@@ -87,9 +87,9 @@ public class UserService {
     }
 
     @Transactional
-    public void activateAccount(String code) {
+    public void activateAccount(UUID code) {
         Users user = userRepository
-                .findByVerficationCode(code)
+                .findByVerificationCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid verification code"));
         user.setEnabled(true);
         userRepository.save(user);
@@ -127,7 +127,7 @@ public class UserService {
 
     private Users getUsersByUsername(String username) {
         return userRepository
-                .findByUserName(username)
+                .findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
