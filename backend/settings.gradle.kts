@@ -6,4 +6,5 @@ include (
     "api-gateway",
     "user-service",
     "auth-service",
+    "notification-service",
 )

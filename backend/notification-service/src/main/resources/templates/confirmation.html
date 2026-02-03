@@ -1,0 +1,84 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm Your Email</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 0;
+      margin: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: auto;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <div
+        style="
+          background-color: #0070f3;
+          padding: 24px;
+          color: #fff;
+          text-align: center;
+        "
+      >
+        <img
+          src="https://img.icons8.com/ios-filled/50/ffffff/email.png"
+          alt="Email Confirmation Icon"
+          width="50"
+        />
+        <h1 style="margin: 16px 0 0">Confirm Your Email</h1>
+      </div>
+      <div style="padding: 24px">
+        <p>Hi <strong><span th:text="${name}"></span></strong>,</p>
+        <p>
+          Thank you for registering with our website! We're excited to have you on board.
+        </p>
+        <p>
+          Please confirm your email address by clicking the button below:
+        </p>
+        <div style="text-align: center; margin: 30px 0">
+          <a
+            th:href="${url}"
+            style="
+              display: inline-block;
+              background-color: #28a745;
+              color: #fff;
+              text-decoration: none;
+              padding: 14px 28px;
+              border-radius: 8px;
+              font-size: 16px;
+              font-weight: 600;
+              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+              transition: background-color 0.3s ease;
+            "
+          >
+            Confirm Email
+          </a>
+        </div>
+        <p>
+          If the button doesn't work, you can copy and paste this link into your browser:
+        </p>
+        <p style="word-break: break-all; color: #0070f3; font-size: 14px">
+          <span th:text="${url}"></span>
+        </p>
+        <p style="margin-top: 30px">Best regards,<br />CNTTK18 TEAM</p>
+      </div>
+      <div style="background-color: #f0f0f0; text-align: center; padding: 16px">
+        <p style="margin: 0; font-size: 12px">
+          📧 Visit us on
+          <a href="https://www.facebook.com/quoc.huy.677647" target="_blank">Facebook</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
