@@ -7,7 +7,6 @@ import java.util.UUID;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +32,7 @@ import com.CNTTK18.auth_service.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -99,8 +99,7 @@ public class UserController {
     @PutMapping("/password/{id}")
     public ResponseEntity<UserResponse> resetPassword(
             @AuthenticationPrincipal UserPrinciple user, @PathVariable UUID id, @RequestBody @Valid Password password) {
-        String role =
-                user.getAuthorities().stream().findFirst().get().getAuthority();
+        String role = user.getAuthorities().stream().findFirst().get().getAuthority();
         if (!user.getId().equals(id) && !role.equals(Role.ADMIN.toString())) {
             throw new ForbiddenException("You are not allowed to update this user.");
         }

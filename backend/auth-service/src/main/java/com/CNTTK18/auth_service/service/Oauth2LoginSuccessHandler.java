@@ -5,7 +5,6 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -17,6 +16,8 @@ import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.auth_service.model.Users;
 import com.CNTTK18.auth_service.model.data.Role;
 import com.CNTTK18.auth_service.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -35,8 +36,9 @@ public class Oauth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // Lấy thông tin user đã được xác thực
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String username = oAuth2User.getAttribute("name");
-        Users user =
-                userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Users user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String accessToken = jwtService.generateToken(username, Role.USER, user.getId());
         String redirectUrl = frontendUrl + "?token=" + accessToken;

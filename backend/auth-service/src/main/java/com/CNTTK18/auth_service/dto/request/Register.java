@@ -1,10 +1,11 @@
 package com.CNTTK18.auth_service.dto.request;
 
-import com.CNTTK18.auth_service.model.data.Role;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
+import com.CNTTK18.auth_service.model.data.Role;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -5,7 +5,9 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -17,7 +19,7 @@ public class RabbitMQConfig {
     private static final String DLX_KEY = "dead_letter_routingKey";
 
     private static final String USER_EXCHANGE = "User_exchange";
-    
+
     private static final String UPDATE_USER_QUEUE = "UpdateUser_queue";
     private static final String UPDATE_USER_KEY = "UpdateUser";
 
@@ -43,9 +45,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding deadLetterBinding() {
-        return BindingBuilder.bind(deadLetterQueue())
-                .to(deadLetterExchange())
-                .with(DLX_KEY);
+        return BindingBuilder.bind(deadLetterQueue()).to(deadLetterExchange()).with(DLX_KEY);
     }
 
     @Bean
@@ -60,9 +60,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding updateUserBinding(Queue updateUserQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(updateUserQueue)
-                .to(userExchange)
-                .with(UPDATE_USER_KEY);
+        return BindingBuilder.bind(updateUserQueue).to(userExchange).with(UPDATE_USER_KEY);
     }
 
     @Bean
@@ -72,9 +70,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding deleteUserBinding(Queue deleteUserQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(deleteUserQueue)
-                .to(userExchange)
-                .with(DELETE_USER_KEY);
+        return BindingBuilder.bind(deleteUserQueue).to(userExchange).with(DELETE_USER_KEY);
     }
 
     private Queue buildQueue(String queueName) {

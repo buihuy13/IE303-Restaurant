@@ -5,7 +5,9 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -17,7 +19,7 @@ public class RabbitMQConfig {
     private static final String DLX_KEY = "dead_letter_routingKey";
 
     private static final String USER_EXCHANGE = "User_exchange";
-    
+
     private static final String CREATE_USER_QUEUE = "CreateUser_queue";
     private static final String CREATE_USER_KEY = "CreateUser";
 
@@ -40,9 +42,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding deadLetterBinding() {
-        return BindingBuilder.bind(deadLetterQueue())
-                .to(deadLetterExchange())
-                .with(DLX_KEY);
+        return BindingBuilder.bind(deadLetterQueue()).to(deadLetterExchange()).with(DLX_KEY);
     }
 
     @Bean
@@ -57,9 +57,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding createUserBinding(Queue createUserQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(createUserQueue())
-                .to(userExchange)
-                .with(CREATE_USER_KEY);
+        return BindingBuilder.bind(createUserQueue()).to(userExchange).with(CREATE_USER_KEY);
     }
 
     private Queue buildQueue(String queueName) {

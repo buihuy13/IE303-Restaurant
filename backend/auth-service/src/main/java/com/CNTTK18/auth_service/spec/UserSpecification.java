@@ -30,10 +30,7 @@ public class UserSpecification {
         };
     }
 
-    public static Specification<Users> allSpecification(
-            Role role, Boolean isEnabled, AuthProvider authProvider) {
-        return Specification.allOf(hasRole(role))
-                .and(isEnabled(isEnabled))
-                .and(hasAuthProvider(authProvider));
+    public static Specification<Users> allSpecification(Role role, Boolean isEnabled, AuthProvider authProvider) {
+        return Specification.allOf(hasRole(role)).and(isEnabled(isEnabled)).and(hasAuthProvider(authProvider));
     }
 }

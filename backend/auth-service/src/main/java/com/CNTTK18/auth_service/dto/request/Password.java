@@ -14,7 +14,7 @@ import lombok.Setter;
 public class Password {
     @NotBlank(message = "Old Password is required")
     private String oldPassword;
-    
+
     @NotBlank(message = "Password is required")
     private String password;
 

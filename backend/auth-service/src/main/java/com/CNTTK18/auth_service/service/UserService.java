@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +32,8 @@ import com.CNTTK18.auth_service.model.data.AuthProvider;
 import com.CNTTK18.auth_service.model.data.Role;
 import com.CNTTK18.auth_service.repository.UserRepository;
 import com.CNTTK18.auth_service.util.EmailValidator;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -156,9 +157,7 @@ public class UserService {
     }
 
     private Users getUsersByEmail(String email) {
-        return userRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private Users getUserAfterLogin(String name) {

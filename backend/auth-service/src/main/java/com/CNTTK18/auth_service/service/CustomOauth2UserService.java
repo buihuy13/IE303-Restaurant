@@ -52,7 +52,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         }
         return oAuth2User;
     }
-    
+
     private AuthProvider getAuthProvider(String provider) {
         return switch (provider.toLowerCase()) {
             case "google" -> AuthProvider.GOOGLE;

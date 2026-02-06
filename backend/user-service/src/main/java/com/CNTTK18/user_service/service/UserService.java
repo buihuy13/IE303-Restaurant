@@ -78,16 +78,11 @@ public class UserService {
     }
 
     private DeleteUserDTO buildDeleteUserDTO(UUID id) {
-        return DeleteUserDTO.builder()
-                .id(id)
-                .build();
+        return DeleteUserDTO.builder().id(id).build();
     }
 
     private UpdateUsernameDTO builUpdateUsernameDTO(UUID id, String username) {
-        return UpdateUsernameDTO.builder()
-                .id(id)
-                .username(username)
-                .build();
+        return UpdateUsernameDTO.builder().id(id).username(username).build();
     }
 
     private Users getById(UUID id) {
