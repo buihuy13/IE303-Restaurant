@@ -51,12 +51,16 @@ public class JwtAuthenticationGatewayFilterFactory
         response.setStatusCode(HttpStatusCode.valueOf(statusCode));
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> errorResponse = Map.of(
-            "timestamp", new Date(),
-            "status", statusCode,
-            "error", HttpStatus.valueOf(statusCode).getReasonPhrase(),
-            "message", message,
-            "path", exchange.getRequest().getURI().getPath()
-        );
+                "timestamp",
+                new Date(),
+                "status",
+                statusCode,
+                "error",
+                HttpStatus.valueOf(statusCode).getReasonPhrase(),
+                "message",
+                message,
+                "path",
+                exchange.getRequest().getURI().getPath());
         try {
             byte[] bytes = mapper.writeValueAsBytes(errorResponse);
             DataBuffer buffer = response.bufferFactory().wrap(bytes);
