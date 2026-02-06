@@ -4,7 +4,7 @@ import com.CNTTK18.auth_service.model.data.Role;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +28,9 @@ public class Register {
     @NotBlank(message = "Confirm Password is required")
     private String confirmPassword;
 
-    @NotBlank(message = "Role is required")
+    @NotNull(message = "Role is required")
     private Role role;
+
+    @NotBlank(message = "Phone number is required")
+    private String phone;
 }

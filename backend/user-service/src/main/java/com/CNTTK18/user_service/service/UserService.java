@@ -2,10 +2,16 @@ package com.CNTTK18.user_service.service;
 
 import java.util.UUID;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.CNTTK18.Common.Event.User.CreateUserDTO;
+import com.CNTTK18.Common.Event.User.DeleteUserDTO;
+import com.CNTTK18.Common.Event.User.UpdateUsernameDTO;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.user_service.dto.request.UserRequest;
@@ -21,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable).map(userMapper::toUserResponse);
@@ -31,11 +38,16 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @Transactional
     public UserResponse updateUser(UUID id, UserRequest user) {
         Users existingUser = getById(id);
         existingUser.setUsername(user.getUsername());
         existingUser.setSlug(SlugGenerator.generate(user.getUsername()));
         existingUser.setPhone(user.getPhone());
+        if (existingUser.getUsername().equals(user.getUsername())) {
+            existingUser.setUsername(user.getUsername());
+            eventPublisher.publishEvent(builUpdateUsernameDTO(id, user.getUsername()));
+        }
         existingUser = userRepository.save(existingUser);
         return userMapper.toUserResponse(existingUser);
     }
@@ -47,8 +59,35 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
+    @Transactional
+    @RabbitListener(queues = "CreateUser_queue")
+    public void createUser(CreateUserDTO user) {
+        Users newUser = new Users();
+        newUser.setId(user.getId());
+        newUser.setUsername(user.getUsername());
+        newUser.setSlug(SlugGenerator.generate(user.getUsername()));
+        newUser.setEmail(user.getEmail());
+        newUser.setPhone(user.getPhone());
+        newUser = userRepository.save(newUser);
+    }
+
+    @Transactional
     public void deleteUserById(UUID id) {
         userRepository.deleteById(id);
+        eventPublisher.publishEvent(buildDeleteUserDTO(id));
+    }
+
+    private DeleteUserDTO buildDeleteUserDTO(UUID id) {
+        return DeleteUserDTO.builder()
+                .id(id)
+                .build();
+    }
+
+    private UpdateUsernameDTO builUpdateUsernameDTO(UUID id, String username) {
+        return UpdateUsernameDTO.builder()
+                .id(id)
+                .username(username)
+                .build();
     }
 
     private Users getById(UUID id) {

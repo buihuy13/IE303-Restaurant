@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.CNTTK18.auth_service.dto.request.Login;
 import com.CNTTK18.auth_service.dto.request.Password;
 import com.CNTTK18.auth_service.dto.request.Register;
+import com.CNTTK18.auth_service.dto.response.MessageResponse;
 import com.CNTTK18.auth_service.dto.response.TokenResponse;
 import com.CNTTK18.auth_service.dto.response.UserResponse;
 import com.CNTTK18.auth_service.exception.ForbiddenException;
@@ -38,8 +39,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
-    record MessageResponse(String message) {}
 
     @Tag(name = "Post")
     @Operation(summary = "Login")

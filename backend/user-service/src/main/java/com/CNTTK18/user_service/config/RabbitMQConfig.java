@@ -1,4 +1,4 @@
-package com.CNTTK18.auth_service.config;
+package com.CNTTK18.user_service.config;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -18,11 +18,8 @@ public class RabbitMQConfig {
 
     private static final String USER_EXCHANGE = "User_exchange";
     
-    private static final String UPDATE_USER_QUEUE = "UpdateUser_queue";
-    private static final String UPDATE_USER_KEY = "UpdateUser";
-
-    private static final String DELETE_USER_QUEUE = "DeleteUser_queue";
-    private static final String DELETE_USER_KEY = "DeleteUser";
+    private static final String CREATE_USER_QUEUE = "CreateUser_queue";
+    private static final String CREATE_USER_KEY = "CreateUser";
 
     private final ObjectMapper objectMapper;
 
@@ -54,27 +51,15 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue updateUserQueue() {
-        return buildQueue(UPDATE_USER_QUEUE);
+    public Queue createUserQueue() {
+        return buildQueue(CREATE_USER_QUEUE);
     }
 
     @Bean
-    public Binding updateUserBinding(Queue updateUserQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(updateUserQueue)
+    public Binding createUserBinding(Queue createUserQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(createUserQueue())
                 .to(userExchange)
-                .with(UPDATE_USER_KEY);
-    }
-
-    @Bean
-    public Queue deleteUserQueue() {
-        return buildQueue(DELETE_USER_QUEUE);
-    }
-
-    @Bean
-    public Binding deleteUserBinding(Queue deleteUserQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(deleteUserQueue)
-                .to(userExchange)
-                .with(DELETE_USER_KEY);
+                .with(CREATE_USER_KEY);
     }
 
     private Queue buildQueue(String queueName) {

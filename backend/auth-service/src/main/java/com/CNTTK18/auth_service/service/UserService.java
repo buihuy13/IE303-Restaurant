@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,6 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.CNTTK18.Common.Event.User.CreateUserDTO;
+import com.CNTTK18.Common.Event.User.DeleteUserDTO;
+import com.CNTTK18.Common.Event.User.UpdateUsernameDTO;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.auth_service.dto.request.Login;
 import com.CNTTK18.auth_service.dto.request.Password;
@@ -24,6 +29,7 @@ import com.CNTTK18.auth_service.dto.response.UserResponse;
 import com.CNTTK18.auth_service.exception.InactivateException;
 import com.CNTTK18.auth_service.mapper.UserMapper;
 import com.CNTTK18.auth_service.model.Users;
+import com.CNTTK18.auth_service.model.data.AuthProvider;
 import com.CNTTK18.auth_service.model.data.Role;
 import com.CNTTK18.auth_service.repository.UserRepository;
 import com.CNTTK18.auth_service.util.EmailValidator;
@@ -38,6 +44,7 @@ public class UserService {
     private final MailService mailService;
     private final CookiesService cookiesService;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void register(Register user) {
@@ -52,10 +59,12 @@ public class UserService {
         newUser.setEnabled(false);
         newUser.setVerificationCode(UUID.randomUUID());
         newUser.setRole(user.getRole());
+        newUser.setAuthProvider(AuthProvider.LOCAL);
         userRepository.save(newUser);
         if (user.getRole().equals(Role.USER)) {
             mailService.sendConfirmationEmail(newUser.getUsername(), newUser.getVerificationCode());
         }
+        eventPublisher.publishEvent(buildCreateUserDTO(newUser.getId(), user));
     }
 
     public TokenResponse login(Login user, HttpServletResponse response) {
@@ -121,6 +130,21 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @Transactional
+    @RabbitListener(queues = "DeleteUser_queue")
+    public void deleteUserById(DeleteUserDTO deletedUser) {
+        Users user = getUsersById(deletedUser.getId());
+        userRepository.delete(user);
+    }
+
+    @Transactional
+    @RabbitListener(queues = "UpdateUser_queue")
+    public void updateUserName(UpdateUsernameDTO updateUserNameDTO) {
+        Users user = getUsersById(updateUserNameDTO.getId());
+        user.setUsername(updateUserNameDTO.getUsername());
+        userRepository.save(user);
+    }
+
     private Users getUsersById(UUID id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
@@ -142,5 +166,14 @@ public class UserService {
             return getUsersByEmail(name);
         }
         return getUsersByUsername(name);
+    }
+
+    private CreateUserDTO buildCreateUserDTO(UUID id, Register user) {
+        return CreateUserDTO.builder()
+                .id(id)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .build();
     }
 }
