@@ -3,6 +3,7 @@ package com.CNTTK18.auth_service.service;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -10,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.CNTTK18.Common.Event.User.CreateUserDTO;
 import com.CNTTK18.auth_service.model.Users;
 import com.CNTTK18.auth_service.model.data.AuthProvider;
 import com.CNTTK18.auth_service.model.data.Role;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomOauth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -43,6 +46,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
                     .authProvider(getAuthProvider(authProvider))
                     .build();
             userRepository.save(user);
+            eventPublisher.publishEvent(buildCreateUserDTO(user.getId(), name, email));
         } else {
             Users user = userFound.get();
             if (!user.getAuthProvider().equals(getAuthProvider(authProvider))) {
@@ -59,5 +63,14 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
             case "facebook" -> AuthProvider.FACEBOOK;
             default -> throw new OAuth2AuthenticationException("Unsupported auth provider: " + provider);
         };
+    }
+
+    private CreateUserDTO buildCreateUserDTO(UUID id, String username, String email) {
+        return CreateUserDTO.builder()
+                .id(id)
+                .username(username)
+                .email(email)
+                .phone(null)
+                .build();
     }
 }
