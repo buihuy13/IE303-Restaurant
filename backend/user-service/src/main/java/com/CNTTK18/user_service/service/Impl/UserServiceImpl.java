@@ -14,8 +14,10 @@ import com.CNTTK18.Common.Event.User.DeleteUserDTO;
 import com.CNTTK18.Common.Event.User.UpdateUsernameDTO;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
+import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.mapper.UserMapper;
 import com.CNTTK18.user_service.model.Users;
 import com.CNTTK18.user_service.repository.UserRepository;
@@ -40,7 +42,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public UserResponse updateUser(UUID id, UserRequest user) {
+    public UserResponse updateUser(UUID id, UserRequest user, UserRole authUser) {
+        checkAuthority(id, authUser);
         Users existingUser = getById(id);
         existingUser.setPhone(user.getPhone());
         if (!existingUser.getUsername().equals(user.getUsername())) {
@@ -72,7 +75,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public void deleteUserById(UUID id) {
+    public void deleteUserById(UUID id, UserRole authUser) {
+        checkAuthority(id, authUser);
         userRepository.deleteById(id);
         eventPublisher.publishEvent(buildDeleteUserDTO(id));
     }
@@ -87,5 +91,11 @@ public class UserServiceImpl implements UserService {
 
     private Users getById(UUID id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private void checkAuthority(UUID id, UserRole authUser) {
+        if (!authUser.getUserId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
     }
 }
