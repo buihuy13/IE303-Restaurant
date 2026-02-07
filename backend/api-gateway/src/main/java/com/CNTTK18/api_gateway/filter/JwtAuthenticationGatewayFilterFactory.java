@@ -90,11 +90,10 @@ public class JwtAuthenticationGatewayFilterFactory
                     return onError(exchange, 401, "Token lỗi");
                 }
                 String requiredRole = config.getRequiredRole();
+                String userRoles = jwtUtil.extractRole(authHeader);
                 // Nếu route này có yêu cầu role
                 if (requiredRole != null && !requiredRole.isEmpty()) {
-                    String userRoles = jwtUtil.extractRole(authHeader);
                     List<String> roles = Arrays.asList(requiredRole.split(","));
-
                     // Kiểm tra xem người dùng có quyền yêu cầu không
                     if (userRoles == null || !roles.stream().anyMatch(r -> r.equals(userRoles))) {
                         return onError(exchange, 403, "Không có quyền");
@@ -105,6 +104,7 @@ public class JwtAuthenticationGatewayFilterFactory
                 ServerHttpRequest mutatedRequest = exchange.getRequest()
                         .mutate()
                         .header("user-id", jwtUtil.extractUserId(authHeader))
+                        .header("role", userRoles)
                         .build();
 
                 exchange = exchange.mutate().request(mutatedRequest).build();
