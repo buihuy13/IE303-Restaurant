@@ -14,6 +14,7 @@ import com.CNTTK18.Common.Event.User.DeleteUserDTO;
 import com.CNTTK18.Common.Event.User.UpdateUsernameDTO;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
+import com.CNTTK18.user_service.dto.KeycloakEventDTO;
 import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.UserResponse;
@@ -97,5 +98,25 @@ public class UserServiceImpl implements UserService {
         if (!authUser.getUserId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
             throw new ForbiddenException("You are not authorized to perform this action");
         }
+    }
+
+    @Override
+    public void handleKeycloakEvent(KeycloakEventDTO event) {
+        if ("REGISTER".equals(event.getType())) {
+            syncUserFromKeycloak(event);
+        }
+    }
+
+    @Transactional
+    private void syncUserFromKeycloak(KeycloakEventDTO event) {
+        String email = event.getDetails().get("email").toString();
+        String username = event.getDetails().get("username").toString();
+
+        Users newUser = new Users();
+        newUser.setId(UUID.fromString(event.getUserId()));
+        newUser.setUsername(username);
+        newUser.setSlug(SlugGenerator.generate(username));
+        newUser.setEmail(email);
+        userRepository.save(newUser);
     }
 }

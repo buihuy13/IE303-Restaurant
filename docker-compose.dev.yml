@@ -27,3 +27,30 @@ services:
             timeout: 3s # Không response sau 3s thì timeout
             retries: 5 # Thử lại 5 lần trước khi mark là unhealthy
             start_period: 10s # Cho 10s bắt đầu trước khi healthcheck
+    
+    keycloak:
+        image: quay.io/keycloak/keycloak:24.0.0
+        #override entrypoint để chạy script init.sh
+        entrypoint: ["/bin/bash"]
+        command: ["/tmp/init.sh"]
+        env_file:
+            - ./.env
+        environment:
+            - KC_DB=postgres
+            - KC_HEALTH_ENABLED=true
+            - KC_METRICS_ENABLED=true
+            - KC_SPI_EVENTS_LISTENER_EXT_EVENT_HTTP_ENDPOINT=http://host.docker.internal:8080/api/users/keycloak
+            # Tắt Cache để sửa theme thấy ngay lập tức (Chỉ dùng cho DEV)
+            - KC_SPI_THEME_CACHE_THEMES=false
+            - KC_SPI_THEME_CACHE_TEMPLATES=false
+            - KC_SPI_THEME_STATIC_MAX_AGE=-1
+        ports:  
+            - '9090:8080'
+        volumes:
+            - ./keycloak-config/realm.json:/tmp/realm.json:ro
+            - ./keycloak-config/init.sh:/tmp/init.sh:ro
+            - ./keycloak-config/keycloak-events-0.51.jar:/opt/keycloak/providers/keycloak-events.jar
+            - ./keycloak-config/themes:/opt/keycloak/themes
+        depends_on:
+            rabbitmq:
+                condition: service_healthy

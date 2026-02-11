@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.CNTTK18.user_service.dto.KeycloakEventDTO;
 import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.UserResponse;
@@ -19,4 +20,6 @@ public interface UserService {
     UserResponse getUserBySlug(String slug);
 
     void deleteUserById(UUID id, UserRole authUser);
+
+    void handleKeycloakEvent(KeycloakEventDTO event);
 }
