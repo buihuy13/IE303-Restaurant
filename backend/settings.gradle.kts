@@ -7,4 +7,5 @@ include (
     "user-service",
     "auth-service",
     "notification-service",
+    "chat-service",
 )
