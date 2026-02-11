@@ -12,11 +12,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.CNTTK18.user_service.dto.KeycloakEventDTO;
 import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
@@ -26,10 +28,12 @@ import com.CNTTK18.user_service.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     private final UserService userService;
 
@@ -74,5 +78,12 @@ public class UserController {
             @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         userService.deleteUserById(id, authUser);
         return ResponseEntity.ok(new MessageResponse("User deleted successfully"));
+    }
+
+    @PostMapping("/keycloak")
+    public void receiveKeycloakEvent(@RequestBody KeycloakEventDTO event) {
+        log.info("Nhận được event từ keycloak: ");
+        log.info(event.toString());
+        userService.handleKeycloakEvent(event);
     }
 }

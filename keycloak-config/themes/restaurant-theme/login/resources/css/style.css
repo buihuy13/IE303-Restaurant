@@ -1,0 +1,253 @@
+/* =========================================
+   1. CẤU HÌNH FONT & BIẾN MÀU SẮC
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #ff6b35; /* Màu cam chủ đạo nhà hàng */
+    --primary-hover: #e85d2a;
+    --bg-overlay: rgba(0, 0, 0, 0.65); /* Lớp phủ tối màu lên ảnh nền */
+    --card-bg: rgba(255, 255, 255, 0.98); /* Nền khung đăng nhập */
+    --text-color: #2d2d2d;
+    --border-radius: 12px;
+}
+
+body {
+    font-family: 'Poppins', sans-serif !important;
+}
+
+/* =========================================
+   2. MÀN HÌNH NỀN (BACKGROUND)
+   ========================================= */
+.pf-v5-c-login {
+    /* Thay background.jpg bằng ảnh món ăn/nhà hàng của bạn */
+    background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), url('../img/background.jpg') !important;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ẩn hình nền mặc định của Keycloak nếu có */
+.pf-v5-c-login__container {
+    background-color: transparent !important;
+    max-width: 500px !important; /* Giới hạn chiều rộng cho đẹp */
+    width: 100%;
+}
+
+/* =========================================
+   3. KHUNG ĐĂNG NHẬP (MAIN CARD)
+   ========================================= */
+.pf-v5-c-login__main {
+    background-color: var(--card-bg) !important;
+    border-radius: var(--border-radius) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+    /* Xóa các border mặc định của PatternFly */
+    border: none !important;
+    overflow: hidden; /* Để bo góc hoạt động tốt */
+}
+
+/* Header (Chữ Login Title) */
+.pf-v5-c-login__main-header {
+    padding: 40px 40px 10px 40px !important;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Tiêu đề chính */
+.pf-v5-c-title.pf-m-3xl {
+    color: #333 !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* =========================================
+   4. LOGO & HEADER
+   ========================================= */
+/* Ẩn dòng chữ "Restaurant Keycloak System" ở trên cùng nếu muốn */
+#kc-header {
+    display: none; 
+}
+
+/* Hoặc nếu muốn hiện Logo thay vì chữ tiêu đề */
+/* .pf-v5-c-login__main-header:before {
+    content: '';
+    display: block;
+    width: 120px;
+    height: 80px;
+    background: url('../img/logo.png') no-repeat center/contain;
+    margin-bottom: 20px;
+} 
+*/
+
+/* =========================================
+   5. INPUT & FORM (QUAN TRỌNG)
+   ========================================= */
+.pf-v5-c-login__main-body {
+    padding: 0 40px 40px 40px !important;
+}
+
+/* Label (Username/Password) */
+.pf-v5-c-form__label-text {
+    font-weight: 600 !important;
+    color: #555 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Input Field */
+.pf-v5-c-form-control input {
+    height: 48px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    background-color: #f9f9f9 !important;
+    padding-left: 15px !important;
+    font-size: 15px !important;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+/* Input Focus Effect */
+.pf-v5-c-form-control input:focus {
+    background-color: #fff !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.15) !important;
+    outline: none !important;
+}
+
+/* Icon con mắt hiện mật khẩu */
+.pf-v5-c-button.pf-m-control {
+    background: transparent !important;
+    border: none !important;
+    color: #777;
+}
+
+/* =========================================
+   6. NÚT BẤM (BUTTONS)
+   ========================================= */
+/* Nút Đăng nhập chính */
+#kc-login {
+    background-color: var(--primary-color) !important;
+    border: none !important;
+    border-radius: 50px !important; /* Bo tròn kiểu viên thuốc */
+    color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    padding: 12px !important;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    width: 100%;
+}
+
+#kc-login:hover {
+    background-color: var(--primary-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+}
+
+/* =========================================
+   7. CÁC ĐƯỜNG LINK & TIỆN ÍCH
+   ========================================= */
+/* Checkbox "Remember Me" */
+.checkbox label {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* Link "Forgot Password" & "Register" */
+a {
+    color: var(--primary-color) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--primary-hover) !important;
+    text-decoration: underline !important;
+}
+
+/* Căn chỉnh lại dòng Forgot Password */
+.pf-v5-c-login__main-body .pf-v5-c-form__group:has(.pf-v5-c-check) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* =========================================
+   8. SOCIAL LOGIN (Google/Facebook...)
+   ========================================= */
+.pf-v5-c-login__main-footer {
+    background-color: #f7f7f7 !important;
+    padding: 20px 40px !important;
+    border-top: 1px solid #eee;
+}
+
+/* Danh sách icon mạng xã hội */
+ul.pf-v5-c-login__main-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 0;
+    list-style: none;
+}
+
+/* Các nút Google, Facebook... */
+.pf-v5-c-login__main-footer-links-item-link {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.pf-v5-c-login__main-footer-links-item-link:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+}
+
+/* Chỉnh màu SVG icon (Google giữ nguyên màu, các cái khác cho màu xám) */
+.pf-v5-c-login__main-footer svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* =========================================
+   9. THÔNG BÁO LỖI (ALERTS)
+   ========================================= */
+.pf-v5-c-alert {
+    border-radius: 8px !important;
+    margin-bottom: 20px !important;
+}
+
+.pf-v5-c-alert.pf-m-danger {
+    background-color: #fff2f0 !important;
+    border-left: 4px solid #ff4d4f !important;
+    color: #ff4d4f;
+}
+
+/* Chỉnh chữ màu đỏ khi validate input */
+.pf-v5-c-form__helper-text.pf-m-error {
+    color: #d32f2f !important;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
