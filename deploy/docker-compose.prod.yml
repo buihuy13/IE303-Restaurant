@@ -1,0 +1,104 @@
+services:
+    rabbitmq:
+        image: 'rabbitmq:3-management'
+        env_file:
+            - ./.env
+        healthcheck:
+            test: ['CMD', 'rabbitmqctl', 'status']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+    redis:
+        image: 'redis:7-alpine'
+        container_name: redis
+        env_file:
+            - ./.env
+        command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 3
+            retries: 5
+            start_period: 10s
+    postgres:
+        image: postgis/postgis:16-3.4   # PostgreSQL + PostGIS
+        restart: unless-stopped
+        expose:
+            - '5432'
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: restaurant-service
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./main_postgres.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant-service"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 60s
+    zipkin:
+        image: openzipkin/zipkin
+        expose:
+            - '9411'
+    keycloak:
+        image: quay.io/keycloak/keycloak:24.0.0
+        #override entrypoint để chạy script init.sh
+        entrypoint: ["/bin/bash"]
+        command: ["/tmp/init-keycloak.sh"]
+        env_file:
+            - ./.env
+        environment:
+            - KC_DB=postgres
+            - KC_HEALTH_ENABLED=true
+            - KC_METRICS_ENABLED=true
+            - KC_SPI_EVENTS_LISTENER_EXT_EVENT_HTTP_ENDPOINT=http://user-service:8081/api/users/keycloak
+        ports:  
+            - '9090:8080'
+        volumes:
+            # Cần đổi ip address ở redirect khi deploy
+            - ./realm.json:/tmp/realm.json:ro
+            - ./init-keycloak.sh:/tmp/init-keycloak.sh:ro
+            - ../keycloak-config/keycloak-events-0.51.jar:/opt/keycloak/providers/keycloak-events.jar
+            - ../keycloak-config/themes:/opt/keycloak/themes
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: 'prometheus'
+        restart: 'unless-stopped'
+        expose:
+            - '9090'
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus-data:/prometheus
+        command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+        healthcheck:
+            test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+    grafana:
+        image: grafana/grafana:latest
+        env_file:
+            - ./.env
+        container_name: grafana
+        restart: 'unless-stopped'
+        expose:
+            - '3000'
+        volumes:
+            - grafana-data:/var/lib/grafana #Lưu dashboard lại khi restart container
+            - ../monitoring/grafana/provisioning:/etc/grafana/provisioning
+        depends_on:
+            - prometheus
+        healthcheck:
+            test: [ "CMD", "nc", "-z", "localhost", "3000" ]
+
+volumes:
+    postgres_data:
+    grafana-data:
+    prometheus-data:
