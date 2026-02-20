@@ -1,0 +1,9 @@
+#Swagger
+springdoc:
+    swagger-ui:
+        path: /api-docs/swagger-ui.html
+        urls:
+            - name: User Service
+              url: /v3/api-docs/user-service
+            - name: Chat Service
+              url: /v3/api-docs/chat-service
