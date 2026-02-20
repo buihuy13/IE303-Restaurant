@@ -20,10 +20,10 @@ public class FallBackController {
 
     @RequestMapping("/fallback")
     public Mono<ResponseEntity<Map<String, Object>>> fallback(ServerWebExchange exchange) {
-        
+
         // Lấy exception gây lỗi
         Throwable exception = exchange.getAttribute(ServerWebExchangeUtils.CIRCUITBREAKER_EXECUTION_EXCEPTION_ATTR);
-        
+
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = (route != null) ? route.getId() : "unknown service";
 
