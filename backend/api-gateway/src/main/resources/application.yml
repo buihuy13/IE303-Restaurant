@@ -1,0 +1,169 @@
+spring:
+    application:
+        name: api-gateway
+    cloud:
+        gateway:
+            default-filters:
+                - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+                - name: RequestRateLimiter
+                  args:
+                      redis-rate-limiter.replenishRate: 100 # tokens/second
+                      redis-rate-limiter.burstCapacity: 200 # max tokens
+                      key-resolver: '#{@ipKeyResolver}'
+                - name: CircuitBreaker
+                  args:
+                      name: defaultCircuitBreaker
+                      fallbackUri: forward:/fallback
+            globalcors:
+                add-to-simple-url-handler-mapping: true
+                cors-configurations:
+                    '[/**]':
+                        allowedOrigins:
+                            - 'http://localhost:3000'
+                        allowedMethods:
+                            - GET
+                            - POST
+                            - PUT
+                            - DELETE
+                            - OPTIONS
+                            - PATCH
+                        allowedHeaders:
+                            - Content-Type
+                            - Authorization
+                            - X-Requested-With
+                            - Refresh-Token
+                        allowCredentials: true
+                        maxAge: 3600
+            discovery:
+                locator:
+                    enabled: true
+                    #lower-case-service-id: true
+            routes:
+                #eureka
+                - id: eureka
+                  uri: ${EUREKA_SERVER_URI}
+                  predicates:
+                      - Path=/eureka/web
+                  filters:
+                      - SetPath=/
+                - id: eureka-static
+                  uri: ${EUREKA_SERVER_URI}
+                  predicates:
+                      - Path=/eureka/**
+                #user-service
+                - id: user-service
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/api/users/**
+                      - Method=GET
+                - id: user-service-put
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/api/users/*
+                      - Method=PUT
+                - id: oauth2-authorization
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/oauth2/authorization/**
+                - id: oauth2-callback
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/login/oauth2/code/**
+                - id: user-service-docs
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/v3/api-docs/user-service
+                # Chat-service
+                - id: chat-service-api
+                  uri: lb://chat-service
+                  predicates:
+                      - Path=/api/chat/roomId/**, /api/chat/rooms/**
+                - id: chat-service-websocket
+                  uri: lb:ws://chat-service
+                  predicates:
+                      - Path=/ws/**
+                # SSE connection (notification-service)
+                - id: sse-connection
+                  uri: lb://notification-service
+                  predicates:
+                      - Path=/api/sse/subcribe/**
+                      - Method=GET
+
+eureka:
+    instance:
+        #hostname: ${spring.application.name}
+        #prefer-ip-address: false
+        #instance-id: ${spring.application.name}:${random.value}
+    client:
+        service-url:
+            defaultZone: ${EUREKA_SERVER_URL}
+
+logging:
+    level:
+        root: TRACE
+
+#Swagger
+springdoc:
+    swagger-ui:
+        path: /api-docs/swagger-ui.html
+        urls:
+            - name: User Service
+              url: /v3/api-docs/user-service
+            - name: Chat Service
+              url: /v3/api-docs/chat-service
+
+
+# resilience4j config (circuit breaker)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10  # Theo dõi 10 request gần nhất
+        permittedNumberOfCallsInHalfOpenState: 3 # Cho phép 3 request thử khi đang Half-Open
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5  # Tối thiểu 5 request mới bắt đầu tính toán
+        waitDurationInOpenState: 4s  # Chờ 4s trước khi thử mở lại mạch (Half-Open)
+        failureRateThreshold: 50  # Nếu 50% request bị lỗi -> Ngắt mạch
+        eventConsumerBufferSize: 10
+        slowCallRateThreshold: 60  # % slow calls -> open
+        slowCallDurationThreshold: 2s  # Call > 3s = slow
+        automaticTransitionFromOpenToHalfOpenEnabled: true # Tự động chuyển từ OPEN sang HALF_OPEN
+        recordExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          # 5xx từ downstream service
+          - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException$ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException$GatewayTimeout
+
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$Unauthorized
+          - org.springframework.web.reactive.function.client.WebClientResponseException$Forbidden
+          - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException$UnprocessableEntity
+          - org.springframework.web.reactive.function.client.WebClientResponseException$TooManyRequests
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s # service response > 3s thì xem là timeout
+        cancelRunningFuture: true
+
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.net.ConnectException
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException$Unauthorized

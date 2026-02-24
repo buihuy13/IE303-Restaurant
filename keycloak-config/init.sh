@@ -19,4 +19,4 @@ sed -e "s|SMTP_PASSWORD_PLACEHOLDER|${SMTP_PASSWORD}|g" \
 echo "Starting Keycloak..."
 
 # chạy mode dev cho nhẹ
-exec /opt/keycloak/bin/kc.sh start-dev
+exec /opt/keycloak/bin/kc.sh start-dev --import-realm
