@@ -53,11 +53,7 @@ services:
         volumes:
             - ./keycloak-config/realm.json:/tmp/realm.json:ro
             - ./keycloak-config/init.sh:/tmp/init.sh:ro
-            - ./keycloak-config/keycloak-events-0.51.jar:/opt/keycloak/providers/keycloak-events.jar
             - ./keycloak-config/themes:/opt/keycloak/themes
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
     prometheus:
         image: prom/prometheus:latest
         container_name: 'prometheus'

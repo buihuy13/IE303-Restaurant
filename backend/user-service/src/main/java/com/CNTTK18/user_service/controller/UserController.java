@@ -18,11 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.CNTTK18.user_service.dto.KeycloakEventDTO;
 import com.CNTTK18.user_service.dto.UserRole;
+import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
+import com.CNTTK18.user_service.dto.response.RegisterResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.service.KeycloakUserService;
 import com.CNTTK18.user_service.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UserController {
     private final UserService userService;
+    private final KeycloakUserService keycloakUserService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Tag(name = "Get")
@@ -80,10 +83,11 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("User deleted successfully"));
     }
 
-    @PostMapping("/keycloak")
-    public void receiveKeycloakEvent(@RequestBody KeycloakEventDTO event) {
-        log.info("Nhận được event từ keycloak: ");
-        log.info(event.toString());
-        userService.handleKeycloakEvent(event);
+    @Tag(name = "Post")
+    @Operation(summary = "Register")
+    @PostMapping("/register")
+    public ResponseEntity<Object> registerWithKeycloak(@RequestBody @Valid Register user) {
+        RegisterResponse response = keycloakUserService.registerWithKeyCloak(user);
+        return ResponseEntity.status(response.getStatusCode()).body(new MessageResponse(response.getMessage()));
     }
 }

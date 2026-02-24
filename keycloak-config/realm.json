@@ -79,7 +79,7 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
-  "editUsernameAllowed": false,
+  "editUsernameAllowed": true,
   "bruteForceProtected": true,
   "permanentLockout": false,
   "maxFailureWaitSeconds": 900,
@@ -103,7 +103,8 @@
       }
     ]
   },
-
+  "defaultRoles": ["USER"],
+  
   "clients": [
     {
       "clientId": "restaurant-frontend",
@@ -118,7 +119,8 @@
       "directAccessGrantsEnabled": true,
       "rootUrl": "http://localhost:3000",
       "redirectUris": [
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
       ],
       "webOrigins": [
         "+"
@@ -137,7 +139,8 @@
       "bearerOnly": false,
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "webOrigins": ["+"],
       "protocolMappers": [
         {
           "name": "realm roles",

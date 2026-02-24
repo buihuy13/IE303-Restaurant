@@ -1,27 +1,26 @@
 package com.CNTTK18.user_service.listener;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.CNTTK18.Common.Event.User.DeleteUserDTO;
-import com.CNTTK18.Common.Event.User.UpdateUsernameDTO;
+import com.CNTTK18.user_service.dto.request.DeleteKeycloakUser;
+import com.CNTTK18.user_service.dto.request.UpdateKeycloakUser;
+import com.CNTTK18.user_service.service.KeycloakUserService;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class UserEventListener {
-    private final RabbitTemplate rabbitTemplate;
+    private final KeycloakUserService keycloakUserService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleUserUpdated(UpdateUsernameDTO event) {
-        rabbitTemplate.convertAndSend("User_exchange", "UpdateUser", event);
+    @EventListener
+    public void handleUserUpdated(UpdateKeycloakUser user) {
+        keycloakUserService.updateKeycloakUser(user);
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleUserDeleted(DeleteUserDTO event) {
-        rabbitTemplate.convertAndSend("User_exchange", "DeleteUser", event);
+    @EventListener
+    public void handleUserDeleted(DeleteKeycloakUser user) {
+        keycloakUserService.deleteKeycloakUser(user);
     }
 }
