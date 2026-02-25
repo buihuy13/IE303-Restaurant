@@ -100,6 +100,10 @@
       {
         "name": "USER",
         "description": "Người sử dụng trang web"
+      },
+      {
+        "name": "MERCHANT",
+        "description": "Người quản lý nhà hàng"
       }
     ]
   },
@@ -190,6 +194,21 @@
         }
       ],
       "realmRoles": [ "ADMIN" ]
+    },
+    {
+      "username": "merchant",
+      "enabled": true,
+      "email": "merchant@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "MERCHANT_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "MERCHANT" ]
     }
   ]
 }
