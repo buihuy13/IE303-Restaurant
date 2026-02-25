@@ -19,6 +19,7 @@ import com.CNTTK18.user_service.dto.request.DeleteKeycloakUser;
 import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UpdateKeycloakUser;
 import com.CNTTK18.user_service.dto.response.RegisterResponse;
+import com.CNTTK18.user_service.model.data.Role;
 import com.CNTTK18.user_service.service.KeycloakEmailService;
 import com.CNTTK18.user_service.service.KeycloakUserService;
 import com.CNTTK18.user_service.service.UserService;
@@ -70,7 +71,11 @@ public class KeycloakUserServiceImpl implements KeycloakUserService {
         registeredUser.setUsername(user.getUsername());
         registeredUser.setEmail(user.getEmail());
         registeredUser.setEmailVerified(false);
-        registeredUser.setEnabled(true);
+        if (Role.MERCHANT.equals(user.getRole())) {
+            registeredUser.setEnabled(false);
+        } else {
+            registeredUser.setEnabled(true);
+        }
         registeredUser.setRequiredActions(List.of("VERIFY_EMAIL"));
         return registeredUser;
     }
