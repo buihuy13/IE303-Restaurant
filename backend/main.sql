@@ -16,6 +16,16 @@ create table users (
 create index idx_email on users(email);
 create index idx_slug on users(slug);
 
+create table address (
+    id UUID DEFAULT gen_random_uuid() primary key,
+    location varchar(255) not null,
+    longitude DOUBLE PRECISION not null,
+    latitude DOUBLE PRECISION not null,
+    user_id UUID not null references users(id)
+);
+
+create index idx_userid on address(user_id);
+
 -- Tạo db chat_service trước
 \c chat_service;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

@@ -1,12 +1,17 @@
 package com.CNTTK18.user_service.model;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -51,4 +56,30 @@ public class Users {
     @Column(name = "updated_at")
     @LastModifiedDate
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Address> addressList;
+
+    public List<Address> getAddressList() {
+        if (this.addressList == null) {
+            this.addressList = new ArrayList<Address>();
+        }
+        return addressList;
+    }
+
+    public void setAddressList(List<Address> addressList) {
+        if (addressList == null) {
+            this.addressList = new ArrayList<Address>();
+            return;
+        }
+        this.addressList = addressList;
+    }
+
+    public void addAddress(Address address) {
+        if (this.addressList == null) {
+            this.addressList = new ArrayList<Address>();
+        }
+        this.addressList.add(address);
+        address.setUser(this);
+    }
 }

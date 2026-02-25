@@ -1,11 +1,13 @@
 package com.CNTTK18.user_service.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,11 +21,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CNTTK18.user_service.dto.UserRole;
+import com.CNTTK18.user_service.dto.request.AddressRequest;
 import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UserRequest;
+import com.CNTTK18.user_service.dto.response.AddressResponse;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
 import com.CNTTK18.user_service.dto.response.RegisterResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.service.AddressService;
 import com.CNTTK18.user_service.service.KeycloakUserService;
 import com.CNTTK18.user_service.service.UserService;
 
@@ -39,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserController {
     private final UserService userService;
     private final KeycloakUserService keycloakUserService;
+    private final AddressService addressService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Tag(name = "Get")
@@ -89,5 +95,28 @@ public class UserController {
     public ResponseEntity<Object> registerWithKeycloak(@RequestBody @Valid Register user) {
         RegisterResponse response = keycloakUserService.registerWithKeyCloak(user);
         return ResponseEntity.status(response.getStatusCode()).body(new MessageResponse(response.getMessage()));
+    }
+
+    @Tag(name = "Post")
+    @Operation(summary = "Added new address for user")
+    @PostMapping("/address")
+    public ResponseEntity<AddressResponse> addNewAddress(@RequestBody @Valid AddressRequest addressRequest) {
+        return new ResponseEntity<>(addressService.createAddress(addressRequest), HttpStatusCode.valueOf(201));
+    }
+
+    @Tag(name = "Delete")
+    @Operation(summary = "Delete address")
+    @DeleteMapping("/address/{id}")
+    public ResponseEntity<MessageResponse> deleteAddress(@PathVariable UUID id) {
+        addressService.deleteAddressById(id);
+        return ResponseEntity.ok(new MessageResponse("Delete successfully"));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get user addresses")
+    @GetMapping("/addresses/{id}")
+    public ResponseEntity<List<AddressResponse>> getUserAddresses(@PathVariable UUID id) {
+        List<AddressResponse> addresses = userService.getAllAddress(id);
+        return ResponseEntity.ok(addresses);
     }
 }
