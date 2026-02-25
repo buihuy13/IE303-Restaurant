@@ -1,5 +1,6 @@
 package com.CNTTK18.user_service.service.Impl;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,8 +23,10 @@ import com.CNTTK18.user_service.dto.request.DeleteKeycloakUser;
 import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UpdateKeycloakUser;
 import com.CNTTK18.user_service.dto.request.UserRequest;
+import com.CNTTK18.user_service.dto.response.AddressResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
 import com.CNTTK18.user_service.exception.ForbiddenException;
+import com.CNTTK18.user_service.mapper.AddressMapper;
 import com.CNTTK18.user_service.mapper.UserMapper;
 import com.CNTTK18.user_service.model.Users;
 import com.CNTTK18.user_service.repository.UserRepository;
@@ -38,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final AddressMapper addressMapper;
 
     @Value("${keycloak.realm}")
     private String realm;
@@ -88,6 +92,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
+    @Override
     public void createUser(UUID id, Register user) {
         Users newUser = new Users();
         newUser.setId(id);
@@ -96,6 +101,14 @@ public class UserServiceImpl implements UserService {
         newUser.setEmail(user.getEmail());
         newUser.setPhone(user.getPhone());
         newUser = userRepository.save(newUser);
+    }
+
+    @Override
+    public List<AddressResponse> getAllAddress(UUID id) {
+        Users user = getById(id);
+        return user.getAddressList().stream()
+                .map(addressMapper::toAddressResponse)
+                .toList();
     }
 
     private Users getById(UUID id) {
