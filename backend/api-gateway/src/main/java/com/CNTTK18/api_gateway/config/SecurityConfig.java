@@ -24,7 +24,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
         return http.csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**")
+                        .pathMatchers("/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**", "/ws")
                         .permitAll()
                         .anyExchange()
                         .authenticated())
