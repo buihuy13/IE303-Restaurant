@@ -64,6 +64,10 @@ spring:
                   uri: lb://chat-service
                   predicates:
                       - Path=/api/chat/roomId/**, /api/chat/rooms/**
+                - id: chat-service-docs
+                  uri: lb://chat-service
+                  predicates:
+                      - Path=/v3/api-docs/chat-service
                 - id: chat-service-websocket
                   uri: lb:ws://chat-service
                   predicates:
@@ -74,6 +78,15 @@ spring:
                   predicates:
                       - Path=/api/sse/subcribe/**
                       - Method=GET
+                # recommendation-service
+                - id: recommendation-service
+                  uri: lb://recommendation-service
+                  predicates:
+                      - Path=/api/recommendations/**
+                - id: recommendation-service-docs
+                  uri: lb://recommendation-service
+                  predicates:
+                      - Path=/v3/api-docs/recommendation-service
 
 eureka:
     instance:
@@ -97,6 +110,8 @@ springdoc:
               url: /v3/api-docs/user-service
             - name: Chat Service
               url: /v3/api-docs/chat-service
+            - name: Recommendation Service
+              url: /v3/api-docs/recommendation-service
 
 
 # resilience4j config (circuit breaker)
