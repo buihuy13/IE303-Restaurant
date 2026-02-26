@@ -20,7 +20,7 @@ allprojects {
 	description = "Restaurant Website"
 
 	repositories {
-        mavenCentral()  
+        mavenCentral()
     }
 }
 
