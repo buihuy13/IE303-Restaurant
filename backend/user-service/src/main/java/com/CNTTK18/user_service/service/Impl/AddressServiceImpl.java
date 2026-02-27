@@ -6,8 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
+import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.AddressRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
+import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.mapper.AddressMapper;
 import com.CNTTK18.user_service.model.Address;
 import com.CNTTK18.user_service.model.Users;
@@ -26,7 +28,8 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     @Transactional
-    public AddressResponse createAddress(AddressRequest address) {
+    public AddressResponse createAddress(AddressRequest address, UserRole authUser) {
+        checkAuthority(address.getUserId(), authUser);
         Users user = userRepository
                 .findById(address.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -47,11 +50,18 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     @Transactional
-    public void deleteAddressById(UUID id) {
+    public void deleteAddressById(UUID id, UserRole authUser) {
+        checkAuthority(findAddressById(id).getUser().getId(), authUser);
         addressRepository.delete(findAddressById(id));
     }
 
     private Address findAddressById(UUID id) {
         return addressRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+    }
+
+    private void checkAuthority(UUID id, UserRole authUser) {
+        if (authUser != null && !authUser.getUserId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
     }
 }
