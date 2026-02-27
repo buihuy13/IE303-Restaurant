@@ -65,21 +65,13 @@
     ]
   },
   "loginTheme": "restaurant-theme",
-  "eventsEnabled": true,
-  "eventsListeners": [
-    "jboss-logging",
-    "ext-event-http"
-  ],
-  "enabledEventTypes": [
-    "REGISTER"
-  ],
   "adminEventsEnabled": true,
   "adminEventsDetailsEnabled": true,
   "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
-  "editUsernameAllowed": false,
+  "editUsernameAllowed": true,
   "bruteForceProtected": true,
   "permanentLockout": false,
   "maxFailureWaitSeconds": 900,
@@ -88,7 +80,7 @@
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 10,
-  "accessTokenLifespan": 300,
+  "accessTokenLifespan": 1800,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "roles": {
@@ -100,10 +92,15 @@
       {
         "name": "USER",
         "description": "Người sử dụng trang web"
+      },
+      {
+        "name": "MERCHANT",
+        "description": "Người quản lý nhà hàng"
       }
     ]
   },
-
+  "defaultRoles": ["USER"],
+  
   "clients": [
     {
       "clientId": "restaurant-frontend",
@@ -116,9 +113,10 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
-      "rootUrl": "http://frontend:3000",
+      "rootUrl": "http://localhost:3000",
       "redirectUris": [
-        "http://frontend:3000/*"
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
       ],
       "webOrigins": [
         "+"
@@ -137,7 +135,8 @@
       "bearerOnly": false,
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "webOrigins": ["+"],
       "protocolMappers": [
         {
           "name": "realm roles",
@@ -187,6 +186,21 @@
         }
       ],
       "realmRoles": [ "ADMIN" ]
+    },
+    {
+      "username": "merchant",
+      "enabled": true,
+      "email": "merchant@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "MERCHANT_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "MERCHANT" ]
     }
   ]
 }

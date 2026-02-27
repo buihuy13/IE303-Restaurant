@@ -65,14 +65,6 @@
     ]
   },
   "loginTheme": "restaurant-theme",
-  "eventsEnabled": true,
-  "eventsListeners": [
-    "jboss-logging",
-    "ext-event-http"
-  ],
-  "enabledEventTypes": [
-    "REGISTER"
-  ],
   "adminEventsEnabled": true,
   "adminEventsDetailsEnabled": true,
   "registrationAllowed": true,
@@ -88,7 +80,7 @@
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 10,
-  "accessTokenLifespan": 300,
+  "accessTokenLifespan": 1800,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "roles": {

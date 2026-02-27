@@ -1,0 +1,41 @@
+{
+    email buiquochuytd@gmail.com
+    debug
+}
+
+SERVER_IP {
+    tls internal
+
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+
+    @api_routes {
+        path /api/*
+        path /v3/api-docs/*
+        path /api-docs/*
+        path /eureka/*
+    }
+
+    @ws_routes {
+        path /ws*
+    }
+
+    handle @ws_routes {
+        reverse_proxy api-gateway:8080 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    handle @api_routes {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
+}
