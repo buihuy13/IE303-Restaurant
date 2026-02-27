@@ -100,15 +100,17 @@ public class UserController {
     @Tag(name = "Post")
     @Operation(summary = "Added new address for user")
     @PostMapping("/address")
-    public ResponseEntity<AddressResponse> addNewAddress(@RequestBody @Valid AddressRequest addressRequest,
-                                                        @AuthenticationPrincipal UserRole authUser) {
-        return new ResponseEntity<>(addressService.createAddress(addressRequest, authUser), HttpStatusCode.valueOf(201));
+    public ResponseEntity<AddressResponse> addNewAddress(
+            @RequestBody @Valid AddressRequest addressRequest, @AuthenticationPrincipal UserRole authUser) {
+        return new ResponseEntity<>(
+                addressService.createAddress(addressRequest, authUser), HttpStatusCode.valueOf(201));
     }
 
     @Tag(name = "Delete")
     @Operation(summary = "Delete address")
     @DeleteMapping("/address/{id}")
-    public ResponseEntity<MessageResponse> deleteAddress(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<MessageResponse> deleteAddress(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         addressService.deleteAddressById(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete successfully"));
     }
@@ -116,8 +118,8 @@ public class UserController {
     @Tag(name = "Get")
     @Operation(summary = "Get user addresses")
     @GetMapping("/addresses/{id}")
-    public ResponseEntity<List<AddressResponse>> getUserAddresses(@PathVariable UUID id, 
-                                                                @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<List<AddressResponse>> getUserAddresses(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         List<AddressResponse> addresses = userService.getAllAddress(id, authUser);
         return ResponseEntity.ok(addresses);
     }
