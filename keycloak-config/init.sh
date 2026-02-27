@@ -14,9 +14,10 @@ sed -e "s|SMTP_PASSWORD_PLACEHOLDER|${SMTP_PASSWORD}|g" \
     -e "s|BACKEND_CLIENT_SECRET_PLACEHOLDER|${BACKEND_CLIENT_SECRET}|g" \
     -e "s|ADMIN_PASSWORD_PLACEHOLDER|${ADMIN_PASSWORD}|g" \
     -e "s|USER_PASSWORD_PLACEHOLDER|${USER_PASSWORD}|g" \
+    -e "s|MERCHANT_PASSWORD_PLACEHOLDER|${MERCHANT_PASSWORD}|g" \
     /tmp/realm.json > /opt/keycloak/data/import/realm.json
 
 echo "Starting Keycloak..."
 
 # chạy mode dev cho nhẹ
-exec /opt/keycloak/bin/kc.sh start-dev
+exec /opt/keycloak/bin/kc.sh start-dev --import-realm

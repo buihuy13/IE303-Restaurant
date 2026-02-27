@@ -79,7 +79,7 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
-  "editUsernameAllowed": false,
+  "editUsernameAllowed": true,
   "bruteForceProtected": true,
   "permanentLockout": false,
   "maxFailureWaitSeconds": 900,
@@ -100,10 +100,15 @@
       {
         "name": "USER",
         "description": "Người sử dụng trang web"
+      },
+      {
+        "name": "MERCHANT",
+        "description": "Người quản lý nhà hàng"
       }
     ]
   },
-
+  "defaultRoles": ["USER"],
+  
   "clients": [
     {
       "clientId": "restaurant-frontend",
@@ -118,7 +123,8 @@
       "directAccessGrantsEnabled": true,
       "rootUrl": "http://localhost:3000",
       "redirectUris": [
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
       ],
       "webOrigins": [
         "+"
@@ -137,7 +143,8 @@
       "bearerOnly": false,
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "webOrigins": ["+"],
       "protocolMappers": [
         {
           "name": "realm roles",
@@ -187,6 +194,21 @@
         }
       ],
       "realmRoles": [ "ADMIN" ]
+    },
+    {
+      "username": "merchant",
+      "enabled": true,
+      "email": "merchant@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "MERCHANT_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "MERCHANT" ]
     }
   ]
 }
