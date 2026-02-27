@@ -32,7 +32,7 @@ services:
             POSTGRES_DB: restaurant-service
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./main_postgres.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
+            - ./main.prod.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant-service"]
             interval: 10s

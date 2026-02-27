@@ -133,7 +133,7 @@ scp -r -i $deploy_host_private_key \
     ./docker-compose.prod.yml \
     ./.env \
     ./ghcr.pem \
-    ../backend/main.sql \
+    ../backend/main.prod.sql \
     ./role-management.sh \
     ./realm.json.sh \
     ./init-keycloak.sh \

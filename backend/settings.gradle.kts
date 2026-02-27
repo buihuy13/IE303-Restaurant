@@ -1,11 +1,16 @@
 rootProject.name = "Restaurant"
 
-include (
-    ":Common",
-    ":service-discovery",
+listOf(
+    "Common",
+    "service-discovery",
     "api-gateway",
     "user-service",
     "notification-service",
     "chat-service",
-    "recommendation-service",
-)
+    "recommendation-service"
+).forEach { module ->
+    val dir = file(module)
+    if (dir.exists()) {  //chỉ include nếu folder tồn tại
+        include(":$module")
+    }
+}

@@ -1,8 +1,6 @@
--- Tạo các db trước nếu chưa có
--- CREATE DATABASE IF user_service;
--- CREATE DATABASE IF chat_service;
-
-\c user_service;
+CREATE DATABASE user_service;
+CREATE DATABASE chat_service;
+\connect user_service;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -29,7 +27,8 @@ create table address (
 
 create index idx_userid on address(user_id);
 
-\c chat_service;
+-- Tạo db chat_service trước
+\connect chat_service;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 create table chat_rooms (
