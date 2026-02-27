@@ -104,7 +104,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<AddressResponse> getAllAddress(UUID id) {
+    public List<AddressResponse> getAllAddress(UUID id, UserRole authUser) {
+        checkAuthority(id, authUser);
         Users user = getById(id);
         return user.getAddressList().stream()
                 .map(addressMapper::toAddressResponse)

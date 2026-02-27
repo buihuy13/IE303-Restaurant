@@ -25,5 +25,5 @@ public interface UserService {
 
     void deleteUserById(UUID id, UserRole authUser);
 
-    List<AddressResponse> getAllAddress(UUID id);
+    List<AddressResponse> getAllAddress(UUID id, UserRole authUser);
 }

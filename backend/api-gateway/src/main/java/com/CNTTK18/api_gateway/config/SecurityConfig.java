@@ -2,6 +2,7 @@ package com.CNTTK18.api_gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -20,12 +21,22 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
     private final HeaderForwardFilter headerForwardFilter;
 
+    private static final String[] PUBLIC_PATHS = {
+        "/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**", "/ws", "/api/users/register"
+    };
+
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
         return http.csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**", "/ws")
+                        .pathMatchers(PUBLIC_PATHS)
                         .permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/users/address")
+                        .hasRole("USER")
+                        .pathMatchers(HttpMethod.DELETE, "/api/users/address")
+                        .hasAnyRole("USER", "ADMIN")
+                        .pathMatchers(HttpMethod.GET, "/api/users/addresses/**")
+                        .hasAnyRole("USER", "ADMIN")
                         .anyExchange()
                         .authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter())))
