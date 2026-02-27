@@ -8,4 +8,5 @@ include (
     "auth-service",
     "notification-service",
     "chat-service",
+    "restaurant-service",
 )

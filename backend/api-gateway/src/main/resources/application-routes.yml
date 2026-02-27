@@ -77,6 +77,17 @@ spring:
                   uri: lb://user-service
                   predicates:
                       - Path=/v3/api-docs/user-service
+                                # restaurant-service
+                                - id: restaurant-service
+                                    uri: lb://restaurant-service
+                                    predicates:
+                                            - Path=/api/restaurants/**
+                                    filters:
+                                            - name: JwtAuthentication
+                                - id: restaurant-service-docs
+                                    uri: lb://restaurant-service
+                                    predicates:
+                                            - Path=/v3/api-docs/restaurant-service
                 # Chat-service
                 - id: chat-service-api
                   uri: lb://chat-service
