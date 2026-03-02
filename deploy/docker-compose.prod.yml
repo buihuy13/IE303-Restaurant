@@ -32,7 +32,7 @@ services:
             POSTGRES_DB: restaurant-service
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./main_postgres.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
+            - ./main.prod.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant-service"]
             interval: 10s
@@ -54,15 +54,13 @@ services:
             - KC_DB=postgres
             - KC_HEALTH_ENABLED=true
             - KC_METRICS_ENABLED=true
-            - KC_SPI_EVENTS_LISTENER_EXT_EVENT_HTTP_ENDPOINT=http://user-service:8081/api/users/keycloak
         ports:  
             - '9090:8080'
         volumes:
             # Cần đổi ip address ở redirect khi deploy
             - ./realm.json:/tmp/realm.json:ro
             - ./init-keycloak.sh:/tmp/init-keycloak.sh:ro
-            - ../keycloak-config/keycloak-events-0.51.jar:/opt/keycloak/providers/keycloak-events.jar
-            - ../keycloak-config/themes:/opt/keycloak/themes
+            - ./themes:/opt/keycloak/themes
         depends_on:
             rabbitmq:
                 condition: service_healthy
@@ -73,7 +71,7 @@ services:
         expose:
             - '9090'
         volumes:
-            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./monitoring:/etc/prometheus
             - prometheus-data:/prometheus
         command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
         healthcheck:
@@ -92,13 +90,30 @@ services:
             - '3000'
         volumes:
             - grafana-data:/var/lib/grafana #Lưu dashboard lại khi restart container
-            - ../monitoring/grafana/provisioning:/etc/grafana/provisioning
+            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
         depends_on:
             - prometheus
         healthcheck:
             test: [ "CMD", "nc", "-z", "localhost", "3000" ]
+    caddy:
+        image: caddy:2-alpine
+        container_name: caddy
+        restart: unless-stopped
+        ports:
+        - "80:80"
+        - "443:443"
+        volumes:
+        - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+        - caddy_data:/data
+        - caddy_config:/config
+        depends_on:
+        - api-gateway
+        - frontend
+        - keycloak
 
 volumes:
     postgres_data:
     grafana-data:
     prometheus-data:
+    caddy_data:
+    caddy_config:

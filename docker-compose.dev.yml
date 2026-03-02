@@ -43,7 +43,6 @@ services:
             - KC_DB=postgres
             - KC_HEALTH_ENABLED=true
             - KC_METRICS_ENABLED=true
-            - KC_SPI_EVENTS_LISTENER_EXT_EVENT_HTTP_ENDPOINT=http://host.docker.internal:8080/api/users/keycloak
             # Tắt Cache để sửa theme thấy ngay lập tức (Chỉ dùng cho DEV)
             - KC_SPI_THEME_CACHE_THEMES=false
             - KC_SPI_THEME_CACHE_TEMPLATES=false
