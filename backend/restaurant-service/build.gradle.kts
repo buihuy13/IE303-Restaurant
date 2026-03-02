@@ -23,10 +23,12 @@ dependencies {
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 	implementation("io.github.cdimascio:dotenv-java:3.2.0")
-	implementation("org.springframework.boot:spring-boot-starter-amqp")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	implementation("com.cloudinary:cloudinary-core:2.3.2")
+	implementation("com.cloudinary:cloudinary-http5:2.3.2")
+	implementation("org.hibernate.orm:hibernate-spatial")
 }
 
 dependencyManagement {
