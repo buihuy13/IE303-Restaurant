@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
-type BadgeProps = {
+type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
 };
 
-export default function Badge({ children }: BadgeProps) {
-  return <span>{children}</span>;
+export default function Badge({ children, ...props }: BadgeProps) {
+  return <span {...props}>{children}</span>;
 }
