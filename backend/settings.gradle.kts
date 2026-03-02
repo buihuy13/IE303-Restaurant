@@ -7,6 +7,7 @@ listOf(
     "user-service",
     "notification-service",
     "chat-service",
+    "restaurant-service",
     "recommendation-service"
 ).forEach { module ->
     val dir = file(module)
