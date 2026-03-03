@@ -8,20 +8,14 @@ import { Button } from "@/components/ui";
 
 import { CategoryItem } from "./CategoryItem";
 
-const CATEGORY_ITEMS = [
-  { name: "Broken rice", icon: "🍛" },
-  { name: "Milk tea", icon: "🧋" },
-  { name: "Noodles & Pho", icon: "🍜" },
-  { name: "Fried chicken", icon: "🍗" },
-  { name: "Snacks", icon: "🍟" },
-  { name: "Pizza", icon: "🍕" },
-  { name: "Burger", icon: "🍔" },
-  { name: "Healthy", icon: "🥗" },
-  { name: "Desserts", icon: "🍰" },
-  { name: "Coffee", icon: "☕" },
-];
+type CategoryListProps = {
+  items: {
+    name: string;
+    icon: string;
+  }[];
+};
 
-export function CategoryList() {
+export function CategoryList({ items }: CategoryListProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { dragFree: true, loop: true },
     [Autoplay({ delay: 3500, stopOnInteraction: false })],
@@ -34,7 +28,7 @@ export function CategoryList() {
         <div className="relative px-4 sm:px-0">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="ml-4 flex gap-4 md:gap-8">
-              {CATEGORY_ITEMS.map((item) => (
+              {items.map((item) => (
                 <CategoryItem key={item.name} name={item.name} icon={item.icon} />
               ))}
             </div>

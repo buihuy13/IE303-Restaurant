@@ -1,4 +1,4 @@
-import type { ChatRoomMock } from "./mock";
+import type { ChatRoomMock } from "@/constants";
 import ChatEmptyState from "./ChatEmptyState";
 import ChatRoomListItem from "./ChatRoomListItem";
 

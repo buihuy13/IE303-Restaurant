@@ -1,23 +1,4 @@
-const mockReviews = [
-  {
-    id: 1,
-    name: "Sarah Nguyen",
-    content:
-      "The food always arrives hot and fresh. Ordering is super easy and fast.",
-  },
-  {
-    id: 2,
-    name: "Minh Tran",
-    content:
-      "Great selection of local restaurants and very reliable delivery time.",
-  },
-  {
-    id: 3,
-    name: "Linh Pham",
-    content:
-      "I love the interface and the promotions. Definitely my go-to food app.",
-  },
-];
+import { homeReviews } from "@/constants";
 
 const HomePageReviews = () => {
   return (
@@ -30,7 +11,7 @@ const HomePageReviews = () => {
         </div>
 
         <div className="mt-12 lg:mt-[69px] grid gap-6 md:grid-cols-3">
-          {mockReviews.map((review) => (
+          {homeReviews.map((review) => (
             <div
               key={review.id}
               className="rounded-xl bg-white/90 p-6 shadow-sm border border-black/5"

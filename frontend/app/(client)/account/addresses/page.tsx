@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import AccountAddressesPageShell from "@/components/client/account/AccountAddressesPageShell";
+
+export default function AccountAddressesPage() {
+  return <AccountAddressesPageShell />;
 }

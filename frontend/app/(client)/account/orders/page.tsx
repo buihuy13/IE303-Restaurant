@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import AccountOrdersPageShell from "@/components/client/account/AccountOrdersPageShell";
+
+export default function AccountOrdersPage() {
+  return <AccountOrdersPageShell />;
 }

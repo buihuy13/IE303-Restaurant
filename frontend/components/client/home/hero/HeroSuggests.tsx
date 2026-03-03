@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui";
 
-const SUGGEST_TAGS = ["Milk tea", "Broken rice", "Fish noodle soup", "Snacks", "Pizza", "Fried chicken"];
+type HeroSuggestsProps = {
+  tags: string[];
+};
 
-export function HeroSuggests() {
+export function HeroSuggests({ tags }: HeroSuggestsProps) {
   return (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-      {SUGGEST_TAGS.map((tag) => (
+      {tags.map((tag) => (
         <Button
           key={tag}
           type="button"

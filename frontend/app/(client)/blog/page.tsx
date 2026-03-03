@@ -1,3 +1,6 @@
-export default function Page() {
-  return <div>Page</div>;
+import BlogListPageShell from "@/components/client/blog/BlogListPageShell";
+
+export default function BlogPage() {
+  return <BlogListPageShell />;
 }
+

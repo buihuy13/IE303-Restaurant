@@ -1,4 +1,4 @@
-import type { ChatRoomMock } from "./mock";
+import type { ChatRoomMock } from "@/constants";
 
 type ChatRoomListItemProps = {
   room: ChatRoomMock;

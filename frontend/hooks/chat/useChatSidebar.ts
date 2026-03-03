@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import type { ChatRoomMock } from "@/components/client/chat/mock";
+import type { ChatRoomMock } from "@/constants";
 
 export function useChatSidebar(rooms: ChatRoomMock[]) {
   const [search, setSearch] = useState("");

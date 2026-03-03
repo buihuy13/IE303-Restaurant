@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { ChatRoomMock } from "./mock";
+import type { ChatRoomMock } from "@/constants";
 import ChatRoomList from "./ChatRoomList";
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import { useChatSidebar } from "@/hooks/chat/useChatSidebar";

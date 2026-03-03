@@ -1,3 +1,5 @@
+import MyBlogsPageShell from "@/components/client/blog/MyBlogsPageShell";
+
 export default function Page() {
-  return <div>Page</div>;
+  return <MyBlogsPageShell />;
 }

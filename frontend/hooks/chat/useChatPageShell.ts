@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { mockChatMessages, mockChatRooms } from "@/components/client/chat/mock";
+import { mockChatMessages, mockChatRooms } from "@/constants";
 
 export function useChatPageShell() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(

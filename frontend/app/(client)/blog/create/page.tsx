@@ -1,3 +1,5 @@
+import BlogCreatePageShell from "@/components/client/blog/BlogCreatePageShell";
+
 export default function Page() {
-  return <div>Page</div>;
+  return <BlogCreatePageShell />;
 }

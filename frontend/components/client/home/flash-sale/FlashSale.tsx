@@ -8,16 +8,17 @@ import { Button } from "@/components/ui";
 
 import { FlashSaleItem } from "./FlashSaleItem";
 
-const FLASH_SALE_ITEMS = [
-  { name: "Grilled milk tea", oldPrice: "60.000đ", newPrice: "29.000đ", discountLabel: "-52%", soldPercentage: 70 },
-  { name: "Pork chop broken rice", oldPrice: "55.000đ", newPrice: "35.000đ", discountLabel: "-36%", soldPercentage: 40 },
-  { name: "Cheese pizza combo", oldPrice: "199.000đ", newPrice: "129.000đ", discountLabel: "-35%", soldPercentage: 55 },
-  { name: "Fried chicken bucket", oldPrice: "150.000đ", newPrice: "99.000đ", discountLabel: "-34%", soldPercentage: 80 },
-  { name: "Snack platter", oldPrice: "89.000đ", newPrice: "59.000đ", discountLabel: "-34%", soldPercentage: 30 },
-  { name: "Beef pho", oldPrice: "65.000đ", newPrice: "45.000đ", discountLabel: "-31%", soldPercentage: 50 },
-];
+type FlashSaleProps = {
+  items: {
+    name: string;
+    oldPrice: string;
+    newPrice: string;
+    discountLabel: string;
+    soldPercentage: number;
+  }[];
+};
 
-export function FlashSale() {
+export function FlashSale({ items }: FlashSaleProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { align: "start", loop: true },
     [Autoplay({ delay: 2800, stopOnInteraction: false })],
@@ -35,7 +36,7 @@ export function FlashSale() {
         <div className="relative px-4 pt-4 pb-4 sm:px-0">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-4 md:gap-6">
-              {FLASH_SALE_ITEMS.map((item) => (
+              {items.map((item) => (
                 <FlashSaleItem key={item.name} {...item} />
               ))}
             </div>

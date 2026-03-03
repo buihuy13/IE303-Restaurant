@@ -3,7 +3,7 @@
 import { ArrowLeft, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import type { ChatMessageMock, ChatRoomMock } from "./mock";
+import type { ChatMessageMock, ChatRoomMock } from "@/constants";
 
 type ChatWindowProps = {
   room: ChatRoomMock | null;

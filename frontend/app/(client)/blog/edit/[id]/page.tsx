@@ -1,3 +1,5 @@
+import BlogEditPageShell from "@/components/client/blog/BlogEditPageShell";
+
 export default function Page() {
-  return <div>Page</div>;
+  return <BlogEditPageShell />;
 }
