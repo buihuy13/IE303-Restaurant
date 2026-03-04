@@ -1,90 +1,112 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 import { useGroupOrderPage } from "@/hooks/group-orders/useGroupOrderPage";
 
+import { GroupOrderDeliveryAddress } from "./GroupOrderDeliveryAddress";
+import { GroupOrderHeader } from "./GroupOrderHeader";
+import { GroupOrderParticipants } from "./GroupOrderParticipants";
+import { GroupOrderSummary } from "./GroupOrderSummary";
+
 export default function GroupOrderPageShell() {
-  const { groupOrder, totalAmount, handleCopy } = useGroupOrderPage();
+  const params = useParams();
+  const shareToken = (params?.shareToken as string) ?? "";
 
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="custom-container py-8 space-y-6">
-        <header className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Group order at {groupOrder.restaurantName}
-            </h1>
-            <p className="text-sm text-gray-500">
-              Status:{" "}
-              <span className="font-medium text-[#EE4D2D]">
-                {groupOrder.status}
-              </span>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <Copy className="w-4 h-4" />
-            Copy share link
-          </button>
-        </header>
+  const {
+    groupOrder,
+    loading,
+    shareLink,
+    canJoin,
+    canLock,
+    canConfirm,
+    canCancel,
+    isAuthenticated,
+    currentUser,
+    statusLabel,
+    formatPrice,
+    handleCopyLink,
+    handleLock,
+    handleConfirm,
+    handleCancel,
+    handleRemoveParticipant,
+  } = useGroupOrderPage(shareToken);
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Participants
-            </h2>
-            <div className="space-y-4">
-              {groupOrder.participants.map((participant) => {
-                const subtotal = participant.items.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0,
-                );
-                return (
-                  <div
-                    key={participant.id}
-                    className="rounded-xl border border-gray-200 p-4"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-gray-900">
-                        {participant.name}
-                      </p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {subtotal.toLocaleString("vi-VN")}₫
-                      </p>
-                    </div>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      {participant.items.map((item, index) => (
-                        <li key={`${participant.id}-${index}`}>
-                          {item.quantity} × {item.name} ·{" "}
-                          {item.price.toLocaleString("vi-VN")}₫
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50 py-12">
+        <div className="custom-container">
+          <div className="mx-auto max-w-4xl">
+            <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-md">
+              <div className="animate-pulse space-y-4">
+                <div className="h-8 w-1/2 rounded bg-gray-200" />
+                <div className="h-4 w-3/4 rounded bg-gray-200" />
+                <div className="h-4 w-1/2 rounded bg-gray-200" />
+              </div>
             </div>
           </div>
+        </div>
+      </main>
+    );
+  }
 
-          <aside className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Group total
-            </h2>
-            <p className="text-2xl font-bold text-[#EE4D2D]">
-              {totalAmount.toLocaleString("vi-VN")}₫
-            </p>
-            <p className="text-xs text-gray-500">
-              This is a mock summary of the group order. No real payment or
-              API calls are performed.
-            </p>
-          </aside>
-        </section>
+  if (!groupOrder) {
+    return (
+      <main className="min-h-screen bg-gray-50 py-12">
+        <div className="custom-container">
+          <div className="mx-auto max-w-4xl">
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-md">
+              <p className="text-gray-600">Group order not found.</p>
+              <Link
+                href="/"
+                className="mt-4 inline-block text-[#EE4D2D] hover:underline"
+              >
+                Back to home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-12">
+      <div className="custom-container">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <GroupOrderHeader
+            groupOrder={groupOrder}
+            shareToken={shareToken}
+            shareLink={shareLink}
+            statusLabel={statusLabel}
+            canJoin={canJoin}
+            canLock={canLock}
+            canConfirm={canConfirm}
+            canCancel={canCancel}
+            isAuthenticated={isAuthenticated}
+            onCopyLink={handleCopyLink}
+            onLock={handleLock}
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+          />
+
+          <GroupOrderParticipants
+            groupOrder={groupOrder}
+            shareToken={shareToken}
+            currentUserId={currentUser?.id}
+            formatPrice={formatPrice}
+            onRemoveParticipant={handleRemoveParticipant}
+          />
+
+          <GroupOrderSummary
+            groupOrder={groupOrder}
+            formatPrice={formatPrice}
+          />
+
+          <GroupOrderDeliveryAddress address={groupOrder.deliveryAddress} />
+        </div>
       </div>
     </main>
   );
 }
-

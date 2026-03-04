@@ -31,8 +31,10 @@
   --color-warning: #ffcf54;
   --color-success: #29b067;
   --color-danger: #ee4d2d;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-roboto-serif: var(--font-roboto-serif);
+  --font-manrope: var(--font-manrope);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,5 +47,147 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), system-ui, Arial, Helvetica, sans-serif;
+  scrollbar-gutter: stable;
+}
+
+.custom-container {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1170px;
+}
+@media (min-width: 1280px) {
+  .custom-container {
+    max-width: 1040px;
+  }
+}
+@media (min-width: 1024px) {
+  .custom-container {
+    max-width: 832px;
+  }
+}
+@media (min-width: 768px) {
+  .custom-container {
+    max-width: 720px;
+  }
+}
+@media (min-width: 640px) {
+  .custom-container {
+    max-width: 540px;
+  }
+}
+
+/* Button base – giống SE347 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 35px;
+  border-radius: 6px;
+  background-color: var(--color-brand-black);
+  color: white;
+}
+
+
+.blog-content .markdown-body,
+.markdown-body {
+  color: rgb(31 41 55);
+  line-height: 1.75;
+  font-size: 1.125rem;
+}
+.blog-content .markdown-body h1,
+.markdown-body h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+.blog-content .markdown-body h2,
+.markdown-body h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+.blog-content .markdown-body h3,
+.markdown-body h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+.blog-content .markdown-body p,
+.markdown-body p {
+  margin-bottom: 1.5rem;
+  line-height: 1.75;
+}
+.blog-content .markdown-body a,
+.markdown-body a {
+  color: #ee4d2d;
+  font-weight: 500;
+  text-decoration: underline;
+}
+.blog-content .markdown-body a:hover {
+  color: #c43e24;
+}
+.blog-content .markdown-body blockquote,
+.markdown-body blockquote {
+  border-left: 4px solid #ee4d2d;
+  padding-left: 1.5rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  margin: 2rem 0;
+  background: rgb(249 250 251);
+  font-style: italic;
+  color: rgb(55 65 81);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.blog-content .markdown-body code,
+.markdown-body code {
+  background: rgb(243 244 246);
+  color: #ee4d2d;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+}
+.blog-content .markdown-body ul,
+.markdown-body ul,
+.blog-content .markdown-body ol,
+.markdown-body ol {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+.blog-content .markdown-body li,
+.markdown-body li {
+  margin-bottom: 0.5rem;
+}
+.blog-content .markdown-body ul {
+  list-style-type: disc;
+}
+.blog-content .markdown-body ol {
+  list-style-type: decimal;
+}
+
+/* Markdown content utility */
+.markdown-content a {
+  color: #ee4d2d;
+}
+.markdown-content blockquote {
+  border-left-color: #ee4d2d;
+}
+
+/* Scrollbar hide – giống SE347 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

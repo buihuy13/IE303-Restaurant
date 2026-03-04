@@ -7,13 +7,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-import { faqItems } from "@/constants";
+import type { FaqItem } from "@/constants";
 
-export default function FaqAccordion() {
+type FaqAccordionProps = {
+  items: FaqItem[];
+};
+
+export default function FaqAccordion({ items }: FaqAccordionProps) {
+  const defaultValue = items[0]?.id ?? "";
   return (
-    <div className="w-full max-w-3xl mx-auto text-left">
-      <Accordion type="single" collapsible defaultValue="item-1">
-        {faqItems.map((faq) => (
+    <div className="mx-auto w-full max-w-3xl text-left">
+      <Accordion type="single" collapsible defaultValue={defaultValue}>
+        {items.map((faq) => (
           <AccordionItem key={faq.id} value={faq.id}>
             <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
               {faq.question}

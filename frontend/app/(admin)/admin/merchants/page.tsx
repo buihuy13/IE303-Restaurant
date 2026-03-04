@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import AdminMerchantsPageShell from "@/components/admin/merchants/AdminMerchantsPageShell";
+
+export default function AdminMerchantsPage() {
+  return <AdminMerchantsPageShell />;
 }

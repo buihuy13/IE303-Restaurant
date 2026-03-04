@@ -9,4 +9,6 @@ export * from "./mock/home.mock";
 export * from "./mock/faq.mock";
 export * from "./mock/about.mock";
 export * from "./mock/chat.mock";
+export * from "./mock/merchant.mock";
+export * from "./mock/admin.mock";
 export * from "./images";

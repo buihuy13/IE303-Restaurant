@@ -11,7 +11,7 @@ type OrderDetailPageShellProps = {
 export default function OrderDetailPageShell({
   slug,
 }: OrderDetailPageShellProps) {
-  const { order, isNotFound, totalItems } = useOrderDetailPage(slug);
+  const { order, isNotFound, totalItems, formattedDate } = useOrderDetailPage(slug);
 
   if (isNotFound || !order) {
     return (
@@ -35,11 +35,6 @@ export default function OrderDetailPageShell({
       </div>
     );
   }
-
-  const date = new Date(order.createdAt);
-  const formattedDate = Number.isNaN(date.getTime())
-    ? order.createdAt
-    : date.toLocaleString();
 
   return (
     <div className="custom-container py-10">

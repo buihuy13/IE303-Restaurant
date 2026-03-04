@@ -13,6 +13,7 @@ export default function SearchPageShell() {
     priceRange,
     setPriceRange,
     filteredProducts,
+    emptyMessage,
   } = useSearchPage();
 
   return (
@@ -41,10 +42,8 @@ export default function SearchPageShell() {
 
           {filteredProducts.length === 0 && (
             <div className="mt-12 flex flex-col items-center justify-center text-gray-400">
-              <div className="text-4xl mb-3">🔍</div>
-              <p className="text-sm">
-                Try adjusting your search or filters to find more items.
-              </p>
+              <div className="mb-3 text-4xl">🔍</div>
+              <p className="text-sm">{emptyMessage}</p>
             </div>
           )}
         </section>

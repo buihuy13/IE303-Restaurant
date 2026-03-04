@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import VerifyEmailPageShell from "@/components/auth/VerifyEmailPageShell";
+
+export default function VerifyEmailPage() {
+  return <VerifyEmailPageShell />;
 }

@@ -5,8 +5,17 @@ import PaymentSummary from "./PaymentSummary";
 import { usePaymentPage } from "@/hooks/payment/usePaymentPage";
 
 export default function PaymentPageShell() {
-  const { method, setMethod, isSubmitting, summaryLines, handleConfirm } =
-    usePaymentPage();
+  const {
+    method,
+    setMethod,
+    isSubmitting,
+    summaryLines,
+    subtotal,
+    deliveryFee,
+    total,
+    formatPrice,
+    handleConfirm,
+  } = usePaymentPage();
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -21,7 +30,13 @@ export default function PaymentPageShell() {
           </div>
 
           <div className="space-y-4">
-            <PaymentSummary lines={summaryLines} />
+            <PaymentSummary
+              lines={summaryLines}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              total={total}
+              formatPrice={formatPrice}
+            />
 
             <button
               type="button"

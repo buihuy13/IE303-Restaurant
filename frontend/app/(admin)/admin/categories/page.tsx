@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import AdminCategoriesPageShell from "@/components/admin/categories/AdminCategoriesPageShell";
+
+export default function AdminCategoriesPage() {
+  return <AdminCategoriesPageShell />;
 }

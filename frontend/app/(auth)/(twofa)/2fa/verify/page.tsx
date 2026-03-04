@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import TwoFaVerifyPageShell from "@/components/auth/TwoFaVerifyPageShell";
+
+export default function TwoFaVerifyPage() {
+  return <TwoFaVerifyPageShell />;
 }

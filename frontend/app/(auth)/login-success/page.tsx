@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import LoginSuccessPageShell from "@/components/auth/LoginSuccessPageShell";
+
+export default function LoginSuccessPage() {
+  return <LoginSuccessPageShell />;
 }

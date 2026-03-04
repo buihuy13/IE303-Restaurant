@@ -20,10 +20,17 @@ export function useOrderDetailPage(slug: string) {
     [order],
   );
 
+  const formattedDate = useMemo(() => {
+    if (!order) return "";
+    const date = new Date(order.createdAt);
+    return Number.isNaN(date.getTime()) ? order.createdAt : date.toLocaleString();
+  }, [order]);
+
   return {
     order,
     isNotFound,
     totalItems,
+    formattedDate,
   };
 }
 

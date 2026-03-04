@@ -18,6 +18,18 @@ export function usePaymentPage() {
     [],
   );
 
+  const subtotal = useMemo(
+    () =>
+      summaryLines.reduce((sum, line) => {
+        if (!line.product) return sum;
+        return sum + line.product.price * line.item.quantity;
+      }, 0),
+    [summaryLines],
+  );
+  const deliveryFee = subtotal > 0 ? 15000 : 0;
+  const total = subtotal + deliveryFee;
+  const formatPrice = (v: number) => v.toLocaleString("vi-VN") + "₫";
+
   const handleConfirm = () => {
     setIsSubmitting(true);
     setTimeout(() => {
@@ -31,6 +43,10 @@ export function usePaymentPage() {
     setMethod,
     isSubmitting,
     summaryLines,
+    subtotal,
+    deliveryFee,
+    total,
+    formatPrice,
     handleConfirm,
   };
 }

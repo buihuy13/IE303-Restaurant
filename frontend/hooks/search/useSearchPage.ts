@@ -43,6 +43,10 @@ export function useSearchPage() {
     return products;
   }, [query, priceRange, sort]);
 
+  const emptyMessage = "Try adjusting your search or filters to find more items.";
+  const formatPrice = (value: number) =>
+    value.toLocaleString("vi-VN") + "₫";
+
   return {
     query,
     sort,
@@ -50,6 +54,8 @@ export function useSearchPage() {
     priceRange,
     setPriceRange,
     filteredProducts,
+    emptyMessage,
+    formatPrice,
   };
 }
 

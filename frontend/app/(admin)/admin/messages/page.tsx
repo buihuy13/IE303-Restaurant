@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import AdminMessagesPageShell from "@/components/admin/messages/AdminMessagesPageShell";
+
+export default function AdminMessagesPage() {
+  return <AdminMessagesPageShell />;
 }
