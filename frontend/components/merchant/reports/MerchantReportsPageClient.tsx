@@ -231,6 +231,7 @@ export default function MerchantReportsPageClient() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
                     <select
+                        title="Date range"
                         value={rangePreset}
                         onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
                         className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
@@ -402,7 +403,7 @@ export default function MerchantReportsPageClient() {
                                 }}
                                 contentStyle={{
                                     backgroundColor: "#1F2937",
-                                    border: "1px solid "#374151",
+                                    border: "1px solid #374151",
                                     borderRadius: "0.5rem",
                                 }}
                             />
