@@ -1,5 +1,7 @@
-import SearchPageShell from "@/components/client/search/SearchPageShell";
+"use client";
+
+import SearchPageClient from "@/components/client/search/SearchPageClient";
 
 export default function SearchPage() {
-  return <SearchPageShell />;
+    return <SearchPageClient />;
 }

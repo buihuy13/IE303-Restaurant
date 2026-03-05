@@ -1,5 +1,8 @@
-import MerchantDashboardPageShell from "@/components/merchant/MerchantDashboardPageShell";
+ "use client";
 
-export default function MerchantPage() {
-  return <MerchantDashboardPageShell />;
+import MerchantDashboardPageClient from "@/components/merchant/dashboard/MerchantDashboardPageClient";
+
+export default function MerchantDashboardPage() {
+    return <MerchantDashboardPageClient />;
 }
+

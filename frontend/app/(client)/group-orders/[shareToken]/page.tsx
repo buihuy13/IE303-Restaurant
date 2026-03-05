@@ -1,5 +1,7 @@
-import GroupOrderPageShell from "@/components/client/group-orders/GroupOrderPageShell";
+"use client";
+
+import GroupOrderPageClient from "@/components/client/group-orders/GroupOrderPageClient";
 
 export default function GroupOrderPage() {
-  return <GroupOrderPageShell />;
+    return <GroupOrderPageClient />;
 }

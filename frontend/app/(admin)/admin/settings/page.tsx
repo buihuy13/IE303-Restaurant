@@ -1,5 +1,7 @@
-import AdminSettingsPageShell from "@/components/admin/settings/AdminSettingsPageShell";
+"use client";
 
-export default function AdminSettingsPage() {
-  return <AdminSettingsPageShell />;
+import SettingsPageClient from "@/components/admin/settings/SettingsPageClient";
+
+export default function SettingsPage() {
+    return <SettingsPageClient />;
 }

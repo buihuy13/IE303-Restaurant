@@ -1,5 +1,8 @@
-import AdminRestaurantsPageShell from "@/components/admin/restaurants/AdminRestaurantsPageShell";
+"use client";
 
-export default function AdminRestaurantsPage() {
-  return <AdminRestaurantsPageShell />;
+import AdminRestaurantsPageClient from "@/components/admin/restaurants/AdminRestaurantsPageClient";
+
+export default function RestaurantsPage() {
+    return <AdminRestaurantsPageClient />;
 }
+

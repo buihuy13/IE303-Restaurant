@@ -1,50 +1,48 @@
 "use client";
 
-type SortValue = "relevance" | "price-asc" | "price-desc";
+import { useRouter, useSearchParams } from "next/navigation";
 
-type SearchSortBarProps = {
-  sort: SortValue;
-  onSortChange: (value: SortValue) => void;
-  total: number;
-  query: string;
-};
+const sortOptions = [
+    { value: "relevance", label: "Relevance" },
+    { value: "distance", label: "Nearest" },
+    { value: "popular", label: "Top Sales" },
+    { value: "rating", label: "Top Rated" },
+];
 
-export default function SearchSortBar({
-  sort,
-  onSortChange,
-  total,
-  query,
-}: SearchSortBarProps) {
-  return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-          {query ? `Search results for "${query}"` : "All food items"}
-        </h1>
-        <p className="text-sm text-gray-500">
-          {total > 0
-            ? `Found ${total} ${total === 1 ? "item" : "items"}.`
-            : "No items match your search."}
-        </p>
-      </div>
+export default function SearchSortBar() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const currentSort = searchParams.get("sort") || "relevance";
 
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">
-          Sort by
-        </span>
-        <select
-          aria-label="Sort search results"
-          title="Sort search results"
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortValue)}
-          className="border border-gray-300 rounded-full px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/30"
-        >
-          <option value="relevance">Relevance</option>
-          <option value="price-asc">Price: Low to high</option>
-          <option value="price-desc">Price: High to low</option>
-        </select>
-      </div>
-    </div>
-  );
+    const handleSortChange = (value: string) => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        if (value === "relevance") {
+            currentParams.delete("sort");
+        } else {
+            currentParams.set("sort", value);
+        }
+        router.push(`/search?${currentParams.toString()}`, { scroll: false });
+    };
+
+    return (
+        <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                {sortOptions.map((option) => (
+                    <button
+                        key={option.value}
+                        onClick={() => handleSortChange(option.value)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            currentSort === option.value
+                                ? "bg-[#EE4D2D] text-white shadow-md"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 }
 

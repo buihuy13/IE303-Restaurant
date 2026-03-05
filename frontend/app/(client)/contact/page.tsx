@@ -1,5 +1,7 @@
-import ContactPageShell from "@/components/client/contact/ContactPageShell";
+"use client";
+
+import ContactPageClient from "@/components/client/contact/ContactPageClient";
 
 export default function ContactPage() {
-  return <ContactPageShell />;
+    return <ContactPageClient />;
 }

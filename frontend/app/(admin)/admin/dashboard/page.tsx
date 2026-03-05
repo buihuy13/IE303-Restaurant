@@ -1,5 +1,7 @@
-import AdminDashboardPageShell from "@/components/admin/AdminDashboardPageShell";
+"use client";
 
-export default function AdminDashboardPage() {
-  return <AdminDashboardPageShell />;
+import DashboardPageClient from "@/components/dashboard/DashboardPageClient";
+
+export default function AdminDashboard() {
+    return <DashboardPageClient />;
 }

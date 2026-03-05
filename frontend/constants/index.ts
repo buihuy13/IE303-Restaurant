@@ -1,14 +1,18 @@
-export * from "./mock/cart.mock";
-export * from "./mock/products.mock";
-export * from "./mock/users.mock";
-export * from "./mock/group-orders.mock";
-export * from "./mock/orders.mock";
-export * from "./mock/restaurants.mock";
-export * from "./mock/blogs.mock";
-export * from "./mock/home.mock";
-export * from "./mock/faq.mock";
-export * from "./mock/about.mock";
-export * from "./mock/chat.mock";
-export * from "./mock/merchant.mock";
-export * from "./mock/admin.mock";
+// Export images
 export * from "./images";
+export { default as Images } from "./images";
+
+// Export icons
+export * from "./icons";
+export { default as Icons } from "./icons";
+
+// Main constants object
+import Images from "./images";
+import Icons from "./icons";
+
+export const Constants = {
+    Images,
+    Icons,
+};
+
+export default Constants;

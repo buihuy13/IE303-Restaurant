@@ -1,5 +1,8 @@
-import AdminUsersPageShell from "@/components/admin/users/AdminUsersPageShell";
+"use client";
 
-export default function AdminUsersPage() {
-  return <AdminUsersPageShell />;
+import UsersPageClient from "@/components/admin/users/UsersPageClient";
+
+export default function UsersPage() {
+    return <UsersPageClient />;
 }
+

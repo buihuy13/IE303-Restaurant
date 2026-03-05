@@ -1,5 +1,7 @@
-import AdminSizesPageShell from "@/components/admin/sizes/AdminSizesPageShell";
+"use client";
 
-export default function AdminSizesPage() {
-  return <AdminSizesPageShell />;
+import SizesPageClient from "@/components/admin/sizes/SizesPageClient";
+
+export default function SizesPage() {
+    return <SizesPageClient />;
 }

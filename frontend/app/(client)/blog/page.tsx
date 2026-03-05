@@ -1,6 +1,7 @@
-import BlogListPageShell from "@/components/client/blog/BlogListPageShell";
+"use client";
+
+import BlogPageClient from "@/components/client/blog/BlogPageClient";
 
 export default function BlogPage() {
-  return <BlogListPageShell />;
+    return <BlogPageClient />;
 }
-

@@ -1,5 +1,7 @@
-import MerchantFoodPageShell from "@/components/merchant/food/MerchantFoodPageShell";
+"use client";
 
-export default function MerchantFoodPage() {
-  return <MerchantFoodPageShell />;
+import FoodPageClient from "@/components/merchant/food/FoodPageClient";
+
+export default function FoodPage() {
+    return <FoodPageClient />;
 }

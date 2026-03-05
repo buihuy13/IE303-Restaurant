@@ -1,5 +1,12 @@
-import OrdersPageShell from "@/components/client/orders/OrdersPageShell";
+"use client";
+
+import OrdersPageClient from "@/components/client/Orders/OrdersPageClient";
 
 export default function OrdersPage() {
-  return <OrdersPageShell />;
+    return (
+        <section>
+            <OrdersPageClient />
+        </section>
+    );
 }
+

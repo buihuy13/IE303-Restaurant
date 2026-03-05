@@ -1,10 +1,7 @@
-import BlogDetailPageShell from "@/components/client/blog/BlogDetailPageShell";
+"use client";
 
-type PageProps = {
-  params: { slug: string };
-};
+import BlogDetailPageClient from "@/components/client/blog/BlogDetailPageClient";
 
-export default function BlogDetailPage({ params }: PageProps) {
-  return <BlogDetailPageShell slug={params.slug} />;
+export default function BlogPostPage() {
+    return <BlogDetailPageClient />;
 }
-

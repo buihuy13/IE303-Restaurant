@@ -1,9 +1,9 @@
-import OrderDetailPageShell from "@/components/client/orders/OrderDetailPageShell";
+import OrderDetailPageContainer from "@/components/client/OrderDetail/OrderDetailContainer";
 
-type PageProps = {
-  params: { slug: string };
-};
-
-export default function OrderDetailPage({ params }: PageProps) {
-  return <OrderDetailPageShell slug={params.slug} />;
+export default function OrderDetailPage({ params }: { params: { slug: string } }) {
+        return (
+                <section>
+                        <OrderDetailPageContainer params={params} />
+                </section>
+        );
 }

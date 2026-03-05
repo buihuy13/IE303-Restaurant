@@ -1,5 +1,7 @@
-import JoinGroupOrderPageShell from "@/components/client/group-orders/JoinGroupOrderPageShell";
+"use client";
+
+import JoinGroupOrderPageClient from "@/components/client/group-orders/JoinGroupOrderPageClient";
 
 export default function JoinGroupOrderPage() {
-  return <JoinGroupOrderPageShell />;
+    return <JoinGroupOrderPageClient />;
 }

@@ -1,5 +1,7 @@
-import AccountProfilePageShell from "@/components/client/account/AccountProfilePageShell";
+"use client";
 
-export default function AccountPage() {
-  return <AccountProfilePageShell />;
+import AccountPageClient from "@/components/client/Account/AccountPageClient";
+
+export default function ProfilePage() {
+    return <AccountPageClient />;
 }

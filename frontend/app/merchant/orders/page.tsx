@@ -1,5 +1,7 @@
-import MerchantOrdersPageShell from "@/components/merchant/MerchantOrdersPageShell";
+"use client";
+
+import MerchantOrdersPageClient from "@/components/merchant/orders/MerchantOrdersPageClient";
 
 export default function MerchantOrdersPage() {
-  return <MerchantOrdersPageShell />;
+    return <MerchantOrdersPageClient />;
 }

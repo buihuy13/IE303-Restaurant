@@ -1,0 +1,759 @@
+ "use client";
+
+import { useAuthStore } from "@/stores/useAuthStore";
+import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
+import { orderApi } from "@/lib/api/orderApi";
+import type { Order } from "@/types/order.type";
+import { useOrderWebSocket } from "@/lib/hooks/useOrderWebSocket";
+import SectionDateFilter from "@/components/dashboard/SectionDateFilter";
+import RevenueTrendChart from "@/components/dashboard/RevenueTrendChart";
+import StatusBreakdown, { type StatusBreakdownRow } from "@/components/dashboard/StatusBreakdown";
+import {
+    AlertCircle,
+    BarChart3,
+    CheckCircle2,
+    Clock,
+    DollarSign,
+    ShoppingCart,
+    Star,
+    Store,
+    TrendingDown,
+    TrendingUp,
+    Truck,
+    Users,
+    Package,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import toast from "react-hot-toast";
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
+import { formatDateTime } from "@/lib/formatters";
+
+interface StatsCardProps {
+    title: string;
+    value: string | number;
+    icon: React.ElementType;
+    trend?: number;
+    trendLabel?: string;
+    bgColor: string;
+    iconColor: string;
+}
+
+function StatsCard({ title, value, icon: Icon, trend, trendLabel, bgColor, iconColor }: StatsCardProps) {
+    const isPositive = trend !== undefined && trend > 0;
+    const isNegative = trend !== undefined && trend < 0;
+
+    return (
+        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark transition-all hover:shadow-lg">
+            <div className="flex items-center justify-between">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${bgColor}`}>
+                            <Icon className={iconColor} size={20} />
+                        </div>
+                    </div>
+                    <p className="text-sm font-medium text-black dark:text-white mb-1">{title}</p>
+                    <h4 className="text-2xl font-bold text-black dark:text-white mb-2">{value}</h4>
+                    {trend !== undefined && (
+                        <div className="flex items-center gap-1.5">
+                            {isPositive && <TrendingUp size={16} className="text-meta-3" />}
+                            {isNegative && <TrendingDown size={16} className="text-meta-1" />}
+                            <span
+                                className={`text-sm font-medium ${isPositive ? "text-meta-3" : isNegative ? "text-meta-1" : "text-meta-6"}`}
+                            >
+                                {Math.abs(trend)}%
+                            </span>
+                            {trendLabel && (
+                                <span className="text-sm font-medium text-black dark:text-white">{trendLabel}</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function useDashboardDateRange(initialPreset: DashboardDateRangePreset = "30d") {
+    const [preset, setPreset] = useState<DashboardDateRangePreset>(initialPreset);
+    const presetQuery = useMemo(() => buildDateRangeQuery(preset), [preset]);
+    const [startDate, setStartDate] = useState<string>(presetQuery.startDate ?? "");
+    const [endDate, setEndDate] = useState<string>(presetQuery.endDate ?? "");
+
+    useEffect(() => {
+        setStartDate(presetQuery.startDate ?? "");
+        setEndDate(presetQuery.endDate ?? "");
+    }, [presetQuery.startDate, presetQuery.endDate]);
+
+    const error = useMemo(() => {
+        if (startDate && endDate && startDate > endDate) return "Start date must be before end date";
+        return null;
+    }, [endDate, startDate]);
+
+    const query = useMemo(() => {
+        if (startDate && endDate && !error) return { startDate, endDate };
+        return presetQuery;
+    }, [endDate, error, presetQuery, startDate]);
+
+    const reset = useCallback(() => {
+        setStartDate(presetQuery.startDate ?? "");
+        setEndDate(presetQuery.endDate ?? "");
+    }, [presetQuery.endDate, presetQuery.startDate]);
+
+    return {
+        preset,
+        startDate,
+        endDate,
+        error,
+        query,
+        setPreset,
+        setStartDate,
+        setEndDate,
+        reset,
+    };
+}
+
+export default function MerchantDashboardPageClient() {
+    const { user } = useAuthStore();
+
+    const orderSummaryRange = useDashboardDateRange("30d");
+    const revenueRange = useDashboardDateRange("30d");
+    const topProductsRange = useDashboardDateRange("30d");
+
+    const [loadingRestaurant, setLoadingRestaurant] = useState(true);
+    const [loadingOverview, setLoadingOverview] = useState(true);
+    const [loadingRevenueTrend, setLoadingRevenueTrend] = useState(true);
+    const [loadingTopProducts, setLoadingTopProducts] = useState(true);
+    const [loadingRecentOrders, setLoadingRecentOrders] = useState(true);
+    const [restaurantOverview, setRestaurantOverview] = useState<{
+        restaurantId: string;
+        restaurantName: string;
+        restaurantSlug: string;
+        restaurantEnabled: boolean;
+        totalProducts: number;
+        rating: number;
+        totalReviews: number;
+        address: string;
+        imageURL?: string | null;
+        openingTime?: string | null;
+        closingTime?: string | null;
+    } | null>(null);
+    const [overview, setOverview] = useState<{
+        totalOrders: number;
+        totalRevenue: number;
+        averageOrderValue: number;
+        pendingOrders: number;
+        confirmedOrders: number;
+        preparingOrders: number;
+        readyOrders: number;
+        completedOrders: number;
+        cancelledOrders: number;
+    } | null>(null);
+    const [topProducts, setTopProducts] = useState<
+        Array<{ productId: string; productName: string; totalQuantity: number; totalRevenue: number }>
+    >([]);
+    const [ratingStats, setRatingStats] = useState<{
+        averageRating: number;
+        totalRatings: number;
+        ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
+    } | null>(null);
+    const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownRow[]>([]);
+    const [revenueTrend, setRevenueTrend] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenueTrend>>>(
+        [],
+    );
+    const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+
+    const fetchOrders = useCallback(async () => {
+        if (!user?.id || !restaurantOverview?.restaurantId) return;
+        try {
+            setLoadingRecentOrders(true);
+            const recent = await orderApi.getOrdersByRestaurant(restaurantOverview.restaurantId, user.id, {
+                page: 1,
+                limit: 5,
+            });
+            setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
+        } catch (error) {
+            console.error("Failed to fetch orders:", error);
+        } finally {
+            setLoadingRecentOrders(false);
+        }
+    }, [user?.id, restaurantOverview?.restaurantId]);
+
+    const handleOrderStatusUpdate = useCallback(
+        (update: { orderId: string; status: string }) => {
+            toast.success(`Order ${update.orderId} updated: ${update.status}`);
+            fetchOrders();
+        },
+        [fetchOrders],
+    );
+
+    const { isConnected: wsConnected } = useOrderWebSocket({
+        restaurantId: restaurantOverview?.restaurantId,
+        onOrderStatusUpdate: handleOrderStatusUpdate,
+    });
+
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const run = async () => {
+            setLoadingRestaurant(true);
+            try {
+                const merchantId = user.id;
+                const restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
+                setRestaurantOverview(restaurant);
+            } catch (error: unknown) {
+                const status =
+                    error && typeof error === "object" && "response" in error
+                        ? (error as { response?: { status?: number } }).response?.status
+                        : undefined;
+
+                if (status === 404) {
+                    setRestaurantOverview(null);
+                    setOverview(null);
+                    setTopProducts([]);
+                    setRatingStats(null);
+                    setStatusBreakdown([]);
+                    setRevenueTrend([]);
+                    setRecentOrders([]);
+                    return;
+                }
+
+                console.error("Failed to load merchant restaurant overview:", error);
+                toast.error("Unable to load restaurant overview.");
+            } finally {
+                setLoadingRestaurant(false);
+            }
+        };
+
+        run();
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingOverview(true);
+            try {
+                const merchantId = user.id;
+                const [ov, ratings, status] = await Promise.all([
+                    dashboardApi.getMerchantOverview(merchantId, orderSummaryRange.query),
+                    dashboardApi.getMerchantRatingStats(merchantId, orderSummaryRange.query),
+                    dashboardApi.getMerchantOrderStatusBreakdown(merchantId, orderSummaryRange.query),
+                ]);
+
+                setOverview(ov);
+                setRatingStats({
+                    averageRating: typeof ratings?.averageRating === "number" ? ratings.averageRating : 0,
+                    totalRatings: typeof ratings?.totalRatings === "number" ? ratings.totalRatings : 0,
+                    ratingDistribution:
+                        typeof ratings?.ratingDistribution === "object" && ratings?.ratingDistribution
+                            ? ratings.ratingDistribution
+                            : { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+                });
+                setStatusBreakdown(
+                    (Array.isArray(status) ? status : []).map((row) => ({
+                        status: String(row.status ?? ""),
+                        count: typeof row.count === "number" ? row.count : 0,
+                        totalAmount: typeof row.totalAmount === "number" ? row.totalAmount : 0,
+                    })),
+                );
+            } catch (error) {
+                console.error("Failed to load merchant overview:", error);
+                toast.error("Unable to load order summary.");
+            } finally {
+                setLoadingOverview(false);
+            }
+        };
+
+        run();
+    }, [orderSummaryRange.query, restaurantOverview?.restaurantId, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingTopProducts(true);
+            try {
+                const merchantId = user.id;
+                const top = await dashboardApi.getMerchantTopProducts(merchantId, {
+                    limit: 10,
+                    ...topProductsRange.query,
+                });
+                setTopProducts(
+                    (Array.isArray(top) ? top : []).map((p) => ({
+                        productId: String(p.productId),
+                        productName: String(p.productName),
+                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
+                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
+                    })),
+                );
+            } catch (error) {
+                console.error("Failed to load merchant top products:", error);
+                toast.error("Unable to load top products.");
+            } finally {
+                setLoadingTopProducts(false);
+            }
+        };
+
+        run();
+    }, [restaurantOverview?.restaurantId, topProductsRange.query, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingRevenueTrend(true);
+            try {
+                const merchantId = user.id;
+                const points = await dashboardApi.getMerchantRevenueTrend(merchantId, revenueRange.query);
+                setRevenueTrend(Array.isArray(points) ? points : []);
+            } catch (error) {
+                console.error("Failed to load merchant revenue trend:", error);
+                toast.error("Unable to load revenue trend.");
+            } finally {
+                setLoadingRevenueTrend(false);
+            }
+        };
+
+        run();
+    }, [restaurantOverview?.restaurantId, revenueRange.query, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+        fetchOrders();
+    }, [fetchOrders, restaurantOverview?.restaurantId, user?.id]);
+
+    const cards = useMemo(() => {
+        const ov = overview;
+        const restaurant = restaurantOverview;
+        const totalOrders = ov?.totalOrders ?? 0;
+
+        return [
+            {
+                title: "Total Revenue",
+                value: formatCurrency(ov?.totalRevenue ?? 0),
+                icon: DollarSign,
+                bgColor: "bg-meta-3/10",
+                iconColor: "text-meta-3",
+                trend: 11.01,
+                trendLabel: "vs last month",
+            },
+            {
+                title: "Total Orders",
+                value: totalOrders,
+                icon: ShoppingCart,
+                bgColor: "bg-primary/10",
+                iconColor: "text-primary",
+                trend: 2.59,
+                trendLabel: "vs last month",
+            },
+            {
+                title: "Products",
+                value: restaurant?.totalProducts ?? 0,
+                icon: Package,
+                bgColor: "bg-meta-6/10",
+                iconColor: "text-meta-6",
+            },
+            {
+                title: "Avg Rating",
+                value: ratingStats ? ratingStats.averageRating.toFixed(1) : "0.0",
+                icon: Star,
+                bgColor: "bg-warning/10",
+                iconColor: "text-warning",
+                trend: undefined,
+                trendLabel: `${formatNumber(ratingStats?.totalRatings ?? 0)} reviews`,
+            },
+        ];
+    }, [overview, restaurantOverview, ratingStats]);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Merchant Dashboard</h1>
+                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
+                        {wsConnected && <span className="text-meta-3">● </span>}
+                        Hello, {user?.username || "Merchant"}!
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        href="/merchant/food/new"
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary py-2 px-4 text-sm font-medium text-white transition hover:bg-opacity-90"
+                    >
+                        <Store size={18} />
+                        Add Menu Item
+                    </Link>
+                </div>
+            </div>
+
+            {!loadingRestaurant && !restaurantOverview && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5" size={18} />
+                        <div className="flex-1">
+                            <p className="font-semibold">Restaurant setup required</p>
+                            <p className="mt-1 text-sm opacity-90">
+                                Your account is approved, but you haven’t created a restaurant profile yet. Create one
+                                to unlock dashboard stats, orders, and food management.
+                            </p>
+                            <div className="mt-4">
+                                <Link
+                                    href="/merchant/manage/settings"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                                >
+                                    <Store size={16} />
+                                    Create restaurant profile
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-black dark:text-white">Order summary range</p>
+                        <p className="text-xs text-bodydark mt-0.5">Controls the stats cards and order status.</p>
+                    </div>
+
+                    <SectionDateFilter
+                        preset={orderSummaryRange.preset}
+                        startDate={orderSummaryRange.startDate}
+                        endDate={orderSummaryRange.endDate}
+                        error={orderSummaryRange.error}
+                        onPresetChange={orderSummaryRange.setPreset}
+                        onStartDateChange={orderSummaryRange.setStartDate}
+                        onEndDateChange={orderSummaryRange.setEndDate}
+                        onReset={orderSummaryRange.reset}
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+                {cards.map((stat, index) => (
+                    <StatsCard key={index} {...stat} />
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                <div className="space-y-3">
+                    <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-black dark:text-white">Revenue trend range</p>
+                                <p className="text-xs text-bodydark mt-0.5">Controls the revenue chart only.</p>
+                            </div>
+
+                            <SectionDateFilter
+                                preset={revenueRange.preset}
+                                startDate={revenueRange.startDate}
+                                endDate={revenueRange.endDate}
+                                error={revenueRange.error}
+                                onPresetChange={revenueRange.setPreset}
+                                onStartDateChange={revenueRange.setStartDate}
+                                onEndDateChange={revenueRange.setEndDate}
+                                onReset={revenueRange.reset}
+                            />
+                        </div>
+                    </div>
+
+                    {loadingRevenueTrend ? (
+                        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                            <p className="text-sm text-bodydark">Loading...</p>
+                        </div>
+                    ) : (
+                        <RevenueTrendChart points={revenueTrend} />
+                    )}
+                </div>
+
+                {loadingOverview ? (
+                    <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <p className="text-sm text-bodydark">Loading...</p>
+                    </div>
+                ) : (
+                    <StatusBreakdown rows={statusBreakdown} />
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Restaurant Info</h3>
+                    {loadingRestaurant && !restaurantOverview ? (
+                        <div className="text-sm text-bodydark">Loading...</div>
+                    ) : restaurantOverview ? (
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="h-16 w-16 rounded-xl bg-gray/30 dark:bg-meta-4 flex items-center justify-center overflow-hidden">
+                                    {restaurantOverview.imageURL ? (
+                                        <Image
+                                            src={restaurantOverview.imageURL}
+                                            alt={restaurantOverview.restaurantName}
+                                            width={64}
+                                            height={64}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <Store className="text-bodydark" size={32} />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-lg font-semibold text-black dark:text-white">
+                                            {restaurantOverview.restaurantName}
+                                        </h4>
+                                        <span
+                                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                restaurantOverview.restaurantEnabled
+                                                    ? "bg-success/10 text-success"
+                                                    : "bg-danger/10 text-danger"
+                                            }`}
+                                        >
+                                            {restaurantOverview.restaurantEnabled ? "Active" : "Temporarily Closed"}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-bodydark">{restaurantOverview.address}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1.5">
+                                    <Star size={16} className="text-warning fill-warning" />
+                                    <span className="font-medium text-black dark:text-white">
+                                        {restaurantOverview.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-bodydark">
+                                        ({formatNumber(restaurantOverview.totalReviews)} reviews)
+                                    </span>
+                                </div>
+                                {restaurantOverview.openingTime && restaurantOverview.closingTime && (
+                                    <div className="flex items-center gap-1.5">
+                                        <Clock size={16} className="text-bodydark" />
+                                        <span className="text-bodydark">
+                                            {restaurantOverview.openingTime} - {restaurantOverview.closingTime}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <Link
+                                    href="/merchant/food"
+                                    className="flex-1 text-center rounded-lg border border-stroke py-2 px-3 text-sm font-medium transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
+                                >
+                                    Manage Menu
+                                </Link>
+                                {restaurantOverview.restaurantSlug && (
+                                    <Link
+                                        href={`/restaurants/${encodeURIComponent(restaurantOverview.restaurantSlug)}`}
+                                        className="flex-1 text-center rounded-lg bg-primary py-2 px-3 text-sm font-medium text-white transition hover:bg-opacity-90"
+                                    >
+                                        View Storefront
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-sm text-bodydark">No restaurant yet.</div>
+                    )}
+                </div>
+
+                <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Order Status</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-lg bg-warning/10 p-4 text-center">
+                            <Clock size={24} className="mx-auto mb-2 text-warning" />
+                            <p className="text-sm font-medium text-bodydark mb-1">Pending Confirmation</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.pendingOrders ?? 0}
+                            </p>
+                        </div>
+                        <div className="rounded-lg bg-primary/10 p-4 text-center">
+                            <Truck size={24} className="mx-auto mb-2 text-primary" />
+                            <p className="text-sm font-medium text-bodydark mb-1">In Progress</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {(overview?.confirmedOrders ?? 0) + (overview?.preparingOrders ?? 0)}
+                            </p>
+                        </div>
+                        <div className="rounded-lg bg-meta-3/10 p-4 text-center">
+                            <CheckCircle2 size={24} className="mx-auto mb-2 text-meta-3" />
+                            <p className="text-sm font-medium text-bodydark mb-1">Completed</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.completedOrders ?? 0}
+                            </p>
+                        </div>
+                        <div className="rounded-lg bg-meta-1/10 p-4 text-center">
+                            <AlertCircle size={24} className="mx-auto mb-2 text-meta-1" />
+                            <p className="text-sm font-medium text-bodydark mb-1">Canceled</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.cancelledOrders ?? 0}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-black dark:text-white">Top Products</h3>
+                                <p className="text-xs text-bodydark mt-0.5">Driven by its own date range.</p>
+                            </div>
+
+                            <SectionDateFilter
+                                preset={topProductsRange.preset}
+                                startDate={topProductsRange.startDate}
+                                endDate={topProductsRange.endDate}
+                                error={topProductsRange.error}
+                                onPresetChange={topProductsRange.setPreset}
+                                onStartDateChange={topProductsRange.setStartDate}
+                                onEndDateChange={topProductsRange.setEndDate}
+                                onReset={topProductsRange.reset}
+                            />
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        {loadingTopProducts ? (
+                            <p className="text-sm text-bodydark">Loading...</p>
+                        ) : topProducts.length === 0 ? (
+                            <p className="text-sm text-bodydark">No data yet.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {topProducts.slice(0, 5).map((product, index) => (
+                                    <div
+                                        key={product.productId}
+                                        className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                                                #{index + 1}
+                                            </span>
+                                            <div>
+                                                <p className="font-medium text-black dark:text-white">
+                                                    {product.productName}
+                                                </p>
+                                                <p className="text-xs text-bodydark">
+                                                    {formatNumber(product.totalQuantity)} sold
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="font-semibold text-meta-3">
+                                            {formatCurrency(product.totalRevenue)}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
+                        <h3 className="font-semibold text-black dark:text-white">Recent Orders</h3>
+                        <Link href="/merchant/orders" className="text-sm font-medium text-primary hover:underline">
+                            View All
+                        </Link>
+                    </div>
+                    <div className="p-6">
+                        {loadingRecentOrders ? (
+                            <p className="text-sm text-bodydark">Loading...</p>
+                        ) : recentOrders.length === 0 ? (
+                            <p className="text-sm text-bodydark">No orders yet.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {recentOrders.map((order) => {
+                                    const statusColor =
+                                        order.status === "completed"
+                                            ? "bg-meta-3/10 text-meta-3"
+                                            : order.status === "cancelled"
+                                              ? "bg-meta-1/10 text-meta-1"
+                                              : "bg-warning/10 text-warning";
+
+                                    return (
+                                        <div
+                                            key={order.orderId}
+                                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                    <ShoppingCart size={18} className="text-primary" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-black dark:text-white">
+                                                        #{order.orderId}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {formatDateTime(order.createdAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-black dark:text-white mb-1">
+                                                    {formatCurrency(order.finalAmount || 0)}
+                                                </p>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
+                                                >
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Quick Actions</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <Link
+                        href="/merchant/food"
+                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
+                    >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                            <Store className="text-primary" size={24} />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-black dark:text-white">Manage Menu Items</p>
+                            <p className="text-sm text-bodydark">Add and edit your menu</p>
+                        </div>
+                    </Link>
+                    <Link
+                        href="/merchant/manage/staff"
+                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
+                    >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-6/10">
+                            <Users className="text-meta-6" size={24} />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-black dark:text-white">Manage Staff</p>
+                            <p className="text-sm text-bodydark">Add and manage staff</p>
+                        </div>
+                    </Link>
+                    <Link
+                        href="/merchant/reports"
+                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
+                    >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-3/10">
+                            <BarChart3 className="text-meta-3" size={24} />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-black dark:text-white">Reports</p>
+                            <p className="text-sm text-bodydark">View detailed analytics</p>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+

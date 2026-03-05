@@ -1,9 +1,13 @@
-import DeliveryTrackingPageShell from "@/components/client/delivery/DeliveryTrackingPageShell";
+import DeliveryStatusPageContainer from "@/components/client/Delivery/DeliveryStatusPageContainer";
 
-type PageProps = {
-  params: { slug: string };
-};
+// Force dynamic rendering to prevent caching and ensure fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export default function DeliveryTrackingPage({ params }: PageProps) {
-  return <DeliveryTrackingPageShell slug={params.slug} />;
+export default function DeliveryStatusPage({ params }: { params: { slug: string } }) {
+        return (
+                <section>
+                        <DeliveryStatusPageContainer params={params} />
+                </section>
+        );
 }

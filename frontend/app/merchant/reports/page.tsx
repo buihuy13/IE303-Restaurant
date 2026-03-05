@@ -1,5 +1,7 @@
-import MerchantReportsPageShell from "@/components/merchant/reports/MerchantReportsPageShell";
+ "use client";
+
+import MerchantReportsPageClient from "@/components/merchant/reports/MerchantReportsPageClient";
 
 export default function MerchantReportsPage() {
-  return <MerchantReportsPageShell />;
+    return <MerchantReportsPageClient />;
 }

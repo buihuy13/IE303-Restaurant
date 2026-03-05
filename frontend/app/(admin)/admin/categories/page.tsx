@@ -1,5 +1,8 @@
-import AdminCategoriesPageShell from "@/components/admin/categories/AdminCategoriesPageShell";
+"use client";
 
-export default function AdminCategoriesPage() {
-  return <AdminCategoriesPageShell />;
+import CategoriesPageClient from "@/components/admin/categories/CategoriesPageClient";
+
+export default function CategoriesPage() {
+    return <CategoriesPageClient />;
 }
+

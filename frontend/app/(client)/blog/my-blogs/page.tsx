@@ -1,5 +1,7 @@
-import MyBlogsPageShell from "@/components/client/blog/MyBlogsPageShell";
+"use client";
 
-export default function Page() {
-  return <MyBlogsPageShell />;
+import MyBlogsPageClient from "@/components/client/blog/MyBlogsPageClient";
+
+export default function MyBlogsPage() {
+    return <MyBlogsPageClient />;
 }

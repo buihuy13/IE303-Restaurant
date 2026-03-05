@@ -1,5 +1,9 @@
-import CartPageShell from "@/components/client/cart/CartPageShell";
+import CartPageContainer from "@/components/client/Cart/CartPageContainer";
 
 export default function CartPage() {
-  return <CartPageShell />;
+        return (
+                <section>
+                        <CartPageContainer />
+                </section>
+        );
 }

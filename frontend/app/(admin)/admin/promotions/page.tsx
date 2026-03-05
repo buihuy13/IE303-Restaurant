@@ -1,5 +1,7 @@
-import AdminPromotionsPageShell from "@/components/admin/promotions/AdminPromotionsPageShell";
+"use client";
 
-export default function AdminPromotionsPage() {
-  return <AdminPromotionsPageShell />;
+import PromotionsPageClient from "@/components/admin/promotions/PromotionsPageClient";
+
+export default function PromotionsPage() {
+    return <PromotionsPageClient />;
 }

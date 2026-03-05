@@ -1,5 +1,7 @@
-import BlogCreatePageShell from "@/components/client/blog/BlogCreatePageShell";
+"use client";
 
-export default function Page() {
-  return <BlogCreatePageShell />;
+import BlogCreatePageClient from "@/components/client/blog/BlogCreatePageClient";
+
+export default function CreateBlogPage() {
+    return <BlogCreatePageClient />;
 }

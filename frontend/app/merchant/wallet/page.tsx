@@ -1,5 +1,8 @@
-import MerchantWalletPageShell from "@/components/merchant/wallet/MerchantWalletPageShell";
+ "use client";
+
+import MerchantWalletPageClient from "@/components/merchant/wallet/MerchantWalletPageClient";
 
 export default function MerchantWalletPage() {
-  return <MerchantWalletPageShell />;
+    return <MerchantWalletPageClient />;
 }
+

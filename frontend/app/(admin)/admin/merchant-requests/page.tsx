@@ -1,5 +1,7 @@
-import AdminMerchantRequestsPageShell from "@/components/admin/merchant-requests/AdminMerchantRequestsPageShell";
+"use client";
 
-export default function AdminMerchantRequestsPage() {
-  return <AdminMerchantRequestsPageShell />;
+import MerchantRequestsPageClient from "@/components/admin/merchant-requests/MerchantRequestsPageClient";
+
+export default function MerchantRequestsPage() {
+    return <MerchantRequestsPageClient />;
 }
