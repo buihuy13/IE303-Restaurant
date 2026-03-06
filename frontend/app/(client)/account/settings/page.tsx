@@ -1,3 +1,6 @@
-export default function Page() {
-  return <div>Page</div>;
+import AccountSettingsPageClient from "@/components/client/account/settings/AccountSettingsPageClient";
+
+export default function SettingsPage() {
+    return <AccountSettingsPageClient />;
 }
+

@@ -1,3 +1,6 @@
-export default function Page() {
-  return <div>Page</div>;
+import AccountOrdersPageClient from "@/components/client/account/orders/AccountOrdersPageClient";
+
+export default function OrderHistoryPage() {
+    return <AccountOrdersPageClient />;
 }
+

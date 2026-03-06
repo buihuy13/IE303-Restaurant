@@ -1,0 +1,356 @@
+"use client";
+
+import { useCategoryStore } from "@/stores/categoryStore";
+import { Category } from "@/types";
+import { X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import FilterSection from "./FilterSection";
+
+// Prices are stored and searched in USD directly
+
+const ratingOptions = [
+    { value: "5", label: "5 stars" },
+    { value: "4", label: "4 stars and above" },
+    { value: "3", label: "3 stars and above" },
+];
+
+const districts = [
+    "District 1",
+    "District 2",
+    "District 3",
+    "District 4",
+    "District 5",
+    "District 7",
+    "Binh Thanh District",
+    "Tan Binh District",
+    "Phu Nhuan District",
+];
+
+interface SearchFiltersProps {
+    isMobile?: boolean;
+    onClose?: () => void;
+    initialCategories?: Category[];
+}
+
+export default function SearchFilters({ isMobile = false, onClose, initialCategories = [] }: SearchFiltersProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { categories, fetchAllCategories } = useCategoryStore();
+
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [minPriceUSD, setMinPriceUSD] = useState<string>("");
+    const [maxPriceUSD, setMaxPriceUSD] = useState<string>("");
+    const [selectedRating, setSelectedRating] = useState<string>("");
+    const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+
+    useEffect(() => {
+        const hasStoreCategories = !!(categories && categories.length > 0);
+        const hasInitialCategories = initialCategories.length > 0;
+
+        if (hasStoreCategories) return;
+
+        if (hasInitialCategories) {
+            useCategoryStore.setState({ categories: initialCategories });
+            return;
+        }
+
+        fetchAllCategories();
+    }, [categories, fetchAllCategories, initialCategories]);
+
+    useEffect(() => {
+        // Sync with URL params
+        setSelectedCategories(searchParams.getAll("category") || []);
+        
+        // Parse price range from URL (USD) - direct, no conversion needed
+        const priceRange = searchParams.get("priceRange");
+        if (priceRange) {
+            if (priceRange.endsWith("+")) {
+                const minUSD = parseFloat(priceRange.replace("+", ""));
+                if (!isNaN(minUSD) && minUSD > 0) {
+                    setMinPriceUSD(minUSD.toFixed(2));
+                    setMaxPriceUSD("");
+                }
+            } else {
+                const [min, max] = priceRange.split("-");
+                const minUSD = min ? parseFloat(min) : null;
+                const maxUSD = max ? parseFloat(max) : null;
+                if (minUSD !== null && !isNaN(minUSD) && minUSD > 0) {
+                    setMinPriceUSD(minUSD.toFixed(2));
+                } else {
+                    setMinPriceUSD("");
+                }
+                if (maxUSD !== null && !isNaN(maxUSD) && maxUSD > 0) {
+                    setMaxPriceUSD(maxUSD.toFixed(2));
+                } else {
+                    setMaxPriceUSD("");
+                }
+            }
+        } else {
+            setMinPriceUSD("");
+            setMaxPriceUSD("");
+        }
+        
+        setSelectedRating(searchParams.get("rating") || "");
+        setSelectedDistrict(searchParams.get("district") || "");
+    }, [searchParams]);
+
+    const updateURL = (updates: Record<string, string | string[] | null>) => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        
+        Object.entries(updates).forEach(([key, value]) => {
+            currentParams.delete(key);
+            if (value === null || (Array.isArray(value) && value.length === 0)) {
+                // Already deleted
+            } else if (Array.isArray(value)) {
+                value.forEach((v) => currentParams.append(key, v));
+            } else {
+                currentParams.set(key, value);
+            }
+        });
+
+        router.push(`/search?${currentParams.toString()}`, { scroll: false });
+        if (onClose) onClose();
+    };
+
+    const handleCategoryToggle = (categoryName: string) => {
+        const newCategories = selectedCategories.includes(categoryName)
+            ? selectedCategories.filter((c) => c !== categoryName)
+            : [...selectedCategories, categoryName];
+        setSelectedCategories(newCategories);
+        updateURL({ category: newCategories.length > 0 ? newCategories : null });
+    };
+
+    const priceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePriceRangeChange = () => {
+        // Clear existing timeout
+        if (priceUpdateTimeoutRef.current) {
+            clearTimeout(priceUpdateTimeoutRef.current);
+        }
+
+        // Debounce the update to avoid too many URL changes
+        priceUpdateTimeoutRef.current = setTimeout(() => {
+            // Use USD directly - no conversion needed
+            const minUSD = parseFloat(minPriceUSD);
+            const maxUSD = parseFloat(maxPriceUSD);
+            
+            let priceRangeValue: string | null = null;
+            
+            // Check if both are valid numbers
+            const hasMin = !isNaN(minUSD) && minUSD > 0;
+            const hasMax = !isNaN(maxUSD) && maxUSD > 0;
+            
+            if (hasMin && hasMax) {
+                // Both min and max provided
+                if (minUSD <= maxUSD) {
+                    priceRangeValue = `${minUSD}-${maxUSD}`;
+                }
+            } else if (hasMin) {
+                // Only min provided (over $X)
+                priceRangeValue = `${minUSD}+`;
+            } else if (hasMax) {
+                // Only max provided (under $X)
+                priceRangeValue = `0-${maxUSD}`;
+            }
+            // If neither is provided, priceRangeValue stays null (clears filter)
+            
+            updateURL({ priceRange: priceRangeValue });
+        }, 500); // 500ms debounce
+    };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (priceUpdateTimeoutRef.current) {
+                clearTimeout(priceUpdateTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const handleRatingChange = (value: string) => {
+        const newValue = selectedRating === value ? "" : value;
+        setSelectedRating(newValue);
+        updateURL({ rating: newValue || null });
+    };
+
+    const handleDistrictChange = (value: string) => {
+        const newValue = selectedDistrict === value ? "" : value;
+        setSelectedDistrict(newValue);
+        updateURL({ district: newValue || null });
+    };
+
+    const handleClearAll = () => {
+        setSelectedCategories([]);
+        setMinPriceUSD("");
+        setMaxPriceUSD("");
+        setSelectedRating("");
+        setSelectedDistrict("");
+        // Clear all filters including search query
+        router.push(`/search`, { scroll: false });
+        if (onClose) onClose();
+    };
+
+    const hasActiveFilters =
+        selectedCategories.length > 0 ||
+        minPriceUSD ||
+        maxPriceUSD ||
+        selectedRating ||
+        selectedDistrict;
+
+    const content = (
+        <div className={`${isMobile ? "p-4" : "p-4"} bg-white ${isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+                {hasActiveFilters && (
+                    <button
+                        onClick={handleClearAll}
+                        className="text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium flex items-center gap-1"
+                    >
+                        <X className="w-4 h-4" />
+                        Clear All
+                    </button>
+                )}
+            </div>
+
+            {/* Category Filter */}
+            {/* Default closed so it doesn't pop open again on URL changes (price/rating/etc.) */}
+            <FilterSection title="Categories" defaultOpen={false}>
+                {categories && categories.length > 0 ? (
+                    <div className="space-y-3">
+                        {categories.map((category: Category) => (
+                            <label
+                                key={category.cateName}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(category.cateName)}
+                                    onChange={() => handleCategoryToggle(category.cateName)}
+                                    className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D] rounded"
+                                />
+                                <span className="text-sm text-gray-700">{category.cateName}</span>
+                            </label>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500">Loading...</p>
+                )}
+            </FilterSection>
+
+            {/* Price Range Filter */}
+            <FilterSection title="Price Range">
+                <div className="space-y-3">
+                    <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-600">Min Price (USD)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={minPriceUSD}
+                            onChange={(e) => {
+                                setMinPriceUSD(e.target.value);
+                                handlePriceRangeChange();
+                            }}
+                            onBlur={handlePriceRangeChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-600">Max Price (USD)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={maxPriceUSD}
+                            onChange={(e) => {
+                                setMaxPriceUSD(e.target.value);
+                                handlePriceRangeChange();
+                            }}
+                            onBlur={handlePriceRangeChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                        Leave empty for no limit. Prices are in USD.
+                    </p>
+                </div>
+            </FilterSection>
+
+            {/* Rating Filter */}
+            <FilterSection title="Rating">
+                <div className="space-y-3">
+                    {ratingOptions.map((option) => (
+                        <label
+                            key={option.value}
+                            className={`flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded ${
+                                selectedRating === option.value ? "bg-[#EE4D2D]/10" : ""
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="rating"
+                                value={option.value}
+                                checked={selectedRating === option.value}
+                                onChange={() => handleRatingChange(option.value)}
+                                className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D]"
+                            />
+                            <span className="text-sm text-gray-700 flex items-center gap-1">
+                                {option.value === "5" && "⭐⭐⭐⭐⭐"}
+                                {option.value === "4" && "⭐⭐⭐⭐"}
+                                {option.value === "3" && "⭐⭐⭐"}
+                                <span className="ml-1">{option.label}</span>
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            </FilterSection>
+
+            {/* District Filter */}
+            <FilterSection title="Area">
+                <select
+                    value={selectedDistrict}
+                    onChange={(e) => handleDistrictChange(e.target.value)}
+                    aria-label="Select area"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50"
+                >
+                    <option value="">All Areas</option>
+                    {districts.map((district) => (
+                        <option key={district} value={district}>
+                            {district}
+                        </option>
+                    ))}
+                </select>
+            </FilterSection>
+        </div>
+    );
+
+    if (isMobile) {
+        // Mobile: show filters as a left sidebar drawer (like restaurants page)
+        return (
+            <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
+                <div
+                    className="fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-xl overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-end p-4 border-b border-gray-200">
+                        <button
+                            onClick={onClose}
+                            className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                            aria-label="Close filters"
+                        >
+                            <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
+                    {content}
+                </div>
+            </div>
+        );
+    }
+
+    return <aside className="w-full lg:w-[280px] flex-shrink-0">{content}</aside>;
+}
+

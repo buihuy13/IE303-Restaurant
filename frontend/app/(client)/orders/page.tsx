@@ -1,3 +1,10 @@
-export default function Page() {
-  return <div>Page</div>;
+import OrdersPageClient from "@/components/client/Orders/OrdersPageClient";
+
+export default function OrdersPage() {
+    return (
+        <section>
+            <OrdersPageClient />
+        </section>
+    );
 }
+

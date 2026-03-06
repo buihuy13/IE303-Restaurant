@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Page</div>;
+import MyBlogsPageClient from "@/components/client/blog/MyBlogsPageClient";
+
+export default function MyBlogsPage() {
+    return <MyBlogsPageClient />;
 }

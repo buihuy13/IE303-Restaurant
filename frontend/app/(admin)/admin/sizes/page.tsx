@@ -1,3 +1,7 @@
-export default function Page() {
-  return <div>Page</div>;
+"use client";
+
+import SizesPageClient from "@/components/admin/sizes/SizesPageClient";
+
+export default function SizesPage() {
+    return <SizesPageClient />;
 }
