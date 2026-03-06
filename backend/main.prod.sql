@@ -1,5 +1,6 @@
 CREATE DATABASE user_service;
 CREATE DATABASE chat_service;
+CREATE DATABASE payment_service;
 \connect user_service;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
