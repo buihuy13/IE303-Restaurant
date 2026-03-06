@@ -68,7 +68,7 @@ export function useLocationWithFallback(): UseLocationResult {
                         setLoading(false);
                         return;
                     }
-                } catch (geoError) {
+                } catch {
                     // Geolocation failed, continue to next strategy
                 }
             }
@@ -90,7 +90,9 @@ export function useLocationWithFallback(): UseLocationResult {
                             }
                         }
                     }
-                } catch (addressError) {}
+                } catch {
+                    // Ignore address errors and fall back to default
+                }
             }
 
             // Strategy 3: Use default location (Ho Chi Minh City)

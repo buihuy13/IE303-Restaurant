@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { Heart, Loader2, PackageCheck, ShoppingBag } from "lucide-react";
-import EditProfileModal from "@/components/client/Account/EditProfileModal";
-import { AccountBanner } from "@/components/client/Account/AccountBanner";
-import { AccountStatsGrid } from "@/components/client/Account/AccountStatsGrid";
-import { AccountRecentActivity } from "@/components/client/Account/AccountRecentActivity";
+import { AccountPageView } from "@/components/client/Account/AccountPageView";
 import { useAccountProfile } from "@/hooks/client/account/useAccountProfile";
 import { useAccountOrdersAndStats } from "@/hooks/client/account/useAccountOrdersAndStats";
 
@@ -40,26 +37,26 @@ export default function AccountPageClient() {
     const avatarUrl = `https://placehold.co/100x100/EFE8D8/333?text=${avatarInitial}`;
 
     return (
-        <>
-            <div className="space-y-8">
-                <AccountBanner
-                    username={user.username}
-                    email={user.email ?? ""}
-                    avatarUrl={avatarUrl}
-                    onEditProfile={() => setIsModalOpen(true)}
-                />
-                <AccountStatsGrid stats={stats.length > 0 ? stats : DEFAULT_STATS} />
-                <AccountRecentActivity recentOrders={recentOrders} />
-            </div>
-            <EditProfileModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                user={{
+        <AccountPageView
+            bannerProps={{
+                username: user.username,
+                email: user.email ?? "",
+                avatarUrl,
+                onEditProfile: () => setIsModalOpen(true),
+            }}
+            stats={stats.length > 0 ? stats : DEFAULT_STATS}
+            recentActivityProps={{
+                recentOrders,
+            }}
+            profileModalProps={{
+                isOpen: isModalOpen,
+                onClose: () => setIsModalOpen(false),
+                user: {
                     name: user.username ?? "",
                     avatar: avatarUrl,
                     phone: user.phone ?? "",
-                }}
-            />
-        </>
+                },
+            }}
+        />
     );
 }

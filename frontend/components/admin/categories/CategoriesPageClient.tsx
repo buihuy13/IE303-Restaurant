@@ -8,7 +8,6 @@ import { useAdminCategoriesData } from "@/hooks/admin/categories/useAdminCategor
 import { useAdminCategoryFilters } from "@/hooks/admin/categories/useAdminCategoryFilters";
 import { useAdminCategoryModal } from "@/hooks/admin/categories/useAdminCategoryModal";
 import { useAdminCategoryActions } from "@/hooks/admin/categories/useAdminCategoryActions";
-import { Edit, Loader2, Plus, Search, Trash } from "lucide-react";
 
 export default function CategoriesPageClient() {
     const { categories, loading, fetchCategories } = useAdminCategoriesData();

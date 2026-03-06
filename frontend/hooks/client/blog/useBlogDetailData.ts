@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { blogApi } from "@/lib/api/blogApi";
 import type { Blog } from "@/types/blog.type";
 
-export function useBlogDetailData(slug: string | undefined, isAuthenticated: boolean, userId: string | undefined) {
+export function useBlogDetailData(slug: string | undefined) {
     const [blog, setBlog] = useState<Blog | null>(null);
     const [loading, setLoading] = useState(true);
 

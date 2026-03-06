@@ -4,8 +4,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useState } from "react";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-        const [isInitialized, setIsInitialized] = useState(false);
-        const [showLoading, setShowLoading] = useState(true);
+        const [, setIsInitialized] = useState(false);
+        const [, setShowLoading] = useState(true);
         const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
         useEffect(() => {

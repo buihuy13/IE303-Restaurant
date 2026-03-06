@@ -3,7 +3,7 @@
 import { useChatStore } from "@/stores/useChatStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { Logo } from "@/constants";
-import { BarChart3, MessageCircle, Package, Settings, ShoppingBag, Store, Users, Wallet, X } from "lucide-react";
+import { BarChart3, MessageCircle, Package, Settings, ShoppingBag, Store, Wallet, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

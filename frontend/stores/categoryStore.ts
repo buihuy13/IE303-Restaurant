@@ -18,7 +18,7 @@ interface CategoryStore {
     clearCategories: () => void;
 }
 
-export const useCategoryStore = create<CategoryStore>((set, get) => ({
+export const useCategoryStore = create<CategoryStore>((set) => ({
     categories: [],
     category: null,
     loading: false,

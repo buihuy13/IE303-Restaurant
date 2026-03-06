@@ -9,8 +9,7 @@ import { useAdminRestaurantOwners } from "@/hooks/admin/restaurants/useAdminRest
 import { useAdminRestaurantFilters } from "@/hooks/admin/restaurants/useAdminRestaurantFilters";
 import { useAdminRestaurantModal } from "@/hooks/admin/restaurants/useAdminRestaurantModal";
 import { useAdminRestaurantActions } from "@/hooks/admin/restaurants/useAdminRestaurantActions";
-import { Ban, CheckCircle, Clock, Edit, Loader2, MapPin, Plus, Search, Trash } from "lucide-react";
-import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 export default function AdminRestaurantsPageClient() {
     const { restaurants, loading, fetchRestaurants } = useAdminRestaurantsData();

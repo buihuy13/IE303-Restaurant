@@ -7,14 +7,11 @@ import ChatProvider from "@/components/providers/ChatProvider";
 import SSEProvider from "@/components/providers/SSEProvider";
 import ConfirmProvider from "@/components/ui/ConfirmModal";
 import { useCartSync } from "@/lib/hooks/useCartSync";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import React from "react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const router = useRouter();
-    const { user, isAuthenticated, loading } = useAuthStore();
     const isMerchant = pathname.includes("merchant");
     const isAdmin = pathname.startsWith("/admin");
     const isManager = pathname.startsWith("/manager");

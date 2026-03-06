@@ -109,7 +109,7 @@ export const MenuItemCard = memo(
                     }, 300);
                 }
             },
-            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName],
+            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName, sizes],
         );
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";

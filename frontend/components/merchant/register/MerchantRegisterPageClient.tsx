@@ -26,13 +26,11 @@ export default function MerchantRegisterPageClient() {
     const [openingTime, setOpeningTime] = useState("09:00");
     const [closingTime, setClosingTime] = useState("22:00");
     const [phone, setPhone] = useState("");
-    const [restaurantImage, setRestaurantImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setRestaurantImage(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -504,7 +502,6 @@ export default function MerchantRegisterPageClient() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    setRestaurantImage(null);
                                                     setImagePreview(null);
                                                 }}
                                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"

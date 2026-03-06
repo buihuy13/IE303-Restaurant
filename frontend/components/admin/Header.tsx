@@ -1,12 +1,11 @@
 "use client";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Home, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { Home, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
 import { AdminNotificationBell } from "./AdminNotificationBell";
-import { useTheme } from "./ThemeProvider";
 
 interface HeaderProps {
     sidebarOpen?: boolean;
@@ -14,7 +13,6 @@ interface HeaderProps {
 }
 
 export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
-    const { theme, toggleTheme } = useTheme();
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -43,7 +41,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                         onClick={() => setSidebarOpen?.(!sidebarOpen)}
                         className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                         aria-label="Toggle sidebar"
-                        aria-expanded={!!sidebarOpen}
+                        aria-expanded={sidebarOpen ? "true" : "false"}
                     >
                         <Menu size={24} />
                     </button>

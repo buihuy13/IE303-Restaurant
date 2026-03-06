@@ -1,24 +1,22 @@
 "use client";
 
-import { ContactHero } from "@/components/client/contact/ContactHero";
-import { ContactForm } from "@/components/client/contact/ContactForm";
+import { ContactPageView } from "@/components/client/contact/ContactPageView";
 import { useContactForm } from "@/hooks/client/contact/useContactForm";
+import type { ContactConfig } from "@/types";
 
-export default function ContactPageClient() {
+interface ContactPageClientProps {
+    contactConfig: ContactConfig;
+}
+
+export default function ContactPageClient({ contactConfig }: ContactPageClientProps) {
     const { formData, handleChange, handleSubmit } = useContactForm();
 
     return (
-        <main className="bg-brand-white">
-            <section className="py-16 px-4">
-                <div className="custom-container">
-                    <ContactHero />
-                    <ContactForm
-                        formData={formData}
-                        onChange={handleChange}
-                        onSubmit={handleSubmit}
-                    />
-                </div>
-            </section>
-        </main>
+        <ContactPageView
+            contactConfig={contactConfig}
+            formData={formData}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+        />
     );
 }

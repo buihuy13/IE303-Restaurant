@@ -54,7 +54,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                 try {
                         // Send data to parent component (UserList)
                         await onSave({ username: username.trim(), phone: phone.trim() });
-                } catch (error) {
+                } catch {
                         // Error handling is done in parent component
                 } finally {
                         setLoading(false);

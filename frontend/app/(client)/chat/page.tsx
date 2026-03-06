@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import ChatPageClient from "@/components/client/Chat/ChatPageClient";

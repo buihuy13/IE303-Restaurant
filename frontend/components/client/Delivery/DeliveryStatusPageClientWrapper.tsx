@@ -113,7 +113,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 console.error("[DeliveryStatusPage] Failed to fetch latest order on mount:", error);
                 // Status already normalized in normalizedInitialOrder
             });
-    }, [initialOrder.slug, isInitialLoad]);
+    }, [initialOrder.slug, initialOrder.orderId, isInitialLoad]);
 
     // Listen for order status updates via WebSocket
     useOrderSocket({
@@ -129,14 +129,13 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             // Get current order from ref (always latest)
             const currentOrder = orderRef.current;
             const currentOrderId = currentOrder.orderId;
-            const currentSlug = currentOrder.slug;
 
             console.log("[DeliveryStatusPage] Notification orderId:", notificationOrderId, "Current orderId:", currentOrderId);
             console.log("[DeliveryStatusPage] Notification status:", newStatus, "Current status:", currentOrder.status);
 
             // Only update if this is the order we're viewing
             if (!notificationOrderId || notificationOrderId !== currentOrderId) {
-                console.log("[DeliveryStatusPage] Order ID mismatch, ignoring update. Expected:", currentOrderId, "Got:", notificationOrderId);
+                    console.log("[DeliveryStatusPage] Order ID mismatch, ignoring update. Expected:", currentOrderId, "Got:", notificationOrderId);
                 return;
             }
 
@@ -265,7 +264,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         }, 5000); // Poll every 5 seconds for faster sync
 
         return () => clearInterval(intervalId);
-    }, [order.slug, order.status, order.estimatedDeliveryTime]);
+    }, [order.orderId, order.slug, order.status, order.estimatedDeliveryTime]);
 
     // Update estimated time every minute for real-time countdown
     useEffect(() => {

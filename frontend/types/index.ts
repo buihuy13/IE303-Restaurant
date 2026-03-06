@@ -11,3 +11,4 @@ export * from "./size.type";
 export * from "./user.type";
 export * from "./wallet.type";
 export * from "./dashboard.type";
+export * from "./contact.type";

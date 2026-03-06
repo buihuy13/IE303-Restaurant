@@ -18,27 +18,27 @@ export default function RelatedBlogs({ currentBlogId, category }: RelatedBlogsPr
         const [loading, setLoading] = useState(true);
 
         useEffect(() => {
+                const fetchRelatedBlogs = async () => {
+                        setLoading(true);
+                        try {
+                                const response = await blogApi.getBlogs({
+                                        page: 1,
+                                        limit: 5,
+                                        category,
+                                });
+                                // Filter out current blog
+                                const related = response.data.filter((blog) => blog._id !== currentBlogId).slice(0, 4);
+                                setBlogs(related);
+                        } catch (error) {
+                                console.error("Failed to fetch related blogs:", error);
+                                toast.error("Unable to load related articles");
+                        } finally {
+                                setLoading(false);
+                        }
+                };
+
                 fetchRelatedBlogs();
         }, [currentBlogId, category]);
-
-        const fetchRelatedBlogs = async () => {
-                setLoading(true);
-                try {
-                        const response = await blogApi.getBlogs({
-                                page: 1,
-                                limit: 5,
-                                category,
-                        });
-                        // Filter out current blog
-                        const related = response.data.filter((blog) => blog._id !== currentBlogId).slice(0, 4);
-                        setBlogs(related);
-                } catch (error) {
-                        console.error("Failed to fetch related blogs:", error);
-                        toast.error("Unable to load related articles");
-                } finally {
-                        setLoading(false);
-                }
-        };
 
         if (loading) {
                 return (

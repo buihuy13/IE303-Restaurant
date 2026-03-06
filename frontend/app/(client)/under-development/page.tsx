@@ -1,5 +1,3 @@
-"use client";
-
 import { Construction, Rocket } from "lucide-react";
 import Link from "next/link";
 

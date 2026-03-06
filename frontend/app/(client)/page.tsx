@@ -4,18 +4,9 @@
 import FeaturedFoodPanel from "@/components/client/HomePage/FeaturedFoodPanel";
 import HeroSearchSection from "@/components/client/HomePage/HeroSearchSection";
 import GlobalLoader from "@/components/ui/GlobalLoader";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { usePathname, useRouter } from "next/navigation";
 import { Suspense } from "react";
 
 export default function HomePage() {
-        const router = useRouter();
-        const pathname = usePathname();
-        const { user, isAuthenticated, loading } = useAuthStore();
-
-        // REMOVED: Allow Merchant/Admin to access home page
-        // They can freely switch between buying view and dashboard view
-
         return (
                 <main className="min-h-screen bg-gray-50">
                         {/* 1. HERO SECTION (Full Width) */}

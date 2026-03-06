@@ -30,9 +30,10 @@ const districts = [
 interface SearchFiltersProps {
     isMobile?: boolean;
     onClose?: () => void;
+    initialCategories?: Category[];
 }
 
-export default function SearchFilters({ isMobile = false, onClose }: SearchFiltersProps) {
+export default function SearchFilters({ isMobile = false, onClose, initialCategories = [] }: SearchFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { categories, fetchAllCategories } = useCategoryStore();
@@ -44,8 +45,18 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
 
     useEffect(() => {
+        const hasStoreCategories = !!(categories && categories.length > 0);
+        const hasInitialCategories = initialCategories.length > 0;
+
+        if (hasStoreCategories) return;
+
+        if (hasInitialCategories) {
+            useCategoryStore.setState({ categories: initialCategories });
+            return;
+        }
+
         fetchAllCategories();
-    }, [fetchAllCategories]);
+    }, [categories, fetchAllCategories, initialCategories]);
 
     useEffect(() => {
         // Sync with URL params

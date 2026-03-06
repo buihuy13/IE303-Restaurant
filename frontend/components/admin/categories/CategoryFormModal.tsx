@@ -40,7 +40,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 		setLoading(true);
 		try {
 			await onSave({ cateName: cateName.trim() });
-		} catch (error) {
+		} catch {
 			// Error handling is done in parent component
 		} finally {
 			setLoading(false);

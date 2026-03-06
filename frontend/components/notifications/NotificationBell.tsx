@@ -19,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function NotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
-    const { notifications, markAsRead, markAllAsRead, unreadCount, initializeFromOrders } = useNotificationStore();
+    const { notifications, markAsRead, markAllAsRead, initializeFromOrders } = useNotificationStore();
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const initializedRef = useRef(false);
 

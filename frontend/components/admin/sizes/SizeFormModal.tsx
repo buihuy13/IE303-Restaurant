@@ -40,7 +40,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 		setLoading(true);
 		try {
 			await onSave({ name: name.trim() });
-		} catch (error) {
+		} catch {
 			// Error handling is done in parent component
 		} finally {
 			setLoading(false);

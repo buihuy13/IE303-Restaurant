@@ -178,3 +178,5 @@ export function useJoinGroupOrderPage(
         handleSubmit,
     };
 }
+
+export type UseJoinGroupOrderPageReturn = ReturnType<typeof useJoinGroupOrderPage>;

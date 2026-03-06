@@ -224,10 +224,6 @@ export default function CartPageContainer() {
         );
     }
 
-    // Get first restaurant ID for checkout (if only one restaurant)
-    const restaurantIds = Object.keys(groupedItems);
-    const firstRestaurantId = restaurantIds[0];
-
     const handleCheckout = () => {
         if (selectedItemsList.length === 0) {
             return;

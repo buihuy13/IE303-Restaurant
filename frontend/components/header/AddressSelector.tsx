@@ -223,7 +223,7 @@ export default function AddressSelector() {
                         setLoading(false);
                         toast.error("Location set but failed to save. Please try again.");
                     }
-                } catch (error) {
+        } catch {
                     setIsGettingLocation(false);
                     setLoading(false);
                     toast.error("Failed to process location");

@@ -3,10 +3,38 @@ import toast from "react-hot-toast";
 import { blogApi } from "@/lib/api/blogApi";
 import type { Blog, BlogCategory } from "@/types/blog.type";
 
-export function useBlogListData(page: number, category: BlogCategory | "", search: string) {
-    const [blogs, setBlogs] = useState<Blog[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [totalPages, setTotalPages] = useState(1);
+export interface InitialBlogListData {
+    blogs: Blog[];
+    totalPages: number;
+    page: number;
+    category: BlogCategory | "";
+    search: string;
+}
+
+const isSameQuery = (
+    page: number,
+    category: BlogCategory | "",
+    search: string,
+    initialData: InitialBlogListData | null,
+) => {
+    return (
+        !!initialData &&
+        initialData.page === page &&
+        initialData.category === category &&
+        initialData.search === search
+    );
+};
+
+export function useBlogListData(
+    page: number,
+    category: BlogCategory | "",
+    search: string,
+    initialData: InitialBlogListData | null = null,
+) {
+    const shouldUseInitialData = isSameQuery(page, category, search, initialData);
+    const [blogs, setBlogs] = useState<Blog[]>(shouldUseInitialData ? (initialData?.blogs ?? []) : []);
+    const [loading, setLoading] = useState(!shouldUseInitialData);
+    const [totalPages, setTotalPages] = useState(shouldUseInitialData ? (initialData?.totalPages ?? 1) : 1);
 
     const fetchBlogs = useCallback(async () => {
         setLoading(true);
@@ -33,8 +61,16 @@ export function useBlogListData(page: number, category: BlogCategory | "", searc
     }, [page, category, search]);
 
     useEffect(() => {
+        if (!shouldUseInitialData || !initialData) return;
+        setBlogs(initialData.blogs);
+        setTotalPages(initialData.totalPages);
+        setLoading(false);
+    }, [initialData, shouldUseInitialData]);
+
+    useEffect(() => {
+        if (shouldUseInitialData) return;
         fetchBlogs();
-    }, [fetchBlogs]);
+    }, [fetchBlogs, shouldUseInitialData]);
 
     return { blogs, loading, totalPages, fetchBlogs };
 }

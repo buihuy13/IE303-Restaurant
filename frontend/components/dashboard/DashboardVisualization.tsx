@@ -67,7 +67,6 @@ function aggregateTopRestaurants(
 }
 
 export default function DashboardVisualization({ data }: { data: DashboardApiBundle }) {
-    const overview = data.overview?.data;
     const merchants = Array.isArray(data.merchants?.data) ? data.merchants.data : [];
     const statusBreakdown = Array.isArray(data.orders?.data?.statusBreakdown) ? data.orders.data.statusBreakdown : [];
 

@@ -22,7 +22,6 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
         const [name, setName] = useState("");
         const [phone, setPhone] = useState("");
         const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-        const [avatarFile, setAvatarFile] = useState<File | null>(null);
         const fileInputRef = useRef<HTMLInputElement>(null);
         const { updateProfile, loading } = useAuthStore();
 
@@ -31,13 +30,11 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                 setName(user.name || "");
                 setPhone(user.phone || "");
                 setAvatarPreview(null);
-                setAvatarFile(null);
         }, [user.name, user.phone, isOpen]);
 
         const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                        setAvatarFile(file);
                         setAvatarPreview(URL.createObjectURL(file));
                 }
         };

@@ -19,7 +19,6 @@ export default function OrdersPageClient() {
 
     const [orders, setOrders] = useState<OrdersPageOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [sortBy, setSortBy] = useState<string>("recent");
     const userId = user?.id;
     const pathname = usePathname();
     const { markAllAsRead, markOrderNotificationsAsRead, notifications } = useNotificationStore();
@@ -288,7 +287,6 @@ export default function OrdersPageClient() {
 
     const handleSortChange = useCallback(
         (sortValue: string) => {
-            setSortBy(sortValue);
             const sorted = [...orders].sort((a, b) => {
                 switch (sortValue) {
                     case "recent":

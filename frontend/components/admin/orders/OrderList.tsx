@@ -7,8 +7,6 @@ import { OrdersSearchBar } from "@/components/admin/orders/OrdersSearchBar";
 import { OrdersMobileList } from "@/components/admin/orders/OrdersMobileList";
 import { OrdersTable } from "@/components/admin/orders/OrdersTable";
 import { Order, OrderStatus } from "@/types/order.type";
-import { Edit, Eye, Loader2 } from "lucide-react";
-import Link from "next/link";
 
 export default function OrderList({ initialOrders }: { initialOrders: Order[] }) {
     const { orders, setOrders, statusDraftById, setStatusDraftById, updatingIds, setUpdatingIds } =

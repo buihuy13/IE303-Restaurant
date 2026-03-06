@@ -1,5 +1,3 @@
-"use client";
-
 import BlogDetailPageClient from "@/components/client/blog/BlogDetailPageClient";
 
 export default function BlogPostPage() {

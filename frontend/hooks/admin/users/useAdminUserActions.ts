@@ -20,7 +20,7 @@ export function useAdminUserActions(onDataChanged: () => Promise<void> | void) {
             await authApi.deleteUser(user.id);
             toast.success("User deleted.");
             await Promise.resolve(onDataChanged());
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete user.");
         }
     };
