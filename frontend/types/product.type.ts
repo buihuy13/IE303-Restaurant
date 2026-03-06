@@ -1,0 +1,47 @@
+import { StaticImageData } from "next/image";
+import { Restaurant } from ".";
+
+export interface ProductSize {
+        id: string;
+        sizeName: string;
+        price: number;
+        sizeId: string;
+}
+
+export interface Product {
+        id: string;
+        slug: string;
+        productName: string;
+        description: string;
+        imageURL: string | null | StaticImageData;
+        publicID?: string; // Public ID for cloud image deletion
+        categoryName: string;
+        categoryId: string;
+        volume: number;
+        available: boolean;
+        restaurant: Restaurant | null;
+        totalReview: number;
+        rating: number;
+        productSizes: ProductSize[];
+        createdAt?: string;
+        updatedAt?: string;
+}
+
+export interface ProductData {
+        productName: string;
+        description: string;
+        categoryId: string;
+        restaurantId: string;
+        volume: number;
+        available: boolean;
+        productSizes: { sizeName: string; price: number }[];
+}
+
+export interface ProductCreateData {
+        productName: string;
+        description: string;
+        categoryId: string;
+        available: boolean;
+        restaurantId: string;
+        sizeIds: { sizeId: string; price: number }[];
+}

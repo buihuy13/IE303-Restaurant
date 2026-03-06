@@ -1,0 +1,331 @@
+"use client";
+
+import { getImageUrl } from "@/lib/utils";
+import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Product } from "@/types";
+import { CheckCircle2, Clock, Plus } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+
+type CompactFoodCardProps = {
+    product: Product;
+    restaurant?: {
+        id: string;
+        resName?: string;
+        slug?: string;
+        duration?: number;
+    };
+};
+
+export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }: CompactFoodCardProps) => {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const addItem = useCartStore((state) => state.addItem);
+    const setUserId = useCartStore((state) => state.setUserId);
+    const { user } = useAuthStore();
+    const [isAdding, setIsAdding] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (isMounted && user?.id) {
+            setUserId(user.id);
+        }
+    }, [isMounted, user?.id, setUserId]);
+
+    // Get minPrice filter from URL if exists
+    const minPriceFilter = useMemo(() => {
+        const priceRange = searchParams?.get("priceRange");
+        if (!priceRange) return null;
+        
+        const decodedPriceRange = decodeURIComponent(priceRange);
+        if (decodedPriceRange.endsWith("+")) {
+            const minPrice = parseFloat(decodedPriceRange.replace("+", ""));
+            return !isNaN(minPrice) && minPrice > 0 ? minPrice : null;
+        } else {
+            const [min] = decodedPriceRange.split("-");
+            const minPrice = min ? parseFloat(min) : null;
+            return minPrice !== null && !isNaN(minPrice) && minPrice > 0 ? minPrice : null;
+        }
+    }, [searchParams]);
+
+    // Get price to display: if there's a minPrice filter, show first price >= minPrice, otherwise show minimum price
+    const displayPrice = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        
+        // If there's a minPrice filter, find first size with price >= minPrice
+        if (minPriceFilter !== null) {
+            const matchingSize = product.productSizes
+                .sort((a, b) => a.price - b.price) // Sort by price ascending
+                .find(size => size.price >= minPriceFilter);
+            return matchingSize?.price;
+        }
+        
+        // Otherwise, show minimum price
+        return Math.min(...product.productSizes.map(size => size.price));
+    }, [product.productSizes, minPriceFilter]);
+    
+    // Get the size to use as default: if there's a minPrice filter, use first size >= minPrice, otherwise use minimum price size
+    const defaultSize = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        
+        // If there's a minPrice filter, find first size with price >= minPrice
+        if (minPriceFilter !== null) {
+            const matchingSize = product.productSizes
+                .sort((a, b) => a.price - b.price) // Sort by price ascending
+                .find(size => size.price >= minPriceFilter);
+            return matchingSize || product.productSizes[0]; // Fallback to first size if no match
+        }
+        
+        // Otherwise, use size with minimum price
+        return product.productSizes.reduce((min, size) => 
+            size.price < min.price ? size : min
+        );
+    }, [product.productSizes, minPriceFilter]);
+    const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [cardImageUrl]);
+
+    const restaurant = useMemo(() => {
+        return restaurantOverride || product.restaurant;
+    }, [restaurantOverride, product.restaurant]);
+
+    // Determine link based on current location
+    // If already on restaurant page, link to food detail page
+    // Otherwise, link to restaurant page
+    const productLink = useMemo(() => {
+        const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
+        if (isOnRestaurantPage) {
+            // On restaurant page, go to food detail
+            return `/food/${product.slug}`;
+        } else {
+            // Outside restaurant page, go to restaurant page
+            return restaurant?.slug ? `/restaurants/${restaurant.slug}` : `/food/${product.slug}`;
+        }
+    }, [pathname, product.slug, restaurant?.slug]);
+
+    // Check if favorite (high rating or many reviews)
+    const isFavorite = useMemo(() => {
+        return product.rating >= 4.5 || product.totalReview > 50;
+    }, [product.rating, product.totalReview]);
+
+    // Delivery time
+    const deliveryTime = useMemo(() => {
+        const duration = restaurant?.duration;
+        if (!duration || typeof duration !== "number") {
+            return "20-30";
+        }
+        if (duration > 60 || duration <= 0) {
+            return "20-30";
+        }
+        return Math.round(duration).toString();
+    }, [restaurant?.duration]);
+
+    // Format price to USD
+    const formatPrice = useMemo(() => {
+        if (displayPrice === undefined) return null;
+        // Format USD with 2 decimal places
+        return displayPrice.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }, [displayPrice]);
+
+    // Format review count
+    const formatReviewCount = useMemo(() => {
+        if (!product.totalReview || product.totalReview === 0) return null;
+        if (product.totalReview >= 1000) {
+            return `${(product.totalReview / 1000).toFixed(1)}k+`;
+        }
+        return `${product.totalReview}+`;
+    }, [product.totalReview]);
+
+    const handleAddToCart = useCallback(
+        async (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (isAdding || !isMounted) {
+                return;
+            }
+
+            if (typeof addItem !== "function") {
+                console.warn("[CompactFoodCard] addItem is not available yet");
+                return;
+            }
+
+            if (!user) {
+                toast.error("Please sign in to add items to cart");
+                router.push("/login");
+                return;
+            }
+
+            if (!product.productSizes || product.productSizes.length === 0) {
+                toast.error("This product has no available sizes");
+                return;
+            }
+
+            if (!restaurant?.id) {
+                toast.error("Restaurant information not found");
+                return;
+            }
+
+            if (!defaultSize) {
+                toast.error("Default size not found");
+                return;
+            }
+
+            setIsAdding(true);
+            try {
+                await addItem(
+                    {
+                        id: product.id,
+                        name: product.productName,
+                        price: defaultSize.price,
+                        image: cardImageUrl,
+                        restaurantId: restaurant.id,
+                        restaurantName: restaurant.resName || "Unknown Restaurant",
+                        categoryId: product.categoryId,
+                        categoryName: product.categoryName,
+                        sizeId: defaultSize.id,
+                        sizeName: defaultSize.sizeName,
+                    },
+                    1,
+                );
+                // Toast is handled by cartStore.addItem
+            } catch (error) {
+                console.error("Failed to add to cart:", error);
+                // Error toast is handled by cartStore.addItem
+            } finally {
+                setTimeout(() => {
+                    setIsAdding(false);
+                }, 300);
+            }
+        },
+        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router],
+    );
+
+    return (
+        <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+            {/* Image Section */}
+            <Link
+                href={productLink}
+                className="block relative w-full aspect-square overflow-hidden"
+            >
+                <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg">
+                    <Image
+                        src={imageError ? "/placeholder.png" : cardImageUrl}
+                        alt={product.productName}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                        unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png" || imageError}
+                        onError={() => {
+                            if (!imageError) {
+                                setImageError(true);
+                            }
+                        }}
+                    />
+
+                    {/* Placeholder overlay */}
+                    {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                            <span className="text-3xl">🍽️</span>
+                        </div>
+                    )}
+
+                    {/* Favorite Badge - Top Left */}
+                    {isFavorite && (
+                        <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
+                            <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                ❤️ Favorite
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Delivery Time Badge - Bottom Left */}
+                    {deliveryTime && (
+                        <div className="absolute bottom-1.5 left-1.5 z-20 pointer-events-none">
+                            <div className="bg-white/95 backdrop-blur-sm text-gray-800 text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{deliveryTime} min</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Quick Add Button - Bottom Right Corner */}
+                    <button
+                        onClick={handleAddToCart}
+                        disabled={isAdding || !isMounted}
+                        className="absolute bottom-2 right-2 z-30 w-8 h-8 bg-[#EE4D2D] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#EE4D2D]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
+                        title="Add to cart"
+                    >
+                        {isAdding ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Plus className="w-4 h-4" />
+                        )}
+                    </button>
+                </div>
+            </Link>
+
+            {/* Content Section */}
+            <div className="p-3 space-y-1.5">
+                {/* Product Name - Truncate 1 line */}
+                <Link
+                    href={productLink}
+                >
+                    <h3
+                        className="text-sm font-bold text-gray-900 line-clamp-1 truncate mt-1 hover:text-[#EE4D2D] transition-colors"
+                        title={product.productName}
+                    >
+                        {product.productName && product.productName.length > 0
+                            ? product.productName.charAt(0).toUpperCase() + product.productName.slice(1)
+                            : product.productName}
+                    </h3>
+                </Link>
+
+                {/* Restaurant Name with Verified Icon */}
+                <div className="flex items-center gap-1.5">
+                    <p className="text-xs text-gray-500 line-clamp-1 flex-1">{restaurant?.resName || "Restaurant"}</p>
+                    <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
+                </div>
+
+                {/* Rating with Review Count */}
+                {product.rating > 0 && (
+                    <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs text-yellow-500">⭐</span>
+                            <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
+                        </div>
+                        {formatReviewCount && (
+                            <span className="text-xs text-gray-500">({formatReviewCount} reviews)</span>
+                        )}
+                    </div>
+                )}
+
+                {/* Price */}
+                <div className="pt-1">
+                    {formatPrice ? (
+                        <p className="text-base font-bold text-[#EE4D2D]">${formatPrice}</p>
+                    ) : (
+                        <p className="text-xs text-gray-400">Price not available</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+});
+
+CompactFoodCard.displayName = "CompactFoodCard";
