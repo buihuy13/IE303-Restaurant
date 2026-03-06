@@ -1,3 +1,8 @@
-export default function Page() {
-  return <div>Page</div>;
+"use client";
+
+import CategoriesPageClient from "@/components/admin/categories/CategoriesPageClient";
+
+export default function CategoriesPage() {
+    return <CategoriesPageClient />;
 }
+
