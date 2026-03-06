@@ -5,13 +5,13 @@ command=$1
 if [ "$command" = "up" ]; then
   docker compose -f docker-compose.dev.yml up -d
   echo "Waiting for Keycloak to be ready..."
-  until curl -s "http://localhost:9090/health/ready" | grep -q "UP"; do
+  until curl -s "http://localhost:9090/auth/health/ready" | grep -q "UP"; do
     echo "Keycloak not ready yet, retrying in 3s"
     sleep 3
   done
 
   echo "Waiting for realm to be ready..."
-  until curl -s "http://localhost:9090/realms/restaurant-realm" | grep -q "restaurant-realm"; do
+  until curl -s "http://localhost:9090/auth/realms/restaurant-realm" | grep -q "restaurant-realm"; do
     echo "Realm not ready yet, retrying in 3s..."
     sleep 3
   done

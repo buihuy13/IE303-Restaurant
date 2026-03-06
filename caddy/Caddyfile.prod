@@ -23,6 +23,10 @@ SERVER_IP {
         path /ws*
     }
 
+    @keycloak_route {
+        path /auth/*
+    }
+
     handle @ws_routes {
         reverse_proxy api-gateway:8080 {
             transport http {
@@ -33,6 +37,10 @@ SERVER_IP {
 
     handle @api_routes {
         reverse_proxy api-gateway:8080
+    }
+
+    handle @keycloak_route {
+        reverse_proxy keycloak:9090
     }
 
     handle {
