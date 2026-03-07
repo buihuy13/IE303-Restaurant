@@ -40,6 +40,7 @@ create table blog_posts (
     slug varchar(300) not null unique,
     content text not null,
     cover_image_url text,
+    public_id varchar(255),
     status varchar(20) not null default 'DRAFT',
     published_at timestamp,
     created_at timestamp default current_timestamp,
