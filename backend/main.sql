@@ -1,7 +1,7 @@
 -- Tạo các db trước nếu chưa có
--- CREATE DATABASE IF user_service;
--- CREATE DATABASE IF chat_service;
-
+CREATE DATABASE user_service;
+CREATE DATABASE chat_service;
+CREATE DATABASE payment_service;
 \c user_service;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
