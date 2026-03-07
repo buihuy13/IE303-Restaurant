@@ -59,3 +59,92 @@ create index idx_receiverid on messages(receiver_id);
 
 -- Hiệu quả khi truy vấn tin nhắn trong một phòng theo thời gian gần nhất
 CREATE INDEX idx_messages_room_timestamp ON messages(room_id, timestamp DESC);
+
+\c restaurant_service;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+create table restaurants (
+    id varchar(255) primary key,
+    res_name varchar(255) not null,
+    address varchar(255),
+    longitude double precision,
+    latitude double precision,
+    rating real default 0,
+    opening_time time not null,
+    closing_time time not null,
+    phone varchar(25),
+    image_url text,
+    public_id varchar(255),
+    merchant_id varchar(255) not null,
+    enabled boolean default false,
+    total_review int default 0,
+    slug varchar(255),
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    geom geometry(Point,4326)
+);
+
+create unique index idx_restaurants_slug on restaurants(slug);
+create index idx_restaurants_merchant on restaurants(merchant_id);
+create index idx_restaurants_enabled on restaurants(enabled);
+
+create table categories (
+    id varchar(255) primary key,
+    cate_name varchar(255) not null unique
+);
+
+create table restaurant_categories (
+    restaurant_id varchar(255) not null references restaurants(id) on delete cascade,
+    category_id varchar(255) not null references categories(id) on delete cascade,
+    primary key (restaurant_id, category_id)
+);
+
+create table products (
+    id varchar(255) primary key,
+    product_name varchar(255) not null,
+    description text,
+    image_url text,
+    public_id varchar(255),
+    category_id varchar(255) not null references categories(id),
+    available boolean default true,
+    rating real default 0,
+    total_review int default 0,
+    restaurant_id varchar(255) not null references restaurants(id) on delete cascade,
+    slug varchar(255),
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp
+);
+
+create unique index idx_products_slug on products(slug);
+create index idx_products_restaurant on products(restaurant_id);
+create index idx_products_category on products(category_id);
+
+create table size (
+    id varchar(255) primary key,
+    name varchar(255) not null
+);
+
+create table product_sizes (
+    id varchar(255) primary key,
+    product_id varchar(255) not null references products(id) on delete cascade,
+    size_id varchar(255) not null references size(id),
+    price numeric(12,2) not null,
+    unique (product_id, size_id)
+);
+
+create index idx_product_sizes_product on product_sizes(product_id);
+create index idx_product_sizes_size on product_sizes(size_id);
+
+create table reviews (
+    id varchar(255) primary key,
+    user_id varchar(255) not null,
+    review_id varchar(255),
+    review_type varchar(25),
+    title varchar(255),
+    content text,
+    rating real,
+    created_at timestamp default current_timestamp
+);
+
+create index idx_reviews_review on reviews(review_type, review_id);
