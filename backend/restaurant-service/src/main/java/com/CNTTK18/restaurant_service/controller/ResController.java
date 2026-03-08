@@ -5,7 +5,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
@@ -35,6 +35,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -103,8 +104,8 @@ public class ResController {
             @PathVariable UUID id,
             @RequestPart(value = "restaurant", required = true) @Valid UpdateRes updateRes,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
-            @AuthenticationPrincipal UUID userId) {
-        return ResponseEntity.ok(resService.updateRestaurant(id, updateRes, imageFile, userId));
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(resService.updateRestaurant(id, updateRes, imageFile, authUser));
     }
 
     @Tag(name = "Post")
@@ -131,8 +132,8 @@ public class ResController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete a restaurant")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteRes(@PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        resService.deleteRestaurant(id, userId);
+    public ResponseEntity<MessageResponse> deleteRes(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        resService.deleteRestaurant(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }
 
@@ -148,9 +149,8 @@ public class ResController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete restaurant image")
     @DeleteMapping("/image/{id}")
-    public ResponseEntity<MessageResponse> deleteResImage(
-            @PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        resService.deleteImage(id, userId);
+    public ResponseEntity<MessageResponse> deleteResImage(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        resService.deleteImage(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete image successfully"));
     }
 }

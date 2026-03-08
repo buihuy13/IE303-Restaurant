@@ -18,9 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
-import com.CNTTK18.restaurant_service.model.Reviews;
+import com.CNTTK18.restaurant_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.restaurant_service.service.ReviewService;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -41,7 +42,7 @@ public class ReviewController {
     @Tag(name = "Get")
     @Operation(summary = "Get all reviews")
     @GetMapping("")
-    public ResponseEntity<List<Reviews>> getAllReviews(
+    public ResponseEntity<List<ReviewResponse>> getAllReviews(
             @RequestParam(required = false) UUID resId, @RequestParam(required = false) UUID productId) {
         return ResponseEntity.ok(reviewService.getAllReviews(resId, productId));
     }
@@ -49,7 +50,7 @@ public class ReviewController {
     @Tag(name = "Get")
     @Operation(summary = "Get review by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Reviews> getReviewById(@PathVariable UUID id) {
+    public ResponseEntity<ReviewResponse> getReviewById(@PathVariable UUID id) {
         return ResponseEntity.ok(reviewService.getReviewById(id));
     }
 
@@ -59,7 +60,7 @@ public class ReviewController {
     @CircuitBreaker(name = "create", fallbackMethod = "fallbackMethod")
     @TimeLimiter(name = "create")
     @Retry(name = "create")
-    public CompletableFuture<ResponseEntity<Reviews>> createReview(@RequestBody @Valid ReviewRequest reviewRequest) {
+    public CompletableFuture<ResponseEntity<ReviewResponse>> createReview(@RequestBody @Valid ReviewRequest reviewRequest) {
         return CompletableFuture.supplyAsync(
                 () -> new ResponseEntity<>(reviewService.createReview(reviewRequest), HttpStatusCode.valueOf(201)));
     }
@@ -73,9 +74,8 @@ public class ReviewController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete a review")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteReview(
-            @PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        reviewService.deleteReview(id, userId);
+    public ResponseEntity<MessageResponse> deleteReview(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        reviewService.deleteReview(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }
 }

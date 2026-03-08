@@ -2,6 +2,7 @@ package com.CNTTK18.restaurant_service.model;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,7 +45,8 @@ public class Restaurants {
     private String address;
     private double longitude; // kinh độ
     private double latitude; // vĩ độ
-    private float rating;
+    @Builder.Default
+    private float rating = 0f;
 
     @Column(name = "opening_time", nullable = false)
     private LocalTime openingTime;
@@ -66,7 +68,8 @@ public class Restaurants {
     private boolean enabled;
 
     @Column(name = "total_review")
-    private int totalReview;
+    @Builder.Default
+    private int totalReview = 0;
 
     private String slug;
 
@@ -90,7 +93,8 @@ public class Restaurants {
     private Set<Categories> categories;
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Products> products;
+    @Builder.Default
+    private Set<Products> products = new HashSet<>();
 
     public void addCate(Categories cate) {
         if (this.categories == null) {

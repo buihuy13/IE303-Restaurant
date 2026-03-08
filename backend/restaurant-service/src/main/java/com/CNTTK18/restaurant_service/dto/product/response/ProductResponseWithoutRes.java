@@ -30,5 +30,7 @@ public class ProductResponseWithoutRes {
     private String slug;
     private Instant createdAt;
     private Instant updatedAt;
+    private Double distance;
+    private Double duration;
     private List<ProductSizeResponse> productSizes;
 }

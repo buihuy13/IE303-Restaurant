@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 public class DistanceService {
     private final DistanceProperties distanceProperties;
     private final WebClient webClientBuilder;
-    
+
     final int R = 6371000;
 
     public Mono<DistanceResponse> getDistanceAndDurationInList(

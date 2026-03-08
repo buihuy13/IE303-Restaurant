@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CNTTK18.restaurant_service.dto.cate.request.CateRequest;
+import com.CNTTK18.restaurant_service.dto.cate.response.CateResponse;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
-import com.CNTTK18.restaurant_service.model.Categories;
 import com.CNTTK18.restaurant_service.service.CateService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,35 +37,35 @@ public class CateController {
     @Tag(name = "Get")
     @Operation(summary = "Get all categories")
     @GetMapping("")
-    public ResponseEntity<List<Categories>> getAllCate() {
+    public ResponseEntity<List<CateResponse>> getAllCate() {
         return ResponseEntity.ok(cateService.getAllCategories());
     }
 
     @Tag(name = "Get")
     @Operation(summary = "Get category by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Categories> getCateById(@PathVariable UUID id) {
+    public ResponseEntity<CateResponse> getCateById(@PathVariable UUID id) {
         return ResponseEntity.ok(cateService.getCateById(id));
     }
 
     @Tag(name = "Get")
     @Operation(summary = "Get category by cate's name")
     @GetMapping("/search")
-    public ResponseEntity<Categories> getCateByName(@RequestParam String name) {
+    public ResponseEntity<CateResponse> getCateByName(@RequestParam String name) {
         return ResponseEntity.ok(cateService.getCateByName(name));
     }
 
     @Tag(name = "Post")
     @Operation(summary = "Create new category")
     @PostMapping("")
-    public ResponseEntity<Categories> createCate(@RequestBody @Valid CateRequest cateRequest) {
+    public ResponseEntity<CateResponse> createCate(@RequestBody @Valid CateRequest cateRequest) {
         return new ResponseEntity<>(cateService.createCate(cateRequest), HttpStatusCode.valueOf(201));
     }
 
     @Tag(name = "Put")
     @Operation(summary = "Update a category")
     @PutMapping("/{id}")
-    public ResponseEntity<Categories> updateCate(@RequestBody @Valid CateRequest cateRequest, @PathVariable UUID id) {
+    public ResponseEntity<CateResponse> updateCate(@RequestBody @Valid CateRequest cateRequest, @PathVariable UUID id) {
         return ResponseEntity.ok(cateService.updateCate(id, cateRequest));
     }
 

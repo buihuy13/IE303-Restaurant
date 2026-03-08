@@ -3,7 +3,6 @@ package com.CNTTK18.restaurant_service.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,7 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -25,15 +23,19 @@ import org.springframework.web.multipart.MultipartFile;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.data.ReviewType;
+import com.CNTTK18.restaurant_service.dto.UserRole;
+import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
 import com.CNTTK18.restaurant_service.dto.product.ProductIdWithRating;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.SizePrice;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
-import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
+import com.CNTTK18.restaurant_service.dto.product.response.ProductResponseWithoutRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
+import com.CNTTK18.restaurant_service.mapper.ProductMapper;
+import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Categories;
 import com.CNTTK18.restaurant_service.model.ProductSize;
 import com.CNTTK18.restaurant_service.model.Products;
@@ -45,10 +47,10 @@ import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
 import com.CNTTK18.restaurant_service.repository.SizeRepository;
-import com.CNTTK18.restaurant_service.util.ProductUtil;
-import com.CNTTK18.restaurant_service.util.ResUtil;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -60,8 +62,10 @@ public class ProductService {
     private ImageHandleService imageFileService;
     private ReviewRepository reviewRepository;
     private DistanceService distanceService;
+    private ProductMapper productMapper;
+    private ResMapper resMapper;
 
-    public Mono<Page<ProductResponse>> getAllProducts(
+    public Mono<Page<ProductResponseWithoutRes>> getAllProducts(
             String rating,
             String category,
             BigDecimal minPrice,
@@ -75,88 +79,40 @@ public class ProductService {
         if (location == null) {
             throw new InvalidRequestException("longitude and latitude is mandatory");
         }
-        List<String> categoryNames = (category == null || category.isBlank())
-                ? List.of()
-                : Arrays.stream(category.split(","))
-                        .map(String::trim)
-                        .map(String::toLowerCase)
-                        .toList();
 
-        search = (search != null && !search.isBlank()) ? search : null;
-        nearby = (nearby == null || nearby > 20000) ? 20000 : nearby;
+        return Mono.fromCallable(() -> fetchProductData(
+                        rating, category, minPrice, maxPrice, search, nearby, location, pageable))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(data -> {
+                    if (data.restaurants().isEmpty()) {
+                        return Mono.just(Page.empty(pageable));
+                    }
 
-        String sort = rating != null && "desc".equalsIgnoreCase(rating) ? "rating_id_desc" : "id_asc";
+                    List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
+                    List<List<Double>> endPoints = data.restaurants().stream()
+                            .map(r -> List.of(r.getLongitude(), r.getLatitude()))
+                            .toList();
 
-        Page<ProductIdWithRating> productResult = productRepo.findProductsWithinDistance(
-                location.getLongitude(),
-                location.getLatitude(),
-                nearby,
-                search,
-                categoryNames,
-                maxPrice,
-                minPrice,
-                sort,
-                pageable);
-
-        List<UUID> productIds = productResult.getContent().stream()
-                .map(ProductIdWithRating::getId)
-                .toList();
-        List<Products> products = productRepo.findByIdIn(productIds);
-
-        List<Restaurants> res =
-                products.stream().map(r -> r.getRestaurant()).distinct().toList();
-
-        if (res.isEmpty()) {
-            return Mono.just(Page.empty(pageable));
-        }
-        final List<Restaurants> filteredRes = res;
-
-        List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
-        List<List<Double>> endPoints = res.stream()
-                .map(r -> List.of(r.getLongitude(), r.getLatitude()))
-                .toList();
-        final List<Products> filteredProducts = products;
-
-        return distanceService
-                .getDistanceAndDurationInList(startingPoints, endPoints)
-                .map(response -> {
-                    List<Double> durations = response.getDurations().get(0);
-                    List<Double> distances = response.getDistances().get(0);
-
-                    Map<UUID, ResResponse> listResResponse = IntStream.range(0, filteredRes.size())
-                            .mapToObj(i -> {
-                                Restaurants resIndex = filteredRes.get(i);
-
-                                ResResponse resResponseIndex = ResUtil.mapResToResResponse(resIndex);
-                                resResponseIndex.setDuration(durations.get(i));
-                                resResponseIndex.setDistance(distances.get(i));
-                                return resResponseIndex;
-                            })
-                            .collect(Collectors.toMap(ResResponse::getId, Function.identity()));
-                    List<ProductResponse> productResponses = filteredProducts.stream()
-                            .map(p -> ProductUtil.mapProductToProductResponse(
-                                    p, listResResponse.get(p.getRestaurant().getId())))
-                            .collect(Collectors.toList());
-                    ;
-
-                    productResponses = sortProductResponse(productResponses, rating, locationsorted);
-                    return new PageImpl<>(productResponses, pageable, productResult.getTotalElements());
+                    return distanceService
+                            .getDistanceAndDurationInList(startingPoints, endPoints)
+                            .map(response -> buildPageResponse(
+                                    data, response, rating, locationsorted, pageable));
                 });
     }
 
-    public ProductResponse getProductById(UUID id) {
+    public ProductResponseWithoutRes getProductById(UUID id) {
         Products product = getById(id);
-        return ProductUtil.mapProductToProductResponseWitoutResParam(product);
+        return productMapper.toProductResponseWithoutRes(product);
     }
 
-    public ProductResponse getProductBySlug(String slug) {
+    public ProductResponseWithoutRes getProductBySlug(String slug) {
         Products product =
                 productRepo.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
-        return ProductUtil.mapProductToProductResponseWitoutResParam(product);
+        return productMapper.toProductResponseWithoutRes(product);
     }
 
     @Transactional
-    public ProductResponse createProduct(ProductRequest productRequest, MultipartFile imageFile) {
+    public ProductResponseWithoutRes createProduct(ProductRequest productRequest, MultipartFile imageFile) {
         Categories cate = cateRepository
                 .findById(productRequest.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("category not found"));
@@ -170,8 +126,6 @@ public class ProductService {
                 .category(cate)
                 .restaurant(res)
                 .available(productRequest.isAvailable())
-                .totalReview(0)
-                .rating(0)
                 .slug(SlugGenerator.generate(productRequest.getProductName()))
                 .build();
         // Check cate
@@ -187,10 +141,8 @@ public class ProductService {
                         .findById(psDto.getSizeId())
                         .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + psDto.getSizeId()));
 
-                ProductSize productSize = ProductSize.builder()
-                        .size(size)
-                        .price(psDto.getPrice())
-                        .build();
+                ProductSize productSize =
+                        ProductSize.builder().size(size).price(psDto.getPrice()).build();
 
                 product.addProductSize(productSize);
             }
@@ -203,12 +155,11 @@ public class ProductService {
         }
 
         productRepo.save(product);
-        return ProductUtil.mapProductToProductResponseWitoutResParam(product);
+        return productMapper.toProductResponseWithoutRes(product);
     }
 
     @Transactional
-    public ProductResponse updateProduct(
-            UpdateProduct updateProduct, UUID id, MultipartFile imageFile, UUID userId) {
+    public ProductResponseWithoutRes updateProduct(UpdateProduct updateProduct, UUID id, MultipartFile imageFile, UserRole authUser) {
         Products product = getById(id);
 
         Categories cate = cateRepository
@@ -217,9 +168,7 @@ public class ProductService {
 
         Restaurants res = getResById(product.getRestaurant().getId());
 
-        if (userId == null || !userId.equals(res.getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this product.");
-        }
+        checkAuthority(res.getMerchantId(), authUser);
         Categories oldCategory = product.getCategory();
         boolean categoryChanged = !oldCategory.getId().equals(cate.getId());
 
@@ -255,10 +204,8 @@ public class ProductService {
                         .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + psDto.getSizeId()));
 
                 // Tạo ProductSize entity
-                ProductSize productSize = ProductSize.builder()
-                        .size(size)
-                        .price(psDto.getPrice())
-                        .build();
+                ProductSize productSize =
+                        ProductSize.builder().size(size).price(psDto.getPrice()).build();
 
                 product.addProductSize(productSize);
             }
@@ -275,16 +222,14 @@ public class ProductService {
             }
         }
         productRepo.save(product);
-        return ProductUtil.mapProductToProductResponseWitoutResParam(product);
+        return productMapper.toProductResponseWithoutRes(product);
     }
 
     @Transactional
-    public void deleteProduct(UUID id, UUID userId) {
+    public void deleteProduct(UUID id, UserRole authUser) {
         Products product = getById(id);
 
-        if (userId == null || !userId.equals(product.getRestaurant().getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this product.");
-        }
+        checkAuthority(product.getRestaurant().getMerchantId(), authUser);
         List<Reviews> rv = reviewRepository.findByReviewId(id).stream()
                 .filter(r -> r.getReviewType().equals(ReviewType.PRODUCT.toString()))
                 .toList();
@@ -304,20 +249,16 @@ public class ProductService {
     }
 
     @Transactional
-    public void changeProductAvailability(UUID id, UUID userId) {
+    public void changeProductAvailability(UUID id, UserRole authUser) {
         Products product = getById(id);
-        if (userId == null || !userId.equals(product.getRestaurant().getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this product.");
-        }
+        checkAuthority(product.getRestaurant().getMerchantId(), authUser);
         product.setAvailable(!product.isAvailable());
         productRepo.save(product);
     }
 
-    public void deleteImage(UUID productId, UUID userId) {
+    public void deleteImage(UUID productId, UserRole authUser) {
         Products product = getById(productId);
-        if (userId == null || !userId.equals(product.getRestaurant().getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this product.");
-        }
+        checkAuthority(product.getRestaurant().getMerchantId(), authUser);
         imageFileService.deleteImage(product.getPublicID());
         product.setImageURL(null);
         product.setPublicID(null);
@@ -328,7 +269,7 @@ public class ProductService {
         return product.getProductSizes();
     }
 
-    public List<ProductResponse> getAllProductsByRestaurantId(UUID id) {
+    public List<ProductResponseWithoutRes> getAllProductsByRestaurantId(UUID id) {
         Restaurants res = getResById(id);
 
         Optional<List<Products>> products = productRepo.findProductsByRestaurant(res);
@@ -337,7 +278,7 @@ public class ProductService {
             return new ArrayList<>();
         }
         return products.get().stream()
-                .map(ProductUtil::mapProductToProductResponseWitoutResParam)
+                .map(productMapper::toProductResponseWithoutRes)
                 .toList();
     }
 
@@ -347,15 +288,15 @@ public class ProductService {
         return product.getRestaurant();
     }
 
-    private List<ProductResponse> sortProductResponse(
-            List<ProductResponse> products, String rating, String locationsorted) {
-        if (rating != null && "desc".equalsIgnoreCase(rating)) {
-            products.sort(Comparator.comparing(ProductResponse::getRating).reversed());
-        } else if (locationsorted != null && "asc".equals(locationsorted)) {
-            products.sort(Comparator.comparing(p -> p.getRestaurant().getDistance()));
-        }
-        return products;
-    }
+    // private List<ProductResponseWithoutRes> sortProductResponse(
+    //         List<ProductResponse> products, String rating, String locationsorted) {
+    //     if (rating != null && "desc".equalsIgnoreCase(rating)) {
+    //         products.sort(Comparator.comparing(ProductResponse::getRating).reversed());
+    //     } else if (locationsorted != null && "asc".equals(locationsorted)) {
+    //         products.sort(Comparator.comparing(p -> p.getRestaurant().getDistance()));
+    //     }
+    //     return products;
+    // }
 
     private Products getById(UUID id) {
         Products product =
@@ -367,5 +308,88 @@ public class ProductService {
         Restaurants res =
                 resRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return res;
+    }
+
+    private record ProductData(
+            Page<ProductIdWithRating> productResult,
+            List<Products> products,
+            List<Restaurants> restaurants) {}
+
+    private ProductData fetchProductData(
+            String rating,
+            String category,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            String search,
+            Integer nearby,
+            Coordinates location,
+            Pageable pageable) {
+
+        List<String> categoryNames = (category == null || category.isBlank())
+                ? List.of()
+                : Arrays.stream(category.split(","))
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .toList();
+
+        String normalizedSearch = (search != null && !search.isBlank()) ? search : null;
+        int normalizedNearby = (nearby == null || nearby > 20000) ? 20000 : nearby;
+        String sort = rating != null && "desc".equalsIgnoreCase(rating) ? "rating_id_desc" : "id_asc";
+
+        Page<ProductIdWithRating> productResult = productRepo.findProductsWithinDistance(
+                location.getLongitude(),
+                location.getLatitude(),
+                normalizedNearby,
+                normalizedSearch,
+                categoryNames,
+                maxPrice,
+                minPrice,
+                sort,
+                pageable);
+
+        List<UUID> productIds = productResult.getContent().stream()
+                .map(ProductIdWithRating::getId)
+                .toList();
+
+        List<Products> products = productRepo.findByIdIn(productIds);
+        List<Restaurants> restaurants = products.stream()
+                .map(Products::getRestaurant)
+                .distinct()
+                .toList();
+
+        return new ProductData(productResult, products, restaurants);
+    }
+
+    private Page<ProductResponseWithoutRes> buildPageResponse(
+            ProductData data,
+            DistanceResponse response,
+            String rating,
+            String locationsorted,
+            Pageable pageable) {
+
+        List<Double> durations = response.getDurations().get(0);
+        List<Double> distances = response.getDistances().get(0);
+
+        // Map<UUID, ResResponse> resResponseMap = IntStream.range(0, data.restaurants().size())
+        //         .mapToObj(i -> {
+        //             ResResponse resResponse = resMapper.toResResponse(data.restaurants().get(i));
+        //             resResponse.setDuration(durations.get(i));
+        //             resResponse.setDistance(distances.get(i));
+        //             return resResponse;
+        //         })
+        //         .collect(Collectors.toMap(ResResponse::getId, Function.identity()));
+
+        List<ProductResponseWithoutRes> productResponses = data.products().stream()
+                .map(productMapper::toProductResponseWithoutRes)
+                .collect(Collectors.toList());
+
+        //productResponses = sortProductResponse(productResponses, rating, locationsorted);
+        return new PageImpl<>(productResponses, pageable, data.productResult().getTotalElements());
+    }
+
+    private void checkAuthority(UUID id, UserRole authUser) {
+        if (authUser != null && !authUser.getId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
     }
 }

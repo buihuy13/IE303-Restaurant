@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
@@ -12,6 +11,8 @@ import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.restaurant_service.dto.size.request.SizeRequest;
 import com.CNTTK18.restaurant_service.model.Size;
 import com.CNTTK18.restaurant_service.repository.SizeRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

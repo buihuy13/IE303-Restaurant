@@ -23,9 +23,10 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
-import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
+import com.CNTTK18.restaurant_service.dto.product.response.ProductResponseWithoutRes;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.model.ProductSize;
@@ -48,7 +49,7 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get all products")
     @GetMapping("")
-    public Mono<ResponseEntity<Page<ProductResponse>>> getAllProducts(
+    public Mono<ResponseEntity<Page<ProductResponseWithoutRes>>> getAllProducts(
             @RequestParam(required = false) String rating,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -73,21 +74,21 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get product by ID")
     @GetMapping("/admin/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable UUID id) {
+    public ResponseEntity<ProductResponseWithoutRes> getProductById(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @Tag(name = "Get")
     @Operation(summary = "Get product by Slug")
     @GetMapping("/{slug}")
-    public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
+    public ResponseEntity<ProductResponseWithoutRes> getProductBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getProductBySlug(slug));
     }
 
     @Tag(name = "Post")
     @Operation(summary = "Create new product")
     @PostMapping("")
-    public ResponseEntity<ProductResponse> createProduct(
+    public ResponseEntity<ProductResponseWithoutRes> createProduct(
             @RequestPart(value = "product", required = true) @Valid ProductRequest productRequest,
             @RequestPart(value = "image", required = false) MultipartFile imageFile) {
         return new ResponseEntity<>(
@@ -97,20 +98,19 @@ public class ProductController {
     @Tag(name = "Put")
     @Operation(summary = "Update a product")
     @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProduct(
+    public ResponseEntity<ProductResponseWithoutRes> updateProduct(
             @RequestPart(value = "product", required = true) @Valid UpdateProduct updateProduct,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @PathVariable UUID id,
-            @AuthenticationPrincipal UUID userId) {
-        return ResponseEntity.ok(productService.updateProduct(updateProduct, id, imageFile, userId));
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(productService.updateProduct(updateProduct, id, imageFile, authUser));
     }
 
     @Tag(name = "Delete")
     @Operation(summary = "Delete a product")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteProduct(
-            @PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        productService.deleteProduct(id, userId);
+    public ResponseEntity<MessageResponse> deleteProduct(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        productService.deleteProduct(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }
 
@@ -118,8 +118,8 @@ public class ProductController {
     @Operation(summary = "Update a product available status")
     @PutMapping("/availability/{id}")
     public ResponseEntity<MessageResponse> updateProductAvailability(
-            @PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        productService.changeProductAvailability(id, userId);
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        productService.changeProductAvailability(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Update availability successfully"));
     }
 
@@ -127,8 +127,8 @@ public class ProductController {
     @Operation(summary = "Delete product image")
     @DeleteMapping("/image/{id}")
     public ResponseEntity<MessageResponse> deleteProductImage(
-            @PathVariable UUID id, @AuthenticationPrincipal UUID userId) {
-        productService.deleteImage(id, userId);
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        productService.deleteImage(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete image successfully"));
     }
 
@@ -142,7 +142,7 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get all product by restaurant id")
     @GetMapping("/restaurant/{id}")
-    public ResponseEntity<List<ProductResponse>> getProductsByRestaurantId(@PathVariable UUID id) {
+    public ResponseEntity<List<ProductResponseWithoutRes>> getProductsByRestaurantId(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getAllProductsByRestaurantId(id));
     }
 

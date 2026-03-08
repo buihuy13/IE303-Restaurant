@@ -29,6 +29,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("io.projectreactor:reactor-test")
   	implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
+	implementation("org.mapstruct:mapstruct:1.6.3")
+	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 }
 
 dependencyManagement {

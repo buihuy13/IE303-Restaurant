@@ -20,8 +20,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -56,14 +54,15 @@ public class Products {
     private Categories category;
 
     private boolean available;
-    private float rating;
+    @Builder.Default
+    private float rating = 0f;
 
     @Column(name = "total_review")
-    private int totalReview;
+    @Builder.Default
+    private int totalReview = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", nullable = false)
-    @JsonIgnore
     private Restaurants restaurant;
 
     private String slug;

@@ -22,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.data.ReviewType;
+import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.Summary;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
@@ -31,14 +32,15 @@ import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponseWithPro
 import com.CNTTK18.restaurant_service.exception.DistanceDurationException;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
+import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
-import com.CNTTK18.restaurant_service.util.ResUtil;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -48,35 +50,38 @@ public class ResService {
     private ImageHandleService imageService;
     private ReviewRepository reviewRepository;
     private DistanceService distanceService;
+    private ResMapper resMapper;
 
     public Mono<Page<ResResponseWithProduct>> getAllRestaurants(
             Coordinates location, String search, Integer nearby, String rating, String category, Pageable pageable) {
 
-        Page<Restaurants> res = getRestaurantsAfterValidation(location, search, nearby, rating, category, pageable);
-        if (res.isEmpty()) {
-            return Mono.just(Page.empty(pageable));
-        }
+        return Mono.fromCallable(
+                        () -> getRestaurantsAfterValidation(location, search, nearby, rating, category, pageable))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(res -> {
+                    if (res.isEmpty()) return Mono.just(Page.empty(pageable));
 
-        List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
-        List<List<Double>> endPoints = res.stream()
-                .map(r -> List.of(r.getLongitude(), r.getLatitude()))
-                .toList();
-
-        return distanceService
-                .getDistanceAndDurationInList(startingPoints, endPoints)
-                .map(response -> {
-                    List<Double> durations = response.getDurations().get(0);
-                    List<Double> distances = response.getDistances().get(0);
-
-                    List<ResResponseWithProduct> responseList = IntStream.range(
-                                    0, res.getContent().size())
-                            .mapToObj(i -> {
-                                return ResUtil.mapResToResResponseWithProductandDistanceAndDuration(
-                                        res.getContent().get(i), durations.get(i), distances.get(i));
-                            })
+                    List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
+                    List<List<Double>> endPoints = res.stream()
+                            .map(r -> List.of(r.getLongitude(), r.getLatitude()))
                             .toList();
 
-                    return new PageImpl<>(responseList, pageable, res.getTotalElements());
+                    return distanceService
+                            .getDistanceAndDurationInList(startingPoints, endPoints)
+                            .map(response -> {
+                                List<Double> durations = response.getDurations().get(0);
+                                List<Double> distances = response.getDistances().get(0);
+
+                                List<ResResponseWithProduct> responseList = IntStream.range(
+                                                0, res.getContent().size())
+                                        .mapToObj(i -> {
+                                            return resMapper.toResResponseWithProductAndDistanceAndDuration(
+                                                    res.getContent().get(i), durations.get(i), distances.get(i));
+                                        })
+                                        .toList();
+
+                                return new PageImpl<>(responseList, pageable, res.getTotalElements());
+                            });
                 });
     }
 
@@ -107,29 +112,32 @@ public class ResService {
     }
 
     public Mono<ResResponseWithProduct> getRestaurantById(UUID id, Coordinates location) {
-        Restaurants res = getById(id);
-
-        if (location != null) {
-            List<Double> start = List.of(location.getLongitude(), location.getLatitude());
-            List<Double> end = List.of(res.getLongitude(), res.getLatitude());
-            return distanceService.getDistanceAndDuration(start, end).map(response -> {
-                if (response == null || response.getFeatures().isEmpty()) {
-                    throw new DistanceDurationException("Error while calculating distance and duration");
+        return Mono.fromCallable(() -> getById(id))
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap(res -> {
+                if (location == null) {
+                    return Mono.just(resMapper.toResResponseWithProduct(res));
                 }
-                Summary summary = response.getFeatures().get(0).getProperties().getSummary();
-                double distance = summary.getDistance();
-                double duration = summary.getDuration();
 
-                return ResUtil.mapResToResResponseWithProductandDistanceAndDuration(res, distance, duration);
+                List<Double> start = List.of(location.getLongitude(), location.getLatitude());
+                List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+
+                return distanceService.getDistanceAndDuration(start, end)
+                        .map(response -> {
+                            if (response == null || response.getFeatures().isEmpty()) {
+                                throw new DistanceDurationException("Error while calculating distance and duration");
+                            }
+                            Summary summary = response.getFeatures().get(0).getProperties().getSummary();
+                            return resMapper.toResResponseWithProductAndDistanceAndDuration(
+                                    res, summary.getDistance(), summary.getDuration());
+                        });
             });
-        }
-        return Mono.just(ResUtil.mapResToResResponseWithProduct(res));
     }
 
     public ResResponseWithProduct getRestaurantBySlug(String slug) {
         Restaurants res =
                 resRepository.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
-        return ResUtil.mapResToResResponseWithProduct(res);
+        return resMapper.toResResponseWithProduct(res);
     }
 
     @Transactional
@@ -157,31 +165,27 @@ public class ResService {
                             .openingTime(resRequest.getOpeningTime())
                             .phone(resRequest.getPhone())
                             .resName(resRequest.getResName())
-                            .products(new HashSet<>())
-                            .totalReview(0)
-                            .rating(0f)
                             .longitude(resRequest.getLongitude())
                             .latitude(resRequest.getLatitude())
                             .slug(SlugGenerator.generate(resRequest.getResName()))
                             .build();
 
-                    if (imageFile != null && !imageFile.isEmpty()) {
-                        Map<String, String> image = imageService.saveImageFile(imageFile);
-                        res.setImageURL(image.get("url"));
-                        res.setPublicID(image.get("public_id"));
-                    }
-                    return Mono.fromCallable(() -> resRepository.save(res));
+                    return Mono.fromCallable(() -> {
+                        if (imageFile != null && !imageFile.isEmpty()) {
+                            Map<String, String> image = imageService.saveImageFile(imageFile);
+                            res.setImageURL(image.get("url"));
+                            res.setPublicID(image.get("public_id"));
+                        }
+                        return resRepository.save(res);
+                    }).subscribeOn(Schedulers.boundedElastic());
                 });
     }
 
     @Transactional
-    public ResResponseWithProduct updateRestaurant(
-            UUID id, UpdateRes updateRes, MultipartFile imageFile, UUID userId) {
+    public ResResponseWithProduct updateRestaurant(UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser) {
         Restaurants res = getById(id);
 
-        if (userId == null || !userId.equals(res.getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this restaurant.");
-        }
+        checkAuthority(res.getMerchantId(), authUser);
         res.setAddress(updateRes.getAddress());
         res.setOpeningTime(updateRes.getOpeningTime());
         res.setClosingTime(updateRes.getClosingTime());
@@ -202,16 +206,13 @@ public class ResService {
             }
         }
         resRepository.save(res);
-        return ResUtil.mapResToResResponseWithProduct(res);
+        return resMapper.toResResponseWithProduct(res);
     }
 
     @Transactional
-    public void deleteRestaurant(UUID id, UUID userId) {
+    public void deleteRestaurant(UUID id, UserRole authUser) {
         Restaurants res = getById(id);
-
-        if (userId == null || !userId.equals(res.getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to delete this restaurant.");
-        }
+        checkAuthority(res.getMerchantId(), authUser);
 
         List<Reviews> rv = reviewRepository.findByReviewId(id).stream()
                 .filter(r -> r.getReviewType().equals(ReviewType.RESTAURANT.toString()))
@@ -231,15 +232,15 @@ public class ResService {
         resRepository.save(res);
     }
 
-    public void deleteImage(UUID resId, UUID userId) {
+    @Transactional
+    public void deleteImage(UUID resId, UserRole authUser) {
         Restaurants res = getById(resId);
 
-        if (userId == null || !userId.equals(res.getMerchantId())) {
-            throw new ForbiddenException("You do not have permission to update this restaurant.");
-        }
+        checkAuthority(res.getMerchantId(), authUser);
         imageService.deleteImage(res.getPublicID());
         res.setImageURL(null);
         res.setPublicID(null);
+        resRepository.save(res);
     }
 
     public List<ResResponseWithProduct> getRestaurantsByMerchantId(UUID id) {
@@ -262,7 +263,7 @@ public class ResService {
             return new ArrayList<>();
         }
         return resList.get().stream()
-                .map(ResUtil::mapResToResResponseWithProduct)
+                .map(resMapper::toResResponseWithProduct)
                 .toList();
     }
 
@@ -270,5 +271,11 @@ public class ResService {
         Restaurants res =
                 resRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return res;
+    }
+
+    private void checkAuthority(UUID id, UserRole authUser) {
+        if (authUser != null && !authUser.getId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
     }
 }

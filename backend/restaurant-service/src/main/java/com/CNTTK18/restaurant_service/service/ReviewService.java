@@ -4,23 +4,27 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.restaurant_service.data.ReviewType;
+import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
+import com.CNTTK18.restaurant_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
+import com.CNTTK18.restaurant_service.mapper.ReviewMapper;
 import com.CNTTK18.restaurant_service.model.Products;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
 import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -29,23 +33,25 @@ public class ReviewService {
     private final WebClient.Builder webClientBuilder;
     private final ProductRepository productRepository;
     private final ResRepository resRepository;
+    private final ReviewMapper reviewMapper;
 
-    public List<Reviews> getAllReviews(UUID resId, UUID productId) {
+    public List<ReviewResponse> getAllReviews(UUID resId, UUID productId) {
         List<Reviews> rv = reviewRepo.findAll();
         if (resId != null) {
             rv = rv.stream().filter(r -> r.getReviewId().equals(resId)).toList();
         } else if (productId != null) {
             rv = rv.stream().filter(r -> r.getReviewId().equals(productId)).toList();
         }
-        return rv;
+        return rv.stream().map(reviewMapper::toReviewResponse).toList();
     }
 
-    public Reviews getReviewById(UUID id) {
-        return reviewRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+    public ReviewResponse getReviewById(UUID id) {
+        Reviews rv = reviewRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        return reviewMapper.toReviewResponse(rv);
     }
 
     @Transactional
-    public Reviews createReview(ReviewRequest reviewRequest) {
+    public ReviewResponse createReview(ReviewRequest reviewRequest) {
         UserResponse user = webClientBuilder
                 .build()
                 .get()
@@ -61,23 +67,21 @@ public class ReviewService {
         UUID rvId = reviewRequest.getReviewId();
         calculateWhenCreate(reviewRequest, rvType, rvId);
         Reviews rv = Reviews.builder()
-                            .userId(reviewRequest.getUserId())
-                            .reviewId(rvId)
-                            .reviewType(rvType)
-                            .title(reviewRequest.getTitle())
-                            .content(reviewRequest.getContent())
-                            .rating(reviewRequest.getRating())
-                            .build();
+                .userId(reviewRequest.getUserId())
+                .reviewId(rvId)
+                .reviewType(rvType)
+                .title(reviewRequest.getTitle())
+                .content(reviewRequest.getContent())
+                .rating(reviewRequest.getRating())
+                .build();
 
-        return reviewRepo.save(rv);
+        return reviewMapper.toReviewResponse(reviewRepo.save(rv));
     }
 
     @Transactional
-    public void deleteReview(UUID id, UUID userId) {
-        if (id != null && userId != null && !userId.equals(id)) {
-            throw new ForbiddenException("Bạn không có quyền");
-        }
-        Reviews rv = getReviewById(id);
+    public void deleteReview(UUID id, UserRole authUser) {
+        Reviews rv = reviewRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        checkAuthority(rv.getUserId(), authUser);
         String rvType = rv.getReviewType();
         calculateWhenDelete(rv, rvType);
         reviewRepo.delete(rv);
@@ -141,6 +145,12 @@ public class ReviewService {
                 res.setRating(newRating);
             }
             resRepository.save(res);
+        }
+    }
+
+    private void checkAuthority(UUID id, UserRole authUser) {
+        if (authUser != null && !authUser.getId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
+            throw new ForbiddenException("You are not authorized to perform this action");
         }
     }
 }

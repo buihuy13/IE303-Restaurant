@@ -3,14 +3,14 @@ package com.CNTTK18.restaurant_service.model;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import org.springframework.data.annotation.CreatedDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
