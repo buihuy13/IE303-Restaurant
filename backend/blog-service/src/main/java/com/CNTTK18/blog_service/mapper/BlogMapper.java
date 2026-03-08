@@ -13,6 +13,7 @@ import com.CNTTK18.blog_service.model.BlogPost;
 
 @Mapper(componentModel = "spring")
 public interface BlogMapper {
+    @Mapping(target = "publicID", source = "publicID")
     @Mapping(target = "publishedAt", source = "publishedAt", qualifiedByName = "convertToVNZone")
     @Mapping(target = "createdAt", source = "createdAt", qualifiedByName = "convertToVNZone")
     @Mapping(target = "updatedAt", source = "updatedAt", qualifiedByName = "convertToVNZone")

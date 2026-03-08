@@ -1,6 +1,7 @@
 package com.CNTTK18.blog_service.service.Impl;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -34,8 +35,12 @@ public class BlogServiceImpl implements BlogService {
     @Override
     @Transactional
     public BlogResponse createBlog(CreateBlogRequest request, UserRole authUser) {
+        checkCreatePermission(authUser);
         UUID authorId = extractAuthorId(authUser);
         BlogStatus status = request.getStatus() == null ? BlogStatus.DRAFT : request.getStatus();
+        if (BlogStatus.ARCHIVED.equals(status)) {
+            throw new IllegalArgumentException("Cannot create blog with ARCHIVED status");
+        }
 
         BlogPost newBlog = BlogPost.builder()
                 .authorId(authorId)
@@ -43,6 +48,7 @@ public class BlogServiceImpl implements BlogService {
                 .slug(generateUniqueSlug(request.getTitle()))
                 .content(request.getContent().trim())
                 .coverImageUrl(normalizeCoverImageUrl(request.getCoverImageUrl()))
+                .publicID(normalizeString(request.getPublicID()))
                 .status(status)
                 .build();
 
@@ -51,30 +57,44 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
-    public BlogResponse getBlogById(UUID id) {
-        return blogMapper.toBlogResponse(getBlogPostById(id));
+    public BlogResponse getBlogById(UUID id, UserRole authUser) {
+        BlogPost blogPost = getBlogPostById(id);
+        if (!BlogStatus.PUBLISHED.equals(blogPost.getStatus())) {
+            checkAuthority(blogPost.getAuthorId(), authUser);
+        }
+        return blogMapper.toBlogResponse(blogPost);
     }
 
     @Override
     public BlogResponse getBlogBySlug(String slug) {
-        return blogMapper.toBlogResponse(blogRepository
+        BlogPost blogPost = blogRepository
                 .findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Blog post not found")));
+                .orElseThrow(() -> new ResourceNotFoundException("Blog post not found"));
+        if (!BlogStatus.PUBLISHED.equals(blogPost.getStatus())) {
+            throw new ResourceNotFoundException("Blog post not found");
+        }
+        return blogMapper.toBlogResponse(blogPost);
     }
 
     @Override
-    public Page<BlogResponse> getBlogs(UUID authorId, BlogStatus status, Pageable pageable) {
-        Page<BlogPost> blogs;
-        if (authorId != null && status != null) {
-            blogs = blogRepository.findAllByAuthorIdAndStatus(authorId, status, pageable);
-        } else if (authorId != null) {
-            blogs = blogRepository.findAllByAuthorId(authorId, pageable);
-        } else if (status != null) {
-            blogs = blogRepository.findAllByStatus(status, pageable);
-        } else {
-            blogs = blogRepository.findAll(pageable);
-        }
-        return blogs.map(blogMapper::toBlogResponse);
+    public Page<BlogResponse> getPublishedBlogs(Pageable pageable) {
+        return blogRepository.findAllByStatus(BlogStatus.PUBLISHED, pageable).map(blogMapper::toBlogResponse);
+    }
+
+    @Override
+    public Page<BlogResponse> getDraftBlogs(UUID authorId, UserRole authUser, Pageable pageable) {
+        UUID targetAuthorId = resolveTargetAuthorId(authorId, authUser);
+        return blogRepository
+                .findAllByAuthorIdAndStatus(targetAuthorId, BlogStatus.DRAFT, pageable)
+                .map(blogMapper::toBlogResponse);
+    }
+
+    @Override
+    public Page<BlogResponse> getArchivedBlogs(UUID authorId, UserRole authUser, Pageable pageable) {
+        UUID targetAuthorId = resolveTargetAuthorId(authorId, authUser);
+        return blogRepository
+                .findAllByAuthorIdAndStatus(targetAuthorId, BlogStatus.ARCHIVED, pageable)
+                .map(blogMapper::toBlogResponse);
     }
 
     @Override
@@ -83,31 +103,27 @@ public class BlogServiceImpl implements BlogService {
         BlogPost existingBlog = getBlogPostById(id);
         checkAuthority(existingBlog.getAuthorId(), authUser);
 
-        if (request.getTitle() != null) {
-            if (request.getTitle().isBlank()) {
-                throw new IllegalArgumentException("Title must not be blank");
-            }
-            String normalizedTitle = request.getTitle().trim();
-            if (!normalizedTitle.equals(existingBlog.getTitle())) {
-                existingBlog.setTitle(normalizedTitle);
-                existingBlog.setSlug(generateUniqueSlug(normalizedTitle));
-            }
+        String normalizedTitle = request.getTitle().trim();
+        if (normalizedTitle.isBlank()) {
+            throw new IllegalArgumentException("Title must not be blank");
+        }
+        if (!normalizedTitle.equals(existingBlog.getTitle())) {
+            existingBlog.setSlug(generateUniqueSlug(normalizedTitle));
+        }
+        existingBlog.setTitle(normalizedTitle);
+
+        String normalizedContent = request.getContent().trim();
+        if (normalizedContent.isBlank()) {
+            throw new IllegalArgumentException("Content must not be blank");
+        }
+        existingBlog.setContent(normalizedContent);
+        if (request.getStatus() == null) {
+            throw new IllegalArgumentException("Status is required");
         }
 
-        if (request.getContent() != null) {
-            if (request.getContent().isBlank()) {
-                throw new IllegalArgumentException("Content must not be blank");
-            }
-            existingBlog.setContent(request.getContent().trim());
-        }
-
-        if (request.getCoverImageUrl() != null) {
-            existingBlog.setCoverImageUrl(normalizeCoverImageUrl(request.getCoverImageUrl()));
-        }
-
-        if (request.getStatus() != null) {
-            existingBlog.setStatus(request.getStatus());
-        }
+        existingBlog.setCoverImageUrl(normalizeCoverImageUrl(request.getCoverImageUrl()));
+        existingBlog.setPublicID(normalizeString(request.getPublicID()));
+        existingBlog.setStatus(request.getStatus());
 
         syncPublishedAt(existingBlog);
         return blogMapper.toBlogResponse(blogRepository.save(existingBlog));
@@ -118,7 +134,9 @@ public class BlogServiceImpl implements BlogService {
     public void deleteBlog(UUID id, UserRole authUser) {
         BlogPost blog = getBlogPostById(id);
         checkAuthority(blog.getAuthorId(), authUser);
-        blogRepository.delete(blog);
+        blog.setStatus(BlogStatus.ARCHIVED);
+        syncPublishedAt(blog);
+        blogRepository.save(blog);
     }
 
     private BlogPost getBlogPostById(UUID id) {
@@ -137,8 +155,7 @@ public class BlogServiceImpl implements BlogService {
             throw new ForbiddenException("You are not authorized to perform this action");
         }
 
-        String role = authUser.getRole() == null ? "" : authUser.getRole();
-        if (!ownerId.equals(authUser.getUserId()) && !"ADMIN".equals(role)) {
+        if (!ownerId.equals(authUser.getUserId()) && !isAdmin(authUser)) {
             throw new ForbiddenException("You are not authorized to perform this action");
         }
     }
@@ -157,6 +174,46 @@ public class BlogServiceImpl implements BlogService {
         if (coverImageUrl == null) return null;
         String normalized = coverImageUrl.trim();
         if (normalized.isEmpty()) return null;
+        return normalized;
+    }
+
+    private String normalizeString(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        if (normalized.isEmpty()) return null;
+        return normalized;
+    }
+
+    private UUID resolveTargetAuthorId(UUID authorId, UserRole authUser) {
+        UUID actorId = extractAuthorId(authUser);
+        if (authorId == null) {
+            return actorId;
+        }
+        checkAuthority(authorId, authUser);
+        return authorId;
+    }
+
+    private boolean isAdmin(UserRole authUser) {
+        return "ADMIN".equals(normalizeRole(authUser.getRole()));
+    }
+
+    private void checkCreatePermission(UserRole authUser) {
+        if (authUser == null || authUser.getUserId() == null) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
+
+        String normalizedRole = normalizeRole(authUser.getRole());
+        if (!"ADMIN".equals(normalizedRole) && !"MERCHANT".equals(normalizedRole)) {
+            throw new ForbiddenException("Only ADMIN or MERCHANT can create blogs");
+        }
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) return "";
+        String normalized = role.toUpperCase(Locale.ROOT);
+        if (normalized.startsWith("ROLE_")) {
+            return normalized.substring(5);
+        }
         return normalized;
     }
 

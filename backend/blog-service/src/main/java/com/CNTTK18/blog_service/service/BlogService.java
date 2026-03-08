@@ -14,11 +14,15 @@ import com.CNTTK18.blog_service.model.data.BlogStatus;
 public interface BlogService {
     BlogResponse createBlog(CreateBlogRequest request, UserRole authUser);
 
-    BlogResponse getBlogById(UUID id);
+    BlogResponse getBlogById(UUID id, UserRole authUser);
 
     BlogResponse getBlogBySlug(String slug);
 
-    Page<BlogResponse> getBlogs(UUID authorId, BlogStatus status, Pageable pageable);
+    Page<BlogResponse> getPublishedBlogs(Pageable pageable);
+
+    Page<BlogResponse> getDraftBlogs(UUID authorId, UserRole authUser, Pageable pageable);
+
+    Page<BlogResponse> getArchivedBlogs(UUID authorId, UserRole authUser, Pageable pageable);
 
     BlogResponse updateBlog(UUID id, UpdateBlogRequest request, UserRole authUser);
 
