@@ -9,7 +9,6 @@ import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
-import com.CNTTK18.blog_service.model.data.BlogStatus;
 
 public interface BlogService {
     BlogResponse createBlog(CreateBlogRequest request, UserRole authUser);

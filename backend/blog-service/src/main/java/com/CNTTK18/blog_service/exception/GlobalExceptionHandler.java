@@ -55,7 +55,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 "CONFLICT",
-                "Data conflict or constraint violation: " + ex.getMostSpecificCause().getMessage());
+                "Data conflict or constraint violation: "
+                        + ex.getMostSpecificCause().getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
