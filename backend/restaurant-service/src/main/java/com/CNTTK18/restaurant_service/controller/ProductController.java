@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
-import com.CNTTK18.restaurant_service.dto.product.response.ProductResponseWithoutRes;
+import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.model.ProductSize;
@@ -49,7 +49,7 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get all products")
     @GetMapping("")
-    public Mono<ResponseEntity<Page<ProductResponseWithoutRes>>> getAllProducts(
+    public Mono<ResponseEntity<Page<ProductResponse>>> getAllProducts(
             @RequestParam(required = false) String rating,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -74,21 +74,21 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get product by ID")
     @GetMapping("/admin/{id}")
-    public ResponseEntity<ProductResponseWithoutRes> getProductById(@PathVariable UUID id) {
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @Tag(name = "Get")
     @Operation(summary = "Get product by Slug")
     @GetMapping("/{slug}")
-    public ResponseEntity<ProductResponseWithoutRes> getProductBySlug(@PathVariable String slug) {
+    public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getProductBySlug(slug));
     }
 
     @Tag(name = "Post")
     @Operation(summary = "Create new product")
     @PostMapping("")
-    public ResponseEntity<ProductResponseWithoutRes> createProduct(
+    public ResponseEntity<ProductResponse> createProduct(
             @RequestPart(value = "product", required = true) @Valid ProductRequest productRequest,
             @RequestPart(value = "image", required = false) MultipartFile imageFile) {
         return new ResponseEntity<>(
@@ -98,7 +98,7 @@ public class ProductController {
     @Tag(name = "Put")
     @Operation(summary = "Update a product")
     @PutMapping("/{id}")
-    public ResponseEntity<ProductResponseWithoutRes> updateProduct(
+    public ResponseEntity<ProductResponse> updateProduct(
             @RequestPart(value = "product", required = true) @Valid UpdateProduct updateProduct,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @PathVariable UUID id,
@@ -142,7 +142,7 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get all product by restaurant id")
     @GetMapping("/restaurant/{id}")
-    public ResponseEntity<List<ProductResponseWithoutRes>> getProductsByRestaurantId(@PathVariable UUID id) {
+    public ResponseEntity<List<ProductResponse>> getProductsByRestaurantId(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getAllProductsByRestaurantId(id));
     }
 

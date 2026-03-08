@@ -87,6 +87,15 @@ spring:
                   uri: lb://recommendation-service
                   predicates:
                       - Path=/v3/api-docs/recommendation-service
+                # restaurant-service
+                - id: restaurant-service
+                  uri: lb://restaurant-service
+                  predicates:
+                      - Path=/api/restaurants/**
+                - id: restaurant-service-docs
+                  uri: lb://restaurant-service
+                  predicates:
+                      - Path=/v3/api-docs/restaurant-service
 
 eureka:
     instance:
@@ -112,6 +121,8 @@ springdoc:
               url: /v3/api-docs/chat-service
             - name: Recommendation Service
               url: /v3/api-docs/recommendation-service
+            - name: Restaurant Service
+              url: /v3/api-docs/restaurant-service
 
 
 # resilience4j config (circuit breaker)

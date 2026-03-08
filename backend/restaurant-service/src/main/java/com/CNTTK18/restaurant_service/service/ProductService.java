@@ -3,6 +3,7 @@ package com.CNTTK18.restaurant_service.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ import com.CNTTK18.restaurant_service.dto.product.ProductIdWithRating;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.SizePrice;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
-import com.CNTTK18.restaurant_service.dto.product.response.ProductResponseWithoutRes;
+import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
@@ -65,7 +66,7 @@ public class ProductService {
     private ProductMapper productMapper;
     private ResMapper resMapper;
 
-    public Mono<Page<ProductResponseWithoutRes>> getAllProducts(
+    public Mono<Page<ProductResponse>> getAllProducts(
             String rating,
             String category,
             BigDecimal minPrice,
@@ -100,19 +101,19 @@ public class ProductService {
                 });
     }
 
-    public ProductResponseWithoutRes getProductById(UUID id) {
+    public ProductResponse getProductById(UUID id) {
         Products product = getById(id);
-        return productMapper.toProductResponseWithoutRes(product);
+        return productMapper.toProductResponse(product);
     }
 
-    public ProductResponseWithoutRes getProductBySlug(String slug) {
+    public ProductResponse getProductBySlug(String slug) {
         Products product =
                 productRepo.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
-        return productMapper.toProductResponseWithoutRes(product);
+        return productMapper.toProductResponse(product);
     }
 
     @Transactional
-    public ProductResponseWithoutRes createProduct(ProductRequest productRequest, MultipartFile imageFile) {
+    public ProductResponse createProduct(ProductRequest productRequest, MultipartFile imageFile) {
         Categories cate = cateRepository
                 .findById(productRequest.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("category not found"));
@@ -155,11 +156,11 @@ public class ProductService {
         }
 
         productRepo.save(product);
-        return productMapper.toProductResponseWithoutRes(product);
+        return productMapper.toProductResponse(product);
     }
 
     @Transactional
-    public ProductResponseWithoutRes updateProduct(UpdateProduct updateProduct, UUID id, MultipartFile imageFile, UserRole authUser) {
+    public ProductResponse updateProduct(UpdateProduct updateProduct, UUID id, MultipartFile imageFile, UserRole authUser) {
         Products product = getById(id);
 
         Categories cate = cateRepository
@@ -222,7 +223,7 @@ public class ProductService {
             }
         }
         productRepo.save(product);
-        return productMapper.toProductResponseWithoutRes(product);
+        return productMapper.toProductResponse(product);
     }
 
     @Transactional
@@ -269,7 +270,7 @@ public class ProductService {
         return product.getProductSizes();
     }
 
-    public List<ProductResponseWithoutRes> getAllProductsByRestaurantId(UUID id) {
+    public List<ProductResponse> getAllProductsByRestaurantId(UUID id) {
         Restaurants res = getResById(id);
 
         Optional<List<Products>> products = productRepo.findProductsByRestaurant(res);
@@ -278,7 +279,7 @@ public class ProductService {
             return new ArrayList<>();
         }
         return products.get().stream()
-                .map(productMapper::toProductResponseWithoutRes)
+                .map(productMapper::toProductResponse)
                 .toList();
     }
 
@@ -288,15 +289,15 @@ public class ProductService {
         return product.getRestaurant();
     }
 
-    // private List<ProductResponseWithoutRes> sortProductResponse(
-    //         List<ProductResponse> products, String rating, String locationsorted) {
-    //     if (rating != null && "desc".equalsIgnoreCase(rating)) {
-    //         products.sort(Comparator.comparing(ProductResponse::getRating).reversed());
-    //     } else if (locationsorted != null && "asc".equals(locationsorted)) {
-    //         products.sort(Comparator.comparing(p -> p.getRestaurant().getDistance()));
-    //     }
-    //     return products;
-    // }
+    private List<ProductResponse> sortProductResponse(
+            List<ProductResponse> products, String rating, String locationsorted) {
+        if (rating != null && "desc".equalsIgnoreCase(rating)) {
+            products.sort(Comparator.comparing(ProductResponse::getRating).reversed());
+        } else if (locationsorted != null && "asc".equals(locationsorted)) {
+            products.sort(Comparator.comparing(p -> p.getDistance()));
+        }
+        return products;
+    }
 
     private Products getById(UUID id) {
         Products product =
@@ -360,7 +361,7 @@ public class ProductService {
         return new ProductData(productResult, products, restaurants);
     }
 
-    private Page<ProductResponseWithoutRes> buildPageResponse(
+    private Page<ProductResponse> buildPageResponse(
             ProductData data,
             DistanceResponse response,
             String rating,
@@ -370,20 +371,22 @@ public class ProductService {
         List<Double> durations = response.getDurations().get(0);
         List<Double> distances = response.getDistances().get(0);
 
-        // Map<UUID, ResResponse> resResponseMap = IntStream.range(0, data.restaurants().size())
-        //         .mapToObj(i -> {
-        //             ResResponse resResponse = resMapper.toResResponse(data.restaurants().get(i));
-        //             resResponse.setDuration(durations.get(i));
-        //             resResponse.setDistance(distances.get(i));
-        //             return resResponse;
-        //         })
-        //         .collect(Collectors.toMap(ResResponse::getId, Function.identity()));
+        Map<UUID, ResResponse> resResponseMap = IntStream.range(0, data.restaurants().size())
+                .mapToObj(i -> {
+                    ResResponse resResponse = resMapper.toResResponseWithDistanceAndDuration(data.restaurants().get(i), 
+                                                                        distances.get(i), durations.get(i));
+                    return resResponse;
+                })
+                .collect(Collectors.toMap(ResResponse::getId, Function.identity()));
 
-        List<ProductResponseWithoutRes> productResponses = data.products().stream()
-                .map(productMapper::toProductResponseWithoutRes)
+        List<ProductResponse> productResponses = data.products().stream()
+                .map(p -> {
+                    ResResponse resResponse = resResponseMap.get(p.getRestaurant().getId());
+                    return productMapper.toProductResponse(p, resResponse.getDistance(), resResponse.getDuration());
+                })
                 .collect(Collectors.toList());
 
-        //productResponses = sortProductResponse(productResponses, rating, locationsorted);
+        productResponses = sortProductResponse(productResponses, rating, locationsorted);
         return new PageImpl<>(productResponses, pageable, data.productResult().getTotalElements());
     }
 

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.CNTTK18.restaurant_service.dto.productSize.response.ProductSizeResponse;
-import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,11 +25,12 @@ public class ProductResponse {
     private String categoryName;
     private UUID categoryId;
     private boolean available;
-    private ResResponse restaurant;
     private int totalReview;
     private float rating;
     private String slug;
     private Instant createdAt;
     private Instant updatedAt;
+    private Double distance;
+    private Double duration;
     private List<ProductSizeResponse> productSizes;
 }
