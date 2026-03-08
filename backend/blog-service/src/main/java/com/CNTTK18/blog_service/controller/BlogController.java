@@ -81,8 +81,7 @@ public class BlogController {
     @Tag(name = "Get")
     @Operation(summary = "Get blog by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<BlogResponse> getBlogById(
-            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<BlogResponse> getBlogById(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         return ResponseEntity.ok(blogService.getBlogById(id, authUser));
     }
 

@@ -67,9 +67,8 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public BlogResponse getBlogBySlug(String slug) {
-        BlogPost blogPost = blogRepository
-                .findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Blog post not found"));
+        BlogPost blogPost =
+                blogRepository.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Blog post not found"));
         if (!BlogStatus.PUBLISHED.equals(blogPost.getStatus())) {
             throw new ResourceNotFoundException("Blog post not found");
         }
