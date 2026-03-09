@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
+import com.CNTTK18.restaurant_service.dto.review.response.ReviewListResponse;
 import com.CNTTK18.restaurant_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.restaurant_service.service.ReviewService;
 
@@ -46,6 +47,20 @@ public class ReviewController {
     @GetMapping("/{id}")
     public ResponseEntity<ReviewResponse> getReviewById(@PathVariable UUID id) {
         return ResponseEntity.ok(reviewService.getReviewById(id));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get review by ID")
+    @GetMapping("/product/{id}")
+    public ResponseEntity<ReviewListResponse> getProductReviewById(@PathVariable UUID id) {
+        return ResponseEntity.ok(reviewService.getProductReviewsById(id));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get review by ID")
+    @GetMapping("/restaurant/{id}")
+    public ResponseEntity<ReviewListResponse> getRestaurantReviewById(@PathVariable UUID id) {
+        return ResponseEntity.ok(reviewService.getRestaurantReviewsById(id));
     }
 
     @Tag(name = "Post")
