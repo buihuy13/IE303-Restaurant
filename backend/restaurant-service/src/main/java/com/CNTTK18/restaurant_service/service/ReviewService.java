@@ -14,6 +14,7 @@ import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
+import com.CNTTK18.restaurant_service.dto.review.response.ReviewListResponse;
 import com.CNTTK18.restaurant_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
@@ -162,5 +163,17 @@ public class ReviewService {
         if (authUser != null && !authUser.getId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
             throw new ForbiddenException("You are not authorized to perform this action");
         }
+    }
+
+    public ReviewListResponse getProductReviewsById(UUID id) {
+        List<Reviews> productReviews = reviewRepo.findByReviewIdAndReviewType(id, ReviewType.PRODUCT);
+        return new ReviewListResponse(
+                productReviews.stream().map(r -> r.getContent()).toList());
+    }
+
+    public ReviewListResponse getRestaurantReviewsById(UUID id) {
+        List<Reviews> productReviews = reviewRepo.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT);
+        return new ReviewListResponse(
+                productReviews.stream().map(r -> r.getContent()).toList());
     }
 }

@@ -187,7 +187,7 @@ public class ResService {
     public void deleteRestaurant(UUID id, UserRole authUser) {
         Restaurants res = getById(id);
         checkAuthority(res.getMerchantId(), authUser);
-        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT.toString());
+        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT);
 
         if (res.getPublicID() != null && !res.getPublicID().isEmpty()) {
             imageService.deleteImage(res.getPublicID());

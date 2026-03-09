@@ -210,7 +210,7 @@ public class ProductService {
         Products product = getById(id);
 
         checkAuthority(product.getRestaurant().getMerchantId(), authUser);
-        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.PRODUCT.toString());
+        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.PRODUCT);
 
         if (product.getPublicID() != null && !product.getPublicID().isEmpty()) {
             imageFileService.deleteImage(product.getPublicID());

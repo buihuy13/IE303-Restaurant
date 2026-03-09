@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.CNTTK18.recommendation_service.dto.request.ReviewRequest;
 import com.CNTTK18.recommendation_service.dto.request.UserContext;
 import com.CNTTK18.recommendation_service.dto.response.MessageResponse;
+import com.CNTTK18.recommendation_service.dto.response.ReviewSummarizeResponse;
 import com.CNTTK18.recommendation_service.service.RecommendationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,21 +27,30 @@ import lombok.RequiredArgsConstructor;
 public class RecommendationController {
     private final RecommendationService recommendationService;
 
-    @Tag(name = "Get")
+    @Tag(name = "POST")
     @Operation(summary = "Get food recommendations")
     @PostMapping("/food")
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'MERCHANT')")
+    @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
     public ResponseEntity<MessageResponse> getFoodRecommendations(@Valid @RequestBody UserContext userContext) {
         MessageResponse response = recommendationService.recommendFood(userContext.getContext());
         return ResponseEntity.ok(response);
     }
 
-    @Tag(name = "Get")
+    @Tag(name = "POST")
     @Operation(summary = "Get food descriptions")
     @PostMapping("/descriptions")
     @PreAuthorize("hasRole('MERCHANT')")
     public ResponseEntity<List<MessageResponse>> getFoodDescriptions(@Valid @RequestBody UserContext userContext) {
         List<MessageResponse> response = recommendationService.generateFoodDescription(userContext.getContext());
+        return ResponseEntity.ok(response);
+    }
+
+    @Tag(name = "POST")
+    @Operation(summary = "Get food descriptions")
+    @PostMapping("/reviews")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MERCHANT')")
+    public ResponseEntity<ReviewSummarizeResponse> summarizeReviews(@RequestBody ReviewRequest rvRequest) {
+        ReviewSummarizeResponse response = recommendationService.summarizeReviews(rvRequest);
         return ResponseEntity.ok(response);
     }
 }
