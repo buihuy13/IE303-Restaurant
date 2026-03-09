@@ -1,4 +1,4 @@
-package com.CNTTK18.restaurant_service.dto;
+package com.CNTTK18.restaurant_service.dto.restaurant.response;
 
 import java.util.UUID;
 
@@ -8,12 +8,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class UserRole {
+public class ResWithDistance {
     private UUID id;
-    private String role;
+    private Double distance;
+    private Double duration;
 }
