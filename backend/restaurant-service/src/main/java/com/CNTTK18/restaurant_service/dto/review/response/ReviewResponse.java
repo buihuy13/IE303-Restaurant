@@ -3,6 +3,8 @@ package com.CNTTK18.restaurant_service.dto.review.response;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +20,7 @@ public class ReviewResponse {
     private UUID id;
     private UUID userId;
     private UUID reviewId;
-    private String reviewType;
+    private ReviewType reviewType;
     private String title;
     private String content;
     private float rating;

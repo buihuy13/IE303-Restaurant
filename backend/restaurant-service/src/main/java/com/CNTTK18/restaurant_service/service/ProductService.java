@@ -20,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
-import com.CNTTK18.restaurant_service.data.ReviewType;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
 import com.CNTTK18.restaurant_service.dto.product.ProductIdWithRating;
@@ -40,6 +39,7 @@ import com.CNTTK18.restaurant_service.model.Products;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
 import com.CNTTK18.restaurant_service.model.Size;
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
 import com.CNTTK18.restaurant_service.repository.CateRepository;
 import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;

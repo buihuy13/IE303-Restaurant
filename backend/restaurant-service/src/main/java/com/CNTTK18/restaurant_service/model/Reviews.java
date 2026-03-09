@@ -12,6 +12,8 @@ import jakarta.persistence.Table;
 
 import org.springframework.data.annotation.CreatedDate;
 
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,7 +39,7 @@ public class Reviews {
     private UUID reviewId; // Id của product hoặc restaurant
 
     @Column(name = "review_type")
-    private String reviewType; // "PRODUCT" hoặc "RESTAURANT"
+    private ReviewType reviewType; // "PRODUCT" hoặc "RESTAURANT"
 
     private String title;
     private String content;

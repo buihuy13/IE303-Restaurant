@@ -2,10 +2,8 @@ package com.CNTTK18.restaurant_service.controller;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +23,9 @@ import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
 import com.CNTTK18.restaurant_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.restaurant_service.service.ReviewService;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/review")
@@ -55,19 +51,8 @@ public class ReviewController {
     @Tag(name = "Post")
     @Operation(summary = "Create new review")
     @PostMapping("")
-    @CircuitBreaker(name = "create", fallbackMethod = "fallbackMethod")
-    @TimeLimiter(name = "create")
-    @Retry(name = "create")
-    public CompletableFuture<ResponseEntity<ReviewResponse>> createReview(
-            @RequestBody @Valid ReviewRequest reviewRequest) {
-        return CompletableFuture.supplyAsync(
-                () -> new ResponseEntity<>(reviewService.createReview(reviewRequest), HttpStatusCode.valueOf(201)));
-    }
-
-    public CompletableFuture<ResponseEntity<MessageResponse>> fallbackMethod(
-            ReviewRequest reviewRequest, Throwable ex) {
-        System.out.println("Lỗi khi gọi createReview, kích hoạt fallback. Lỗi: " + ex.getMessage());
-        return CompletableFuture.completedFuture(ResponseEntity.status(503).body(new MessageResponse(ex.getMessage())));
+    public ResponseEntity<ReviewResponse> createReview(@RequestBody @Valid ReviewRequest reviewRequest) {
+        return new ResponseEntity<>(reviewService.createReview(reviewRequest), HttpStatusCode.valueOf(201));
     }
 
     @Tag(name = "Delete")

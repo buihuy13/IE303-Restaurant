@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,7 +25,7 @@ public class ReviewRequest {
     private UUID reviewId;
 
     @NotBlank(message = "Type should be PRODUCT or RESTAURANT")
-    private String reviewType;
+    private ReviewType reviewType;
 
     @NotBlank(message = "Title is required")
     @Size(max = 100)

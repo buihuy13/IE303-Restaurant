@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
-import com.CNTTK18.restaurant_service.data.ReviewType;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.review.request.ReviewRequest;
@@ -22,6 +21,7 @@ import com.CNTTK18.restaurant_service.mapper.ReviewMapper;
 import com.CNTTK18.restaurant_service.model.Products;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
 import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
@@ -92,8 +92,8 @@ public class ReviewService {
         reviewRepo.delete(rv);
     }
 
-    private void calculateWhenCreate(ReviewRequest reviewRequest, String rvType, UUID rvId) {
-        if (rvType.equals(ReviewType.PRODUCT.toString())) {
+    private void calculateWhenCreate(ReviewRequest reviewRequest, ReviewType rvType, UUID rvId) {
+        if (ReviewType.PRODUCT.equals(rvType)) {
             Products product = productRepository
                     .findProductById(rvId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -102,7 +102,7 @@ public class ReviewService {
             product.setTotalReview(product.getTotalReview() + 1);
             productRepository.save(product);
 
-        } else if (rvType.equals(ReviewType.RESTAURANT.toString())) {
+        } else if (ReviewType.RESTAURANT.equals(rvType)) {
             Restaurants res = resRepository
                     .findRestaurantById(rvId)
                     .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
@@ -115,8 +115,8 @@ public class ReviewService {
         }
     }
 
-    private void calculateWhenDelete(Reviews rv, String rvType) {
-        if (rvType.equals(ReviewType.PRODUCT.toString())) {
+    private void calculateWhenDelete(Reviews rv, ReviewType rvType) {
+        if (ReviewType.PRODUCT.equals(rvType)) {
             Products product = productRepository
                     .findProductById(rv.getReviewId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -128,7 +128,7 @@ public class ReviewService {
                     rv.getRating());
             productRepository.save(product);
 
-        } else if (rvType.equals(ReviewType.RESTAURANT.toString())) {
+        } else if (ReviewType.RESTAURANT.equals(rvType)) {
             Restaurants res = resRepository
                     .findRestaurantById(rv.getReviewId())
                     .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));

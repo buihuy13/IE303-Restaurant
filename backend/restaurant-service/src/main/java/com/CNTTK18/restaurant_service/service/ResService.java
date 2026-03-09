@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
-import com.CNTTK18.restaurant_service.data.ReviewType;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.Summary;
@@ -32,6 +31,7 @@ import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
 import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
+import com.CNTTK18.restaurant_service.model.data.ReviewType;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
 
@@ -250,7 +250,8 @@ public class ResService {
 
     private void validateMerchant(UserResponse user, UserRole authUser) {
         if (user == null) throw new ResourceNotFoundException("Không tồn tại user");
-        if ((!user.getId().equals(authUser.getId()) && !authUser.getRole().equals("MERCHANT")) && !authUser.getRole().equals("ADMIN")) {
+        if ((!user.getId().equals(authUser.getId()) && !authUser.getRole().equals("MERCHANT"))
+                && !authUser.getRole().equals("ADMIN")) {
             throw new InvalidRequestException("User không phải là merchant hay admin");
         }
     }
