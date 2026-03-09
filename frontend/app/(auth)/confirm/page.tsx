@@ -32,17 +32,36 @@ function ConfirmPageInner() {
                     router.push("/login");
                 }, 3000);
             } catch (error: unknown) {
-                setStatus("error");
                 const maybeAxiosError = error as {
                     response?: { data?: { message?: string } };
                     message?: string;
                 };
-                const errorMessage =
+                const rawMessage =
                     maybeAxiosError.response?.data?.message ||
                     maybeAxiosError.message ||
                     "Failed to activate account. The link may be invalid or expired.";
-                setMessage(errorMessage);
-                toast.error(errorMessage);
+
+                const normalized = rawMessage.toLowerCase();
+                const isAlreadyActivated =
+                    normalized.includes("already activated") ||
+                    normalized.includes("already active") ||
+                    normalized.includes("already verified") ||
+                    normalized.includes("account is already");
+
+                if (isAlreadyActivated) {
+                    // Treat \"already activated\" as a successful, idempotent confirmation.
+                    setStatus("success");
+                    setMessage("Your account is already activated. You can log in now.");
+                    toast.success("Account already activated. You can log in.");
+                    setTimeout(() => {
+                        router.push("/login");
+                    }, 2000);
+                    return;
+                }
+
+                setStatus("error");
+                setMessage(rawMessage);
+                toast.error(rawMessage);
             }
         };
 

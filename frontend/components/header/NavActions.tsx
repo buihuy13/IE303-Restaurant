@@ -22,7 +22,7 @@ import CartDropdown from "./CartDropdown";
 import NotificationDropdown from "./NotificationDropdown";
 
 export default function NavActions() {
-    const { user, isAuthenticated, loading, logout } = useAuthStore();
+    const { user, isAuthenticated, loading, logout, loginWithKeycloak } = useAuthStore();
     // Subscribe to unread count map to trigger re-render when it changes
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const [mounted, setMounted] = useState(false);
@@ -44,11 +44,9 @@ export default function NavActions() {
 
         try {
             const loadingToast = toast.loading("Logging out...");
-            logout();
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            logout({ redirectToKeycloak: true, postLogoutRedirectPath: "/" });
             toast.dismiss(loadingToast);
-            toast.success("Logged out successfully. See you soon!", { duration: 3000 });
-            router.replace("/");
+            toast.success("Signing out...", { duration: 1500 });
         } catch (error) {
             toast.error("Logout failed. Please try again.");
             console.error("Logout error:", error);
@@ -154,14 +152,14 @@ export default function NavActions() {
             {isAuthenticated && user && !loading && <CartDropdown />}
 
             {/* User Actions */}
-            {isAuthenticated && user && !loading ? (
+            {isAuthenticated && !loading ? (
                 // Authenticated: Show user dropdown with groups
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild className="focus:outline-none">
                         <button className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
                             {getAvatarContent()}
                             <span className="hidden lg:inline text-sm font-medium text-brand-black">
-                                {user.username || "User"}
+                                {user?.username || "User"}
                             </span>
                         </button>
                     </DropdownMenuTrigger>
@@ -174,8 +172,8 @@ export default function NavActions() {
                         {/* User Info */}
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">{user.username || "User"}</p>
-                                <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                                <p className="text-sm font-medium leading-none">{user?.username || "User"}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{user?.email ?? ""}</p>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
@@ -324,12 +322,24 @@ export default function NavActions() {
                     >
                         Sign in
                     </Link>
-                    <Link
-                        href="/register"
-                        className="px-4 py-2 text-sm font-medium bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await loginWithKeycloak({
+                                    redirectPath: "/",
+                                    action: "register",
+                                });
+                            } catch (error) {
+                                const message =
+                                    error instanceof Error ? error.message : "Unable to start Keycloak registration.";
+                                toast.error(message);
+                            }
+                        }}
+                        className="px-4 py-2 text-sm font-medium bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors cursor-pointer"
                     >
                         Sign up
-                    </Link>
+                    </button>
                 </div>
             )}
         </div>

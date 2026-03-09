@@ -86,6 +86,17 @@ export const ORDER_WS_BASE_URL = trimTrailingSlash(
 );
 
 /**
+ * Keycloak OpenID Connect settings (frontend public client).
+ */
+export const KEYCLOAK_BASE_URL = trimTrailingSlash(
+    pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL], [], "http://localhost:9090"),
+);
+
+export const KEYCLOAK_REALM = pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_REALM], [], "restaurant-realm");
+
+export const KEYCLOAK_CLIENT_ID = pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID], [], "restaurant-frontend");
+
+/**
  * Convert an http(s) base URL to ws(s).
  */
 export const toWebSocketOrigin = (httpOrigin: string) => httpOrigin.replace(/^http/i, "ws");

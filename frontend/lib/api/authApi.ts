@@ -1,5 +1,7 @@
 import { Address, AddressRequest, PageableResponse, User, UserUpdateAfterLogin } from "@/types";
+import { refreshKeycloakToken } from "../auth/keycloak";
 import api from "../axios";
+import { KEYCLOAK_BASE_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM } from "../config/publicRuntime";
 
 const looksLikeUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -9,10 +11,6 @@ interface LoginResponse {
 }
 
 interface RegisterResponse {
-    message: string;
-}
-
-interface RefreshTokenResponse {
     message: string;
 }
 
@@ -73,17 +71,14 @@ export const authApi = {
         });
         return response.data;
     },
-    refreshAccessToken: async (refreshToken?: string) => {
-        const response = await api.get<RefreshTokenResponse>("/users/refreshtoken", {
-            // Backend primarily uses HttpOnly cookie refresh token; header is an optional fallback.
-            headers: refreshToken
-                ? {
-                      "Refresh-Token": refreshToken,
-                  }
-                : undefined,
+    refreshAccessToken: async (refreshToken: string) => {
+        const refreshed = await refreshKeycloakToken({
+            baseUrl: KEYCLOAK_BASE_URL,
+            realm: KEYCLOAK_REALM,
+            clientId: KEYCLOAK_CLIENT_ID,
+            refreshToken,
         });
-        // The backend returns message field with the new access token
-        return response.data.message;
+        return refreshed;
     },
     getOneTimeToken: async () => {
         const response = await api.get<{ accessToken: string }>("/users/one-time-token");
