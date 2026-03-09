@@ -1,6 +1,6 @@
 package com.CNTTK18.restaurant_service.dto.review.response;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -22,5 +22,5 @@ public class ReviewResponse {
     private String title;
     private String content;
     private float rating;
-    private Instant createdAt;
+    private ZonedDateTime createdAt;
 }

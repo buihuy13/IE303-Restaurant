@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -27,12 +28,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/category")
+@RequiredArgsConstructor
 public class CateController {
-    private CateService cateService;
-
-    public CateController(CateService cateService) {
-        this.cateService = cateService;
-    }
+    private final CateService cateService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all categories")

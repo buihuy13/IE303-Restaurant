@@ -1,6 +1,5 @@
-package com.CNTTK18.restaurant_service.dto.productSize.response;
+package com.CNTTK18.restaurant_service.dto.restaurant.response;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -11,11 +10,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class ProductSizeResponse {
+public class ResWithDistance {
     private UUID id;
-    private String sizeName;
-    private BigDecimal price;
+    private Double distance;
+    private Double duration;
 }

@@ -1,11 +1,8 @@
 package com.CNTTK18.restaurant_service.service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -45,12 +42,12 @@ import reactor.core.scheduler.Schedulers;
 @Service
 @RequiredArgsConstructor
 public class ResService {
-    private ResRepository resRepository;
-    private WebClient.Builder webClientBuilder;
-    private ImageHandleService imageService;
-    private ReviewRepository reviewRepository;
-    private DistanceService distanceService;
-    private ResMapper resMapper;
+    private final ResRepository resRepository;
+    private final WebClient.Builder webClientBuilder;
+    private final ImageHandleService imageService;
+    private final ReviewRepository reviewRepository;
+    private final DistanceService distanceService;
+    private final ResMapper resMapper;
 
     public Mono<Page<ResResponseWithProduct>> getAllRestaurants(
             Coordinates location, String search, Integer nearby, String rating, String category, Pageable pageable) {
@@ -113,25 +110,25 @@ public class ResService {
 
     public Mono<ResResponseWithProduct> getRestaurantById(UUID id, Coordinates location) {
         return Mono.fromCallable(() -> getById(id))
-            .subscribeOn(Schedulers.boundedElastic())
-            .flatMap(res -> {
-                if (location == null) {
-                    return Mono.just(resMapper.toResResponseWithProduct(res));
-                }
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(res -> {
+                    if (location == null) {
+                        return Mono.just(resMapper.toResResponseWithProduct(res));
+                    }
 
-                List<Double> start = List.of(location.getLongitude(), location.getLatitude());
-                List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+                    List<Double> start = List.of(location.getLongitude(), location.getLatitude());
+                    List<Double> end = List.of(res.getLongitude(), res.getLatitude());
 
-                return distanceService.getDistanceAndDuration(start, end)
-                        .map(response -> {
-                            if (response == null || response.getFeatures().isEmpty()) {
-                                throw new DistanceDurationException("Error while calculating distance and duration");
-                            }
-                            Summary summary = response.getFeatures().get(0).getProperties().getSummary();
-                            return resMapper.toResResponseWithProductAndDistanceAndDuration(
-                                    res, summary.getDistance(), summary.getDuration());
-                        });
-            });
+                    return distanceService.getDistanceAndDuration(start, end).map(response -> {
+                        if (response == null || response.getFeatures().isEmpty()) {
+                            throw new DistanceDurationException("Error while calculating distance and duration");
+                        }
+                        Summary summary =
+                                response.getFeatures().get(0).getProperties().getSummary();
+                        return resMapper.toResResponseWithProductAndDistanceAndDuration(
+                                res, summary.getDistance(), summary.getDuration());
+                    });
+                });
     }
 
     public ResResponseWithProduct getRestaurantBySlug(String slug) {
@@ -141,7 +138,7 @@ public class ResService {
     }
 
     @Transactional
-    public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile) {
+    public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser) {
         return webClientBuilder
                 .build()
                 .get()
@@ -149,40 +146,17 @@ public class ResService {
                 .retrieve()
                 .bodyToMono(UserResponse.class)
                 .flatMap(user -> {
-                    if (user == null) {
-                        throw new ResourceNotFoundException("Không tồn tại user");
-                    }
-                    if (!user.getRole().equals("MERCHANT")) {
-                        throw new InvalidRequestException("User không phải là merchant");
-                    }
-                    Restaurants res = Restaurants.builder()
-                            .address(resRequest.getAddress())
-                            .categories(new HashSet<>())
-                            .closingTime(resRequest.getClosingTime())
-                            .enabled(false)
-                            .id(UUID.randomUUID())
-                            .merchantId(resRequest.getMerchantId())
-                            .openingTime(resRequest.getOpeningTime())
-                            .phone(resRequest.getPhone())
-                            .resName(resRequest.getResName())
-                            .longitude(resRequest.getLongitude())
-                            .latitude(resRequest.getLatitude())
-                            .slug(SlugGenerator.generate(resRequest.getResName()))
-                            .build();
+                    validateMerchant(user, authUser);
+                    Restaurants res = buildRestaurant(resRequest);
 
-                    return Mono.fromCallable(() -> {
-                        if (imageFile != null && !imageFile.isEmpty()) {
-                            Map<String, String> image = imageService.saveImageFile(imageFile);
-                            res.setImageURL(image.get("url"));
-                            res.setPublicID(image.get("public_id"));
-                        }
-                        return resRepository.save(res);
-                    }).subscribeOn(Schedulers.boundedElastic());
+                    return Mono.fromCallable(() -> saveRestaurant(res, imageFile))
+                            .subscribeOn(Schedulers.boundedElastic());
                 });
     }
 
     @Transactional
-    public ResResponseWithProduct updateRestaurant(UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser) {
+    public ResResponseWithProduct updateRestaurant(
+            UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser) {
         Restaurants res = getById(id);
 
         checkAuthority(res.getMerchantId(), authUser);
@@ -194,7 +168,7 @@ public class ResService {
         res.setLatitude(updateRes.getLatitude());
         if (!res.getResName().equals(updateRes.getResName())) {
             res.setResName(updateRes.getResName());
-            res.setSlug(updateRes.getResName());
+            res.setSlug(SlugGenerator.generate(updateRes.getResName()));
         }
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = res.getPublicID();
@@ -213,10 +187,7 @@ public class ResService {
     public void deleteRestaurant(UUID id, UserRole authUser) {
         Restaurants res = getById(id);
         checkAuthority(res.getMerchantId(), authUser);
-
-        List<Reviews> rv = reviewRepository.findByReviewId(id).stream()
-                .filter(r -> r.getReviewType().equals(ReviewType.RESTAURANT.toString()))
-                .toList();
+        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT.toString());
 
         if (res.getPublicID() != null && !res.getPublicID().isEmpty()) {
             imageService.deleteImage(res.getPublicID());
@@ -258,13 +229,11 @@ public class ResService {
         if (!user.getRole().equals("MERCHANT")) {
             throw new InvalidRequestException("User không phải là merchant");
         }
-        Optional<List<Restaurants>> resList = resRepository.findRestaurantsByMerchantId(id);
-        if (!resList.isPresent()) {
-            return new ArrayList<>();
-        }
-        return resList.get().stream()
-                .map(resMapper::toResResponseWithProduct)
-                .toList();
+        return resRepository
+                .findRestaurantsByMerchantId(id)
+                .map(list ->
+                        list.stream().map(resMapper::toResResponseWithProduct).toList())
+                .orElse(List.of());
     }
 
     private Restaurants getById(UUID id) {
@@ -277,5 +246,38 @@ public class ResService {
         if (authUser != null && !authUser.getId().equals(id) && !"ADMIN".equals(authUser.getRole())) {
             throw new ForbiddenException("You are not authorized to perform this action");
         }
+    }
+
+    private void validateMerchant(UserResponse user, UserRole authUser) {
+        if (user == null) throw new ResourceNotFoundException("Không tồn tại user");
+        if ((!user.getId().equals(authUser.getId()) && !authUser.getRole().equals("MERCHANT")) && !authUser.getRole().equals("ADMIN")) {
+            throw new InvalidRequestException("User không phải là merchant hay admin");
+        }
+    }
+
+    private Restaurants buildRestaurant(ResRequest resRequest) {
+        return Restaurants.builder()
+                .address(resRequest.getAddress())
+                .closingTime(resRequest.getClosingTime())
+                .enabled(false)
+                .id(UUID.randomUUID())
+                .merchantId(resRequest.getMerchantId())
+                .openingTime(resRequest.getOpeningTime())
+                .phone(resRequest.getPhone())
+                .resName(resRequest.getResName())
+                .longitude(resRequest.getLongitude())
+                .latitude(resRequest.getLatitude())
+                .slug(SlugGenerator.generate(resRequest.getResName()))
+                .build();
+    }
+
+    @Transactional
+    private Restaurants saveRestaurant(Restaurants res, MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            Map<String, String> image = imageService.saveImageFile(imageFile);
+            res.setImageURL(image.get("url"));
+            res.setPublicID(image.get("public_id"));
+        }
+        return resRepository.save(res);
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -26,12 +27,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/size")
+@RequiredArgsConstructor
 public class SizeController {
-    private SizeService sizeService;
-
-    public SizeController(SizeService sizeService) {
-        this.sizeService = sizeService;
-    }
+    private final SizeService sizeService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all sizes")

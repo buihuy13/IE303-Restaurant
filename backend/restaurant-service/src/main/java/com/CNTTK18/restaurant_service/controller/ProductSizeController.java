@@ -3,6 +3,7 @@ package com.CNTTK18.restaurant_service.controller;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -26,12 +27,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/productsize")
+@RequiredArgsConstructor
 public class ProductSizeController {
-    private ProductSizeService productSizeService;
-
-    public ProductSizeController(ProductSizeService productSizeService) {
-        this.productSizeService = productSizeService;
-    }
+    private final ProductSizeService productSizeService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get product size by ID")

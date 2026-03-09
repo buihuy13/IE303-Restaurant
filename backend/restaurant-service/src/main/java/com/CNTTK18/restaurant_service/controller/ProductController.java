@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,12 +40,9 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/products")
+@RequiredArgsConstructor
 public class ProductController {
-    private ProductService productService;
-
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
+    private final ProductService productService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all products")
@@ -109,7 +107,8 @@ public class ProductController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete a product")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteProduct(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<MessageResponse> deleteProduct(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         productService.deleteProduct(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }

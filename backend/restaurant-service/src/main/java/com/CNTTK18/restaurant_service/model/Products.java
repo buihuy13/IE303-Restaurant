@@ -49,11 +49,12 @@ public class Products {
     @Column(name = "public_id")
     private String publicID; // Cho việc xóa ảnh trong cloud
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     private Categories category;
 
     private boolean available;
+
     @Builder.Default
     private float rating = 0f;
 
@@ -68,7 +69,8 @@ public class Products {
     private String slug;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProductSize> productSizes;
+    @Builder.Default
+    private Set<ProductSize> productSizes = new HashSet<>();
 
     @Column(name = "created_at")
     @CreatedDate

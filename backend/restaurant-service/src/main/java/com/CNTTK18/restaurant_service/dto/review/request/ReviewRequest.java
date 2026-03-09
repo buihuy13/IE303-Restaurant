@@ -16,10 +16,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewRequest {
-    @NotBlank(message = "userId is required")
+    @NotNull(message = "userId is required")
     private UUID userId;
 
-    @NotBlank(message = "Id of restaurant or product is required")
+    @NotNull(message = "Id of restaurant or product is required")
     private UUID reviewId;
 
     @NotBlank(message = "Type should be PRODUCT or RESTAURANT")

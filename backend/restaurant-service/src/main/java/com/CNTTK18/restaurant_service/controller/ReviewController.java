@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +33,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/review")
+@RequiredArgsConstructor
 public class ReviewController {
-    private ReviewService reviewService;
-
-    public ReviewController(ReviewService reviewService) {
-        this.reviewService = reviewService;
-    }
+    private final ReviewService reviewService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all reviews")
@@ -60,7 +58,8 @@ public class ReviewController {
     @CircuitBreaker(name = "create", fallbackMethod = "fallbackMethod")
     @TimeLimiter(name = "create")
     @Retry(name = "create")
-    public CompletableFuture<ResponseEntity<ReviewResponse>> createReview(@RequestBody @Valid ReviewRequest reviewRequest) {
+    public CompletableFuture<ResponseEntity<ReviewResponse>> createReview(
+            @RequestBody @Valid ReviewRequest reviewRequest) {
         return CompletableFuture.supplyAsync(
                 () -> new ResponseEntity<>(reviewService.createReview(reviewRequest), HttpStatusCode.valueOf(201)));
     }
@@ -74,7 +73,8 @@ public class ReviewController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete a review")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteReview(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<MessageResponse> deleteReview(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         reviewService.deleteReview(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }

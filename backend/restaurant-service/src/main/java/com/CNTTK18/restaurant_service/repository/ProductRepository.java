@@ -48,7 +48,7 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             :maxDistance
         )
         AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:#{#categories.size()} = 0 OR LOWER(c.cate_name) IN :categories)
+        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND (:minPrice IS NULL OR ps.price >= :minPrice)
         AND (:maxPrice IS NULL OR ps.price <= :maxPrice)
         ORDER BY
@@ -69,7 +69,7 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             :maxDistance
         )
         AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:#{#categories.size()} = 0 OR LOWER(c.cate_name) IN :categories)
+        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND (:minPrice IS NULL OR ps.price >= :minPrice)
         AND (:maxPrice IS NULL OR ps.price <= :maxPrice)
         """,
@@ -79,7 +79,7 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             @Param("latitude") Double latitude,
             @Param("maxDistance") Integer maxDistance,
             @Param("search") String search,
-            @Param("categories") List<String> categories,
+            @Param("categories") String categories,
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("minPrice") BigDecimal minPrice,
             @Param("sort") String sort,
@@ -87,13 +87,11 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
 
     @Query("SELECT DISTINCT p FROM Products p "
             + "LEFT JOIN FETCH p.restaurant r "
-            + // Lấy luôn Nhà hàng
-            "LEFT JOIN FETCH p.category "
             + // Lấy luôn Danh mục của Món ăn
             "LEFT JOIN FETCH p.productSizes ps "
+            + "LEFT JOIN FETCH ps.size "
+            + "LEFT JOIN FETCH p.category "
             + // Lấy luôn bảng nối ProductSize
-            "LEFT JOIN FETCH ps.size "
-            + // Lấy luôn chi tiết tên Size (S, M, L)
             "WHERE p.id IN :ids")
     List<Products> findByIdIn(List<UUID> ids);
 }

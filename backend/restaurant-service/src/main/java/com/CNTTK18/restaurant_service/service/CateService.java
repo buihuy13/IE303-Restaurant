@@ -27,14 +27,14 @@ public class CateService {
     }
 
     public CateResponse getCateById(UUID id) {
-        Categories cate = cateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        Categories cate = findCateById(id);
         return cateMapper.toCateResponse(cate);
     }
 
     public CateResponse getCateByName(String name) {
         Categories cate = cateRepository
-                            .findByCateName(name)
-                            .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+                .findByCateName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         return cateMapper.toCateResponse(cate);
     }
 
@@ -47,14 +47,18 @@ public class CateService {
 
     @Transactional
     public CateResponse updateCate(UUID id, CateRequest cateRequest) {
-        Categories cate = cateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        Categories cate = findCateById(id);
         cate.setCateName(cateRequest.getCateName());
         return cateMapper.toCateResponse(cateRepository.save(cate));
     }
 
     @Transactional
     public void deleteCate(UUID id) {
-        Categories cate = cateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        Categories cate = findCateById(id);
         cateRepository.delete(cate);
+    }
+
+    private Categories findCateById(UUID id) {
+        return cateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 }

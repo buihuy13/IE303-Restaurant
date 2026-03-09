@@ -10,6 +10,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -45,6 +46,7 @@ public class Restaurants {
     private String address;
     private double longitude; // kinh độ
     private double latitude; // vĩ độ
+
     @Builder.Default
     private float rating = 0f;
 
@@ -85,27 +87,17 @@ public class Restaurants {
     @Column(columnDefinition = "geometry(Point,4326)")
     private Point geom;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "restaurant_categories",
             joinColumns = @jakarta.persistence.JoinColumn(name = "restaurant_id"),
             inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "category_id"))
-    private Set<Categories> categories;
+    @Builder.Default
+    private Set<Categories> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Products> products = new HashSet<>();
-
-    public void addCate(Categories cate) {
-        if (this.categories == null) {
-            this.categories = new java.util.HashSet<>();
-        }
-        this.categories.add(cate);
-    }
-
-    public void removeCate(Categories cate) {
-        this.categories.remove(cate);
-    }
 
     @Override
     public boolean equals(Object o) {

@@ -24,7 +24,7 @@ public class UpdateProduct {
     @NotBlank(message = "Description is required")
     private String description;
 
-    @NotBlank(message = "Category is required")
+    @NotNull(message = "Category is required")
     private UUID categoryId;
 
     @NotNull(message = "List of sizes is required")

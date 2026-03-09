@@ -3,7 +3,6 @@ package com.CNTTK18.restaurant_service.dto.productSize.request;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import lombok.AllArgsConstructor;
@@ -16,10 +15,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductSizeCreate {
-    @NotBlank
+    @NotNull
     private UUID sizeId;
 
-    @NotBlank
+    @NotNull
     private UUID productId;
 
     @NotNull

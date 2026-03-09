@@ -42,6 +42,6 @@ public class ResRequest {
     @Size(max = 12)
     private String phone;
 
-    @NotBlank(message = "Merchant Id is required")
+    @NotNull(message = "Merchant Id is required")
     private UUID merchantId;
 }

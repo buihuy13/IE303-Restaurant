@@ -2,7 +2,6 @@ package com.CNTTK18.restaurant_service.controller;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import jakarta.validation.Valid;
 
@@ -30,23 +29,16 @@ import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponseWithPro
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.service.ResService;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/restaurant")
-@Slf4j
+@RequiredArgsConstructor
 public class ResController {
-    private ResService resService;
-
-    public ResController(ResService resService) {
-        this.resService = resService;
-    }
+    private final ResService resService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all restaurants")
@@ -111,28 +103,20 @@ public class ResController {
     @Tag(name = "Post")
     @Operation(summary = "Create new restaurant")
     @PostMapping()
-    @CircuitBreaker(name = "create", fallbackMethod = "fallbackMethod")
-    @TimeLimiter(name = "create")
-    @Retry(name = "create")
-    public CompletableFuture<ResponseEntity<Restaurants>> createRestaurant(
+    public Mono<ResponseEntity<Restaurants>> createRestaurant(
             @RequestPart(value = "restaurant", required = true) @Valid ResRequest resRequest,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @AuthenticationPrincipal UserRole authUser) {
         return resService
-                .createRestaurant(resRequest, imageFile)
-                .map(savedRestaurant -> ResponseEntity.ok(savedRestaurant))
-                .toFuture();
-    }
-
-    public CompletableFuture<ResponseEntity<MessageResponse>> fallbackMethod(
-            ResRequest resRequest, MultipartFile imageFile, Throwable ex) {
-        log.error("Lỗi khi gọi createRestaurant, kích hoạt fallback. Lỗi: " + ex.getMessage());
-        return CompletableFuture.completedFuture(ResponseEntity.status(503).body(new MessageResponse(ex.getMessage())));
+                .createRestaurant(resRequest, imageFile, authUser)
+                .map(savedRestaurant -> ResponseEntity.ok(savedRestaurant));
     }
 
     @Tag(name = "Delete")
     @Operation(summary = "Delete a restaurant")
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponse> deleteRes(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<MessageResponse> deleteRes(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         resService.deleteRestaurant(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete Successfully"));
     }
@@ -149,7 +133,8 @@ public class ResController {
     @Tag(name = "Delete")
     @Operation(summary = "Delete restaurant image")
     @DeleteMapping("/image/{id}")
-    public ResponseEntity<MessageResponse> deleteResImage(@PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+    public ResponseEntity<MessageResponse> deleteResImage(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         resService.deleteImage(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Delete image successfully"));
     }

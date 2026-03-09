@@ -11,4 +11,6 @@ import com.CNTTK18.restaurant_service.model.Reviews;
 @Repository
 public interface ReviewRepository extends JpaRepository<Reviews, UUID> {
     List<Reviews> findByReviewId(UUID id);
+
+    List<Reviews> findByReviewIdAndReviewType(UUID reviewId, String reviewType);
 }
