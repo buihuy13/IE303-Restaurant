@@ -1,7 +1,6 @@
 "use client";
 
 import GlobalLoader from "@/components/ui/GlobalLoader";
-import { decodeJWT } from "@/lib/jwt";
 import { getLoginRedirectPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,103 +10,61 @@ import toast from "react-hot-toast";
 function LoginSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { handleOAuthLogin } = useAuthStore();
+    const { completeKeycloakLogin } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const hasProcessed = useRef(false);
 
     useEffect(() => {
-        // Prevent multiple calls using ref
         if (hasProcessed.current) return;
+        hasProcessed.current = true;
 
-        const token = searchParams.get("token");
+        const code = searchParams.get("code");
+        const state = searchParams.get("state");
+        const callbackError = searchParams.get("error");
 
-        if (!token) {
-            setError("No token received. Please try logging in again.");
+        if (callbackError) {
+            setError("Sign in was cancelled or rejected by the identity provider.");
             setLoading(false);
-            toast.error("No token received. Please try logging in again.");
-            // Redirect to login after 3 seconds
+            toast.error("Sign in was cancelled. Please try again.");
             setTimeout(() => {
                 router.replace("/login");
             }, 3000);
             return;
         }
 
-        // Mark as processed immediately to prevent re-renders
-        hasProcessed.current = true;
-
-        // Clean up URL by removing token parameter immediately to prevent re-renders
-        if (typeof window !== "undefined") {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("token");
-            window.history.replaceState({}, "", url.pathname);
+        if (!code || !state) {
+            setError("Missing authorization code. Please login again.");
+            setLoading(false);
+            toast.error("Missing authorization code. Please login again.");
+            setTimeout(() => {
+                router.replace("/login");
+            }, 3000);
+            return;
         }
 
-        // Handle OAuth login with token
-        const processOAuthLogin = async () => {
+        const processKeycloakCallback = async () => {
             try {
                 setLoading(true);
 
-                const success = await handleOAuthLogin(token);
+                const { success, redirectPath } = await completeKeycloakLogin(code, state);
 
                 if (success) {
                     toast.success("Login successful! Welcome back! 🎉", { duration: 2000 });
-                    
-                    // Get role from token or user profile for OAuth redirect
-                    const accessToken = useAuthStore.getState().accessToken;
-                    let userRole: string | null = null;
-                    
-                    if (accessToken) {
-                        const decodedToken = decodeJWT(accessToken);
-                        userRole = decodedToken?.role || null;
-                    }
-                    
-                    // Get callback URL from query params
-                    const callbackUrl = searchParams.get("redirect");
-                    
-                    // If role not in token, wait for user profile
-                    if (!userRole) {
-                        const checkUserAndRedirect = async () => {
-                            let attempts = 0;
-                            const maxAttempts = 10;
-                            
-                            while (attempts < maxAttempts) {
-                                const currentUser = useAuthStore.getState().user;
-                                if (currentUser?.role) {
-                                    userRole = currentUser.role;
-                                    break;
-                                }
-                                await new Promise((resolve) => setTimeout(resolve, 100));
-                                attempts++;
-                            }
-                            
-                            const redirectPath = getLoginRedirectPath(userRole || null, callbackUrl);
-                            router.replace(redirectPath);
-                        };
-                        
-                        setTimeout(() => {
-                            checkUserAndRedirect();
-                        }, 500);
-                    } else {
-                        // Role found, redirect immediately
-                        const redirectPath = getLoginRedirectPath(userRole, callbackUrl);
-                        setTimeout(() => {
-                            router.replace(redirectPath);
-                        }, 500);
-                    }
+                    const currentUser = useAuthStore.getState().user;
+                    const finalRedirect = getLoginRedirectPath(currentUser?.role ?? null, redirectPath);
+                    router.replace(finalRedirect);
                 } else {
-                    setError("Failed to complete login. Please try again.");
+                    setError("Failed to complete Keycloak login. Please try again.");
                     toast.error("Failed to complete login. Please try again.", { duration: 3000 });
-                    // Redirect to login after 3 seconds
                     setTimeout(() => {
                         router.replace("/login");
                     }, 3000);
                 }
             } catch (err) {
-                console.error("OAuth login error:", err);
+                console.error("Keycloak callback error:", err);
                 setError("An error occurred during login. Please try again.");
                 toast.error("An error occurred during login. Please try again.", { duration: 3000 });
-                // Redirect to login after 3 seconds
                 setTimeout(() => {
                     router.replace("/login");
                 }, 3000);
@@ -116,9 +73,8 @@ function LoginSuccessContent() {
             }
         };
 
-        processOAuthLogin();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        processKeycloakCallback();
+    }, [completeKeycloakLogin, router, searchParams]);
 
     return (
         <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">

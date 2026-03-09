@@ -1,14 +1,20 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 import { authApi } from "@/lib/api/authApi";
+import {
+    buildKeycloakLogoutUrl,
+    exchangeCodeForTokens,
+    refreshKeycloakToken,
+    startKeycloakLogin,
+} from "@/lib/auth/keycloak";
+import { KEYCLOAK_BASE_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM } from "@/lib/config/publicRuntime";
 import { User } from "@/types";
 import { create } from "zustand";
 
 interface AuthState {
     user: User | null;
     accessToken: string | null;
-    // Refresh token is managed by backend as an HttpOnly cookie.
-    // Keep field for backward compatibility, but do not persist it in localStorage.
     refreshToken: string | null;
+    idToken: string | null;
     isAuthenticated: boolean;
     loading: boolean;
     error: string | null;
@@ -16,6 +22,12 @@ interface AuthState {
 
     // Actions
     login: (credentials: { username: string; password: string }) => Promise<boolean>;
+    loginWithKeycloak: (options?: {
+        redirectPath?: string | null;
+        idpHint?: "google" | "facebook";
+        action?: "register";
+    }) => Promise<void>;
+    completeKeycloakLogin: (code: string, state: string) => Promise<{ success: boolean; redirectPath: string | null }>;
     register: (userData: {
         username: string;
         email: string;
@@ -23,14 +35,13 @@ interface AuthState {
         confirmPassword: string;
         role: string;
     }) => Promise<boolean>;
-    logout: () => void;
-    setTokens: (access: string | null, refresh: string | null) => void;
+    logout: (options?: { redirectToKeycloak?: boolean; postLogoutRedirectPath?: string }) => void;
+    setTokens: (access: string | null, refresh: string | null, idToken?: string | null) => void;
     fetchProfile: () => Promise<void>;
     updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
     initializeAuth: () => Promise<void>;
     clearError: () => void;
     resendVerificationEmail: (email: string) => Promise<boolean>;
-    handleOAuthLogin: (accessToken: string) => Promise<boolean>;
 }
 
 const normalizeToken = (value: string | null): string | null => {
@@ -40,29 +51,32 @@ const normalizeToken = (value: string | null): string | null => {
     return v;
 };
 
-const getInitialTokens = (): { accessToken: string | null; refreshToken: string | null } => {
+const getInitialTokens = (): { accessToken: string | null; refreshToken: string | null; idToken: string | null } => {
     if (typeof window !== "undefined") {
         const accessToken = normalizeToken(localStorage.getItem("accessToken"));
-        // Refresh token is no longer stored in localStorage.
-        return { accessToken, refreshToken: null };
+        const refreshToken = normalizeToken(localStorage.getItem("refreshToken"));
+        const idToken = normalizeToken(localStorage.getItem("idToken"));
+        return { accessToken, refreshToken, idToken };
     }
-    return { accessToken: null, refreshToken: null };
+    return { accessToken: null, refreshToken: null, idToken: null };
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     accessToken: getInitialTokens().accessToken,
     refreshToken: getInitialTokens().refreshToken,
+    idToken: getInitialTokens().idToken,
     isAuthenticated: !!getInitialTokens().accessToken,
     loading: false,
     error: null,
     isLoggingOut: false,
 
-    setTokens: (access, refresh) => {
+    setTokens: (access, refresh, idToken = null) => {
         // Set tokens and authentication state immediately
         set({
             accessToken: access,
             refreshToken: refresh,
+            idToken,
             isAuthenticated: !!access,
         });
         if (typeof window !== "undefined") {
@@ -71,8 +85,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             } else {
                 localStorage.removeItem("accessToken");
             }
-            // Do not persist refresh token in localStorage.
-            localStorage.removeItem("refreshToken");
+            if (refresh) {
+                localStorage.setItem("refreshToken", refresh);
+            } else {
+                localStorage.removeItem("refreshToken");
+            }
+            if (idToken) {
+                localStorage.setItem("idToken", idToken);
+            } else {
+                localStorage.removeItem("idToken");
+            }
         }
     },
 
@@ -115,6 +137,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             return false;
+        }
+    },
+
+    loginWithKeycloak: async (options) => {
+        set({ error: null });
+        await startKeycloakLogin({
+            baseUrl: KEYCLOAK_BASE_URL,
+            realm: KEYCLOAK_REALM,
+            clientId: KEYCLOAK_CLIENT_ID,
+            redirectPath: options?.redirectPath ?? "/",
+            idpHint: options?.idpHint,
+            action: options?.action,
+        });
+    },
+
+    completeKeycloakLogin: async (code, state) => {
+        set({ loading: true, error: null });
+        try {
+            const tokenData = await exchangeCodeForTokens({
+                baseUrl: KEYCLOAK_BASE_URL,
+                realm: KEYCLOAK_REALM,
+                clientId: KEYCLOAK_CLIENT_ID,
+                code,
+                state,
+            });
+
+            get().setTokens(tokenData.accessToken, tokenData.refreshToken, tokenData.idToken);
+            await get().fetchProfile();
+            set({ loading: false });
+
+            return { success: true, redirectPath: tokenData.redirectPath };
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to complete Keycloak login.";
+            set({ error: message, loading: false, isAuthenticated: false });
+            return { success: false, redirectPath: null };
         }
     },
 
@@ -169,11 +226,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     user: null,
                     isAuthenticated: false,
                     loading: false,
+                    idToken: null,
                 });
                 // Clear invalid tokens
                 if (typeof window !== "undefined") {
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("idToken");
                 }
             } else {
                 // For timeout, network errors, or other errors, just set loading to false
@@ -200,11 +259,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    logout: () => {
+    logout: (options) => {
+        const redirectToKeycloak = !!options?.redirectToKeycloak;
+        const postLogoutRedirectPath = options?.postLogoutRedirectPath ?? "/";
+        const currentIdToken = get().idToken;
+
         set({
             user: null,
             accessToken: null,
             refreshToken: null,
+            idToken: null,
             isAuthenticated: false,
             error: null,
             loading: false,
@@ -213,6 +277,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (typeof window !== "undefined") {
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
+            localStorage.removeItem("idToken");
+            if (redirectToKeycloak) {
+                try {
+                    const postLogoutRedirectUri = `${window.location.origin}${postLogoutRedirectPath}`;
+                    const logoutUrl = buildKeycloakLogoutUrl({
+                        baseUrl: KEYCLOAK_BASE_URL,
+                        realm: KEYCLOAK_REALM,
+                        clientId: KEYCLOAK_CLIENT_ID,
+                        postLogoutRedirectUri,
+                        idTokenHint: currentIdToken,
+                    });
+                    window.location.assign(logoutUrl);
+                    return;
+                } catch (error) {
+                    console.error("Failed to build Keycloak logout URL:", error);
+                }
+            }
             // Reset isLoggingOut after a short delay
             setTimeout(() => {
                 set({ isLoggingOut: false });
@@ -222,12 +303,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     initializeAuth: async () => {
         // Quick check - if no access token, skip immediately (guest mode)
-        const { accessToken } = getInitialTokens();
+        const { accessToken, refreshToken, idToken } = getInitialTokens();
         if (!accessToken) {
+            if (refreshToken) {
+                try {
+                    const refreshed = await refreshKeycloakToken({
+                        baseUrl: KEYCLOAK_BASE_URL,
+                        realm: KEYCLOAK_REALM,
+                        clientId: KEYCLOAK_CLIENT_ID,
+                        refreshToken,
+                    });
+                    set({
+                        accessToken: refreshed.accessToken,
+                        refreshToken: refreshed.refreshToken,
+                        idToken: refreshed.idToken || idToken,
+                        isAuthenticated: true,
+                        loading: true,
+                    });
+                    await get().fetchProfile();
+                    return;
+                } catch {
+                    // Ignore refresh initialization error and continue as guest.
+                }
+            }
+
             set({
                 user: null,
                 accessToken: null,
                 refreshToken: null,
+                idToken: null,
                 isAuthenticated: false,
                 loading: false,
             });
@@ -235,7 +339,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         // Set tokens immediately for faster UI response
-        set({ accessToken, refreshToken: null, isAuthenticated: true, loading: true });
+        set({ accessToken, refreshToken, idToken, isAuthenticated: true, loading: true });
 
         try {
             // Fetch user profile in background - don't block if it fails
@@ -324,29 +428,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             set({ error: errorMessage, loading: false });
-            return false;
-        }
-    },
-
-    handleOAuthLogin: async (accessToken: string) => {
-        set({ loading: true, error: null });
-        try {
-            // Set the access token (OAuth doesn't provide refresh token in this flow)
-            // Store accessToken as both access and refresh for now
-            // Backend should handle token refresh separately if needed
-            get().setTokens(accessToken, null);
-            // Fetch user profile to complete login
-            await get().fetchProfile();
-            set({ loading: false });
-            return true;
-        } catch (err) {
-            console.error("OAuth login error:", err);
-            const axiosError = err as {
-                response?: { data?: { message?: string } };
-                message?: string;
-            };
-            const errorMessage = axiosError.response?.data?.message || axiosError.message || "OAuth login failed";
-            set({ error: errorMessage, loading: false, isAuthenticated: false });
             return false;
         }
     },

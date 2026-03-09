@@ -3,7 +3,7 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import { LogOut, MapPin, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -15,7 +15,6 @@ const navLinks = [
 
 export default function OrderHistorySidebar() {
     const pathname = usePathname();
-    const router = useRouter();
     const { logout } = useAuthStore();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -24,9 +23,8 @@ export default function OrderHistorySidebar() {
 
         setIsLoggingOut(true);
         try {
-            await logout();
-            toast.success("Logged out successfully");
-            router.push("/");
+            logout({ redirectToKeycloak: true, postLogoutRedirectPath: "/" });
+            toast.success("Signing out...");
         } catch (error) {
             console.error("Logout error:", error);
             toast.error("Failed to logout");
