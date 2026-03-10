@@ -25,6 +25,8 @@ create table address (
     location varchar(255) not null,
     longitude DOUBLE PRECISION not null,
     latitude DOUBLE PRECISION not null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
     user_id UUID not null references users(id)
 );
 
