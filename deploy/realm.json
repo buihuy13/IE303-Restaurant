@@ -113,10 +113,10 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
-      "rootUrl": "http://localhost:3000",
+      "rootUrl": "https://20.205.208.223",
       "redirectUris": [
-        "http://localhost:3000/*",
-        "http://localhost:8080/*"
+        "https://20.205.208.223/*",
+        "https://20.205.208.223/*"
       ],
       "webOrigins": [
         "+"
