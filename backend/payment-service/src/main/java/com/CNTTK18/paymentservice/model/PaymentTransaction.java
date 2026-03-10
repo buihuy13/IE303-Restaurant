@@ -1,10 +1,13 @@
 package com.CNTTK18.paymentservice.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.GenericGenerator;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.GenericGenerator;
+
+import lombok.*;
 
 @Entity
 @Table(name = "payment_transactions")
@@ -26,7 +29,7 @@ public class PaymentTransaction {
 
     // Mã đơn hàng hệ thống mã hoá gửi cho PayOS (PayOS require int/long)
     @Column(name = "order_code", nullable = false, unique = true)
-    private Long orderCode; 
+    private Long orderCode;
 
     // Số tiền thanh toán
     @Column(name = "amount", nullable = false)

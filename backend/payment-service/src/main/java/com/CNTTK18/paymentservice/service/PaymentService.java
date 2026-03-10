@@ -1,17 +1,19 @@
 package com.CNTTK18.paymentservice.service;
 
-import com.CNTTK18.paymentservice.model.PaymentTransaction;
-import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
-import com.CNTTK18.paymentservice.utils.WebhookUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import vn.payos.PayOS;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.CNTTK18.paymentservice.model.PaymentTransaction;
+import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
+import com.CNTTK18.paymentservice.utils.WebhookUtils;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import vn.payos.PayOS;
 
 @Service
 @RequiredArgsConstructor
@@ -64,7 +66,7 @@ public class PaymentService {
         if (dataObj instanceof Map) {
             Map<?, ?> dataMap = (Map<?, ?>) dataObj;
             Long orderCode = Long.valueOf(dataMap.get("orderCode").toString());
-            
+
             // 3. Tìm giao dịch trong Database và cập nhật trạng thái PAID
             Optional<PaymentTransaction> transactionOpt = paymentTransactionRepository.findByOrderCode(orderCode);
             if (transactionOpt.isPresent()) {
@@ -75,7 +77,7 @@ public class PaymentService {
                 return true;
             }
         }
-        
+
         return false;
     }
 }
