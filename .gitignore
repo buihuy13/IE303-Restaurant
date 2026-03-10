@@ -52,3 +52,4 @@ backend/**/.nb-gradle/
 
 #deploy key
 *.pem
+backend/payment-service/docs/
