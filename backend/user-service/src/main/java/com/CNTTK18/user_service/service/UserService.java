@@ -19,6 +19,8 @@ public interface UserService {
 
     UserResponse updateUser(UUID id, UserRequest user, UserRole authUser);
 
+    UserResponse getUserByAccessToken(UserRole authUser);
+
     void createUser(UUID id, Register registeredUser);
 
     UserResponse getUserBySlug(String slug);
