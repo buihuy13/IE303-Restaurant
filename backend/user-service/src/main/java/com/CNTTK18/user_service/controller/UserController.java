@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,7 +45,6 @@ public class UserController {
     private final KeycloakUserService keycloakUserService;
     private final AddressService addressService;
 
-    @PreAuthorize("hasRole('ADMIN')")
     @Tag(name = "Get")
     @Operation(summary = "Get all users")
     @GetMapping("")
@@ -66,6 +64,13 @@ public class UserController {
     @GetMapping("/{slug}")
     public ResponseEntity<UserResponse> getUserBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(userService.getUserBySlug(slug));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get user by access token")
+    @GetMapping("/accesstoken")
+    public ResponseEntity<UserResponse> getUserByAccessToken(@AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(userService.getUserByAccessToken(authUser));
     }
 
     @Tag(name = "Put")
