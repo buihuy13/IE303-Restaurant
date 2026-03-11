@@ -13,11 +13,8 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const getRuntimeApiUrl = () => {
     // SSR / server-side
     if (typeof window === "undefined") {
-        console.log('1=========================')
         const internal = process.env.API_INTERNAL_URL;
-        console.log("Internal: ======================", internal)
         if (typeof internal === "string" && internal.trim()) {
-            console.log("Internal TRIMMMM: ======================", internal)
             return trimTrailingSlash(internal.trim());
         }
     }
@@ -117,8 +114,12 @@ api.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            // Refresh token is stored as an HttpOnly cookie by the backend.
-            // We do not rely on localStorage refresh tokens (can be missing/invalid).
+            const refreshToken =
+                typeof window !== "undefined" ? normalizeToken(localStorage.getItem("refreshToken")) : null;
+            if (!refreshToken) {
+                useAuthStore.getState().logout();
+                return Promise.reject(error);
+            }
 
             // If already refreshing, queue this request
             if (isRefreshing) {
@@ -142,14 +143,14 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                // Try to refresh the token
-                const newAccessToken = await authApi.refreshAccessToken();
+                // Try to refresh the token against Keycloak
+                const refreshed = await authApi.refreshAccessToken(refreshToken);
 
                 // Update the store with new access token
-                useAuthStore.getState().setTokens(newAccessToken, null);
+                useAuthStore.getState().setTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.idToken);
 
                 // Process queued requests
-                processQueue(null, newAccessToken);
+                processQueue(null, refreshed.accessToken);
 
                 // Refresh finished successfully
                 isRefreshing = false;
@@ -157,7 +158,7 @@ api.interceptors.response.use(
                 // Retry original request with new token
                 // Ensure we use the correct baseURL and don't follow redirects to wrong URLs
                 if (originalRequest.headers) {
-                    originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                    originalRequest.headers["Authorization"] = `Bearer ${refreshed.accessToken}`;
                 }
                 // Ensure baseURL is correct (prevent redirects to Docker hostnames)
                 originalRequest.baseURL = getRuntimeApiUrl();
@@ -212,34 +213,37 @@ api.interceptors.response.use(
             }
         }
 
-        // Keep error logging concise and production-safe.
-        console.error("API request failed", {
-            url: error.config?.url,
-            method: error.config?.method?.toUpperCase(),
-            status: status ?? "Unknown",
-            errorCode: errorCode ?? undefined,
-            message:
-                data && typeof data === "object" && "message" in data
-                    ? (data as { message?: unknown }).message
-                    : error.message,
-        });
+        // Only log detailed errors in development to avoid noisy console in production.
+        if (process.env.NODE_ENV === "development") {
+            // Keep error logging concise and development-friendly.
+            console.error("API request failed", {
+                url: error.config?.url,
+                method: error.config?.method?.toUpperCase(),
+                status: status ?? "Unknown",
+                errorCode: errorCode ?? undefined,
+                message:
+                    data && typeof data === "object" && "message" in data
+                        ? (data as { message?: unknown }).message
+                        : error.message,
+            });
 
-        // Optional: status-specific logging
-        switch (status) {
-            case 400:
-                console.error("Bad Request – Check the request payload");
-                break;
-            case 403:
-                console.error("Forbidden – Insufficient permissions");
-                break;
-            case 404:
-                console.error("Not Found – Resource does not exist");
-                break;
-            case 500:
-                console.error("Internal Server Error – Server-side failure");
-                break;
-            default:
-                console.error("Unknown Error –", error.message);
+            // Optional: status-specific logging
+            switch (status) {
+                case 400:
+                    console.error("Bad Request – Check the request payload");
+                    break;
+                case 403:
+                    console.error("Forbidden – Insufficient permissions");
+                    break;
+                case 404:
+                    console.error("Not Found – Resource does not exist");
+                    break;
+                case 500:
+                    console.error("Internal Server Error – Server-side failure");
+                    break;
+                default:
+                    console.error("Unknown Error –", error.message);
+            }
         }
 
         return Promise.reject(error);

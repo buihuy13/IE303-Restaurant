@@ -4,7 +4,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { BookOpen, Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -14,7 +14,6 @@ export default function MobileMenu() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const { isAuthenticated, user, logout, loading } = useAuthStore();
     const { items: cartItems } = useCartStore();
-    const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
@@ -31,11 +30,9 @@ export default function MobileMenu() {
         const loadingToast = toast.loading("Logging out...");
 
         try {
-            logout();
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            logout({ redirectToKeycloak: true, postLogoutRedirectPath: "/" });
             toast.dismiss(loadingToast);
-            toast.success("Logged out successfully! See you soon 👋", { duration: 3000 });
-            router.replace("/");
+            toast.success("Signing out...", { duration: 1500 });
         } catch (error) {
             toast.dismiss(loadingToast);
             toast.error("Failed to logout. Please try again.", { duration: 3000 });

@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
-import { BACKEND_ORIGIN } from "@/lib/config/publicRuntime";
 import { useAuthStore } from "@/stores/useAuthStore";
 import toast from "react-hot-toast";
 
@@ -20,7 +19,7 @@ export default function SignUpPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { register, loading, error } = useAuthStore();
+    const { register, loginWithKeycloak, loading, error } = useAuthStore();
 
     const router = useRouter();
 
@@ -61,13 +60,22 @@ export default function SignUpPage() {
 
                 {/* Social Login */}
                 <div className="space-y-3">
-                    <a
-                        href={`${BACKEND_ORIGIN}/oauth2/authorization/google`}
+                    <button
+                        type="button"
+                        onClick={() =>
+                            loginWithKeycloak({
+                                redirectPath: "/",
+                                idpHint: "google",
+                            }).catch((err) => {
+                                const message = err instanceof Error ? err.message : "Unable to start Keycloak login.";
+                                toast.error(message);
+                            })
+                        }
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                         <FcGoogle size={22} />
                         <span className="text-sm font-medium text-gray-700">Continue with Google</span>
-                    </a>
+                    </button>
                 </div>
 
                 {/* Separator */}

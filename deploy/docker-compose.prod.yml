@@ -24,17 +24,19 @@ services:
     postgres:
         image: postgis/postgis:16-3.4   # PostgreSQL + PostGIS
         restart: unless-stopped
-        expose:
-            - '5432'
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: ${DB_PASSWORD}
-            POSTGRES_DB: restaurant-service
+            POSTGRES_DB: postgres
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./main.prod.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
+            - ./seed-db/seed-db.sh:/docker-entrypoint-initdb.d/00_seed_db.sh
+            - ./seed-db/user_service.sql:/docker-entrypoint-initdb.d/user_service.sql
+            - ./seed-db/blog_service.sql:/docker-entrypoint-initdb.d/blog_service.sql
+            - ./seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
+            - ./seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant-service"]
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -62,7 +64,6 @@ services:
         ports:  
             - '9090:9091'
         volumes:
-            # Cần đổi ip address ở redirect khi deploy
             - ./realm.json:/tmp/realm.json:ro
             - ./init-keycloak.sh:/tmp/init-keycloak.sh:ro
             - ./themes:/opt/keycloak/themes
@@ -115,6 +116,91 @@ services:
         - api-gateway
         - frontend
         - keycloak
+    service-discovery:
+        image: ghcr.io/buihuy13/service-discovery:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${SERVICE_DISCOVERY_PORT}
+        healthcheck:
+            test: ['CMD-SHELL', 'curl -f http://localhost:8761/actuator/health | grep UP || exit 1']
+            interval: 10s
+            timeout: 10s
+            retries: 10
+            start_period: 60s
+    api-gateway:
+        image: ghcr.io/buihuy13/api-gateway:${VERSION}
+        expose:
+            - '8080'
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${API_GATEWAY_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    user-service:
+        image: ghcr.io/buihuy13/user-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${USER_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    notification-service:
+        image: ghcr.io/buihuy13/notification-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${NOTIFICATION_PORT}
+            - PASSWORD=${SMTP_PASSWORD}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    chat-service:
+        image: ghcr.io/buihuy13/chat-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${CHAT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+            redis:
+                condition: service_healthy
+    recommendation-service:
+        image: ghcr.io/buihuy13/recommendation-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${RECOMMENDATION_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    restaurant-service:
+        image: ghcr.io/buihuy13/restaurant-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${RESTAURANT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    frontend:
+        image: ghcr.io/buihuy13/frontend:${VERSION}
+        container_name: frontend
+        restart: unless-stopped
+        expose:
+            - '3000'
+        env_file:
+            - ./.env
 
 volumes:
     postgres_data:
