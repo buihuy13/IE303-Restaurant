@@ -24,7 +24,6 @@ public class BlogResponse {
     private String slug;
     private String content;
     private String coverImageUrl;
-    private String publicID;
     private BlogStatus status;
 
     @JsonSerialize(using = ZonedDateTimeSerializer.class)
