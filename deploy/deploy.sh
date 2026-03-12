@@ -22,15 +22,11 @@ cat ghcr.pem | docker login $registry -u $github_username --password-stdin
 services=(
     "api-gateway"
     "user-service"
-    "order-service"
     "chat-service"
-    "payment-service"
     "notification-service"
     "restaurant-service"
     "service-discovery"
-    "blog-service"
     "frontend"
-    "dashboard-service"
     "recommendation-service"
 )
 
@@ -116,7 +112,7 @@ echo "All images pushed successfully"
 
 git checkout develop
 
-deploy_host=
+deploy_host=20.205.208.223
 deploy_host_username=quochuy
 deploy_host_private_key=key.pem
 
@@ -133,7 +129,7 @@ scp -r -i $deploy_host_private_key \
     ./docker-compose.prod.yml \
     ./.env \
     ./ghcr.pem \
-    ../backend/main.prod.sql \
+    ../backend/seed-db \
     ./role-management.sh \
     ./realm.json.sh \
     ./init-keycloak.sh \

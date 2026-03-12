@@ -94,12 +94,16 @@ services:
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: ${DB_PASSWORD}
-            POSTGRES_DB: restaurant-service
+            POSTGRES_DB: postgres
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./backend/main.prod.sql:/docker-entrypoint-initdb.d/01-init_postgres.sql
+            - ./backend/seed-db/seed-db.sh:/docker-entrypoint-initdb.d/00_seed_db.sh
+            - ./backend/seed-db/user_service.sql:/docker-entrypoint-initdb.d/user_service.sql
+            - ./backend/seed-db/blog_service.sql:/docker-entrypoint-initdb.d/blog_service.sql
+            - ./backend/seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
+            - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant-service"]
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -194,6 +198,35 @@ services:
         depends_on:
             service-discovery:
                 condition: service_started
+    restaurant-service:
+        build:
+            context: ./backend
+            dockerfile: ./restaurant-service/Dockerfile
+            args:
+                MODULE_PATH: restaurant-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${RESTAURANT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    frontend:
+        expose:
+            - "3000"
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            args:
+                NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+                NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+                NEXT_PUBLIC_BACKEND_ORIGIN: ${NEXT_PUBLIC_BACKEND_ORIGIN}
+        container_name: frontend
+        env_file:
+            - ./.env
+        restart: unless-stopped
 
 volumes:
     grafana-data:

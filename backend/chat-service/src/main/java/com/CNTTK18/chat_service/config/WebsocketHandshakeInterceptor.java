@@ -11,6 +11,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import com.CNTTK18.chat_service.service.RedisService;
+import com.CNTTK18.chat_service.service.TokenService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WebsocketHandshakeInterceptor implements HandshakeInterceptor {
     private final RedisService redisService;
+    private final TokenService tokenService;
 
     @Override
     public boolean beforeHandshake(
@@ -35,7 +37,12 @@ public class WebsocketHandshakeInterceptor implements HandshakeInterceptor {
             if (token == null || token.isEmpty()) {
                 return false; // Không cho kết nối
             }
-            if (redisService.exists(token)) {
+            try {
+                tokenService.validateToken(token);
+                if (redisService.exists(token)) {
+                    return false;
+                }
+            } catch (Exception e) {
                 return false;
             }
 
