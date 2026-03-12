@@ -24,7 +24,6 @@ interface AuthState {
     isLoggingOut: boolean;
 
     // Actions
-    login: (credentials: { username: string; password: string }) => Promise<boolean>;
     loginWithKeycloak: (options?: {
         redirectPath?: string | null;
         idpHint?: "google" | "facebook";
@@ -37,6 +36,7 @@ interface AuthState {
         password: string;
         confirmPassword: string;
         role: string;
+        phone: string;
     }) => Promise<boolean>;
     logout: (options?: { redirectToKeycloak?: boolean; postLogoutRedirectPath?: string }) => void;
     setTokens: (access: string | null, refresh: string | null, idToken?: string | null) => void;
@@ -44,7 +44,6 @@ interface AuthState {
     updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
     initializeAuth: () => Promise<void>;
     clearError: () => void;
-    resendVerificationEmail: (email: string) => Promise<boolean>;
 }
 
 const normalizeToken = (value: string | null): string | null => {
@@ -174,48 +173,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    login: async (credentials) => {
-        set({ loading: true, error: null });
-        try {
-            const { accessToken } = await authApi.login(credentials);
-            // Set tokens first to mark as authenticated immediately
-            get().setTokens(accessToken, null);
-            // Fetch profile in background - don't block login success
-            // Use Promise.race with timeout to prevent hanging
-            const profilePromise = get().fetchProfile();
-            const timeoutPromise = new Promise<void>((resolve) => {
-                setTimeout(() => resolve(), 5000); // 5 second timeout
-            });
-            try {
-                await Promise.race([profilePromise, timeoutPromise]);
-            } catch (profileError) {
-                // Log but don't fail login if profile fetch fails
-                console.warn("Profile fetch failed during login:", profileError);
-            }
-            set({ loading: false });
-            return true;
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            const errorCode = err.response?.data?.errorCode;
-            const errorMessage = err.response?.data?.message || err.message || "Login failed";
-
-            // Store error code and message for handling
-            set({
-                error: errorCode ? `${errorCode}: ${errorMessage}` : errorMessage,
-                loading: false,
-                isAuthenticated: false,
-            });
-
-            // Re-throw error so login page can handle INACTIVATED_ACCOUNT specifically
-            if (errorCode === "INACTIVATED_ACCOUNT") {
-                throw err;
-            }
-
-            return false;
-        }
-    },
-
     loginWithKeycloak: async (options) => {
         set({ error: null });
         await startKeycloakLogin({
@@ -277,8 +234,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             // Ưu tiên đồng bộ user đầy đủ từ backend theo access token vừa login.
             const userFromToken = await authApi.getUserByToken();
+            const resolvedRole = get().authRole ?? userFromToken.role ?? "USER";
             set({
-                user: userFromToken,
+                user: {
+                    ...userFromToken,
+                    role: resolvedRole,
+                },
                 error: null,
                 isAuthenticated: !!accessToken,
                 loading: false,
@@ -286,8 +247,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch {
             // Fallback: nếu backend tạm thời lỗi thì vẫn giữ trải nghiệm đăng nhập bằng JWT claims.
             const minimalUser = extractUserFromAccessToken(accessToken);
+            const resolvedRole = get().authRole ?? minimalUser?.role ?? "USER";
             set({
-                user: minimalUser,
+                user: minimalUser
+                    ? {
+                          ...minimalUser,
+                          role: resolvedRole,
+                      }
+                    : null,
                 error: null,
                 isAuthenticated: !!accessToken,
                 loading: false,
@@ -436,56 +403,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     clearError: () => {
         set({ error: null });
-    },
-
-    resendVerificationEmail: async (email: string) => {
-        set({ loading: true, error: null });
-        try {
-            await authApi.resendVerificationEmail(email);
-            set({ loading: false, error: null });
-            return true;
-        } catch (err) {
-            console.error("Resend verification email error:", err);
-            let errorMessage = "Failed to send verification email";
-
-            if (err && typeof err === "object" && "response" in err) {
-                const axiosError = err as {
-                    response?: {
-                        status?: number;
-                        data?: { message?: string; errorCode?: string };
-                    };
-                };
-
-                console.error("Axios error details:", {
-                    status: axiosError.response?.status,
-                    data: axiosError.response?.data,
-                });
-
-                errorMessage = axiosError.response?.data?.message || errorMessage;
-
-                // Handle specific error cases
-                if (
-                    axiosError.response?.data?.errorCode === "USER_NOT_FOUND" ||
-                    errorMessage.toLowerCase().includes("not found") ||
-                    errorMessage.toLowerCase().includes("user not found")
-                ) {
-                    errorMessage = "Email not found. Please check your email address.";
-                } else if (
-                    errorMessage.toLowerCase().includes("already activated") ||
-                    errorMessage.toLowerCase().includes("account is already")
-                ) {
-                    errorMessage = "This account is already activated. You can log in now.";
-                } else if (axiosError.response?.status === 404) {
-                    errorMessage = "Email not found. Please check your email address.";
-                } else if (axiosError.response?.status === 400) {
-                    errorMessage = errorMessage || "Invalid request. Please check your email address.";
-                }
-            } else if (err instanceof Error) {
-                errorMessage = err.message;
-            }
-
-            set({ error: errorMessage, loading: false });
-            return false;
-        }
     },
 }));

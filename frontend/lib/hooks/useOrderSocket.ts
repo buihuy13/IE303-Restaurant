@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Socket, io } from "socket.io-client";
-import { ORDER_SOCKET_URL } from "../config/publicRuntime";
+import type { Socket } from "socket.io-client";
 
 interface OrderNotification {
     type: string;

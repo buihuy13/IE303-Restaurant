@@ -94,6 +94,7 @@ export default function MerchantRegisterPageClient() {
             await authApi.register({
                 username,
                 email,
+                phone,
                 password,
                 confirmPassword,
                 role: "MERCHANT",

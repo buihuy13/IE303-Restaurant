@@ -204,16 +204,7 @@ export const restaurantApi = {
                 data: restaurant,
             });
         }
-        return api.put<Restaurant>(`/restaurant/enable/${restaurantId}`);
-    },
-    createManagerForRestaurant: (
-        restaurantId: string,
-        payload: { username: string; email: string; password: string; confirmPassword: string }
-    ) => {
-        if (USE_MOCK) {
-            return Promise.resolve({ data: undefined } as { data: void });
-        }
-        return api.post<void>(`/restaurant/manager/${restaurantId}`, payload);
+        return api.put<{ message: string }>(`/restaurant/enable/${restaurantId}`);
     },
     deleteRestaurant: (restaurantId: string) => {
         if (USE_MOCK) {

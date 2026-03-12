@@ -66,6 +66,12 @@ export const productApi = {
         }
         return api.get<Product[]>(`/products/restaurant/${restaurantId}`);
     },
+    getProductSizesByProductId: (productId: string) => {
+        return api.get<Product["productSizes"]>(`/products/productsize/${productId}`);
+    },
+    getRestaurantByProductId: (productId: string) => {
+        return api.get(`/products/res/${productId}`);
+    },
     getProductBySlug: (slug: string) => {
         if (USE_MOCK) {
             const source: MockProduct =

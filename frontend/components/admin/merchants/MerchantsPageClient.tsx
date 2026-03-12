@@ -6,13 +6,12 @@ import { MerchantsFilters } from "@/components/admin/merchants/MerchantsFilters"
 import { MerchantsTable } from "@/components/admin/merchants/MerchantsTable";
 import { useAdminMerchantsData } from "@/hooks/admin/merchants/useAdminMerchantsData";
 import { useAdminMerchantFilters } from "@/hooks/admin/merchants/useAdminMerchantFilters";
-import { useAdminMerchantActions } from "@/hooks/admin/merchants/useAdminMerchantActions";
 
 export default function MerchantsPageClient() {
     const { merchants, loading, fetchMerchants } = useAdminMerchantsData();
     const { searchTerm, setSearchTerm, filterStatus, setFilterStatus, filteredMerchants } =
         useAdminMerchantFilters(merchants);
-    const { handleApproveMerchant, handleRejectMerchant } = useAdminMerchantActions(fetchMerchants);
+    void fetchMerchants;
 
     const pending = merchants.filter((m) => m.status === "PENDING").length;
     const approved = merchants.filter((m) => m.status === "APPROVED").length;
@@ -36,8 +35,6 @@ export default function MerchantsPageClient() {
             <MerchantsTable
                 merchants={filteredMerchants}
                 loading={loading}
-                onApprove={handleApproveMerchant}
-                onReject={handleRejectMerchant}
             />
         </div>
     );

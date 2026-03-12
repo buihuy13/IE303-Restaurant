@@ -5,7 +5,6 @@ import { Home, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
-import { AdminNotificationBell } from "./AdminNotificationBell";
 
 interface HeaderProps {
     sidebarOpen?: boolean;
@@ -62,9 +61,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </button>
 
                     {/* Notifications */}
-                    {user?.role === "ADMIN" ? (
-                        <AdminNotificationBell />
-                    ) : user?.role === "MERCHANT" ? (
+                    {user?.role === "MERCHANT" ? (
                         <MerchantNotificationBell />
                     ) : null}
 

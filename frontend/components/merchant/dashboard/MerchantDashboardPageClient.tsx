@@ -20,7 +20,6 @@ import {
     TrendingDown,
     TrendingUp,
     Truck,
-    Users,
     Package,
 } from "lucide-react";
 import Image from "next/image";
@@ -725,18 +724,6 @@ export default function MerchantDashboardPageClient() {
                         <div>
                             <p className="font-semibold text-black dark:text-white">Manage Menu Items</p>
                             <p className="text-sm text-bodydark">Add and edit your menu</p>
-                        </div>
-                    </Link>
-                    <Link
-                        href="/merchant/manage/staff"
-                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
-                    >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-6/10">
-                            <Users className="text-meta-6" size={24} />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-black dark:text-white">Manage Staff</p>
-                            <p className="text-sm text-bodydark">Add and manage staff</p>
                         </div>
                     </Link>
                     <Link
