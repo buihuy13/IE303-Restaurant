@@ -9,6 +9,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.stereotype.Component;
 
+import com.CNTTK18.paymentservice.exception.WebhookSignatureException;
+
 @Component
 public class WebhookUtils {
 
@@ -43,7 +45,7 @@ public class WebhookUtils {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to calculate HMAC-SHA256", e);
+            throw new WebhookSignatureException("Failed to calculate HMAC-SHA256", e);
         }
     }
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.model.PaymentTransaction;
+import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
 import com.CNTTK18.paymentservice.service.PaymentService;
 import com.CNTTK18.paymentservice.utils.WebhookUtils;
@@ -36,7 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .userId(userId)
                 .amount(amount)
                 .orderCode(orderCode)
-                .status("PENDING")
+                .status(PaymentStatus.PENDING)
                 .build();
         paymentTransactionRepository.save(transaction);
 
@@ -68,7 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
             Optional<PaymentTransaction> transactionOpt = paymentTransactionRepository.findByOrderCode(orderCode);
             if (transactionOpt.isPresent()) {
                 PaymentTransaction transaction = transactionOpt.get();
-                transaction.setStatus("PAID");
+                transaction.setStatus(PaymentStatus.PAID);
                 paymentTransactionRepository.save(transaction);
                 log.info("Giao dịch {} thanh toán thành công!", orderCode);
                 return true;
