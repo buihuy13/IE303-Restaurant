@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.CNTTK18.chat_service.dto.request.RoomDTO;
 import com.CNTTK18.chat_service.dto.response.MessageResponseDTO;
+import com.CNTTK18.chat_service.dto.response.ResponseMessage;
 import com.CNTTK18.chat_service.mapper.MessageMapper;
 import com.CNTTK18.chat_service.model.ChatRoom;
 import com.CNTTK18.chat_service.repository.ChatRoomRepository;
@@ -70,8 +71,8 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     }
 
     @Override
-    public String generateOneTimeToken(UUID userid) {
-        return tokenService.generateToken(userid);
+    public ResponseMessage generateOneTimeToken(UUID userid) {
+        return new ResponseMessage(tokenService.generateToken(userid));
     }
 
     private UUID findOrCreateNewRoom(RoomDTO roomDTO, UUID roomId) {

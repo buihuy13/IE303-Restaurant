@@ -84,6 +84,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse getUserByAccessToken(UserRole authUser) {
+        if (authUser == null || authUser.getUserId().toString().isBlank()) {
+            throw new ResourceNotFoundException("Cannot recognize user id");
+        }
+        UUID id = authUser.getUserId();
+        Optional<Users> optionalUser = userRepository.findById(id);
+        if (optionalUser.isEmpty()) {
+            return userMapper.toUserResponse(createUserIfNotExist(id));
+        }
+        return userMapper.toUserResponse(optionalUser.get());
+    }
+
+    @Override
     @Transactional
     public void deleteUserById(UUID id, UserRole authUser) {
         checkAuthority(id, authUser);

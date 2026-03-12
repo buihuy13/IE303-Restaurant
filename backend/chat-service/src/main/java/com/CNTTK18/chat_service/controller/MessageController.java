@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @Controller
 @RequiredArgsConstructor
 public class MessageController {
-    private MessageService messageService;
+    private final MessageService messageService;
 
     // Cần tiền tố /app -> /app/chat.sendMessage
     @MessageMapping("/chat.sendMessage")
