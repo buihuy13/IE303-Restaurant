@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
 import com.CNTTK18.paymentservice.service.PaymentService;
@@ -24,12 +24,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayOS payOS;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final WebhookUtils webhookUtils;
-
-    @Value("${payos.checksum-key}")
-    private String checksumKey;
+    private final PayOSProperties payOSProperties;
 
     @Override
-    public String createPaymentLink(UUID userId, Integer amount) {
+    public String createPaymentLink(UUID userId, Long amount) {
         // 1. Khởi tạo Order Code duy nhất (Random System limit của Java Long)
         Long orderCode = System.currentTimeMillis() % 1000000000L;
 
@@ -51,7 +49,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public boolean processWebhook(Map<String, Object> webhookBody, String inputSignature) {
         // 1. Dùng Utils để tính toán Signature
-        boolean isValid = webhookUtils.isValidData(webhookBody, inputSignature, checksumKey);
+        boolean isValid =
+                webhookUtils.isValidData(
+                        webhookBody, inputSignature, payOSProperties.getChecksumKey());
 
         if (!isValid) {
             log.warn("Lỗi Xác Thực Webhook: Chữ ký không khớp!");

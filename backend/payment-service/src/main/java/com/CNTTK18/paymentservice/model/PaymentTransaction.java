@@ -33,7 +33,7 @@ public class PaymentTransaction {
 
     // Số tiền thanh toán
     @Column(name = "amount", nullable = false)
-    private Integer amount;
+    private Long amount;
 
     // Trạng thái thanh toán: PENDING, PAID, CANCELLED
     @Column(name = "status", nullable = false, length = 20)
