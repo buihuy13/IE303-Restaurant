@@ -89,7 +89,7 @@ export const ORDER_WS_BASE_URL = trimTrailingSlash(
  * Keycloak OpenID Connect settings (frontend public client).
  */
 export const KEYCLOAK_BASE_URL = trimTrailingSlash(
-    pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL], [], "http://localhost:9090"),
+    pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_BASE_URL], [], "http://localhost:9090/auth"),
 );
 
 export const KEYCLOAK_REALM = pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_REALM], [], "restaurant-realm");

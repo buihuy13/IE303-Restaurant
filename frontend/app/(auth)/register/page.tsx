@@ -66,6 +66,7 @@ export default function SignUpPage() {
                             loginWithKeycloak({
                                 redirectPath: "/",
                                 idpHint: "google",
+                                action: "register",
                             }).catch((err) => {
                                 const message = err instanceof Error ? err.message : "Unable to start Keycloak login.";
                                 toast.error(message);

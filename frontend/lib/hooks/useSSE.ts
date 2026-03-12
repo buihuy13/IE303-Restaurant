@@ -25,8 +25,23 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const { addNotification } = useNotificationStore();
 
+    const closeCurrentEventSource = () => {
+        const currentEventSource = eventSourceRef.current;
+        if (!currentEventSource) {
+            return;
+        }
+        currentEventSource.close();
+        eventSourceRef.current = null;
+    };
+
     const connect = () => {
-        if (!userId || !isAuthenticated) {
+        // SSE notifications are temporarily disabled (backend endpoint not ready).
+        // Keep the hook API intact but avoid opening any EventSource connection.
+        return;
+
+        // The code below is kept for future use when SSE is enabled again.
+        const currentUserId = userId;
+        if (!currentUserId || !isAuthenticated) {
             return;
         }
 
@@ -37,13 +52,10 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
         }
 
         // Close existing connection if any
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
-        }
+        closeCurrentEventSource();
 
         try {
-            const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(userId)}`;
+            const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(currentUserId ?? "")}`;
 
             const eventSource = new EventSource(sseUrl);
 
@@ -62,10 +74,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                 setIsConnected(false);
 
                 // Close connection
-                if (eventSourceRef.current) {
-                    eventSourceRef.current.close();
-                    eventSourceRef.current = null;
-                }
+                closeCurrentEventSource();
 
                 // Reconnect after 5 seconds if still authenticated
                 if (isAuthenticated && userId) {
@@ -140,10 +149,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
             reconnectTimeoutRef.current = null;
         }
 
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
-        }
+        closeCurrentEventSource();
     };
 
     // Connect when user is authenticated, disconnect when logged out

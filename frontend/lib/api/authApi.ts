@@ -65,12 +65,6 @@ export const authApi = {
     },
 
     // Token endpoints
-    getUserByAccessToken: async () => {
-        const response = await api.get<User>("/users/accesstoken", {
-            timeout: 30000,
-        });
-        return response.data;
-    },
     refreshAccessToken: async (refreshToken: string) => {
         const refreshed = await refreshKeycloakToken({
             baseUrl: KEYCLOAK_BASE_URL,
@@ -99,6 +93,10 @@ export const authApi = {
             return null;
         }
         const response = await api.get<User>(`/users/admin/${id}`);
+        return response.data;
+    },
+    getUserByToken: async () => {
+        const response = await api.get<User>("/users/accesstoken");
         return response.data;
     },
     updateUser: async (id: string, userData: UserUpdateRequest) => {

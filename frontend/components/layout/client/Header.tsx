@@ -21,7 +21,7 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const { isAuthenticated, user, logout } = useAuthStore();
+    const { isAuthenticated, user, logout, loginWithKeycloak } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
@@ -61,6 +61,21 @@ export default function Header() {
         } finally {
             // Reset logging out state after navigation
             setTimeout(() => setIsLoggingOut(false), 500);
+        }
+    };
+
+    const handleKeycloakSignUp = async (closeMobileMenu = false) => {
+        if (closeMobileMenu) {
+            setOpen(false);
+        }
+        try {
+            await loginWithKeycloak({
+                redirectPath: "/",
+                action: "register",
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Unable to start Keycloak registration.";
+            toast.error(message);
         }
     };
 
@@ -220,11 +235,13 @@ export default function Header() {
                                         Sign In
                                     </Button>
                                 </Link>
-                                <Link href="/register" prefetch={true}>
-                                    <Button className="bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white">
-                                        Sign Up
-                                    </Button>
-                                </Link>
+                                <Button
+                                    type="button"
+                                    onClick={() => void handleKeycloakSignUp()}
+                                    className="bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white"
+                                >
+                                    Sign Up
+                                </Button>
                             </>
                         ) : (
                             <div className="w-20 h-10" />
@@ -341,11 +358,13 @@ export default function Header() {
                                             Sign In
                                         </Button>
                                     </Link>
-                                    <Link href="/register" prefetch={true} className="w-full">
-                                        <Button className="w-full text-left bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white">
-                                            Sign Up
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        type="button"
+                                        onClick={() => void handleKeycloakSignUp(true)}
+                                        className="w-full text-left bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white"
+                                    >
+                                        Sign Up
+                                    </Button>
                                 </>
                             )}
                         </nav>

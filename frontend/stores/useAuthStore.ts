@@ -15,6 +15,9 @@ interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
     idToken: string | null;
+    // Effective role resolved from Keycloak access token (realm_access.roles).
+    // This is the single source of truth for role-based routing in the frontend.
+    authRole: "USER" | "MERCHANT" | "ADMIN" | null;
     isAuthenticated: boolean;
     loading: boolean;
     error: string | null;
@@ -61,11 +64,82 @@ const getInitialTokens = (): { accessToken: string | null; refreshToken: string 
     return { accessToken: null, refreshToken: null, idToken: null };
 };
 
+/**
+ * Decode a JWT and extract an effective application role from realm_access.roles.
+ * Priority: ADMIN > MERCHANT > USER (default).
+ */
+const extractRoleFromAccessToken = (
+    accessToken: string | null,
+): "USER" | "MERCHANT" | "ADMIN" | null => {
+    if (!accessToken) return null;
+
+    try {
+        const [, payload] = accessToken.split(".");
+        if (!payload) return null;
+
+        const json = JSON.parse(
+            typeof atob === "function"
+                ? atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                : Buffer.from(payload, "base64").toString("utf8"),
+        ) as {
+            realm_access?: { roles?: string[] };
+        };
+
+        const roles = json.realm_access?.roles ?? [];
+        if (roles.includes("ADMIN")) return "ADMIN";
+        if (roles.includes("MERCHANT")) return "MERCHANT";
+        return "USER";
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Decode a JWT access token into a minimal User profile for the UI.
+ * We only rely on Keycloak standard claims (sub, preferred_username, email).
+ */
+const extractUserFromAccessToken = (accessToken: string | null): User | null => {
+    if (!accessToken) return null;
+
+    try {
+        const [, payload] = accessToken.split(".");
+        if (!payload) return null;
+
+        const json = JSON.parse(
+            typeof atob === "function"
+                ? atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                : Buffer.from(payload, "base64").toString("utf8"),
+        ) as {
+            sub?: string;
+            preferred_username?: string;
+            email?: string;
+        };
+
+        if (!json.sub) return null;
+
+        const username = json.preferred_username || json.email || "User";
+
+        // Note: other domain fields (addresses, status, etc.) still come from backend when needed.
+        const minimalUser: User = {
+            id: json.sub,
+            username,
+            email: json.email || "",
+            role: "USER", // UI-level role comes from authRole; this field is kept for compatibility.
+            // The rest of User fields (if any) will use TypeScript's optional properties.
+        } as User;
+
+        return minimalUser;
+    } catch {
+        return null;
+    }
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     accessToken: getInitialTokens().accessToken,
     refreshToken: getInitialTokens().refreshToken,
     idToken: getInitialTokens().idToken,
+    authRole: extractRoleFromAccessToken(getInitialTokens().accessToken),
     isAuthenticated: !!getInitialTokens().accessToken,
     loading: false,
     error: null,
@@ -73,10 +147,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setTokens: (access, refresh, idToken = null) => {
         // Set tokens and authentication state immediately
+        const resolvedRole = extractRoleFromAccessToken(access);
         set({
             accessToken: access,
             refreshToken: refresh,
             idToken,
+            authRole: resolvedRole,
             isAuthenticated: !!access,
         });
         if (typeof window !== "undefined") {
@@ -192,53 +268,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     fetchProfile: async () => {
         const accessToken = get().accessToken;
-        // Check token directly instead of isAuthenticated flag
+        // Nếu không có token thì xem như guest.
         if (!accessToken) {
             set({ user: null, isAuthenticated: false, loading: false });
             return;
         }
+
         try {
-            // Use getUserByAccessToken endpoint which extracts user from token automatically
-            const userData = await authApi.getUserByAccessToken();
-            set({ user: userData, error: null, isAuthenticated: true, loading: false });
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            // Check if it's a timeout error
-            const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
-
-            // Check if it's a network error (backend not accessible)
-            const isNetworkError = err.code === "ERR_NETWORK" || err.message === "Network Error" || !err.response;
-
-            // Only log errors that have a response from server (not network/infrastructure errors)
-            // Network errors usually mean backend is not running or not accessible
-            if (!isTimeout && !isNetworkError && err.response) {
-                console.error("Failed to fetch user profile:", err);
-            }
-
-            // For timeout or network errors, don't clear tokens - might just be backend not running
-            // Only clear tokens for actual authentication errors (401, 403)
-            const isAuthError = err.response?.status === 401 || err.response?.status === 403;
-
-            if (isAuthError && !isTimeout && !isNetworkError) {
-                // If token is invalid, clear everything
-                set({
-                    error: "Failed to load user profile.",
-                    user: null,
-                    isAuthenticated: false,
-                    loading: false,
-                    idToken: null,
-                });
-                // Clear invalid tokens
-                if (typeof window !== "undefined") {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
-                    localStorage.removeItem("idToken");
-                }
-            } else {
-                // For timeout, network errors, or other errors, just set loading to false
-                // Keep tokens and authentication state (might be valid, just backend not accessible)
-                set({ loading: false });
-            }
+            // Ưu tiên đồng bộ user đầy đủ từ backend theo access token vừa login.
+            const userFromToken = await authApi.getUserByToken();
+            set({
+                user: userFromToken,
+                error: null,
+                isAuthenticated: !!accessToken,
+                loading: false,
+            });
+        } catch {
+            // Fallback: nếu backend tạm thời lỗi thì vẫn giữ trải nghiệm đăng nhập bằng JWT claims.
+            const minimalUser = extractUserFromAccessToken(accessToken);
+            set({
+                user: minimalUser,
+                error: null,
+                isAuthenticated: !!accessToken,
+                loading: false,
+            });
         }
     },
 
@@ -269,6 +322,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             accessToken: null,
             refreshToken: null,
             idToken: null,
+            authRole: null,
             isAuthenticated: false,
             error: null,
             loading: false,
@@ -313,10 +367,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         clientId: KEYCLOAK_CLIENT_ID,
                         refreshToken,
                     });
+                    const resolvedRole = extractRoleFromAccessToken(refreshed.accessToken);
                     set({
                         accessToken: refreshed.accessToken,
                         refreshToken: refreshed.refreshToken,
                         idToken: refreshed.idToken || idToken,
+                        authRole: resolvedRole,
                         isAuthenticated: true,
                         loading: true,
                     });
@@ -338,8 +394,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return;
         }
 
-        // Set tokens immediately for faster UI response
-        set({ accessToken, refreshToken, idToken, isAuthenticated: true, loading: true });
+        // Set tokens + role immediately for faster UI response
+        const resolvedRole = extractRoleFromAccessToken(accessToken);
+        set({ accessToken, refreshToken, idToken, authRole: resolvedRole, isAuthenticated: true, loading: true });
 
         try {
             // Fetch user profile in background - don't block if it fails
