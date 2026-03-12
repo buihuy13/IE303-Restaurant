@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 public class ChatMessageController {
-    private ChatMessageService chatMessageService;
+    private final ChatMessageService chatMessageService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get room ID by two user IDs")
@@ -83,8 +83,8 @@ public class ChatMessageController {
     @Tag(name = "Get")
     @Operation(summary = "Get one-time token for a user")
     @GetMapping("/one-time-token/{userId}")
-    public ResponseEntity<String> getOneTimeToken(@PathVariable UUID userId) {
-        String token = chatMessageService.generateOneTimeToken(userId);
+    public ResponseEntity<ResponseMessage> getOneTimeToken(@PathVariable UUID userId) {
+        ResponseMessage token = chatMessageService.generateOneTimeToken(userId);
         return ResponseEntity.ok(token);
     }
 }
