@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.CNTTK18.chat_service.dto.request.RoomDTO;
 import com.CNTTK18.chat_service.dto.response.MessageResponseDTO;
+import com.CNTTK18.chat_service.dto.response.ResponseMessage;
 import com.CNTTK18.chat_service.model.ChatRoom;
 
 public interface ChatMessageService {
@@ -22,5 +23,5 @@ public interface ChatMessageService {
 
     public void markMessagesAsRead(UUID roomId, UUID receiverId);
 
-    public String generateOneTimeToken(UUID userid);
+    public ResponseMessage generateOneTimeToken(UUID userid);
 }

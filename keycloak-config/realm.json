@@ -81,7 +81,7 @@
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 10,
   "accessTokenLifespan": 1800,
-  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionIdleTimeout": 7200,
   "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [

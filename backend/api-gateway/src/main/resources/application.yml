@@ -63,7 +63,7 @@ spring:
                 - id: chat-service-api
                   uri: lb://chat-service
                   predicates:
-                      - Path=/api/chat/roomId/**, /api/chat/rooms/**
+                      - Path=/api/chat/**
                 - id: chat-service-docs
                   uri: lb://chat-service
                   predicates:
