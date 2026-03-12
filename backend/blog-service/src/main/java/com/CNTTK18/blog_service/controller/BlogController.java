@@ -1,5 +1,6 @@
 package com.CNTTK18.blog_service.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,12 +19,15 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
+import com.CNTTK18.blog_service.dto.response.ImageUploadResponse;
 import com.CNTTK18.blog_service.dto.response.MessageResponse;
 import com.CNTTK18.blog_service.service.BlogService;
 
@@ -35,6 +40,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BlogController {
     private final BlogService blogService;
+
+    @Tag(name = "Post")
+    @Operation(summary = "Upload images for blog content")
+    @PostMapping(value = "/images/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImageUploadResponse> uploadContentImages(
+            @RequestPart("images") List<MultipartFile> images, @AuthenticationPrincipal UserRole authUser) {
+        List<String> imageUrls = blogService.uploadContentImages(images, authUser);
+        return new ResponseEntity<>(new ImageUploadResponse(imageUrls), HttpStatusCode.valueOf(201));
+    }
 
     @Tag(name = "Post")
     @Operation(summary = "Create a new blog post")

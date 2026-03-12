@@ -25,8 +25,6 @@ public class UpdateBlogRequest {
 
     private String coverImageUrl;
 
-    private String publicID;
-
     @NotNull(message = "Status is required")
     private BlogStatus status;
 }

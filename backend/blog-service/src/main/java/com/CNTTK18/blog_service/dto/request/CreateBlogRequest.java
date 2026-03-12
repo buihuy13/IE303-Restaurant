@@ -23,7 +23,6 @@ public class CreateBlogRequest {
     private String content;
 
     private String coverImageUrl;
-    private String publicID;
 
     private BlogStatus status;
 }
