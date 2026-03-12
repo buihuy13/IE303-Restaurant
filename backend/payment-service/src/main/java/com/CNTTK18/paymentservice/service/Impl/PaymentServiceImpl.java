@@ -50,9 +50,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public boolean processWebhook(Map<String, Object> webhookBody, String inputSignature) {
         // 1. Dùng Utils để tính toán Signature
-        boolean isValid =
-                webhookUtils.isValidData(
-                        webhookBody, inputSignature, payOSProperties.getChecksumKey());
+        boolean isValid = webhookUtils.isValidData(webhookBody, inputSignature, payOSProperties.getChecksumKey());
 
         if (!isValid) {
             log.warn("Lỗi Xác Thực Webhook: Chữ ký không khớp!");

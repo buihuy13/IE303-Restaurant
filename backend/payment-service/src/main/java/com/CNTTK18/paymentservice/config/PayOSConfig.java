@@ -17,9 +17,6 @@ public class PayOSConfig {
     @Bean
     public PayOS payOS() {
         // Khởi tạo đối tượng PayOS dùng chung cho toàn bộ ứng dụng
-        return new PayOS(
-                payOSProperties.getClientId(),
-                payOSProperties.getApiKey(),
-                payOSProperties.getChecksumKey());
+        return new PayOS(payOSProperties.getClientId(), payOSProperties.getApiKey(), payOSProperties.getChecksumKey());
     }
 }
