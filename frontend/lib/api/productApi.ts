@@ -1,6 +1,6 @@
 import type { Product, ProductCreateData, Review } from "@/types";
 import api from "../axios";
-import { USE_MOCK } from "../config/mockRuntime";
+import { USE_MOCK_PRODUCT } from "../config/mockRuntime";
 import { mockProducts } from "@/mock-data/products";
 
 // Page response structure from Spring Boot
@@ -39,7 +39,7 @@ const mapMockToProduct = (mock: MockProduct): Product => ({
 
 export const productApi = {
     getAllProducts: (params: URLSearchParams) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const content: Product[] = mockProducts.map(mapMockToProduct);
             return Promise.resolve({
                 data: {
@@ -58,7 +58,7 @@ export const productApi = {
         return api.get<PageResponse<Product>>("/products", { params: params });
     },
     getProductsByRestaurantId: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const filtered: Product[] = mockProducts
                 .filter((p) => p.restaurantId === restaurantId)
                 .map(mapMockToProduct);
@@ -73,7 +73,7 @@ export const productApi = {
         return api.get(`/products/res/${productId}`);
     },
     getProductBySlug: (slug: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const source: MockProduct =
                 mockProducts.find((p) => p.slug === slug) ?? mockProducts[0];
             const product = mapMockToProduct(source);
@@ -118,7 +118,7 @@ export const productApi = {
         return api.get<Product>(`/products/${encodedSlug}`);
     },
     getProductById: (productId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const source: MockProduct =
                 mockProducts.find((p) => p.id === productId) ?? mockProducts[0];
             const product = mapMockToProduct(source);
@@ -127,7 +127,7 @@ export const productApi = {
         return api.get<Product>(`/products/admin/${productId}`);
     },
     createProduct: (productData: ProductCreateData, imageFile?: File) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const created: Product = {
                 id: `mock-${Date.now()}`,
                 slug: productData.productName.toLowerCase().replace(/\s+/g, "-"),
@@ -155,7 +155,7 @@ export const productApi = {
         return api.post<Product>("/products", formData);
     },
     updateProduct: (productId: string, productData: ProductCreateData, imageFile?: File) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const updated: Product = {
                 id: productId,
                 slug: productData.productName.toLowerCase().replace(/\s+/g, "-"),
@@ -183,7 +183,7 @@ export const productApi = {
         return api.put<Product>(`/products/${productId}`, formData);
     },
     updateProductStatus: (productId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             const source: MockProduct =
                 mockProducts.find((p) => p.id === productId) ?? mockProducts[0];
             const toggled: MockProduct = {
@@ -196,19 +196,19 @@ export const productApi = {
         return api.put<Product>(`/products/availability/${productId}`);
     },
     deleteProduct: (productId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             return Promise.resolve({ data: null } as { data: null });
         }
         return api.delete(`/products/${productId}`);
     },
     deleteProductImage: (productId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             return Promise.resolve({ data: null } as { data: null });
         }
         return api.delete(`/products/image/${productId}`);
     },
     getAllReviews: (productId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_PRODUCT) {
             return Promise.resolve({ data: [] as Review[] });
         }
         return api.get<Review[]>(`/review?productId=${productId}`);

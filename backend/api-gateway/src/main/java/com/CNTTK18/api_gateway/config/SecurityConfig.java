@@ -28,7 +28,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
-        return http.csrf(csrf -> csrf.disable())
+        return http
+                // Bật CORS để Spring Security tôn trọng cấu hình globalcors trong application.yml
+                .cors(cors -> {})
+                .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> configureAuthorization(exchanges))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter())))
                 .addFilterAfter(headerForwardFilter, SecurityWebFiltersOrder.AUTHORIZATION)
@@ -37,6 +40,9 @@ public class SecurityConfig {
 
     private AuthorizeExchangeSpec configureAuthorization(AuthorizeExchangeSpec exchanges) {
         return exchanges
+                // Cho phép preflight CORS (OPTIONS) cho mọi path để browser có thể gửi request từ http://localhost:3000
+                .pathMatchers(HttpMethod.OPTIONS, "/**")
+                .permitAll()
                 .pathMatchers(PUBLIC_PATHS)
                 .permitAll()
                 // user-service

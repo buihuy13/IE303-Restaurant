@@ -43,25 +43,33 @@
   display: inline-flex !important;
   align-items: center;
   justify-content: center !important;
-  gap: 10px;
+  gap: 12px;
   padding: 0 14px !important;
   border-radius: 12px !important;
-  border: 1px solid #e5e7eb !important;
-  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
   color: #191720 !important;
   font-size: 15px !important;
   font-weight: 600 !important;
   text-decoration: none !important;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    border-color 0.22s ease,
+    background-color 0.22s ease,
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 .kc-social-links .pf-c-button:hover,
 .kc-social-links .pf-v5-c-button:hover,
 #kc-social-providers .pf-c-login__main-footer-links-item-link:hover,
 #kc-social-providers .pf-v5-c-login__main-footer-links-item-link:hover {
-  border-color: #ee4d2d !important;
-  background: #fff7f5 !important;
-  transform: translateY(-1px);
+  border-color: #cbd5f5 !important;
+  background: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.08),
+    0 12px 24px rgba(15, 23, 42, 0.06);
 }
 
 #kc-social-providers .pf-c-login__main-footer-links-item-link i,
