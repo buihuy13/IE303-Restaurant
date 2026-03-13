@@ -61,14 +61,14 @@ services:
             - KC_HOSTNAME_PATH=/auth
             - KC_PROXY=edge
             - KC_HTTP_RELATIVE_PATH=/auth
-        ports:  
-            - '9090:9091'
         volumes:
             - ./realm.json:/tmp/realm.json:ro
             - ./init-keycloak.sh:/tmp/init-keycloak.sh:ro
             - ./themes:/opt/keycloak/themes
         depends_on:
             rabbitmq:
+                condition: service_healthy
+            postgres:
                 condition: service_healthy
     prometheus:
         image: prom/prometheus:latest
@@ -88,6 +88,9 @@ services:
             start_period: 40s
     grafana:
         image: grafana/grafana:latest
+        environment:
+            - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/monitoring
+            - GF_SERVER_SERVE_FROM_SUB_PATH=true
         env_file:
             - ./.env
         container_name: grafana
@@ -105,17 +108,20 @@ services:
         image: caddy:2-alpine
         container_name: caddy
         restart: unless-stopped
+        env_file:
+            - ./.env
         ports:
-        - "80:80"
-        - "443:443"
+            - "80:80"
+            - "443:443"
         volumes:
-        - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
-        - caddy_data:/data
-        - caddy_config:/config
+            - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
         depends_on:
-        - api-gateway
-        - frontend
-        - keycloak
+            - api-gateway
+            - frontend
+            - keycloak
+            - grafana
     service-discovery:
         image: ghcr.io/buihuy13/service-discovery:${VERSION}
         env_file:
@@ -194,13 +200,18 @@ services:
             service-discovery:
                 condition: service_started
     frontend:
-        image: ghcr.io/buihuy13/frontend:${VERSION}
-        container_name: frontend
-        restart: unless-stopped
         expose:
-            - '3000'
+            - "3000"
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            args:
+                NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+                NEXT_PUBLIC_BACKEND_ORIGIN: ${NEXT_PUBLIC_BACKEND_ORIGIN}
+        container_name: frontend
         env_file:
             - ./.env
+        restart: unless-stopped
 
 volumes:
     postgres_data:

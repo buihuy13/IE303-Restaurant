@@ -4,6 +4,7 @@ CREATE DATABASE blog_service;
 CREATE DATABASE chat_service;
 CREATE DATABASE payment_service;
 CREATE DATABASE restaurant_service;
+CREATE DATABASE auth_service;
 \c user_service;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
