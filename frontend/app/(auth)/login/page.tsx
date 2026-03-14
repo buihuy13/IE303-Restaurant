@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
-    const { isAuthenticated, user, loginWithKeycloak } = useAuthStore();
+    const { isAuthenticated, authRole, loginWithKeycloak } = useAuthStore();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -19,9 +19,9 @@ export default function LoginPage() {
     // Nếu đã login rồi mà vẫn vào /login thì redirect về trang phù hợp
     useEffect(() => {
         if (!isAuthenticated) return;
-        const redirectPath = getLoginRedirectPath(user?.role ?? null, searchParams.get("redirect"));
+        const redirectPath = getLoginRedirectPath(authRole ?? null, searchParams.get("redirect"));
         router.replace(redirectPath);
-    }, [isAuthenticated, user?.role, router, searchParams]);
+    }, [isAuthenticated, authRole, router, searchParams]);
 
     // Nếu chưa login thì tự động chuyển sang trang Keycloak (không cần bấm nút)
     useEffect(() => {

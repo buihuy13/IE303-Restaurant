@@ -148,7 +148,11 @@ export const startKeycloakLogin = async (
         createdAt: Date.now(),
     });
 
-    const authEndpoint = `${createOidcBase(baseUrl, realm)}/auth`;
+    // Use Keycloak's dedicated registrations endpoint to force opening the signup page.
+    const authEndpoint =
+        action === "register"
+            ? `${createOidcBase(baseUrl, realm)}/registrations`
+            : `${createOidcBase(baseUrl, realm)}/auth`;
     const query = new URLSearchParams({
         client_id: clientId,
         response_type: "code",
@@ -163,7 +167,7 @@ export const startKeycloakLogin = async (
         query.set("kc_idp_hint", idpHint);
     }
 
-    // Nếu muốn mở thẳng trang đăng ký của Keycloak
+    // Keep kc_action for compatibility with custom themes / older Keycloak flows.
     if (action === "register") {
         query.set("kc_action", "register");
     }

@@ -1,4 +1,4 @@
-import { authApi } from "@/lib/api/authApi";
+import { KEYCLOAK_BASE_URL, KEYCLOAK_REALM } from "@/lib/config/publicRuntime";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -29,21 +29,13 @@ export function useAccountPasswordUpdate(userId: string | null) {
 
         setLoading(true);
         try {
-            await authApi.resetPassword(userId, {
-                password: newPassword,
-                confirmPassword,
-            });
-            toast.success("Password updated successfully!");
+            const accountUrl = `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/account/#/security/signingin`;
+            window.location.assign(accountUrl);
+            toast.success("Redirecting to Keycloak account settings...");
             setNewPassword("");
             setConfirmPassword("");
-        } catch (error) {
-            const errorMessage =
-                (error && typeof error === "object" && "response" in error
-                    ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                    : null) ||
-                (error instanceof Error ? error.message : null) ||
-                "Failed to update password";
-            toast.error(errorMessage);
+        } catch {
+            toast.error("Unable to open Keycloak account settings");
         } finally {
             setLoading(false);
         }

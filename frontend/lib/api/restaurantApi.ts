@@ -1,7 +1,7 @@
 import type { Category, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import api from "../axios";
-import { USE_MOCK } from "../config/mockRuntime";
+import { USE_MOCK_RESTAURANT } from "../config/mockRuntime";
 import { mockRestaurants } from "@/mock-data/restaurants";
 import { mockCategories } from "@/mock-data/categories";
 
@@ -55,7 +55,7 @@ const mapMockToRestaurant = (mock: MockRestaurant): Restaurant => ({
 
 export const restaurantApi = {
     getByRestaurantSlug: (slug: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const source: MockRestaurant | undefined = mockRestaurants.find((r) => r.slug === slug);
             const restaurant = mapMockToRestaurant(source ?? mockRestaurants[0]);
             return Promise.resolve({
@@ -86,7 +86,7 @@ export const restaurantApi = {
         return api.get<Restaurant>(`/restaurant/${encodedSlug}`);
     },
     getByRestaurantId: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const source: MockRestaurant | undefined = mockRestaurants.find((r) => r.id === restaurantId);
             const restaurant = mapMockToRestaurant(source ?? mockRestaurants[0]);
             return Promise.resolve({ data: restaurant } as { data: Restaurant });
@@ -94,14 +94,14 @@ export const restaurantApi = {
         return api.get<Restaurant>(`/restaurant/admin/${restaurantId}`);
     },
     getRestaurantByMerchantId: (merchantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const data: Restaurant[] = mockRestaurants.map(mapMockToRestaurant);
             return Promise.resolve({ data } as { data: Restaurant[] });
         }
         return api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`);
     },
     getAllRestaurants: (params: URLSearchParams) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const content: Restaurant[] = mockRestaurants.map(mapMockToRestaurant);
             return Promise.resolve({
                 data: {
@@ -124,7 +124,7 @@ export const restaurantApi = {
         });
     },
     createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const created: Restaurant = {
                 id: `mock-rest-${Date.now()}`,
                 slug: restaurantData.resName.toLowerCase().replace(/\s+/g, "-"),
@@ -158,7 +158,7 @@ export const restaurantApi = {
         return api.post<Restaurant>("/restaurant", formData);
     },
     updateRestaurant: (restaurantId: string, restaurantData: RestaurantData, imageFile?: File) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const updated: Restaurant = {
                 id: restaurantId,
                 slug: restaurantData.resName.toLowerCase().replace(/\s+/g, "-"),
@@ -192,7 +192,7 @@ export const restaurantApi = {
         return api.put<Restaurant>(`/restaurant/${restaurantId}`, formData);
     },
     updateRestaurantStatus: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const source: MockRestaurant =
                 mockRestaurants.find((r) => r.id === restaurantId) ?? mockRestaurants[0];
             const toggled: MockRestaurant = {
@@ -204,31 +204,22 @@ export const restaurantApi = {
                 data: restaurant,
             });
         }
-        return api.put<Restaurant>(`/restaurant/enable/${restaurantId}`);
-    },
-    createManagerForRestaurant: (
-        restaurantId: string,
-        payload: { username: string; email: string; password: string; confirmPassword: string }
-    ) => {
-        if (USE_MOCK) {
-            return Promise.resolve({ data: undefined } as { data: void });
-        }
-        return api.post<void>(`/restaurant/manager/${restaurantId}`, payload);
+        return api.put<{ message: string }>(`/restaurant/enable/${restaurantId}`);
     },
     deleteRestaurant: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             return Promise.resolve({ data: null } as { data: null });
         }
         return api.delete(`/restaurant/${restaurantId}`);
     },
     deleteRestaurantImage: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             return Promise.resolve({ data: null } as { data: null });
         }
         return api.delete(`/restaurant/image/${restaurantId}`);
     },
     getAllCategories: () => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             const data: Category[] = mockCategories.map((c) => ({
                 id: c.id,
                 cateName: (c as { name: string }).name,
@@ -238,7 +229,7 @@ export const restaurantApi = {
         return api.get<Category[]>(`/category`);
     },
     getAllReviews: (restaurantId: string) => {
-        if (USE_MOCK) {
+        if (USE_MOCK_RESTAURANT) {
             return Promise.resolve({ data: [] as Review[] });
         }
         return api.get<Review[]>(`/review?resId=${restaurantId}`);

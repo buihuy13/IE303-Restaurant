@@ -1,15 +1,13 @@
-import { CheckCircle, Eye, Loader2, XCircle } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import type { MerchantWithStats } from "@/hooks/admin/merchants/useAdminMerchantsData";
 
 interface MerchantsTableProps {
     merchants: MerchantWithStats[];
     loading: boolean;
-    onApprove: (merchantId: string) => void;
-    onReject: (merchantId: string, reason: string) => void;
 }
 
-export function MerchantsTable({ merchants, loading, onApprove, onReject }: MerchantsTableProps) {
+export function MerchantsTable({ merchants, loading }: MerchantsTableProps) {
     if (loading) {
         return (
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -109,29 +107,6 @@ export function MerchantsTable({ merchants, loading, onApprove, onReject }: Merc
                                         >
                                             <Eye size={18} />
                                         </button>
-                                        {merchant.status === "PENDING" && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onApprove(merchant.id)}
-                                                    className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                                    title="Approve"
-                                                >
-                                                    <CheckCircle size={18} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const reason = prompt("Enter a rejection reason:");
-                                                        if (reason != null && reason.trim()) onReject(merchant.id, reason.trim());
-                                                    }}
-                                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                    title="Reject"
-                                                >
-                                                    <XCircle size={18} />
-                                                </button>
-                                            </>
-                                        )}
                                     </div>
                                 </td>
                             </tr>

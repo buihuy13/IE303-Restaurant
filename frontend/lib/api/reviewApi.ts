@@ -10,6 +10,10 @@ export interface ReviewData {
     rating: number;
 }
 
+export interface ReviewListResponse {
+    response: string[];
+}
+
 export const reviewApi = {
     // Get reviews by restaurant
     getReviewsByRestaurant: async (restaurantId: string) => {
@@ -20,6 +24,14 @@ export const reviewApi = {
     // Get reviews by product
     getReviewsByProduct: async (productId: string) => {
         const response = await api.get<Review[]>(`/review?productId=${productId}`);
+        return response.data;
+    },
+    getProductReviewSummary: async (productId: string) => {
+        const response = await api.get<ReviewListResponse>(`/review/product/${productId}`);
+        return response.data;
+    },
+    getRestaurantReviewSummary: async (restaurantId: string) => {
+        const response = await api.get<ReviewListResponse>(`/review/restaurant/${restaurantId}`);
         return response.data;
     },
 

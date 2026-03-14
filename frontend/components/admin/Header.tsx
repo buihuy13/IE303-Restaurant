@@ -5,7 +5,6 @@ import { Home, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
-import { AdminNotificationBell } from "./AdminNotificationBell";
 
 interface HeaderProps {
     sidebarOpen?: boolean;
@@ -38,10 +37,10 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                 {/* Left side */}
                 <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
                     <button
+                        type="button"
                         onClick={() => setSidebarOpen?.(!sidebarOpen)}
                         className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                         aria-label="Toggle sidebar"
-                        aria-expanded={sidebarOpen ? "true" : "false"}
                     >
                         <Menu size={24} />
                     </button>
@@ -53,6 +52,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                 <div className="flex items-center gap-1.5 sm:gap-3">
                     {/* Mobile search toggle */}
                     <button
+                        type="button"
                         onClick={() => setMobileSearchOpen((v) => !v)}
                         className="sm:hidden h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                         aria-label={mobileSearchOpen ? "Close search" : "Open search"}
@@ -61,9 +61,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </button>
 
                     {/* Notifications */}
-                    {user?.role === "ADMIN" ? (
-                        <AdminNotificationBell />
-                    ) : user?.role === "MERCHANT" ? (
+                    {user?.role === "MERCHANT" ? (
                         <MerchantNotificationBell />
                     ) : null}
 

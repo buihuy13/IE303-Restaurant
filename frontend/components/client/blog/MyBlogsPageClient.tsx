@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { MyBlogsPageView } from "@/components/client/blog/MyBlogsPageView";
@@ -22,10 +22,13 @@ export default function MyBlogsPageClient() {
     const { handleDelete } = useMyBlogsActions(fetchMyBlogs);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    if (!isAuthenticated || !user) {
-        router.push("/login");
-        return null;
-    }
+    useEffect(() => {
+        if (!isAuthenticated || !user) {
+            router.replace("/login");
+        }
+    }, [isAuthenticated, user, router]);
+
+    if (!isAuthenticated || !user) return null;
 
     const onDelete = async (blogId: string, title: string) => {
         setDeletingId(blogId);
