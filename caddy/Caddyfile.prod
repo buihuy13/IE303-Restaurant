@@ -14,9 +14,12 @@ SERVER_IP {
 
     @api_routes {
         path /api/*
+    }
+
+    @protected_routes {
         path /v3/api-docs/*
         path /api-docs/*
-        path /eureka/*
+        path /eureka*
     }
 
     @ws_routes {
@@ -24,23 +27,38 @@ SERVER_IP {
     }
 
     @keycloak_route {
-        path /auth/*
+        path /auth*
+    }
+
+    @grafana_route {
+        path /monitoring*
     }
 
     handle @ws_routes {
-        reverse_proxy api-gateway:8080 {
+        reverse_proxy api-gateway {
             transport http {
                 versions 1.1
             }
         }
     }
 
-    handle @api_routes {
+    handle @protected_routes {
+        basicauth {
+            admin {env.CADDY_HASH_PASSWORD}
+        }
         reverse_proxy api-gateway:8080
     }
 
+    handle @api_routes {
+        reverse_proxy api-gateway:8080
+    }
+    
     handle @keycloak_route {
-        reverse_proxy keycloak:9090
+        reverse_proxy keycloak:9091
+    }
+
+    handle @grafana_route {
+        reverse_proxy grafana:3000
     }
 
     handle {

@@ -115,7 +115,6 @@
       "directAccessGrantsEnabled": true,
       "rootUrl": "https://20.205.208.223",
       "redirectUris": [
-        "https://20.205.208.223/*",
         "https://20.205.208.223/*"
       ],
       "webOrigins": [
