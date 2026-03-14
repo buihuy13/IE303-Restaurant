@@ -17,6 +17,11 @@ public interface ResMapper {
     @Mapping(target = "duration", ignore = true)
     ResResponse toResResponse(Restaurants res);
 
+    @Mapping(target = "cate", source = "res.categories")
+    @Mapping(target = "distance", source = "distance")
+    @Mapping(target = "duration", source = "duration")
+    ResResponse toResResponse(Restaurants res, Double distance, Double duration);
+
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")
     ResWithDistance toResResponseWithDistanceAndDuration(Restaurants res, Double distance, Double duration);

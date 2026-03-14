@@ -9,5 +9,6 @@ import com.CNTTK18.restaurant_service.model.ProductSize;
 @Mapper(componentModel = "spring")
 public interface ProductSizeMapper {
     @Mapping(target = "sizeName", source = "size.name")
+    @Mapping(target = "sizeId", source = "size.id")
     ProductSizeResponse toProductSizeResponse(ProductSize productSize);
 }

@@ -14,8 +14,8 @@ import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
+import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.model.ProductSize;
-import com.CNTTK18.restaurant_service.model.Restaurants;
 
 import reactor.core.publisher.Mono;
 
@@ -50,5 +50,5 @@ public interface ProductService {
 
     public List<ProductResponse> getAllProductsByRestaurantId(UUID id);
 
-    public Restaurants getRestaurantByProductId(UUID id);
+    public ResResponse getRestaurantByProductId(UUID id);
 }
