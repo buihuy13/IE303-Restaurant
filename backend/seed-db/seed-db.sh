@@ -21,8 +21,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="blog_service" \
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="chat_service" \
     -f /docker-entrypoint-initdb.d/chat_service.sql
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="payment_service" \
-    -f /docker-entrypoint-initdb.d/payment_service.sql
-
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="restaurant_service" \
     -f /docker-entrypoint-initdb.d/restaurant_service.sql
