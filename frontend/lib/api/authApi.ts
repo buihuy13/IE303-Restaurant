@@ -1,14 +1,10 @@
-import { Address, AddressRequest, PageableResponse, User, UserUpdateAfterLogin } from "@/types";
+import { AddressRequest, PageableResponse, User } from "@/types";
 import { refreshKeycloakToken } from "../auth/keycloak";
 import api from "../axios";
 import { KEYCLOAK_BASE_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_REALM } from "../config/publicRuntime";
 
 const looksLikeUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-
-interface LoginResponse {
-    accessToken: string;
-}
 
 interface RegisterResponse {
     message: string;
@@ -19,58 +15,63 @@ interface UserUpdateRequest {
     phone: string;
 }
 
-interface PasswordUpdateRequest {
+interface RegisterRequest {
+    username: string;
+    email: string;
     password: string;
     confirmPassword: string;
+    role: string;
+    phone: string;
 }
 
-// Backend Address response may include nested user object (circular reference)
+interface UserPayload {
+    id: string;
+    username?: string;
+    email?: string;
+    phone?: string | null;
+    role?: string;
+    enabled?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
 interface AddressResponse {
     id: string;
     location: string;
     longitude: number;
     latitude: number;
-    user?: User | unknown; // Nested user object (we don't need it, but backend returns it)
 }
 
-interface RejectionRequest {
-    reason: string;
-}
+const toUserRole = (role?: string): User["role"] => {
+    const value = (role || "").toUpperCase();
+    if (value === "ADMIN" || value === "MERCHANT" || value === "MANAGER" || value === "USER") {
+        return value;
+    }
+    return "USER";
+};
+
+const normalizeUser = (user: UserPayload): User => ({
+    id: user.id,
+    username: user.username || "Unknown",
+    email: user.email || "",
+    phone: user.phone ?? null,
+    enabled: user.enabled ?? true,
+    role: toUserRole(user.role),
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+});
+
+const normalizeUserPage = (page: PageableResponse<UserPayload>): PageableResponse<User> => ({
+    ...page,
+    content: Array.isArray(page.content) ? page.content.map(normalizeUser) : [],
+});
 
 export const authApi = {
-    // Authentication endpoints
-    login: async (credentials: { username: string; password: string }) => {
-        const response = await api.post<LoginResponse>("/users/login", credentials);
-        return response.data;
-    },
-    register: async (userData: {
-        username: string;
-        email: string;
-        password: string;
-        confirmPassword: string;
-        role: string;
-    }) => {
+    register: async (userData: RegisterRequest) => {
         const response = await api.post<RegisterResponse>("/users/register", userData);
         return response.data;
     },
-    confirmAccount: async (code: string) => {
-        const response = await api.get(`/users/confirmation?code=${code}`);
-        return response.data;
-    },
-    resendVerificationEmail: async (email: string) => {
-        // Encode email properly for URL
-        const encodedEmail = encodeURIComponent(email);
-        const response = await api.post(`/users/email?email=${encodedEmail}`);
-        return response.data;
-    },
 
-    // Token endpoints
-    getUserByAccessToken: async () => {
-        const response = await api.get<User>("/users/accesstoken", {
-            timeout: 30000,
-        });
-        return response.data;
-    },
     refreshAccessToken: async (refreshToken: string) => {
         const refreshed = await refreshKeycloakToken({
             baseUrl: KEYCLOAK_BASE_URL,
@@ -80,72 +81,42 @@ export const authApi = {
         });
         return refreshed;
     },
-    getOneTimeToken: async () => {
-        const response = await api.get<{ accessToken: string }>("/users/one-time-token");
-        // Backend returns TokenResponse with accessToken field
-        return response.data.accessToken;
-    },
 
-    // User endpoints
     getAllUsers: async (params?: { page?: number; size?: number; sort?: string }) => {
-        const response = await api.get<PageableResponse<User>>("/users", {
+        const response = await api.get<PageableResponse<UserPayload>>("/users", {
             params,
         });
-        return response.data;
+        return normalizeUserPage(response.data);
     },
     getUserById: async (id: string) => {
-        // Prevent spamming the backend with invalid IDs (e.g. merchant_123, empty, etc.)
         if (!id || !looksLikeUuid(id)) {
             return null;
         }
-        const response = await api.get<User>(`/users/admin/${id}`);
-        return response.data;
+        const response = await api.get<UserPayload>(`/users/admin/${id}`);
+        return normalizeUser(response.data);
+    },
+    getUserBySlug: async (slug: string) => {
+        const response = await api.get<UserPayload>(`/users/${slug}`);
+        return normalizeUser(response.data);
+    },
+    getUserByToken: async () => {
+        const response = await api.get<UserPayload>("/users/accesstoken");
+        return normalizeUser(response.data);
     },
     updateUser: async (id: string, userData: UserUpdateRequest) => {
-        const response = await api.put<User>(`/users/${id}`, userData);
-        return response.data;
+        const response = await api.put<UserPayload>(`/users/${id}`, userData);
+        return normalizeUser(response.data);
     },
     deleteUser: async (id: string) => {
         const response = await api.delete<{ message: string }>(`/users/${id}`);
         return response.data;
     },
-    updateUserAfterLogin: async (id: string, userData: UserUpdateAfterLogin) => {
-        const response = await api.put<User>(`/users/profile/${id}`, userData);
-        return response.data;
-    },
-    resetPassword: async (id: string, passwordData: PasswordUpdateRequest) => {
-        const response = await api.put<User>(`/users/password/${id}`, passwordData);
-        return response.data;
-    },
 
-    // Roles
-    getRoles: async () => {
-        const response = await api.get<string[]>("/users/roles");
-        return response.data;
-    },
-
-    // Merchant approval/rejection
-    approveMerchant: async (id: string) => {
-        const response = await api.put<{ message: string }>(`/users/approvement/${id}`);
-        return response.data;
-    },
-    rejectMerchant: async (id: string, rejection: RejectionRequest) => {
-        const response = await api.delete<{ message: string }>(`/users/rejection/${id}`, {
-            data: rejection,
-        });
-        return response.data;
-    },
-
-    // Merchant approval queue
-    getMerchantsPendingConsideration: async (params?: { page?: number; size?: number; sort?: string }) => {
-        const response = await api.get<PageableResponse<User>>("/users/merchants/consideration", {
-            params,
-        });
-        return response.data;
-    },
-    // Address endpoints
     addAddress: async (userId: string, address: AddressRequest) => {
-        const response = await api.post<AddressResponse>(`/users/address/${userId}`, address);
+        const response = await api.post<AddressResponse>("/users/address", {
+            userId,
+            ...address,
+        });
         return response.data;
     },
     deleteAddress: async (addressId: string) => {
@@ -153,60 +124,12 @@ export const authApi = {
         return response.data;
     },
     getUserAddresses: async (userId: string) => {
-        try {
-            // Request raw response to handle potential circular reference issues
-            const response = await api.get(`/users/addresses/${userId}`, {
-                responseType: "text", // Get raw text response
-            });
-
-            // Parse JSON manually to handle circular references
-            let data: unknown;
-            try {
-                data = JSON.parse(response.data as string);
-            } catch (parseError) {
-                console.error("Failed to parse addresses JSON:", parseError);
-                // Try to extract addresses from potentially corrupted JSON
-                // If response.data is already an object (shouldn't happen with responseType: text)
-                if (typeof response.data === "object" && response.data !== null) {
-                    data = response.data;
-                } else {
-                    return [];
-                }
-            }
-
-            // Handle null or undefined
-            if (!data) {
-                console.warn("getUserAddresses: Response data is null or undefined");
-                return [];
-            }
-
-            // Check if data is an array
-            if (Array.isArray(data)) {
-                // Map to extract only address fields, removing nested user object to avoid circular reference
-                try {
-                    return data.map((addr: AddressResponse) => {
-                        // Safely extract fields, handling potential undefined values
-                        const address: Address = {
-                            id: addr?.id || "",
-                            location: addr?.location || "",
-                            longitude: typeof addr?.longitude === "number" ? addr.longitude : 0,
-                            latitude: typeof addr?.latitude === "number" ? addr.latitude : 0,
-                        };
-                        return address;
-                    });
-                } catch (mapError) {
-                    console.error("Failed to map addresses:", mapError);
-                    return [];
-                }
-            }
-
-            // If data is not an array, log and return empty array
-            console.warn("getUserAddresses: Response data is not an array:", typeof data, Array.isArray(data));
-            return [];
-        } catch (error) {
-            console.error("getUserAddresses: Error fetching addresses:", error);
-            // Return empty array on any error
-            return [];
-        }
+        const response = await api.get<AddressResponse[]>(`/users/addresses/${userId}`);
+        return response.data.map((addr) => ({
+            id: addr.id,
+            location: addr.location,
+            longitude: addr.longitude,
+            latitude: addr.latitude,
+        }));
     },
 };

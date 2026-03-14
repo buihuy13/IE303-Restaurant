@@ -51,8 +51,8 @@ function LoginSuccessContent() {
 
                 if (success) {
                     toast.success("Login successful! Welcome back! 🎉", { duration: 2000 });
-                    const currentUser = useAuthStore.getState().user;
-                    const finalRedirect = getLoginRedirectPath(currentUser?.role ?? null, redirectPath);
+                    const { authRole } = useAuthStore.getState();
+                    const finalRedirect = getLoginRedirectPath(authRole ?? null, redirectPath);
                     router.replace(finalRedirect);
                 } else {
                     setError("Failed to complete Keycloak login. Please try again.");

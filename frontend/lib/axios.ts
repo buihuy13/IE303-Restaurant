@@ -172,6 +172,12 @@ api.interceptors.response.use(
             }
         }
 
+        // For pure network errors (backend down, CORS, etc.) where there is no HTTP response,
+        // just reject without logging to avoid noisy console output in dev.
+        if (!error.response && (error.code === "ERR_NETWORK" || error.message === "Network Error")) {
+            return Promise.reject(error);
+        }
+
         const data = error.response?.data;
         const errorCode = data && typeof data === "object" && "errorCode" in data ? data.errorCode : null;
 

@@ -1,6 +1,5 @@
 import { Merchant } from "@/types";
 import { authApi } from "./authApi";
-import { restaurantApi } from "./restaurantApi";
 
 export const merchantApi = {
     // Get all merchants (Admin only)
@@ -34,31 +33,5 @@ export const merchantApi = {
         };
     },
 
-    // Approve merchant (Admin only)
-    approveMerchant: async (merchantId: string) => {
-        return authApi.approveMerchant(merchantId);
-    },
-
-    // Reject merchant (Admin only)
-    rejectMerchant: async (merchantId: string, reason: string) => {
-        return authApi.rejectMerchant(merchantId, { reason });
-    },
-
-    // Create manager for restaurant
-    createManager: async (data: {
-        email: string;
-        username: string;
-        password: string;
-        restaurantId: string;
-        merchantId: string;
-    }): Promise<void> => {
-        // Backend endpoint lives under restaurant-service.
-        // Note: merchantId is kept for backwards compatibility but is not required by the API.
-        await restaurantApi.createManagerForRestaurant(data.restaurantId, {
-            username: data.username,
-            email: data.email,
-            password: data.password,
-            confirmPassword: data.password,
-        });
-    },
+    // Manager creation endpoint is not available in current restaurant-service API.
 };

@@ -129,14 +129,11 @@ export const orderApi = {
     },
 
     // Get orders by user
+    // Temporarily disabled: backend endpoint not available in current setup.
+    // Returns empty result to avoid failing UI when orders-service is not running.
     getOrdersByUser: async (userId: string): Promise<{ orders: Order[]; pagination?: unknown }> => {
-        const response = await api.get<{ success: boolean; data: Order[]; pagination?: Pagination }>(
-            `/orders/user/${userId}`
-        );
-        return {
-            orders: response.data.data,
-            pagination: response.data.pagination,
-        };
+        void userId;
+        return { orders: [], pagination: undefined };
     },
 
     // Get orders by merchant

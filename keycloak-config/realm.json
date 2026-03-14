@@ -116,7 +116,8 @@
       "rootUrl": "http://localhost:3000",
       "redirectUris": [
         "http://localhost:3000/*",
-        "http://localhost:8080/*"
+        "http://localhost:8080/*",
+        "https://localhost:8443/*"
       ],
       "webOrigins": [
         "+"

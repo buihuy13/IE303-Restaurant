@@ -14,6 +14,7 @@ interface SearchSuggestion {
     slug?: string;
     image?: string | null;
     restaurantName?: string;
+    restaurantSlug?: string;
 }
 
 export default function SearchBar() {
@@ -82,6 +83,7 @@ export default function SearchBar() {
                     slug: p.slug,
                     image: typeof p.imageURL === "string" ? p.imageURL : null,
                     restaurantName: p.restaurant?.resName,
+                    restaurantSlug: p.restaurant?.slug,
                 }));
 
                 // Combine and limit to 8 total suggestions (4 restaurants + 4 products)
@@ -141,8 +143,14 @@ export default function SearchBar() {
     const handleSuggestionClick = (suggestion: SearchSuggestion) => {
         if (suggestion.type === "restaurant" && suggestion.slug) {
             router.push(`/restaurants/${suggestion.slug}`);
-        } else if (suggestion.type === "product" && suggestion.slug) {
-            router.push(`/food/${suggestion.slug}`);
+        } else if (suggestion.type === "product") {
+            // Flow mong muốn: từ search → vào nhà hàng → trong nhà hàng mới vào food detail
+            if (suggestion.restaurantSlug) {
+                router.push(`/restaurants/${suggestion.restaurantSlug}`);
+            } else if (suggestion.slug) {
+                // Fallback an toàn nếu thiếu restaurantSlug
+                router.push(`/food/${suggestion.slug}`);
+            }
         }
         setShowSuggestions(false);
         setSearchQuery("");

@@ -15,8 +15,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const isMerchant = pathname.includes("merchant");
     const isAdmin = pathname.startsWith("/admin");
     const isManager = pathname.startsWith("/manager");
-    // All auth-related pages (login, register, verify-email, etc.) should not show the main header/footer
-    const authPaths = ["/login", "/register", "/verify-email", "/confirm", "/login-success"];
+    // Auth pages should not show the main header/footer
+    const authPaths = ["/login", "/register", "/login-success"];
     const isAuthPage = authPaths.includes(pathname);
 
     // Sync cart with user authentication

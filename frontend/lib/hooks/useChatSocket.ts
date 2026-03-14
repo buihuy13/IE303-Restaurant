@@ -1,6 +1,5 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
 import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,6 +30,10 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
     // Connect WebSocket when user is authenticated
     const connect = useCallback(async () => {
+        // Realtime chat WebSocket is temporarily disabled (backend not ready / optional feature).
+        // Keep the hook API intact but avoid opening any WebSocket connection to prevent console errors.
+        return;
+
         if (!userId || !isAuthenticated || isConnectingRef.current) {
             return;
         }
@@ -44,9 +47,9 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         isConnectingRef.current = true;
 
         try {
-            const oneTimeToken = await authApi.getOneTimeToken();
             const wsOrigin = toWebSocketOrigin(WS_BASE_URL);
-            const wsUrl = `${wsOrigin}/ws?token=${encodeURIComponent(oneTimeToken)}`;
+            // Connect without a backend-issued one-time token.
+            const wsUrl = `${wsOrigin}/ws`;
 
             const client = new Client({
                 webSocketFactory: () => {

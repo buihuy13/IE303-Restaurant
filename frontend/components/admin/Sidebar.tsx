@@ -1,10 +1,8 @@
 "use client";
 
 import { Logo } from "@/constants";
-import { useNotificationStore } from "@/stores/useNotificationStore";
 import {
     ChevronDown,
-    Clock,
     Grid3x3,
     Home,
     LayoutDashboard,
@@ -38,11 +36,6 @@ const menuItems: MenuItem[] = [
         href: "/admin/users",
     },
     {
-        label: "Merchant Requests",
-        icon: Clock,
-        href: "/admin/merchant-requests",
-    },
-    {
         label: "Manage Restaurants",
         icon: Utensils,
         href: "/admin/restaurants",
@@ -72,10 +65,6 @@ interface SidebarProps {
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     const pathname = usePathname();
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-    const notifications = useNotificationStore((state) => state.notifications);
-
-    // Calculate pending merchant requests count from notifications
-    const pendingMerchantCount = notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read).length;
 
     return (
         <>
@@ -156,8 +145,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                         );
                                     }
 
-                                    const isMerchantRequests = item.href === "/admin/merchant-requests";
-
                                     return (
                                         <li key={item.label}>
                                             <Link
@@ -171,17 +158,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                             >
                                                 <Icon size={20} />
                                                 <span className="flex-1">{item.label}</span>
-                                                {isMerchantRequests && pendingMerchantCount > 0 && (
-                                                    <span
-                                                        className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                                            isActive
-                                                                ? "bg-white text-brand-orange"
-                                                                : "bg-brand-orange text-white"
-                                                        }`}
-                                                    >
-                                                        {pendingMerchantCount > 99 ? "99+" : pendingMerchantCount}
-                                                    </span>
-                                                )}
                                             </Link>
                                         </li>
                                     );

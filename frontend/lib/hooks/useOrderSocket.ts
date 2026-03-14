@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Socket, io } from "socket.io-client";
-import { ORDER_SOCKET_URL } from "../config/publicRuntime";
+import type { Socket } from "socket.io-client";
 
 interface OrderNotification {
     type: string;
@@ -49,68 +48,13 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
     }, [onOrderStatusUpdate]);
 
     useEffect(() => {
-        // Connect to order service socket (port 8082 from backend)
-        const socket = io(ORDER_SOCKET_URL, {
-            transports: ["websocket", "polling"],
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5,
-        });
-
-        socketRef.current = socket;
-
-        socket.on("connect", () => {
-            setIsConnected(true);
-            console.log("[Order Socket] Connected, socket ID:", socket.id);
-
-            // Join restaurant room if merchant
-            if (restaurantId) {
-                console.log("[Order Socket] Joining restaurant room:", restaurantId);
-                socket.emit("join-restaurant", restaurantId);
-            }
-
-            // Join user room if user (for receiving order status updates)
-            // Backend uses 'join-user-orders' event, not 'join-user'
-            if (userId) {
-                console.log("[Order Socket] Joining user orders room:", userId);
-                socket.emit("join-user-orders", userId);
-            } else {
-                console.warn("[Order Socket] No userId provided, cannot join user orders room");
-            }
-        });
-
-        socket.on("disconnect", () => {
-            setIsConnected(false);
-        });
-
-        socket.on("connect_error", (error) => {
-            console.error("[Order Socket] Connection error:", error);
-            setIsConnected(false);
-        });
-
-        // Listen for new orders (merchant)
-        socket.on("new-order", (notification: OrderNotification) => {
-            onNewOrderRef.current?.(notification);
-        });
-
-        // Listen for order status updates (user)
-        // Backend emits order-status-updated with orderId, status at root level
-        socket.on("order-status-updated", (notification: OrderNotification) => {
-            console.log("[Order Socket] Received order-status-updated event:", notification);
-            // Transform notification to match expected format
-            const transformedNotification: OrderNotification = {
-                ...notification,
-                data: {
-                    orderId: notification.orderId || notification.data?.orderId || "",
-                    status: notification.status || notification.data?.status,
-                },
-            };
-            console.log("[Order Socket] Transformed notification:", transformedNotification);
-            onOrderStatusUpdateRef.current?.(transformedNotification);
-        });
+        // Order-service WebSocket via Socket.IO is not enabled in the current setup,
+        // so we skip creating a socket connection to avoid ERR_CONNECTION_REFUSED noise.
+        // The hook still returns a stable API shape for future use.
+        setIsConnected(false);
+        socketRef.current = null;
 
         return () => {
-            socket.disconnect();
             socketRef.current = null;
         };
     }, [restaurantId, userId]);

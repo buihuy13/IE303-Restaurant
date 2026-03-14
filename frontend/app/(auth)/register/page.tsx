@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 export default function SignUpPage() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -31,9 +32,10 @@ export default function SignUpPage() {
             return;
         }
 
-        const success = await register({ username, email, password, confirmPassword, role: "USER" });
+        const success = await register({ username, email, phone, password, confirmPassword, role: "USER" });
         if (success) {
-            router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+            toast.success("Registration successful. Please sign in with Keycloak.");
+            router.push("/login");
         } else {
             toast.error(error || "Registration failed. Please try again.");
         }
@@ -66,6 +68,7 @@ export default function SignUpPage() {
                             loginWithKeycloak({
                                 redirectPath: "/",
                                 idpHint: "google",
+                                action: "register",
                             }).catch((err) => {
                                 const message = err instanceof Error ? err.message : "Unable to start Keycloak login.";
                                 toast.error(message);
@@ -114,6 +117,21 @@ export default function SignUpPage() {
                             required
                             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                             placeholder="you@example.com"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            Phone
+                        </label>
+                        <input
+                            type="tel"
+                            id="phone"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            required
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                            placeholder="0123456789"
                         />
                     </div>
 
