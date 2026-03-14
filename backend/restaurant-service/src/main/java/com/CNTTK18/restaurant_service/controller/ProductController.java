@@ -29,8 +29,8 @@ import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
+import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.model.ProductSize;
-import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.service.ProductService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -148,7 +148,7 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get restaurant by product id")
     @GetMapping("/res/{id}")
-    public ResponseEntity<Restaurants> getRestaurantByProductId(@PathVariable UUID id) {
+    public ResponseEntity<ResResponse> getRestaurantByProductId(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getRestaurantByProductId(id));
     }
 }

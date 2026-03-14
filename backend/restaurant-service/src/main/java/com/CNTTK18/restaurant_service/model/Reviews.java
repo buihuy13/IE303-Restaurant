@@ -6,6 +6,8 @@ import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,6 +44,7 @@ public class Reviews {
     private UUID reviewId; // Id của product hoặc restaurant
 
     @Column(name = "review_type")
+    @Enumerated(EnumType.STRING)
     private ReviewType reviewType; // "PRODUCT" hoặc "RESTAURANT"
 
     private String title;

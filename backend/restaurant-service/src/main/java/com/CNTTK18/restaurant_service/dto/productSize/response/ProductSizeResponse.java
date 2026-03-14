@@ -16,6 +16,7 @@ import lombok.Setter;
 @Builder
 public class ProductSizeResponse {
     private UUID id;
+    private UUID sizeId;
     private String sizeName;
     private BigDecimal price;
 }

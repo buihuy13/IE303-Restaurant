@@ -5,8 +5,6 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,7 +23,7 @@ import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
-import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponseWithProduct;
+import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.service.ResService;
 
@@ -41,30 +39,9 @@ public class ResController {
     private final ResService resService;
 
     @Tag(name = "Get")
-    @Operation(summary = "Get all restaurants")
-    @GetMapping()
-    public Mono<ResponseEntity<Page<ResResponseWithProduct>>> getAllRestaurants(
-            @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Integer nearby,
-            @RequestParam(required = false) String rating,
-            @RequestParam(required = false) String category,
-            Pageable pageable) {
-
-        Coordinates location = null;
-        if (lon != null && lat != null) {
-            location = new Coordinates(lon, lat);
-        }
-        return resService
-                .getAllRestaurants(location, search, nearby, rating, category, pageable)
-                .map(resList -> ResponseEntity.ok(resList));
-    }
-
-    @Tag(name = "Get")
     @Operation(summary = "Get restaurant by ID")
     @GetMapping("/admin/{id}")
-    public Mono<ResponseEntity<ResResponseWithProduct>> getRestaurantById(
+    public Mono<ResponseEntity<ResResponse>> getRestaurantById(
             @PathVariable UUID id,
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lon) {
@@ -78,21 +55,21 @@ public class ResController {
     @Tag(name = "Get")
     @Operation(summary = "Get restaurant by Slug")
     @GetMapping("/{slug}")
-    public ResponseEntity<ResResponseWithProduct> getRestaurantBySlug(@PathVariable String slug) {
+    public ResponseEntity<ResResponse> getRestaurantBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(resService.getRestaurantBySlug(slug));
     }
 
     @Tag(name = "Get")
     @Operation(summary = "Get restaurants by merchant id")
     @GetMapping("/merchant/{id}")
-    public ResponseEntity<List<ResResponseWithProduct>> getRestaurantByMerchantId(@PathVariable UUID id) {
+    public ResponseEntity<List<ResResponse>> getRestaurantByMerchantId(@PathVariable UUID id) {
         return ResponseEntity.ok(resService.getRestaurantsByMerchantId(id));
     }
 
     @Tag(name = "Put")
     @Operation(summary = "Update restaurant")
     @PutMapping("/{id}")
-    public ResponseEntity<ResResponseWithProduct> updateRestaurant(
+    public ResponseEntity<ResResponse> updateRestaurant(
             @PathVariable UUID id,
             @RequestPart(value = "restaurant", required = true) @Valid UpdateRes updateRes,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,

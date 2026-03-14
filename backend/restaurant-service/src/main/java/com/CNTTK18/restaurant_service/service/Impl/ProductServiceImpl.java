@@ -27,6 +27,7 @@ import com.CNTTK18.restaurant_service.dto.product.request.SizePrice;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
+import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResWithDistance;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
@@ -272,10 +273,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Restaurants getRestaurantByProductId(UUID id) {
+    public ResResponse getRestaurantByProductId(UUID id) {
         Products product = getById(id);
 
-        return product.getRestaurant();
+        return resMapper.toResResponse(product.getRestaurant());
     }
 
     private void addProductSizes(Products product, List<SizePrice> sizePrices) {
