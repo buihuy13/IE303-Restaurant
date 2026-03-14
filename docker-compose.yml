@@ -110,7 +110,6 @@ services:
             - ./backend/seed-db/user_service.sql:/docker-entrypoint-initdb.d/user_service.sql
             - ./backend/seed-db/blog_service.sql:/docker-entrypoint-initdb.d/blog_service.sql
             - ./backend/seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
-            - ./backend/seed-db/payment_service.sql:/docker-entrypoint-initdb.d/payment_service.sql
             - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
