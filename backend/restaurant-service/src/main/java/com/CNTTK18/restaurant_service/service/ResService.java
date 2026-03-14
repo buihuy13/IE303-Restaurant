@@ -22,8 +22,7 @@ public interface ResService {
 
     public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser);
 
-    public ResResponse updateRestaurant(
-            UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser);
+    public ResResponse updateRestaurant(UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser);
 
     public void deleteRestaurant(UUID id, UserRole authUser);
 

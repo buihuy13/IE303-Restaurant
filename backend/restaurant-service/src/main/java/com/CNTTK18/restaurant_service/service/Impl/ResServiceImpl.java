@@ -95,8 +95,7 @@ public class ResServiceImpl implements ResService {
 
     @Transactional
     @Override
-    public ResResponse updateRestaurant(
-            UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser) {
+    public ResResponse updateRestaurant(UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser) {
         Restaurants res = getByIdWithFetching(id);
 
         checkAuthority(res.getMerchantId(), authUser);
@@ -172,8 +171,7 @@ public class ResServiceImpl implements ResService {
         }
         return resRepository
                 .findRestaurantsByMerchantId(id)
-                .map(list ->
-                        list.stream().map(resMapper::toResResponse).toList())
+                .map(list -> list.stream().map(resMapper::toResResponse).toList())
                 .orElse(List.of());
     }
 
