@@ -11,9 +11,9 @@ import com.CNTTK18.Common.Exception.ErrorResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(WebhookSignatureException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleWebhookSignatureException(WebhookSignatureException ex) {
         ErrorResponse errorResponse = new ErrorResponse("WEBHOOK_SIGNATURE_ERROR", ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }
