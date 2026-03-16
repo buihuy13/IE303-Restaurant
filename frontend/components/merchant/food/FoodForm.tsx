@@ -97,19 +97,25 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
 
     const filteredCategories = useMemo(() => {
         const q = categoryQuery.trim().toLowerCase();
-        if (!q) return [];
+        // Nếu chưa gõ gì, trả về một vài gợi ý đầu tiên
+        if (!q) {
+            return localCategories.slice(0, 8);
+        }
         return localCategories.filter((c) => c.cateName.toLowerCase().includes(q)).slice(0, 12);
     }, [categoryQuery, localCategories]);
 
     const filteredSizes = useMemo(() => {
         const q = sizeQuery.trim().toLowerCase();
-        if (!q) return [];
 
         const selected = new Set(selectedSizes.map((s) => s.sizeId));
-        return localSizes
-            .filter((s) => !selected.has(s.id))
-            .filter((s) => s.name.toLowerCase().includes(q))
-            .slice(0, 12);
+        const available = localSizes.filter((s) => !selected.has(s.id));
+
+        // Nếu chưa gõ gì, trả về một vài size đầu tiên chưa chọn
+        if (!q) {
+            return available.slice(0, 8);
+        }
+
+        return available.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 12);
     }, [localSizes, selectedSizes, sizeQuery]);
 
     const addExistingCategory = (categoryId: string) => {
@@ -293,7 +299,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                     />
 
-                    {categoryOpen && categoryQuery.trim() ? (
+                    {categoryOpen && filteredCategories.length > 0 ? (
                         <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-gray-900">
                             {filteredCategories.length > 0 ? (
                                 <div className="max-h-56 overflow-auto">
@@ -373,7 +379,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                     />
 
-                    {sizeOpen && sizeQuery.trim() ? (
+                    {sizeOpen && filteredSizes.length > 0 ? (
                         <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-gray-900">
                             {filteredSizes.length > 0 ? (
                                 <div className="max-h-56 overflow-auto">

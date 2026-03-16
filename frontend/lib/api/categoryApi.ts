@@ -1,69 +1,42 @@
 import api from "../axios";
 import type { Category, CategoryData } from "@/types";
-import { USE_MOCK } from "../config/mockRuntime";
-import { mockCategories } from "@/mock-data/categories";
+
+// Backend returns CateResponse { cateId, cateName }
+type CateResponse = {
+    cateId: string;
+    cateName: string;
+};
+
+const mapCateResponseToCategory = (cate: CateResponse): Category => ({
+    id: cate.cateId,
+    cateName: cate.cateName,
+});
 
 export const categoryApi = {
-    getAllCategories: () => {
-        if (USE_MOCK) {
-            const data: Category[] = mockCategories.map((c) => ({
-                id: c.id,
-                cateName: (c as { name: string }).name,
-            }));
-            return Promise.resolve({ data } as { data: Category[] });
-        }
-        return api.get<Category[]>("/category");
+    getAllCategories: async () => {
+        const res = await api.get<CateResponse[]>("/category");
+        const data: Category[] = res.data.map(mapCateResponseToCategory);
+        return { ...res, data };
     },
-    getCategoryById: (categoryId: string) => {
-        if (USE_MOCK) {
-            const source =
-                mockCategories.find((c) => c.id === categoryId) ?? mockCategories[0];
-            const category: Category = {
-                id: source.id,
-                cateName: (source as { name: string }).name,
-            };
-            return Promise.resolve({ data: category } as { data: Category });
-        }
-        return api.get<Category>(`/category/${categoryId}`);
+    getCategoryById: async (categoryId: string) => {
+        const res = await api.get<CateResponse>(`/category/${categoryId}`);
+        const data: Category = mapCateResponseToCategory(res.data);
+        return { ...res, data };
     },
-    getCategoryByName: (categoryName: string) => {
-        if (USE_MOCK) {
-            const source =
-                mockCategories.find(
-                    (c) => c.name.toLowerCase() === categoryName.toLowerCase(),
-                ) ?? mockCategories[0];
-            const category: Category = {
-                id: source.id,
-                cateName: (source as { name: string }).name,
-            };
-            return Promise.resolve({ data: category } as { data: Category });
-        }
-        return api.get<Category>(`/category/search?name=${categoryName}`);
+    getCategoryByName: async (categoryName: string) => {
+        const res = await api.get<CateResponse>(`/category/search?name=${categoryName}`);
+        const data: Category = mapCateResponseToCategory(res.data);
+        return { ...res, data };
     },
-    createCategory: (categoryData: CategoryData) => {
-        if (USE_MOCK) {
-            const created: Category = {
-                id: `mock-cate-${Date.now()}`,
-                cateName: categoryData.cateName,
-            };
-            return Promise.resolve({ data: created } as { data: Category });
-        }
-        return api.post<Category>("/category", categoryData);
+    createCategory: async (categoryData: CategoryData) => {
+        const res = await api.post<CateResponse>("/category", categoryData);
+        const data: Category = mapCateResponseToCategory(res.data);
+        return { ...res, data };
     },
-    updateCategory: (categoryId: string, categoryData: CategoryData) => {
-        if (USE_MOCK) {
-            const updated: Category = {
-                id: categoryId,
-                cateName: categoryData.cateName,
-            };
-            return Promise.resolve({ data: updated } as { data: Category });
-        }
-        return api.put<Category>(`/category/${categoryId}`, categoryData);
+    updateCategory: async (categoryId: string, categoryData: CategoryData) => {
+        const res = await api.put<CateResponse>(`/category/${categoryId}`, categoryData);
+        const data: Category = mapCateResponseToCategory(res.data);
+        return { ...res, data };
     },
-    deleteCategory: (categoryId: string) => {
-        if (USE_MOCK) {
-            return Promise.resolve({ data: null } as { data: null });
-        }
-        return api.delete(`/category/${categoryId}`);
-    },
+    deleteCategory: (categoryId: string) => api.delete(`/category/${categoryId}`),
 };

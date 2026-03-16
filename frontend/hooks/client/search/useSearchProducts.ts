@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useProductStore } from "@/stores/useProductsStores";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const PAGE_SIZE = 12;
 
@@ -14,11 +14,13 @@ export function useSearchProducts(currentAddress: { lat: number; lng: number } |
     const currentPageNumber = pageParam ? parseInt(pageParam, 10) : 1;
 
     useEffect(() => {
-        if (!currentAddress || !isLocationSet) return;
-
         const params = new URLSearchParams();
-        params.set("lat", currentAddress.lat.toString());
-        params.set("lon", currentAddress.lng.toString());
+        // Prefer real user coordinates when available.
+        // If missing, store layer will inject safe defaults so backend requests don't fail.
+        if (currentAddress) {
+            params.set("lat", currentAddress.lat.toString());
+            params.set("lon", currentAddress.lng.toString());
+        }
 
         const nearby = searchParams.get("nearby");
         if (nearby?.trim()) params.set("nearby", nearby);

@@ -55,7 +55,15 @@ export const productApi = {
                 },
             } as { data: PageResponse<Product> });
         }
-        return api.get<PageResponse<Product>>("/products", { params: params });
+        // Backend requires coordinates. Inject defaults when missing so global search
+        // can still work without forcing the user to set location.
+        //
+        // Default is set near UIT (Thu Duc) to match seeded restaurants/products in this project.
+        const finalParams = new URLSearchParams(params);
+        if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
+        if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
+
+        return api.get<PageResponse<Product>>("/products", { params: finalParams });
     },
     getProductsByRestaurantId: (restaurantId: string) => {
         if (USE_MOCK_PRODUCT) {

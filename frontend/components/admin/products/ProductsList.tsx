@@ -42,7 +42,7 @@ export default function ProductsList() {
                 productApi.getAllProducts(new URLSearchParams()),
                 categoryApi.getAllCategories(),
                 sizeApi.getAllSizes(),
-                restaurantApi.getAllRestaurants(new URLSearchParams({ lat: "10.762622", lon: "106.660172" })),
+                restaurantApi.getAllRestaurants(new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" })),
             ]);
             setProducts(productsRes.data.content);
             setCategories(categoriesRes.data);
