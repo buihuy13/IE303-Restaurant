@@ -16,7 +16,6 @@ import com.CNTTK18.restaurant_service.dto.distance.response.OrsDirectionResponse
 import com.CNTTK18.restaurant_service.service.DistanceService;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +26,7 @@ public class DistanceServiceImpl implements DistanceService {
     final int R = 6371000;
 
     @Override
-    public Mono<DistanceResponse> getDistanceAndDurationInList(
-            List<Double> startingPoints, List<List<Double>> endPoints) {
+    public DistanceResponse getDistanceAndDurationInList(List<Double> startingPoints, List<List<Double>> endPoints) {
         List<List<Double>> allPoints = new ArrayList<>();
 
         allPoints.add(startingPoints);
@@ -43,11 +41,12 @@ public class DistanceServiceImpl implements DistanceService {
                 .header("Authorization", distanceProperties.getApiKey()) // ORS yêu cầu API Key trong header
                 .bodyValue(distanceRequest)
                 .retrieve()
-                .bodyToMono(DistanceResponse.class);
+                .bodyToMono(DistanceResponse.class)
+                .block();
     }
 
     @Override
-    public Mono<OrsDirectionResponse> getDistanceAndDuration(List<Double> start, List<Double> end) {
+    public OrsDirectionResponse getDistanceAndDuration(List<Double> start, List<Double> end) {
         Map<String, List<List<Double>>> requestBody = Map.of("coordinates", List.of(start, end));
 
         return webClientBuilder
@@ -57,6 +56,7 @@ public class DistanceServiceImpl implements DistanceService {
                 .header("Authorization", distanceProperties.getApiKey()) // ORS yêu cầu API Key trong header
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(OrsDirectionResponse.class);
+                .bodyToMono(OrsDirectionResponse.class)
+                .block();
     }
 }

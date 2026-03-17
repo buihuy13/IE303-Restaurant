@@ -1,12 +1,15 @@
 package com.CNTTK18.restaurant_service.exception;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -93,6 +96,13 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = new ErrorResponse("NOT_ALLOWED_ACTION", ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<?> handleBindException(BindException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+        return ResponseEntity.badRequest().body(errors);
     }
 
     // Xử lý exception chung

@@ -3,7 +3,13 @@ package com.CNTTK18.restaurant_service.service.Impl;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,8 +19,11 @@ import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
+import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
+import com.CNTTK18.restaurant_service.dto.distance.response.OrsDirectionResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.Summary;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
+import com.CNTTK18.restaurant_service.dto.restaurant.request.ResQuery;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
@@ -32,8 +41,6 @@ import com.CNTTK18.restaurant_service.service.ImageHandleService;
 import com.CNTTK18.restaurant_service.service.ResService;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -46,26 +53,72 @@ public class ResServiceImpl implements ResService {
     private final ResMapper resMapper;
 
     @Override
-    public Mono<ResResponse> getRestaurantById(UUID id, Coordinates location) {
-        return Mono.fromCallable(() -> getByIdWithFetching(id))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(res -> {
-                    if (location == null) {
-                        return Mono.just(resMapper.toResResponse(res));
-                    }
+    public Page<ResResponse> getAllRestaurants(Coordinates location, ResQuery resQuery, Pageable pageable) {
 
-                    List<Double> start = List.of(location.getLongitude(), location.getLatitude());
-                    List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+        Page<Restaurants> res = getRestaurantsAfterValidation(location, resQuery, pageable);
+        if (res.isEmpty()) {
+            return Page.empty(pageable);
+        }
 
-                    return distanceService.getDistanceAndDuration(start, end).map(response -> {
-                        if (response == null || response.getFeatures().isEmpty()) {
-                            throw new DistanceDurationException("Error while calculating distance and duration");
-                        }
-                        Summary summary =
-                                response.getFeatures().get(0).getProperties().getSummary();
-                        return resMapper.toResResponse(res, summary.getDistance(), summary.getDuration());
-                    });
-                });
+        List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
+        List<List<Double>> endPoints = res.stream()
+                .map(r -> List.of(r.getLongitude(), r.getLatitude()))
+                .toList();
+
+        DistanceResponse response = distanceService.getDistanceAndDurationInList(startingPoints, endPoints);
+
+        List<Double> durations = response.getDurations().get(0);
+        List<Double> distances = response.getDistances().get(0);
+
+        List<ResResponse> responseList = IntStream.range(0, res.getContent().size())
+                .mapToObj(i -> resMapper.toResResponse(res.getContent().get(i), durations.get(i), distances.get(i)))
+                .toList();
+
+        return new PageImpl<>(responseList, pageable, res.getTotalElements());
+    }
+
+    private Page<Restaurants> getRestaurantsAfterValidation(
+            Coordinates location, ResQuery resQuery, Pageable pageable) {
+        if (location == null) {
+            throw new InvalidRequestException("longitude and latitude is mandatory");
+        }
+
+        String category = resQuery.getCategory();
+        String categoryName = (category != null && !category.isBlank()) ? category : null;
+
+        String search = (resQuery.getSearch() != null && !resQuery.getSearch().isBlank()) ? resQuery.getSearch() : null;
+
+        Sort sort = "desc".equalsIgnoreCase(resQuery.getRating())
+                ? Sort.by(Sort.Order.desc("rating"), Sort.Order.asc("id"))
+                : Sort.by("id").ascending();
+
+        Pageable newPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+        int nearby = (resQuery.getNearby() == null || resQuery.getNearby() > 20000) ? 20000 : resQuery.getNearby();
+
+        return resRepository.findRestaurantsWithinDistance(
+                location.getLongitude(), location.getLatitude(), nearby, search, categoryName, newPageable);
+    }
+
+    @Override
+    public ResResponse getRestaurantById(UUID id, Coordinates location) {
+        Restaurants res = getByIdWithFetching(id);
+
+        if (location == null) {
+            return resMapper.toResResponse(res);
+        }
+
+        List<Double> start = List.of(location.getLongitude(), location.getLatitude());
+        List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+
+        OrsDirectionResponse response = distanceService.getDistanceAndDuration(start, end);
+
+        if (response == null || response.getFeatures().isEmpty()) {
+            throw new DistanceDurationException("Error while calculating distance and duration");
+        }
+
+        Summary summary = response.getFeatures().get(0).getProperties().getSummary();
+        return resMapper.toResResponse(res, summary.getDistance(), summary.getDuration());
     }
 
     @Override
@@ -77,20 +130,19 @@ public class ResServiceImpl implements ResService {
 
     @Transactional
     @Override
-    public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser) {
-        return webClientBuilder
+    public Restaurants createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser) {
+        UserResponse user = webClientBuilder
                 .build()
                 .get()
                 .uri("lb://user-service/api/users/admin/{id}", resRequest.getMerchantId())
                 .retrieve()
                 .bodyToMono(UserResponse.class)
-                .flatMap(user -> {
-                    validateMerchant(user, authUser);
-                    Restaurants res = buildRestaurant(resRequest);
+                .block();
 
-                    return Mono.fromCallable(() -> saveRestaurant(res, imageFile))
-                            .subscribeOn(Schedulers.boundedElastic());
-                });
+        validateMerchant(user, authUser);
+        Restaurants res = buildRestaurant(resRequest);
+
+        return saveRestaurant(res, imageFile);
     }
 
     @Transactional

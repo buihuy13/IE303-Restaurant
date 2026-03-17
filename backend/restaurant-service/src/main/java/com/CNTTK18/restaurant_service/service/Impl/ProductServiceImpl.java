@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.service.Impl;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
 import com.CNTTK18.restaurant_service.dto.product.ProductIdWithRating;
+import com.CNTTK18.restaurant_service.dto.product.request.ProductQuery;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.SizePrice;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
@@ -30,7 +30,6 @@ import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResWithDistance;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
-import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
 import com.CNTTK18.restaurant_service.mapper.ProductMapper;
 import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Categories;
@@ -50,8 +49,6 @@ import com.CNTTK18.restaurant_service.service.ImageHandleService;
 import com.CNTTK18.restaurant_service.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -67,38 +64,22 @@ public class ProductServiceImpl implements ProductService {
     private final ResMapper resMapper;
 
     @Override
-    public Mono<Page<ProductResponse>> getAllProducts(
-            String rating,
-            String category,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            String search,
-            Integer nearby,
-            Coordinates location,
-            String locationsorted,
-            Pageable pageable) {
+    public Page<ProductResponse> getAllProducts(ProductQuery productQuery, Coordinates location, Pageable pageable) {
 
-        if (location == null) {
-            throw new InvalidRequestException("longitude and latitude is mandatory");
+        ProductData data = fetchProductData(productQuery, location, pageable);
+
+        if (data.restaurants().isEmpty()) {
+            return Page.empty(pageable);
         }
 
-        return Mono.fromCallable(() ->
-                        fetchProductData(rating, category, minPrice, maxPrice, search, nearby, location, pageable))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(data -> {
-                    if (data.restaurants().isEmpty()) {
-                        return Mono.just(Page.empty(pageable));
-                    }
+        List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
+        List<List<Double>> endPoints = data.restaurants().stream()
+                .map(r -> List.of(r.getLongitude(), r.getLatitude()))
+                .toList();
 
-                    List<Double> startingPoints = List.of(location.getLongitude(), location.getLatitude());
-                    List<List<Double>> endPoints = data.restaurants().stream()
-                            .map(r -> List.of(r.getLongitude(), r.getLatitude()))
-                            .toList();
+        DistanceResponse response = distanceService.getDistanceAndDurationInList(startingPoints, endPoints);
 
-                    return distanceService
-                            .getDistanceAndDurationInList(startingPoints, endPoints)
-                            .map(response -> buildPageResponse(data, response, rating, locationsorted, pageable));
-                });
+        return buildPageResponse(data, response, productQuery.getRating(), productQuery.getLocationsorted(), pageable);
     }
 
     @Override
@@ -322,21 +303,21 @@ public class ProductServiceImpl implements ProductService {
     private record ProductData(
             Page<ProductIdWithRating> productResult, List<Products> products, List<Restaurants> restaurants) {}
 
-    private ProductData fetchProductData(
-            String rating,
-            String category,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            String search,
-            Integer nearby,
-            Coordinates location,
-            Pageable pageable) {
-
-        String categoryName = (category != null && !category.isBlank()) ? category : null;
-
-        String normalizedSearch = (search != null && !search.isBlank()) ? search : null;
-        int normalizedNearby = (nearby == null || nearby > 20000) ? 20000 : nearby;
-        String sort = rating != null && "desc".equalsIgnoreCase(rating) ? "rating_id_desc" : "id_asc";
+    private ProductData fetchProductData(ProductQuery productQuery, Coordinates location, Pageable pageable) {
+        String categoryName = (productQuery.getCategory() != null
+                        && !productQuery.getCategory().isBlank())
+                ? productQuery.getCategory()
+                : null;
+        String normalizedSearch =
+                (productQuery.getSearch() != null && !productQuery.getSearch().isBlank())
+                        ? productQuery.getSearch()
+                        : null;
+        int normalizedNearby = (productQuery.getNearby() == null || productQuery.getNearby() > 20000)
+                ? 20000
+                : productQuery.getNearby();
+        String sort = productQuery.getRating() != null && "desc".equalsIgnoreCase(productQuery.getRating())
+                ? "rating_id_desc"
+                : "id_asc";
 
         Page<ProductIdWithRating> productResult = productRepo.findProductsWithinDistance(
                 location.getLongitude(),
@@ -344,8 +325,8 @@ public class ProductServiceImpl implements ProductService {
                 normalizedNearby,
                 normalizedSearch,
                 categoryName,
-                maxPrice,
-                minPrice,
+                productQuery.getMaxPrice(),
+                productQuery.getMinPrice(),
                 sort,
                 pageable);
 
