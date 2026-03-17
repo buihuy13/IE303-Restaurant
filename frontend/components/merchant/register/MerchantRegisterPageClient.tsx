@@ -391,7 +391,7 @@ export default function MerchantRegisterPageClient() {
                                             required
                                             step="any"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
-                                            placeholder="10.762622"
+                                            placeholder="10.9032198"
                                         />
                                     </div>
                                     <div>
@@ -406,7 +406,7 @@ export default function MerchantRegisterPageClient() {
                                             required
                                             step="any"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
-                                            placeholder="106.660172"
+                                            placeholder="106.7750317"
                                         />
                                     </div>
                                 </div>

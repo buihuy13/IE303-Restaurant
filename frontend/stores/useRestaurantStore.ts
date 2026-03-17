@@ -112,11 +112,11 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
     getAllRestaurants: async (params?: URLSearchParams) => {
         set({ loading: true, error: null });
         try {
-            const defaultParams = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: HCM
+            const defaultParams = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" }); // Default: UIT
             const finalParams = params ?? defaultParams;
             // Ensure lat/lon are present
-            if (!finalParams.has("lat")) finalParams.set("lat", "10.762622");
-            if (!finalParams.has("lon")) finalParams.set("lon", "106.660172");
+            if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
+            if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
             const res = await restaurantApi.getAllRestaurants(finalParams);
             // Handle Page response structure: { content: Restaurant[], ... } or direct array
             const data = res.data;

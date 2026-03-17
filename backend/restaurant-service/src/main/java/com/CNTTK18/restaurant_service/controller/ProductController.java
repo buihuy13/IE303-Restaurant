@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -14,16 +13,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.restaurant_service.dto.UserRole;
+import com.CNTTK18.restaurant_service.dto.product.request.ProductQuery;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductRequest;
 import com.CNTTK18.restaurant_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
@@ -36,7 +36,6 @@ import com.CNTTK18.restaurant_service.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/products")
@@ -47,26 +46,10 @@ public class ProductController {
     @Tag(name = "Get")
     @Operation(summary = "Get all products")
     @GetMapping("")
-    public Mono<ResponseEntity<Page<ProductResponse>>> getAllProducts(
-            @RequestParam(required = false) String rating,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Integer nearby,
-            @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon,
-            @RequestParam(required = false) String locationsorted,
-            Pageable pageable) {
-
-        Coordinates location = null;
-        if (lon != null && lat != null) {
-            location = new Coordinates(lon, lat);
-        }
-        return productService
-                .getAllProducts(
-                        rating, category, minPrice, maxPrice, search, nearby, location, locationsorted, pageable)
-                .map(productList -> ResponseEntity.ok(productList));
+    public ResponseEntity<Page<ProductResponse>> getAllProducts(
+            @ModelAttribute ProductQuery productQuery, Pageable pageable) {
+        Coordinates location = new Coordinates(productQuery.getLon(), productQuery.getLat());
+        return ResponseEntity.ok(productService.getAllProducts(productQuery, location, pageable));
     }
 
     @Tag(name = "Get")
