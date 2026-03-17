@@ -11,7 +11,7 @@ export type AccountSettingsPageViewProps = SettingsPasswordFormProps;
 
 export function AccountSettingsPageView(props: AccountSettingsPageViewProps) {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-8">
             <SettingsHeader />
             <SettingsPasswordForm {...props} />
             <SettingsSecuritySection />

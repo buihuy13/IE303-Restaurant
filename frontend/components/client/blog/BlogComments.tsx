@@ -255,7 +255,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                 <h3 className="text-xl font-bold text-gray-900">Comments ({comments?.length || 0})</h3>
                 <button
                     onClick={() => setIsCommentsExpanded(!isCommentsExpanded)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-[#EE4D2D] hover:bg-gray-50 rounded-lg transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-brand-orange hover:bg-gray-50 rounded-lg transition-all"
                     aria-label={isCommentsExpanded ? "Hide comments" : "Show comments"}
                 >
                     <span className="font-medium">{isCommentsExpanded ? "Hide" : "Show"}</span>
@@ -268,7 +268,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                 <>
                     {loading ? (
                         <div className="text-center py-8">
-                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#EE4D2D]"></div>
+                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-brand-orange"></div>
                             <p className="mt-4 text-sm text-gray-500">Loading comments...</p>
                         </div>
                     ) : !Array.isArray(comments) || comments.length === 0 ? (
@@ -290,7 +290,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                 className="rounded-full object-cover"
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-sm">
+                                            <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-sm">
                                                 {comment.author.name?.charAt(0).toUpperCase() || "?"}
                                             </div>
                                         )}
@@ -311,14 +311,14 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                     <textarea
                                                         value={editContent}
                                                         onChange={(e) => setEditContent(e.target.value)}
-                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] mb-2"
+                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange mb-2"
                                                         rows={3}
                                                         aria-label="Edit comment"
                                                     />
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => handleEditComment(comment._id)}
-                                                            className="px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] text-sm"
+                                                            className="px-4 py-2 bg-brand-orange text-white rounded-lg hover:bg-brand-orange/90 text-sm"
                                                         >
                                                             Save
                                                         </button>
@@ -363,7 +363,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                 className={`flex items-center gap-1 text-xs font-medium ${
                                                     isLiked(comment)
                                                         ? "text-red-600 hover:text-red-700"
-                                                        : "text-gray-500 hover:text-[#EE4D2D]"
+                                                        : "text-gray-500 hover:text-brand-orange"
                                                 } transition-colors`}
                                             >
                                                 <Heart
@@ -380,7 +380,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         fetchReplies(comment._id);
                                                     }
                                                 }}
-                                                className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                className="text-xs text-gray-500 hover:text-brand-orange font-medium transition-colors"
                                             >
                                                 Reply
                                             </button>
@@ -392,7 +392,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                 !expandedReplies[comment._id] && (
                                                     <button
                                                         onClick={() => toggleReplies(comment._id)}
-                                                        className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                        className="text-xs text-gray-500 hover:text-brand-orange font-medium transition-colors"
                                                     >
                                                         View {replies[comment._id].length} replies
                                                     </button>
@@ -404,7 +404,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                             setEditingComment(comment._id);
                                                             setEditContent(comment.content);
                                                         }}
-                                                        className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                        className="text-xs text-gray-500 hover:text-brand-orange font-medium transition-colors"
                                                     >
                                                         Edit
                                                     </button>
@@ -434,7 +434,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                                     className="rounded-full flex-shrink-0"
                                                                 />
                                                             ) : (
-                                                                <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                                <div className="w-8 h-8 rounded-full bg-brand-orange flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                                                     {reply.author.name.charAt(0).toUpperCase()}
                                                                 </div>
                                                             )}
@@ -467,7 +467,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                                         className={`flex items-center gap-1 text-xs font-medium ${
                                                                             isLiked(reply)
                                                                                 ? "text-red-600 hover:text-red-700"
-                                                                                : "text-gray-500 hover:text-[#EE4D2D]"
+                                                                                : "text-gray-500 hover:text-brand-orange"
                                                                         } transition-colors`}
                                                                     >
                                                                         <Heart
@@ -489,7 +489,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                                                     setEditingComment(reply._id);
                                                                                     setEditContent(reply.content);
                                                                                 }}
-                                                                                className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                                                className="text-xs text-gray-500 hover:text-brand-orange font-medium transition-colors"
                                                                             >
                                                                                 Edit
                                                                             </button>
@@ -514,7 +514,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                         {replies[comment._id] && replies[comment._id].length > 0 && (
                                             <button
                                                 onClick={() => toggleReplies(comment._id)}
-                                                className="mt-2 ml-12 text-xs text-gray-500 hover:text-[#EE4D2D] transition-colors font-medium"
+                                                className="mt-2 ml-12 text-xs text-gray-500 hover:text-brand-orange transition-colors font-medium"
                                             >
                                                 {expandedReplies[comment._id]
                                                     ? "Hide replies"
@@ -535,7 +535,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         className="rounded-full object-cover flex-shrink-0"
                                                     />
                                                 ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                                                         {user?.username?.charAt(0).toUpperCase() || "?"}
                                                     </div>
                                                 )}
@@ -545,7 +545,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         value={replyContent}
                                                         onChange={(e) => setReplyContent(e.target.value)}
                                                         placeholder="Write a reply..."
-                                                        className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:bg-white transition-all resize-none"
+                                                        className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:bg-white transition-all resize-none"
                                                         rows={2}
                                                     />
                                                     {replyImages.length > 0 && (
@@ -589,7 +589,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         />
                                                         <button
                                                             onClick={() => replyFileInputRef.current?.click()}
-                                                            className="flex items-center gap-1 px-3 py-1.5 text-xs border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-[#EE4D2D] transition-all"
+                                                            className="flex items-center gap-1 px-3 py-1.5 text-xs border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-brand-orange transition-all"
                                                         >
                                                             <ImageIcon className="w-3.5 h-3.5" />
                                                             <span>Image</span>
@@ -597,7 +597,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         <button
                                                             onClick={() => handleReply(comment._id)}
                                                             disabled={!replyContent.trim() && replyImages.length === 0}
-                                                            className="px-4 py-1.5 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="px-4 py-1.5 bg-brand-orange text-white rounded-lg hover:bg-brand-orange/90 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             Send
                                                         </button>
@@ -650,7 +650,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                         className="rounded-full object-cover flex-shrink-0"
                                     />
                                 ) : (
-                                    <div className="w-10 h-10 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                         {user?.username?.charAt(0).toUpperCase() || "?"}
                                     </div>
                                 )}
@@ -670,7 +670,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                             }, 200);
                                         }}
                                         placeholder="Write a comment..."
-                                        className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:bg-white transition-all resize-none"
+                                        className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:bg-white transition-all resize-none"
                                         rows={3}
                                     />
                                     {commentImages.length > 0 && (
@@ -714,7 +714,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                             />
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-[#EE4D2D] transition-all"
+                                                className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-brand-orange transition-all"
                                             >
                                                 <ImageIcon className="w-4 h-4" />
                                                 <span className="text-sm font-medium">Image</span>
@@ -725,7 +725,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                     setIsCommentFocused(false);
                                                 }}
                                                 disabled={!newComment.trim() && commentImages.length === 0}
-                                                className="flex items-center gap-2 px-6 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
+                                                className="flex items-center gap-2 px-6 py-2 bg-brand-orange text-white rounded-lg hover:bg-brand-orange/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
                                             >
                                                 <Send className="w-4 h-4" />
                                                 <span className="text-sm font-semibold">Send</span>

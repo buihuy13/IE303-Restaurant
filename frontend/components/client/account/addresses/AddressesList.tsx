@@ -11,12 +11,12 @@ export function AddressesList(props: { addresses: Address[]; onDelete: (addressI
             {addresses.map((address) => (
                 <div
                     key={address.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white"
                 >
                     <div className="flex justify-between items-start">
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                                <MapPin className="w-5 h-5 text-[#EE4D2D]" />
+                                <MapPin className="w-5 h-5 text-brand-orange" />
                                 <h3 className="font-semibold text-gray-800">Address</h3>
                             </div>
                             <p className="text-gray-600 text-sm mb-2">{address.location}</p>
@@ -28,7 +28,7 @@ export function AddressesList(props: { addresses: Address[]; onDelete: (addressI
                         </div>
                         <button
                             onClick={() => onDelete(address.id)}
-                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                             title="Delete address"
                         >
                             <Trash2 size={18} />

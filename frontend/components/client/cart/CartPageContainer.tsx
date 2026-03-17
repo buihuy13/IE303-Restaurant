@@ -1,6 +1,7 @@
 "use client";
 
 import GlobalLoader from "@/components/ui/GlobalLoader";
+import { Button } from "@/components/ui/Button";
 import { saveCheckoutSelection } from "@/lib/checkoutSelection";
 import { CartItem, useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -212,12 +213,9 @@ export default function CartPageContainer() {
                         </p>
 
                         {/* CTA Button */}
-                        <Link
-                            href="/"
-                            className="bg-[#EE4D2D] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                            Go Shopping Now
-                        </Link>
+                        <Button asChild variant="brand" className="h-12 px-8 shadow-md hover:shadow-lg">
+                            <Link href="/">Go Shopping Now</Link>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -241,14 +239,14 @@ export default function CartPageContainer() {
     return (
         <div className="custom-container p-4 sm:p-6 md:p-12">
             {/* Header */}
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-6">
                 Shopping Cart ({totalItems} {totalItems > 1 ? "items" : "item"})
             </h1>
 
             {/* Desktop: 2 Column Layout */}
             <div className="hidden lg:grid lg:grid-cols-[65%_35%] gap-6">
                 {/* Left Column: Cart Items */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
                     {/* Header with Select All */}
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                         <label className="flex items-center gap-3 cursor-pointer">
@@ -256,7 +254,7 @@ export default function CartPageContainer() {
                                 type="checkbox"
                                 checked={selectedItems.size === items.length && items.length > 0}
                                 onChange={toggleSelectAll}
-                                className="w-5 h-5 text-[#EE4D2D] border-gray-300 rounded focus:ring-[#EE4D2D] focus:ring-2"
+                                className="w-5 h-5 text-brand-orange border-gray-300 rounded focus:ring-brand-orange focus:ring-2"
                             />
                             <span className="text-sm font-medium text-gray-700">
                                 Select All ({selectedItems.size} items)
@@ -269,7 +267,9 @@ export default function CartPageContainer() {
                         {Object.entries(groupedItems).map(([restaurantId, group]) => (
                             <div key={restaurantId} className="p-6">
                                 {/* Restaurant Name */}
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">{group.restaurantName}</h2>
+                                <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">
+                                    {group.restaurantName}
+                                </h2>
 
                                 {/* Items */}
                                 {group.items.map((item) => {
@@ -305,7 +305,7 @@ export default function CartPageContainer() {
             {/* Mobile: Single Column + Fixed Bottom Bar */}
             <div className="lg:hidden">
                 {/* Cart Items */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-20">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-24">
                     {/* Header with Select All */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -313,7 +313,7 @@ export default function CartPageContainer() {
                                 type="checkbox"
                                 checked={selectedItems.size === items.length && items.length > 0}
                                 onChange={toggleSelectAll}
-                                className="w-4 h-4 text-[#EE4D2D] border-gray-300 rounded focus:ring-[#EE4D2D] focus:ring-2"
+                                className="w-4 h-4 text-brand-orange border-gray-300 rounded focus:ring-brand-orange focus:ring-2"
                             />
                             <span className="text-sm font-medium text-gray-700">Select All ({selectedItems.size})</span>
                         </label>
@@ -347,23 +347,24 @@ export default function CartPageContainer() {
                 </div>
 
                 {/* Fixed Bottom Bar */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 lg:hidden">
+                <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] z-50 lg:hidden">
                     <div className="custom-container px-4 py-3">
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>
-                                <span className="text-lg font-bold text-[#EE4D2D]">
+                                <span className="text-lg font-bold text-brand-orange">
                                     ${formatPriceUSD(selectedSubtotal)}
                                 </span>
                             </div>
-                            <button
+                            <Button
                                 type="button"
                                 onClick={handleCheckout}
                                 disabled={selectedItemsList.length === 0 || selectedRestaurantIds.size !== 1}
-                                className="bg-[#EE4D2D] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                variant="brand"
+                                className="h-12 px-6 rounded-full shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-white"
                             >
                                 Checkout ({selectedTotalItems})
-                            </button>
+                            </Button>
                         </div>
                         {selectedItemsList.length > 0 && selectedRestaurantIds.size > 1 && (
                             <p className="mt-2 text-xs text-red-500">

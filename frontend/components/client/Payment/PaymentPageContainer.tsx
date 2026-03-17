@@ -2,6 +2,8 @@
 
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import GlobalLoader from "@/components/ui/GlobalLoader";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { authApi } from "@/lib/api/authApi";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
@@ -636,12 +638,9 @@ export default function PaymentPageClient() {
             <div className="custom-container p-4 sm:p-6 md:p-12">
                 <div className="text-center py-12">
                     <p className="text-gray-600 mb-4">Your cart is empty</p>
-                    <button
-                        onClick={() => router.push("/cart")}
-                        className="text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
-                    >
+                    <Button onClick={() => router.push("/cart")} variant="link" className="text-brand-orange">
                         Go to Cart
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -658,12 +657,12 @@ export default function PaymentPageClient() {
             <div className="mb-6">
                 <Link
                     href="/cart"
-                    className="inline-flex items-center gap-2 text-gray-600 hover:text-[#EE4D2D] transition-colors mb-4 group"
+                    className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-orange transition-colors mb-4 group"
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     <span className="text-sm font-medium">Back to Cart</span>
                 </Link>
-                <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Checkout</h1>
             </div>
 
             {/* Desktop: 2 Column Layout */}
@@ -671,8 +670,8 @@ export default function PaymentPageClient() {
                 {/* Left Column: Delivery Details Only */}
                 <div className="space-y-6">
                     {/* Block A: Delivery Details */}
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                        <h2 className="text-xl font-bold mb-4">Delivery Details</h2>
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Delivery Details</h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Name */}
@@ -680,14 +679,14 @@ export default function PaymentPageClient() {
                                 <label htmlFor="desktop-name" className="block text-sm font-medium text-gray-700 mb-1">
                                     Name
                                 </label>
-                                <input
+                                <Input
                                     id="desktop-name"
                                     type="text"
                                     name="name"
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                    className="h-10"
                                 />
                             </div>
 
@@ -696,14 +695,14 @@ export default function PaymentPageClient() {
                                 <label htmlFor="desktop-phone" className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone Number
                                 </label>
-                                <input
+                                <Input
                                     id="desktop-phone"
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                    className="h-10"
                                 />
                             </div>
 
@@ -725,7 +724,7 @@ export default function PaymentPageClient() {
                                                     handleAddressSelect(addresses[0].id);
                                                 }
                                             }}
-                                            className="mt-1 h-4 w-4 accent-[#EE4D2D]"
+                                            className="mt-1 h-4 w-4 accent-brand-orange"
                                         />
                                         <div className="flex-1">
                                             <div className="text-sm font-medium text-gray-900">
@@ -743,7 +742,7 @@ export default function PaymentPageClient() {
                                                                 className={
                                                                     "w-full rounded-lg border p-3 text-left transition-colors " +
                                                                     (selected
-                                                                        ? "border-[#EE4D2D] bg-[#EE4D2D]/5"
+                                                                        ? "border-brand-orange bg-brand-orange/5"
                                                                         : "border-gray-200 hover:bg-gray-50")
                                                                 }
                                                             >
@@ -754,7 +753,7 @@ export default function PaymentPageClient() {
                                                                         </div>
                                                                     </div>
                                                                     {selected && (
-                                                                        <span className="text-xs font-semibold text-[#EE4D2D]">
+                                                                        <span className="text-xs font-semibold text-brand-orange">
                                                                             Selected
                                                                         </span>
                                                                     )}
@@ -774,7 +773,7 @@ export default function PaymentPageClient() {
                                         name="addressMode"
                                         checked={useNewAddress || addresses.length === 0}
                                         onChange={handleUseNewAddress}
-                                        className="mt-1 h-4 w-4 accent-[#EE4D2D]"
+                                        className="mt-1 h-4 w-4 accent-brand-orange"
                                     />
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between gap-3">
@@ -811,7 +810,7 @@ export default function PaymentPageClient() {
                                     onChange={handleChange}
                                     rows={3}
                                     placeholder="Any special instructions..."
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                                 />
                             </div>
                         </form>
@@ -821,8 +820,8 @@ export default function PaymentPageClient() {
                 {/* Right Column: Order Summary + Payment Method */}
                 <div className="space-y-6 lg:sticky lg:top-24 h-fit">
                     {/* Block A: Order Summary */}
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                        <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
 
                         {/* Items List */}
                         <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
@@ -879,13 +878,13 @@ export default function PaymentPageClient() {
                         {/* Total */}
                         <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                             <span className="text-lg font-semibold text-gray-900">Total</span>
-                            <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
+                            <span className="text-2xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
                         </div>
                     </div>
 
                     {/* Block B: Payment Method */}
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
-                        <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6" data-payment-form>
+                        <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
                         {isProcessingCardPayment && stripeClientSecret ? (
                             <div className="space-y-4">
                                 <PaymentMethodSelector
@@ -901,7 +900,7 @@ export default function PaymentPageClient() {
                                 <div className="text-gray-500 text-sm py-4 text-center">
                                     {isProcessingCardPayment ? (
                                         <div className="flex items-center justify-center space-x-2">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
                                             <span>Preparing payment form...</span>
                                         </div>
                                     ) : (
@@ -911,14 +910,15 @@ export default function PaymentPageClient() {
 
                                 {/* Place Order Button - Only show if not processing card payment */}
                                 {!isProcessingCardPayment && (
-                                    <button
+                                    <Button
                                         type="submit"
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
-                                        className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                                        variant="brand"
+                                        className="w-full h-12 rounded-full shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                                     >
                                         {isSubmitting ? "Placing order..." : "Place Order"}
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         )}
@@ -929,8 +929,8 @@ export default function PaymentPageClient() {
             {/* Mobile: Single Column */}
             <div className="lg:hidden space-y-6 pb-24">
                 {/* Delivery Details */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-                    <h2 className="text-lg font-bold mb-4">Delivery Details</h2>
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Delivery Details</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-3">
                         {/* Name */}
@@ -938,14 +938,14 @@ export default function PaymentPageClient() {
                             <label htmlFor="mobile-name" className="block text-sm font-medium text-gray-700 mb-1">
                                 Name
                             </label>
-                            <input
+                            <Input
                                 id="mobile-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                                className="h-10 text-sm"
                             />
                         </div>
 
@@ -954,14 +954,14 @@ export default function PaymentPageClient() {
                             <label htmlFor="mobile-phone" className="block text-sm font-medium text-gray-700 mb-1">
                                 Phone Number
                             </label>
-                            <input
+                            <Input
                                 id="mobile-phone"
                                 type="tel"
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                                className="h-10 text-sm"
                             />
                         </div>
 
@@ -975,7 +975,7 @@ export default function PaymentPageClient() {
                                     value={selectedAddressId || ""}
                                     onChange={(e) => handleAddressSelect(e.target.value)}
                                     aria-label="Select Address"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange text-sm"
                                 >
                                     {addresses.map((addr) => (
                                         <option key={addr.id} value={addr.id}>
@@ -983,14 +983,15 @@ export default function PaymentPageClient() {
                                         </option>
                                     ))}
                                 </select>
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => setUseNewAddress(true)}
-                                    className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 flex items-center gap-1"
+                                    variant="link"
+                                    className="mt-2 h-auto p-0 text-xs text-brand-orange hover:text-brand-orange/80 flex items-center gap-1"
                                 >
                                     <Edit2 className="w-3 h-3" />
                                     Use new address
-                                </button>
+                                </Button>
                             </div>
                         ) : (
                             <div>
@@ -1004,7 +1005,7 @@ export default function PaymentPageClient() {
                                     className="w-full"
                                 />
                                 {addresses.length > 0 && (
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={() => {
                                             setUseNewAddress(false);
@@ -1012,10 +1013,11 @@ export default function PaymentPageClient() {
                                                 handleAddressSelect(addresses[0].id);
                                             }
                                         }}
-                                        className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80"
+                                        variant="link"
+                                        className="mt-2 h-auto p-0 text-xs text-brand-orange hover:text-brand-orange/80"
                                     >
                                         Use saved address
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         )}
@@ -1031,15 +1033,15 @@ export default function PaymentPageClient() {
                                 onChange={handleChange}
                                 rows={2}
                                 placeholder="Any special instructions..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange text-sm"
                             />
                         </div>
                     </form>
                 </div>
 
                 {/* Order Summary */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-                    <h2 className="text-lg font-bold mb-4">Order Summary</h2>
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
 
                     {/* Items List */}
                     <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
@@ -1096,13 +1098,13 @@ export default function PaymentPageClient() {
                     {/* Total */}
                     <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                         <span className="text-base font-semibold text-gray-900">Total</span>
-                        <span className="text-xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
+                        <span className="text-xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
                     </div>
                 </div>
 
                 {/* Payment Method */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
-                    <h2 className="text-lg font-bold mb-4">Payment Method</h2>
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4" data-payment-form>
+                    <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
                     {isProcessingCardPayment && stripeClientSecret ? (
                         <div className="space-y-4">
                             <PaymentMethodSelector
@@ -1118,7 +1120,7 @@ export default function PaymentPageClient() {
                             <div className="text-gray-500 text-sm py-4 text-center">
                                 {isProcessingCardPayment ? (
                                     <div className="flex items-center justify-center space-x-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
                                         <span>Preparing payment form...</span>
                                     </div>
                                 ) : (
@@ -1128,14 +1130,15 @@ export default function PaymentPageClient() {
 
                             {/* Place Order Button - Only show if not processing card payment */}
                             {!isProcessingCardPayment && (
-                                <button
+                                <Button
                                     type="submit"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    variant="brand"
+                                    className="w-full h-12 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSubmitting ? "Placing order..." : "Place Order"}
-                                </button>
+                                </Button>
                             )}
                         </div>
                     )}

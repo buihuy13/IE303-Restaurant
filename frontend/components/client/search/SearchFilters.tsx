@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { Category } from "@/types";
 import { X } from "lucide-react";
@@ -27,13 +30,27 @@ const districts = [
     "Phu Nhuan District",
 ];
 
+const distanceOptions = [
+    { value: "", label: "Any distance" },
+    { value: "0-3", label: "Within 3 km" },
+    { value: "0-5", label: "Within 5 km" },
+    { value: "0-10", label: "Within 10 km" },
+    { value: "10+", label: "10+ km" },
+];
+
 interface SearchFiltersProps {
     isMobile?: boolean;
     onClose?: () => void;
     initialCategories?: Category[];
+    searchType?: "foods" | "restaurants";
 }
 
-export default function SearchFilters({ isMobile = false, onClose, initialCategories = [] }: SearchFiltersProps) {
+export default function SearchFilters({
+    isMobile = false,
+    onClose,
+    initialCategories = [],
+    searchType = "foods",
+}: SearchFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { categories, fetchAllCategories } = useCategoryStore();
@@ -43,6 +60,8 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
     const [maxPriceUSD, setMaxPriceUSD] = useState<string>("");
     const [selectedRating, setSelectedRating] = useState<string>("");
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+    const [openNow, setOpenNow] = useState<boolean>(false);
+    const [distanceRange, setDistanceRange] = useState<string>("");
 
     useEffect(() => {
         const hasStoreCategories = !!(categories && categories.length > 0);
@@ -93,10 +112,13 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
         
         setSelectedRating(searchParams.get("rating") || "");
         setSelectedDistrict(searchParams.get("district") || "");
+        setOpenNow(searchParams.get("openNow") === "1");
+        setDistanceRange(searchParams.get("distanceRange") || "");
     }, [searchParams]);
 
     const updateURL = (updates: Record<string, string | string[] | null>) => {
         const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        currentParams.delete("page");
         
         Object.entries(updates).forEach(([key, value]) => {
             currentParams.delete(key);
@@ -180,12 +202,26 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
         updateURL({ district: newValue || null });
     };
 
+    const handleOpenNowToggle = () => {
+        const next = !openNow;
+        setOpenNow(next);
+        updateURL({ openNow: next ? "1" : null });
+    };
+
+    const handleDistanceChange = (value: string) => {
+        const next = distanceRange === value ? "" : value;
+        setDistanceRange(next);
+        updateURL({ distanceRange: next || null });
+    };
+
     const handleClearAll = () => {
         setSelectedCategories([]);
         setMinPriceUSD("");
         setMaxPriceUSD("");
         setSelectedRating("");
         setSelectedDistrict("");
+        setOpenNow(false);
+        setDistanceRange("");
         // Clear all filters including search query
         router.push(`/search`, { scroll: false });
         if (onClose) onClose();
@@ -196,89 +232,128 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
         minPriceUSD ||
         maxPriceUSD ||
         selectedRating ||
-        selectedDistrict;
+        selectedDistrict ||
+        openNow ||
+        !!distanceRange;
+
+    const activeFilterCount =
+        selectedCategories.length +
+        (minPriceUSD || maxPriceUSD ? 1 : 0) +
+        (selectedRating ? 1 : 0) +
+        (selectedDistrict ? 1 : 0) +
+        (openNow ? 1 : 0) +
+        (distanceRange ? 1 : 0);
 
     const content = (
-        <div className={`${isMobile ? "p-4" : "p-4"} bg-white ${isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"}`}>
+        <div
+            className={`${
+                isMobile ? "p-4" : "p-4"
+            } rounded-xl border border-gray-200 bg-white shadow-sm ${
+                isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"
+            }`}
+        >
             {/* Header */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900">Filters</h3>
-                {hasActiveFilters && (
+                <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+                    {activeFilterCount > 0 && (
+                        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-orange/10 px-2 text-xs font-semibold text-brand-orange">
+                            {activeFilterCount}
+                        </span>
+                    )}
+                </div>
+                {isMobile ? (
                     <button
-                        onClick={handleClearAll}
-                        className="text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium flex items-center gap-1"
+                        onClick={onClose}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                        aria-label="Close filters"
+                        title="Close"
                     >
-                        <X className="w-4 h-4" />
-                        Clear All
+                        <X className="w-5 h-5 text-gray-600" />
                     </button>
+                ) : (
+                    hasActiveFilters && (
+                        <Button
+                            type="button"
+                            onClick={handleClearAll}
+                            variant="brandGhost"
+                            size="sm"
+                            className="h-8 px-2"
+                        >
+                            <X className="w-4 h-4" />
+                            Clear All
+                        </Button>
+                    )
                 )}
             </div>
 
             {/* Category Filter */}
             {/* Default closed so it doesn't pop open again on URL changes (price/rating/etc.) */}
-            <FilterSection title="Categories" defaultOpen={false}>
-                {categories && categories.length > 0 ? (
-                    <div className="space-y-3">
-                        {categories.map((category: Category) => (
-                            <label
-                                key={category.cateName}
-                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={selectedCategories.includes(category.cateName)}
-                                    onChange={() => handleCategoryToggle(category.cateName)}
-                                    className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D] rounded"
-                                />
-                                <span className="text-sm text-gray-700">{category.cateName}</span>
-                            </label>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-sm text-gray-500">Loading...</p>
-                )}
-            </FilterSection>
+            {searchType === "foods" && (
+                <FilterSection title="Categories" defaultOpen={false}>
+                    {categories && categories.length > 0 ? (
+                        <div className="space-y-3">
+                            {categories.map((category: Category) => (
+                                <label
+                                    key={category.cateName}
+                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedCategories.includes(category.cateName)}
+                                        onChange={() => handleCategoryToggle(category.cateName)}
+                                        className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
+                                    />
+                                    <span className="text-sm text-gray-700">{category.cateName}</span>
+                                </label>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500">Loading...</p>
+                    )}
+                </FilterSection>
+            )}
 
             {/* Price Range Filter */}
-            <FilterSection title="Price Range">
-                <div className="space-y-3">
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-gray-600">Min Price (USD)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={minPriceUSD}
-                            onChange={(e) => {
-                                setMinPriceUSD(e.target.value);
-                                handlePriceRangeChange();
-                            }}
-                            onBlur={handlePriceRangeChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
-                        />
+            {searchType === "foods" && (
+                <FilterSection title="Price Range">
+                    <div className="space-y-3">
+                        <div className="space-y-2">
+                            <label className="block text-xs font-medium text-gray-600">Min Price (USD)</label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={minPriceUSD}
+                                onChange={(e) => {
+                                    setMinPriceUSD(e.target.value);
+                                    handlePriceRangeChange();
+                                }}
+                                onBlur={handlePriceRangeChange}
+                                className="h-10"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-xs font-medium text-gray-600">Max Price (USD)</label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={maxPriceUSD}
+                                onChange={(e) => {
+                                    setMaxPriceUSD(e.target.value);
+                                    handlePriceRangeChange();
+                                }}
+                                onBlur={handlePriceRangeChange}
+                                className="h-10"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Leave empty for no limit. Prices are in USD.</p>
                     </div>
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-gray-600">Max Price (USD)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={maxPriceUSD}
-                            onChange={(e) => {
-                                setMaxPriceUSD(e.target.value);
-                                handlePriceRangeChange();
-                            }}
-                            onBlur={handlePriceRangeChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
-                        />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                        Leave empty for no limit. Prices are in USD.
-                    </p>
-                </div>
-            </FilterSection>
+                </FilterSection>
+            )}
 
             {/* Rating Filter */}
             <FilterSection title="Rating">
@@ -287,7 +362,7 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
                         <label
                             key={option.value}
                             className={`flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded ${
-                                selectedRating === option.value ? "bg-[#EE4D2D]/10" : ""
+                                selectedRating === option.value ? "bg-brand-orange/10" : ""
                             }`}
                         >
                             <input
@@ -296,7 +371,7 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
                                 value={option.value}
                                 checked={selectedRating === option.value}
                                 onChange={() => handleRatingChange(option.value)}
-                                className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D]"
+                                className="w-4 h-4 text-brand-orange focus:ring-brand-orange"
                             />
                             <span className="text-sm text-gray-700 flex items-center gap-1">
                                 {option.value === "5" && "⭐⭐⭐⭐⭐"}
@@ -311,11 +386,11 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
 
             {/* District Filter */}
             <FilterSection title="Area">
-                <select
+                <Select
                     value={selectedDistrict}
                     onChange={(e) => handleDistrictChange(e.target.value)}
                     aria-label="Select area"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50"
+                    className="w-full"
                 >
                     <option value="">All Areas</option>
                     {districts.map((district) => (
@@ -323,8 +398,69 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
                             {district}
                         </option>
                     ))}
-                </select>
+                </Select>
             </FilterSection>
+
+            {searchType === "restaurants" && (
+                <FilterSection title="Open Now">
+                    <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                        <input
+                            type="checkbox"
+                            checked={openNow}
+                            onChange={handleOpenNowToggle}
+                            className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
+                        />
+                        <span className="text-sm text-gray-700">Show restaurants open right now</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">
+                        UI-only if backend doesn&apos;t support hours yet.
+                    </p>
+                </FilterSection>
+            )}
+
+            {searchType === "restaurants" && (
+                <FilterSection title="Distance">
+                    <Select
+                        value={distanceRange}
+                        onChange={(e) => handleDistanceChange(e.target.value)}
+                        aria-label="Select distance"
+                        className="w-full"
+                    >
+                        {distanceOptions.map((opt) => (
+                            <option key={opt.value || "any"} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-2">
+                        UI-only if backend doesn&apos;t support distance filtering yet.
+                    </p>
+                </FilterSection>
+            )}
+
+            {/* Mobile footer actions */}
+            {isMobile && (
+                <div className="pt-4 mt-4 border-t border-gray-200 flex gap-2">
+                    <Button
+                        type="button"
+                        onClick={handleClearAll}
+                        variant="brandOutline"
+                        className="flex-1 h-11 rounded-full"
+                        disabled={!hasActiveFilters}
+                        title={!hasActiveFilters ? "No filters to clear" : "Clear all filters"}
+                    >
+                        Clear all
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={onClose}
+                        variant="brand"
+                        className="flex-1 h-11 rounded-full shadow-sm hover:shadow-md"
+                    >
+                        Done
+                    </Button>
+                </div>
+            )}
         </div>
     );
 
@@ -333,18 +469,9 @@ export default function SearchFilters({ isMobile = false, onClose, initialCatego
         return (
             <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
                 <div
-                    className="fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-xl overflow-y-auto"
+                    className="fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-2xl overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-end p-4 border-b border-gray-200">
-                        <button
-                            onClick={onClose}
-                            className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-                            aria-label="Close filters"
-                        >
-                            <X className="w-5 h-5 text-gray-600" />
-                        </button>
-                    </div>
                     {content}
                 </div>
             </div>

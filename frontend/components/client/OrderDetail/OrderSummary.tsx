@@ -103,8 +103,8 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     }, [isAdding, order, addItem, user, isAuthenticated, router]);
 
     return (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-md w-full lg:sticky lg:top-24">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Order Summary</h2>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm w-full lg:sticky lg:top-24">
+            <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
             <div className="space-y-3 text-gray-600">
                 <div className="flex justify-between">
                     <span>Original Price</span>
@@ -125,12 +125,12 @@ export const OrderSummary = ({ order }: { order: Order }) => {
             </div>
             <div className="flex justify-between font-bold text-2xl mt-4 pt-4 border-t border-gray-200">
                 <span className="text-gray-900">Total</span>
-                <span className="text-[#EE4D2D] text-right">${formatPrice(total)}</span>
+                <span className="text-brand-orange text-right">${formatPrice(total)}</span>
             </div>
             <button
                 onClick={handleBuyAgain}
                 disabled={isAdding}
-                className="cursor-pointer w-full mt-6 bg-[#EE4D2D] text-white font-bold py-3 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="cursor-pointer w-full mt-6 bg-brand-orange text-white font-bold py-3 rounded-full hover:bg-brand-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
                 {isAdding ? "Adding..." : "Reorder"}
             </button>

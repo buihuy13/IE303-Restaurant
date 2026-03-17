@@ -40,22 +40,22 @@ export function AccountAddressesPageView({
 }: AccountAddressesPageViewProps) {
     if (!mounted || authLoading || loading) {
         return (
-            <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-[#EE4D2D]" />
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
             </div>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold mb-2">My Addresses</h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">My Addresses</h1>
                     <p className="text-gray-500">Manage your delivery addresses</p>
                 </div>
                 <Button
                     onClickFunction={onToggleAdd}
-                    className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer flex items-center gap-2"
+                    className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer flex items-center gap-2 rounded-full shadow-sm hover:shadow-md transition-shadow"
                 >
                     <Plus size={20} />
                     {isAdding ? "Cancel" : "Add Address"}
@@ -94,7 +94,7 @@ export function AccountAddressesPageView({
                                     type="button"
                                     onClick={onUseCurrentLocation}
                                     disabled={submitting || isLocating}
-                                    className="inline-flex items-center gap-2 rounded-md border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-3 py-2 text-sm font-semibold text-[#EE4D2D] hover:bg-[#EE4D2D]/15 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 rounded-md border border-brand-orange/30 bg-brand-orange/10 px-3 py-2 text-sm font-semibold text-brand-orange hover:bg-brand-orange/15 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isLocating ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -108,7 +108,7 @@ export function AccountAddressesPageView({
                         <div className="flex gap-4">
                             <Button
                                 type="submit"
-                                className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={submitting}
                             >
                                 {submitting ? (
@@ -152,7 +152,7 @@ export function AccountAddressesPageView({
                                 />
                             </svg>
                         </div>
-                        <p className="text-gray-500 text-lg font-semibold mb-2">No addresses saved yet</p>
+                        <p className="text-gray-800 text-lg font-semibold mb-2">No addresses saved yet</p>
                         <p className="text-gray-400 text-sm">Add your first address to get started</p>
                     </div>
                 ) : (
@@ -161,12 +161,12 @@ export function AccountAddressesPageView({
                             addresses.map((address) => (
                                 <div
                                     key={address.id}
-                                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                    className="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white"
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <MapPin className="w-5 h-5 text-[#EE4D2D]" />
+                                                <MapPin className="w-5 h-5 text-brand-orange" />
                                                 <h3 className="font-semibold text-gray-800">Address</h3>
                                             </div>
                                             <p className="text-gray-600 text-sm mb-2">{address.location}</p>
@@ -179,7 +179,7 @@ export function AccountAddressesPageView({
                                         </div>
                                         <button
                                             onClick={() => onDeleteAddress(address.id)}
-                                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                                             title="Delete address"
                                         >
                                             <Trash2 size={18} />
