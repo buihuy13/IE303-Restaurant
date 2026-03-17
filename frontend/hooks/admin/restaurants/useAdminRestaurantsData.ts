@@ -10,7 +10,7 @@ export function useAdminRestaurantsData() {
     const fetchRestaurants = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" });
+            const params = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" });
             const response = await restaurantApi.getAllRestaurants(params);
             const restaurantData = response.data?.content || response.data;
             setRestaurants(Array.isArray(restaurantData) ? restaurantData : []);

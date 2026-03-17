@@ -39,7 +39,13 @@ export const useProductStore = create<ProductState>((set) => ({
     fetchAllProducts: async (params: URLSearchParams) => {
         set({ loading: true, error: null });
         try {
-            const res = await productApi.getAllProducts(params);
+            // Backend requires coordinates. Keep frontend resilient by injecting defaults
+            // when the caller doesn't provide them (same strategy as restaurant listing).
+            const finalParams = new URLSearchParams(params);
+            if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
+            if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
+
+            const res = await productApi.getAllProducts(finalParams);
             // Handle Page response structure: { content: Product[], totalPages, totalElements, ... }
             const data = res.data;
 

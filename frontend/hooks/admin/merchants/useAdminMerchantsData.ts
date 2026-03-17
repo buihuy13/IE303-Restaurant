@@ -21,7 +21,7 @@ export function useAdminMerchantsData() {
             const data = await merchantApi.getAllMerchants();
             const baseMerchants = Array.isArray(data) ? data : [];
 
-            const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" });
+            const params = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" });
             const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
             const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
 
