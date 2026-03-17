@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.service.Impl;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -305,18 +304,20 @@ public class ProductServiceImpl implements ProductService {
             Page<ProductIdWithRating> productResult, List<Products> products, List<Restaurants> restaurants) {}
 
     private ProductData fetchProductData(ProductQuery productQuery, Coordinates location, Pageable pageable) {
-
-        String category = productQuery.getCategory();
-        String search = productQuery.getSearch();
-        Integer nearby = productQuery.getNearby();
-        String rating = productQuery.getRating();
-        BigDecimal maxPrice = productQuery.getMaxPrice();
-        BigDecimal minPrice = productQuery.getMinPrice();
-
-        String categoryName = (category != null && !category.isBlank()) ? category : null;
-        String normalizedSearch = (search != null && !search.isBlank()) ? search : null;
-        int normalizedNearby = (nearby == null || nearby > 20000) ? 20000 : nearby;
-        String sort = rating != null && "desc".equalsIgnoreCase(rating) ? "rating_id_desc" : "id_asc";
+        String categoryName = (productQuery.getCategory() != null
+                        && !productQuery.getCategory().isBlank())
+                ? productQuery.getCategory()
+                : null;
+        String normalizedSearch =
+                (productQuery.getSearch() != null && !productQuery.getSearch().isBlank())
+                        ? productQuery.getSearch()
+                        : null;
+        int normalizedNearby = (productQuery.getNearby() == null || productQuery.getNearby() > 20000)
+                ? 20000
+                : productQuery.getNearby();
+        String sort = productQuery.getRating() != null && "desc".equalsIgnoreCase(productQuery.getRating())
+                ? "rating_id_desc"
+                : "id_asc";
 
         Page<ProductIdWithRating> productResult = productRepo.findProductsWithinDistance(
                 location.getLongitude(),
@@ -324,8 +325,8 @@ public class ProductServiceImpl implements ProductService {
                 normalizedNearby,
                 normalizedSearch,
                 categoryName,
-                maxPrice,
-                minPrice,
+                productQuery.getMaxPrice(),
+                productQuery.getMinPrice(),
                 sort,
                 pageable);
 

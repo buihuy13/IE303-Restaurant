@@ -5,10 +5,13 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.response.MessageResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
+import com.CNTTK18.restaurant_service.dto.restaurant.request.ResQuery;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
@@ -36,6 +40,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ResController {
     private final ResService resService;
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get all restaurants")
+    @GetMapping()
+    public ResponseEntity<Page<ResResponse>> getAllRestaurants(@ModelAttribute ResQuery resQuery, Pageable pageable) {
+
+        Coordinates location = null;
+        Double lon = resQuery.getLon();
+        Double lat = resQuery.getLat();
+        if (lon != null && lat != null) {
+            location = new Coordinates(lon, lat);
+        }
+        return ResponseEntity.ok(resService.getAllRestaurants(location, resQuery, pageable));
+    }
 
     @Tag(name = "Get")
     @Operation(summary = "Get restaurant by ID")
