@@ -13,6 +13,7 @@ import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
+import com.CNTTK18.restaurant_service.dto.distance.response.OrsDirectionResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.Summary;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
@@ -32,8 +33,6 @@ import com.CNTTK18.restaurant_service.service.ImageHandleService;
 import com.CNTTK18.restaurant_service.service.ResService;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -46,26 +45,24 @@ public class ResServiceImpl implements ResService {
     private final ResMapper resMapper;
 
     @Override
-    public Mono<ResResponse> getRestaurantById(UUID id, Coordinates location) {
-        return Mono.fromCallable(() -> getByIdWithFetching(id))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(res -> {
-                    if (location == null) {
-                        return Mono.just(resMapper.toResResponse(res));
-                    }
+    public ResResponse getRestaurantById(UUID id, Coordinates location) {
+        Restaurants res = getByIdWithFetching(id);
 
-                    List<Double> start = List.of(location.getLongitude(), location.getLatitude());
-                    List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+        if (location == null) {
+            return resMapper.toResResponse(res);
+        }
 
-                    return distanceService.getDistanceAndDuration(start, end).map(response -> {
-                        if (response == null || response.getFeatures().isEmpty()) {
-                            throw new DistanceDurationException("Error while calculating distance and duration");
-                        }
-                        Summary summary =
-                                response.getFeatures().get(0).getProperties().getSummary();
-                        return resMapper.toResResponse(res, summary.getDistance(), summary.getDuration());
-                    });
-                });
+        List<Double> start = List.of(location.getLongitude(), location.getLatitude());
+        List<Double> end = List.of(res.getLongitude(), res.getLatitude());
+
+        OrsDirectionResponse response = distanceService.getDistanceAndDuration(start, end);
+
+        if (response == null || response.getFeatures().isEmpty()) {
+            throw new DistanceDurationException("Error while calculating distance and duration");
+        }
+
+        Summary summary = response.getFeatures().get(0).getProperties().getSummary();
+        return resMapper.toResResponse(res, summary.getDistance(), summary.getDuration());
     }
 
     @Override
@@ -77,20 +74,19 @@ public class ResServiceImpl implements ResService {
 
     @Transactional
     @Override
-    public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser) {
-        return webClientBuilder
+    public Restaurants createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser) {
+        UserResponse user = webClientBuilder
                 .build()
                 .get()
                 .uri("lb://user-service/api/users/admin/{id}", resRequest.getMerchantId())
                 .retrieve()
                 .bodyToMono(UserResponse.class)
-                .flatMap(user -> {
-                    validateMerchant(user, authUser);
-                    Restaurants res = buildRestaurant(resRequest);
+                .block();
 
-                    return Mono.fromCallable(() -> saveRestaurant(res, imageFile))
-                            .subscribeOn(Schedulers.boundedElastic());
-                });
+        validateMerchant(user, authUser);
+        Restaurants res = buildRestaurant(resRequest);
+
+        return saveRestaurant(res, imageFile);
     }
 
     @Transactional

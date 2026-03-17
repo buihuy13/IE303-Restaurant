@@ -12,15 +12,13 @@ import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 
-import reactor.core.publisher.Mono;
-
 public interface ResService {
 
-    public Mono<ResResponse> getRestaurantById(UUID id, Coordinates location);
+    public ResResponse getRestaurantById(UUID id, Coordinates location);
 
     public ResResponse getRestaurantBySlug(String slug);
 
-    public Mono<Restaurants> createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser);
+    public Restaurants createRestaurant(ResRequest resRequest, MultipartFile imageFile, UserRole authUser);
 
     public ResResponse updateRestaurant(UUID id, UpdateRes updateRes, MultipartFile imageFile, UserRole authUser);
 

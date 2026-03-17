@@ -30,7 +30,6 @@ import com.CNTTK18.restaurant_service.service.ResService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/restaurant")
@@ -41,7 +40,7 @@ public class ResController {
     @Tag(name = "Get")
     @Operation(summary = "Get restaurant by ID")
     @GetMapping("/admin/{id}")
-    public Mono<ResponseEntity<ResResponse>> getRestaurantById(
+    public ResponseEntity<ResResponse> getRestaurantById(
             @PathVariable UUID id,
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lon) {
@@ -49,7 +48,7 @@ public class ResController {
         if (lon != null && lat != null) {
             location = new Coordinates(lon, lat);
         }
-        return resService.getRestaurantById(id, location).map(res -> ResponseEntity.ok(res));
+        return ResponseEntity.ok(resService.getRestaurantById(id, location));
     }
 
     @Tag(name = "Get")
@@ -80,13 +79,11 @@ public class ResController {
     @Tag(name = "Post")
     @Operation(summary = "Create new restaurant")
     @PostMapping()
-    public Mono<ResponseEntity<Restaurants>> createRestaurant(
+    public ResponseEntity<Restaurants> createRestaurant(
             @RequestPart(value = "restaurant", required = true) @Valid ResRequest resRequest,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @AuthenticationPrincipal UserRole authUser) {
-        return resService
-                .createRestaurant(resRequest, imageFile, authUser)
-                .map(savedRestaurant -> ResponseEntity.ok(savedRestaurant));
+        return ResponseEntity.ok(resService.createRestaurant(resRequest, imageFile, authUser));
     }
 
     @Tag(name = "Delete")
