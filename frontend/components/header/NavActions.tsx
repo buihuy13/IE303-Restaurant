@@ -9,6 +9,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/Button";
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
@@ -92,33 +93,42 @@ export default function NavActions() {
     return (
         <div className="flex items-center gap-3 lg:gap-4">
             {/* Browse foods (main action) */}
-            <Link
-                href="/search"
-                className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                    pathname === "/search" ? "text-[#EE4D2D]" : "text-gray-600"
-                }`}
-                aria-label="Explore foods"
-                title="Explore foods"
-            >
-                <UtensilsCrossed className="w-5 h-5" />
-                {pathname === "/search" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
-                )}
-            </Link>
+            {isAuthenticated && user && !loading ? (
+                <Link
+                    href="/search"
+                    className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
+                        pathname === "/search" ? "text-brand-orange" : "text-gray-600"
+                    }`}
+                    aria-label="Explore foods"
+                    title="Explore foods"
+                >
+                    <UtensilsCrossed className="w-5 h-5" />
+                    {pathname === "/search" && (
+                        <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
+                    )}
+                </Link>
+            ) : (
+                <Button asChild variant="brandSoft" size="sm" className="h-9 rounded-full px-3">
+                    <Link href="/search" aria-label="Explore foods" title="Explore foods" className="gap-2">
+                        <UtensilsCrossed className="w-4 h-4" />
+                        <span>Explore</span>
+                    </Link>
+                </Button>
+            )}
 
             {/* Orders - Show if authenticated */}
             {isAuthenticated && user && !loading && (
                 <Link
                     href="/orders"
-                    className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                        pathname === "/orders" ? "text-[#EE4D2D]" : "text-gray-600"
+                    className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
+                        pathname === "/orders" ? "text-brand-orange" : "text-gray-600"
                     }`}
                     aria-label="My orders"
                     title="My orders"
                 >
                     <Package className="w-5 h-5" />
                     {pathname === "/orders" && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
+                        <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
                     )}
                 </Link>
             )}
@@ -127,20 +137,20 @@ export default function NavActions() {
             {isAuthenticated && user && !loading && (
                 <Link
                     href="/chat"
-                    className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                        pathname === "/chat" ? "text-[#EE4D2D]" : "text-gray-600"
+                    className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
+                        pathname === "/chat" ? "text-brand-orange" : "text-gray-600"
                     }`}
                     aria-label="Messages"
                     title="Messages"
                 >
                     <MessageCircle className="w-5 h-5" />
                     {chatUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
+                        <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
                             {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                         </span>
                     )}
                     {pathname === "/chat" && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
+                        <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
                     )}
                 </Link>
             )}
@@ -156,7 +166,11 @@ export default function NavActions() {
                 // Authenticated: Show user dropdown with groups
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild className="focus:outline-none">
-                        <button className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+                        <button
+                            className="flex items-center gap-2 cursor-pointer rounded-full hover:bg-gray-50 p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
+                            aria-label="Account menu"
+                            title="Account menu"
+                        >
                             {getAvatarContent()}
                             <span className="hidden lg:inline text-sm font-medium text-brand-black">
                                 {user?.username || "User"}
@@ -201,7 +215,7 @@ export default function NavActions() {
                                         <span className="text-sm">Messages</span>
                                     </div>
                                     {chatUnreadCount > 0 && (
-                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-brand-orange text-white text-xs rounded-full flex items-center justify-center font-bold">
                                             {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                                         </span>
                                     )}
@@ -322,7 +336,7 @@ export default function NavActions() {
                     >
                         Sign in
                     </Link>
-                    <button
+                    <Button
                         type="button"
                         onClick={async () => {
                             try {
@@ -336,10 +350,12 @@ export default function NavActions() {
                                 toast.error(message);
                             }
                         }}
-                        className="px-4 py-2 text-sm font-medium bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors cursor-pointer"
+                        variant="brand"
+                        size="sm"
+                        className="px-4"
                     >
                         Sign up
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>

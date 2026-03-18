@@ -2,6 +2,7 @@
 
 import { startChat } from "@/lib/utils/chatUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { Button } from "@/components/ui/Button";
 import { Loader2, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -69,23 +70,17 @@ export default function ChatWithRestaurantButton({
         }
     };
 
-    const baseStyles =
-        "inline-flex items-center justify-center gap-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
-
-    const variantStyles = {
-        default: "bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 focus:ring-[#EE4D2D]",
-        outline: "border-2 border-[#EE4D2D] text-[#EE4D2D] hover:bg-[#EE4D2D]/10 focus:ring-[#EE4D2D]",
-        ghost: "text-[#EE4D2D] hover:bg-[#EE4D2D]/10 focus:ring-[#EE4D2D]",
-    };
+    const uiVariant = variant === "outline" ? "brandOutline" : variant === "ghost" ? "brandGhost" : "brand";
 
     // Ensure disabled is always a boolean to avoid hydration mismatch
     const isDisabled = isMounted ? isLoading || !isAuthenticated : false;
 
     return (
-        <button
+        <Button
             onClick={handleChatClick}
             disabled={isDisabled}
-            className={`${baseStyles} ${variantStyles[variant]} ${className}`}
+            variant={uiVariant}
+            className={className}
             aria-label={`Chat with ${restaurantName}`}
         >
             {isLoading ? (
@@ -99,6 +94,6 @@ export default function ChatWithRestaurantButton({
                     <span>Chat with Restaurant</span>
                 </>
             )}
-        </button>
+        </Button>
     );
 }

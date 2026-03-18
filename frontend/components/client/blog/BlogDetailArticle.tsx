@@ -41,13 +41,13 @@ export function BlogDetailArticle({
                     <div className="flex items-center justify-between mb-4">
                         <Link
                             href="/blog"
-                            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#EE4D2D] transition-colors"
+                            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-orange transition-colors"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
                             <span>Back</span>
                         </Link>
                         {blog.category && (
-                            <span className="inline-block px-3 py-1 bg-[#EE4D2D] text-white text-xs font-semibold rounded-full shadow-sm">
+                            <span className="inline-block px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-full shadow-sm">
                                 {BLOG_CATEGORY_LABELS[blog.category] ?? blog.category}
                             </span>
                         )}
@@ -68,7 +68,7 @@ export function BlogDetailArticle({
                                 className="rounded-full object-cover flex-shrink-0"
                             />
                         ) : (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm bg-[#EE4D2D] flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm bg-brand-orange flex-shrink-0">
                                 {blog.author?.name?.charAt(0).toUpperCase() ?? "?"}
                             </div>
                         )}
@@ -164,7 +164,7 @@ export function BlogDetailArticle({
                     <button
                         type="button"
                         onClick={onShare}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-xl border-2 border-gray-300 hover:bg-gray-50 hover:border-[#EE4D2D] hover:text-[#EE4D2D] transition-all font-medium whitespace-nowrap min-w-fit"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-xl border-2 border-gray-300 hover:bg-gray-50 hover:border-brand-orange hover:text-brand-orange transition-all font-medium whitespace-nowrap min-w-fit"
                     >
                         <Share2 className="w-5 h-5 flex-shrink-0" />
                         <span className="font-semibold whitespace-nowrap">Share</span>

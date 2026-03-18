@@ -15,7 +15,7 @@ export function AccountRecentActivity({ recentOrders }: AccountRecentActivityPro
                         {recentOrders.map((order) => (
                             <div
                                 key={order.id}
-                                className="border border-gray-200 p-5 rounded-xl hover:border-[#EE4D2D]/30 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                                className="border border-gray-200 p-5 rounded-xl hover:border-brand-orange/30 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                             >
                                 <div>
                                     <p className="font-bold text-gray-900 text-lg">{order.displayId}</p>
@@ -37,7 +37,7 @@ export function AccountRecentActivity({ recentOrders }: AccountRecentActivityPro
                     <div className="text-right mt-6">
                         <Link
                             href="/account/orders"
-                            className="text-sm font-bold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors inline-flex items-center gap-1"
+                            className="text-sm font-bold text-brand-orange hover:text-brand-orange/80 transition-colors inline-flex items-center gap-1"
                         >
                             View all orders →
                         </Link>
@@ -48,7 +48,7 @@ export function AccountRecentActivity({ recentOrders }: AccountRecentActivityPro
                     <p className="text-gray-500 mb-4">No orders yet</p>
                     <Link
                         href="/restaurants"
-                        className="text-sm font-bold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors inline-flex items-center gap-1"
+                        className="text-sm font-bold text-brand-orange hover:text-brand-orange/80 transition-colors inline-flex items-center gap-1"
                     >
                         Start ordering →
                     </Link>

@@ -14,6 +14,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { formatTime } from "@/lib/formatters";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 
 interface CreateGroupOrderModalProps {
     restaurant: Restaurant;
@@ -241,13 +244,16 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                     <div className="bg-orange-50 px-6 py-4 border-b border-orange-100">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">Create Group Order</h2>
-                            <button
+                            <Button
+                                type="button"
                                 onClick={onClose}
-                                className="p-1.5 hover:bg-white/50 rounded-full transition-colors"
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full hover:bg-white/60"
                                 aria-label="Close"
                             >
                                 <X className="w-5 h-5 text-gray-600" />
-                            </button>
+                            </Button>
                         </div>
 
                         {/* Restaurant Mini Card */}
@@ -283,7 +289,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                         {/* Delivery Address - Simplified */}
                         <div>
                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-3">
-                                <MapPin className="w-4 h-4 text-[#EE4D2D]" />
+                                <MapPin className="w-4 h-4 text-brand-orange" />
                                 Delivery Address <span className="text-red-500">*</span>
                             </label>
 
@@ -302,7 +308,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                                 }}
                                                 className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                                                     !useNewAddress && selectedAddressId === addr.id
-                                                        ? "border-[#EE4D2D] bg-orange-50"
+                                                        ? "border-brand-orange bg-orange-50"
                                                         : "border-gray-200 hover:border-gray-300 bg-white"
                                                 }`}
                                             >
@@ -310,7 +316,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                                     <div
                                                         className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
                                                             !useNewAddress && selectedAddressId === addr.id
-                                                                ? "border-[#EE4D2D] bg-[#EE4D2D]"
+                                                                ? "border-brand-orange bg-brand-orange"
                                                                 : "border-gray-300"
                                                         }`}
                                                     >
@@ -336,14 +342,14 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                         }}
                                         className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                                             useNewAddress
-                                                ? "border-[#EE4D2D] bg-orange-50"
+                                                ? "border-brand-orange bg-orange-50"
                                                 : "border-gray-200 hover:border-gray-300 bg-white"
                                         }`}
                                     >
                                         <div className="flex items-start gap-2">
                                             <div
                                                 className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                                                    useNewAddress ? "border-[#EE4D2D] bg-[#EE4D2D]" : "border-gray-300"
+                                                    useNewAddress ? "border-brand-orange bg-brand-orange" : "border-gray-300"
                                                 }`}
                                             >
                                                 {useNewAddress && <div className="w-2 h-2 rounded-full bg-white" />}
@@ -357,7 +363,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                             ) : (
                                 <div className="space-y-2">
                                     <p className="text-xs text-gray-500 mb-2">No saved addresses. Add one below:</p>
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Enter delivery address"
                                         value={newAddress}
@@ -365,7 +371,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                             setNewAddress(e.target.value);
                                             setUseNewAddress(true);
                                         }}
-                                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                        className="h-12 border-2 border-gray-200 px-4 py-3 text-sm"
                                         required
                                     />
                                 </div>
@@ -373,12 +379,12 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
 
                             {useNewAddress && addresses.length > 0 && (
                                 <div className="mt-3">
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Enter delivery address"
                                         value={newAddress}
                                         onChange={(e) => setNewAddress(e.target.value)}
-                                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                        className="h-12 border-2 border-gray-200 px-4 py-3 text-sm"
                                         required={useNewAddress}
                                     />
                                 </div>
@@ -387,7 +393,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                             {addresses.length === 0 && (
                                 <Link
                                     href="/account/addresses"
-                                    className="text-xs text-[#EE4D2D] hover:underline mt-2 inline-block"
+                                    className="text-xs text-brand-orange hover:underline mt-2 inline-block"
                                 >
                                     Manage addresses →
                                 </Link>
@@ -399,15 +405,17 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                             <label className="block text-sm font-semibold text-gray-900 mb-3">Order Deadline</label>
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {(["15", "30", "60", "custom"] as DeadlineOption[]).map((option) => (
-                                    <button
+                                    <Button
                                         key={option}
                                         type="button"
                                         onClick={() => setDeadlineOption(option)}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                        variant={deadlineOption === option ? "brand" : "secondary"}
+                                        size="sm"
+                                        className={
                                             deadlineOption === option
-                                                ? "bg-[#EE4D2D] text-white shadow-md"
-                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        }`}
+                                                ? "rounded-full shadow-sm"
+                                                : "rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                        }
                                     >
                                         {option === "15"
                                             ? "15 mins"
@@ -416,20 +424,20 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                               : option === "60"
                                                 ? "1 Hour"
                                                 : "Custom"}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
 
                             {deadlineOption === "custom" && (
                                 <div className="mb-3">
-                                    <input
+                                    <Input
                                         type="number"
                                         min={0.25}
                                         max={24}
                                         step={0.25}
                                         value={customHours}
                                         onChange={(e) => setCustomHours(parseFloat(e.target.value) || 1)}
-                                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                        className="h-11 w-full border-2 border-gray-200 px-4"
                                         placeholder="Hours"
                                     />
                                 </div>
@@ -451,7 +459,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                     onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "split" }))}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                                         formData.paymentMethod === "split"
-                                            ? "border-[#EE4D2D] bg-orange-50"
+                                            ? "border-brand-orange bg-orange-50"
                                             : "border-gray-200 hover:border-gray-300 bg-white"
                                     }`}
                                 >
@@ -460,7 +468,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                             <div
                                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                                                     formData.paymentMethod === "split"
-                                                        ? "border-[#EE4D2D] bg-[#EE4D2D]"
+                                                        ? "border-brand-orange bg-brand-orange"
                                                         : "border-gray-300"
                                                 }`}
                                             >
@@ -483,7 +491,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                     onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "card" }))}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                                         formData.paymentMethod === "card"
-                                            ? "border-[#EE4D2D] bg-orange-50"
+                                            ? "border-brand-orange bg-orange-50"
                                             : "border-gray-200 hover:border-gray-300 bg-white"
                                     }`}
                                 >
@@ -492,7 +500,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                                             <div
                                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                                                     formData.paymentMethod === "card"
-                                                        ? "border-[#EE4D2D] bg-[#EE4D2D]"
+                                                        ? "border-brand-orange bg-brand-orange"
                                                         : "border-gray-300"
                                                 }`}
                                             >
@@ -514,32 +522,23 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
                         {/* Group Note - Optional */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Note (Optional)</label>
-                            <textarea
+                            <Textarea
                                 placeholder="Add a note for your group..."
                                 value={formData.groupNote}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, groupNote: e.target.value }))}
                                 rows={3}
-                                className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] resize-none"
+                                className="border-2 border-gray-200 px-4 py-3 resize-none"
                             />
                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 pt-4 border-t border-gray-200">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                disabled={isSubmitting}
-                            >
+                            <Button type="button" onClick={onClose} variant="secondary" className="flex-1 h-12" disabled={isSubmitting}>
                                 Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 px-6 py-3 text-sm font-semibold text-white bg-[#EE4D2D] rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                                disabled={isSubmitting}
-                            >
+                            </Button>
+                            <Button type="submit" variant="brand" className="flex-1 h-12 shadow-lg" disabled={isSubmitting}>
                                 {isSubmitting ? "Creating..." : "Create Group Order"}
-                            </button>
+                            </Button>
                         </div>
                     </form>
                 </div>

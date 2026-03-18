@@ -124,17 +124,17 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     };
 
     return (
-        <div className="custom-container p-3 sm:p-1 md:p-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16 items-start">
+        <div className="custom-container py-8 sm:py-10 md:py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start">
                 {/* Left column: Order Details */}
                 <div className="lg:col-span-2 space-y-8">
-                    <h1 className="text-xl md:text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
                         Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
                     </h1>
 
                     {/* Review Section - Show if order is completed */}
                     {isOrderCompleted && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                             {!showReviewForm && !hasReviewed && (
                                 <div className="text-center py-4">
                                     <p className="text-gray-600 mb-4">
@@ -142,7 +142,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                     </p>
                                     <button
                                         onClick={() => setShowReviewForm(true)}
-                                        className="px-6 py-3 bg-[#EE4D2D] text-white font-semibold rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg"
+                                        className="px-6 py-3 bg-brand-orange text-white font-semibold rounded-full hover:bg-brand-orange/90 transition-colors shadow-sm hover:shadow-md"
                                     >
                                         Review Order
                                     </button>
@@ -165,11 +165,11 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                         {Object.entries(groupedItems).map(([shopName, items]) => (
                             <div
                                 key={shopName}
-                                className="border border-gray-200 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 bg-white"
+                                className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
                             >
                                 {/* Restaurant Header */}
                                 <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
-                                    <h2 className="text-xl md:text-2xl font-bold text-gray-900">{shopName}</h2>
+                                    <h2 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">{shopName}</h2>
                                 </div>
 
                                 {/* Items */}
@@ -186,7 +186,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                         >
                                             {/* Product Image */}
                                             {hasImage ? (
-                                                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 shadow-sm">
+                                                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 shadow-sm ring-1 ring-gray-200">
                                                     <Image
                                                         src={finalImageUrl}
                                                         alt={item.name}
@@ -197,9 +197,9 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm">
+                                                <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-2xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm ring-1 ring-orange-200">
                                                     <svg
-                                                        className="w-8 h-8 text-[#EE4D2D]"
+                                                        className="w-8 h-8 text-brand-orange"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"

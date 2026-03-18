@@ -139,31 +139,31 @@ export default function FilterSidebar() {
     const searchType = searchParams.get("type") || "restaurants";
     const isNearbyActive = searchParams.has("nearby");
     return (
-        <aside className="w-full py-2 px-4">
-            <div className="flex justify-between items-center ">
-                <h2 className="text-[20px] font-bold font-manrope leading-[30px]text-brand-black">Filters</h2>
+        <aside className="w-full py-4 px-4">
+            <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold tracking-tight text-gray-900">Filters</h2>
                 <button
                     onClick={handleClearAll}
-                    className="text-sm font-bold text-brand-purple hover:underline font-manrope leading-[30px] cursor-pointer underline hover:text-brand-purple/80"
+                    className="text-sm font-semibold text-brand-orange hover:underline"
                 >
                     Clear All
                 </button>
             </div>
 
             {/* Delivery Type */}
-            <div className="mt-[30px] grid grid-cols-2 gap-2 p-1 bg-brand-white rounded-md ">
+            <div className="mt-6 grid grid-cols-2 gap-2 p-1 bg-gray-50 rounded-full border border-gray-200">
                 <button
                     onClick={() => handleToggleChange("type", "restaurants")}
-                    className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
-                        searchType === "restaurants" ? "bg-brand-purple text-white" : "bg-transparent text-gray-700"
+                    className={`px-4 py-2.5 rounded-full text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                        searchType === "restaurants" ? "bg-brand-orange text-white shadow-sm" : "bg-transparent text-gray-700 hover:bg-white"
                     }`}
                 >
                     Restaurants
                 </button>
                 <button
                     onClick={() => handleToggleChange("type", "foods")}
-                    className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
-                        searchType === "foods" ? "bg-brand-purple text-white" : "bg-transparent text-gray-700"
+                    className={`px-4 py-2.5 rounded-full text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                        searchType === "foods" ? "bg-brand-orange text-white shadow-sm" : "bg-transparent text-gray-700 hover:bg-white"
                     }`}
                 >
                     Foods
@@ -179,12 +179,13 @@ export default function FilterSidebar() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSearchApply()}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60"
                     />
                     <button
                         onClick={handleSearchApply}
-                        className="p-2 bg-brand-purple text-white rounded-md hover:bg-brand-purple/80"
+                        className="p-2.5 bg-brand-orange text-white rounded-2xl hover:bg-brand-orange/90 shadow-sm hover:shadow-md transition-shadow"
                         title="Search"
+                        type="button"
                     >
                         <Search className="w-5 h-5" />
                     </button>
@@ -196,10 +197,10 @@ export default function FilterSidebar() {
                 <button
                     onClick={handleNearbyClick}
                     disabled={loading}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded text-sm font-semibold transition-colors border cursor-pointer ${
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-semibold transition-colors border cursor-pointer shadow-sm hover:shadow-md ${
                         isNearbyActive
-                            ? "bg-brand-purple text-white border-brand-purple"
-                            : "bg-transparent text-gray-700 border-brand-black"
+                            ? "bg-brand-orange text-white border-brand-orange"
+                            : "bg-white text-gray-800 border-gray-200"
                     } ${loading ? "opacity-50 cursor-wait" : ""}`}
                 >
                     <MapPin className="w-4 h-4" />
@@ -267,7 +268,7 @@ export default function FilterSidebar() {
                                 placeholder="Min"
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60"
                             />
                             <span>-</span>
                             <input
@@ -275,12 +276,13 @@ export default function FilterSidebar() {
                                 placeholder="Max"
                                 value={maxPrice}
                                 onChange={(e) => setMaxPrice(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60"
                             />
                         </div>
                         <button
                             onClick={handlePriceApply}
-                            className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
+                            className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-orange text-white rounded-full text-sm font-semibold hover:bg-brand-orange/90 shadow-sm hover:shadow-md transition-shadow"
+                            type="button"
                         >
                             Apply Price
                         </button>

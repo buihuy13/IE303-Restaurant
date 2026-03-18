@@ -13,7 +13,7 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
         return (
                 <>
                         {/* 1. Hero Banner Wrapper - Atmospheric Blur Style */}
-                        <div className="relative h-[300px] md:h-[400px] w-full overflow-hidden bg-gray-900">
+                        <div className="relative h-[320px] md:h-[420px] w-full overflow-hidden bg-gray-900">
                                 {/* Blurred Background Image */}
                                 <Image
                                         src={getImageUrl(bannerUrl)}
@@ -26,7 +26,8 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                 />
 
                                 {/* Strong Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-gray-900/20 z-0"></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-gray-900/20 z-0" />
+                                <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_30%,rgba(255,255,255,0.10),transparent_60%)] z-0" />
 
                                 {/* Content - Restaurant Info */}
                                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 z-20">
@@ -49,7 +50,7 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                                 {/* Restaurant Info */}
                                                 <div className="flex-1 min-w-0">
                                                         {/* Restaurant Name */}
-                                                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2 drop-shadow-lg">
+                                                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-2 drop-shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
                                                                 {restaurant.resName}
                                                         </h1>
 

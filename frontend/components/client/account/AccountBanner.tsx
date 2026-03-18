@@ -13,7 +13,7 @@ export function AccountBanner({ username, email, avatarUrl, onEditProfile }: Acc
     return (
         <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-6">
             <div className="relative w-24 h-24 md:w-28 md:h-28 flex-shrink-0">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#EE4D2D] to-orange-600 p-0.5">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-orange to-orange-600 p-0.5">
                     <div className="w-full h-full rounded-full bg-white p-1">
                         <Image src={avatarUrl} alt="User Avatar" fill className="rounded-full object-cover" />
                     </div>
@@ -29,7 +29,7 @@ export function AccountBanner({ username, email, avatarUrl, onEditProfile }: Acc
             </div>
             <div className="flex-shrink-0">
                 <Button
-                    className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 text-sm !py-3 !px-6 cursor-pointer rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-200"
+                    className="bg-brand-orange text-white hover:bg-brand-orange/90 text-sm !py-3 !px-6 cursor-pointer rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-200"
                     onClickFunction={onEditProfile}
                 >
                     Edit Profile

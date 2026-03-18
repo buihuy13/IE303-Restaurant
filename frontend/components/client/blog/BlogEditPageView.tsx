@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import type { MDEditorProps } from "@uiw/react-md-editor";
 import { ArrowLeft, Image as ImageIcon, Loader2, X } from "lucide-react";
 import "@uiw/react-md-editor/markdown-editor.css";
-import { BLOG_CATEGORIES_FORM, BRAND_ORANGE } from "@/lib/constants/blog";
+import { BLOG_CATEGORIES_FORM } from "@/lib/constants/blog";
 import type { BlogCategory, BlogStatus } from "@/types/blog.type";
 
 type BlogEditForm = {
@@ -58,10 +58,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div
-                        className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
-                        style={{ borderBottomColor: BRAND_ORANGE }}
-                    />
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange" />
                     <p className="mt-4 text-gray-600">Loading blog...</p>
                 </div>
             </div>
@@ -95,7 +92,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                             value={form.title}
                             onChange={(e) => form.setTitle(e.target.value)}
                             placeholder="Enter article title..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                             maxLength={200}
                             required
                         />
@@ -113,7 +110,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                             placeholder="Brief description (optional)..."
                             rows={3}
                             maxLength={500}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] resize-none"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange resize-none"
                         />
                         <p className="text-xs text-gray-500 mt-1">{form.excerpt.length}/500 characters</p>
                     </div>
@@ -217,7 +214,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                                 id="edit-category"
                                 value={form.category}
                                 onChange={(e) => form.setCategory(e.target.value as BlogCategory)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                                 aria-label="Category"
                             >
                                 {BLOG_CATEGORIES_FORM.map((cat) => (
@@ -235,7 +232,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                                 id="edit-status"
                                 value={form.status}
                                 onChange={(e) => form.setStatus(e.target.value as BlogStatus)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                                 aria-label="Publish status"
                             >
                                 <option value="draft">Draft</option>
@@ -262,13 +259,12 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                                     }
                                 }}
                                 placeholder="Add tags (press Enter)..."
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]"
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                             />
                             <button
                                 type="button"
                                 onClick={form.handleAddTag}
-                                className="px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
-                                style={{ backgroundColor: BRAND_ORANGE }}
+                                className="px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity bg-brand-orange"
                             >
                                 Add
                             </button>
@@ -350,8 +346,7 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                         <button
                             type="submit"
                             disabled={form.loading}
-                            className="flex-1 px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            style={{ backgroundColor: BRAND_ORANGE }}
+                            className="flex-1 px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-brand-orange"
                         >
                             {form.loading ? (
                                 <>

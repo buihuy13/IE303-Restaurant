@@ -19,7 +19,7 @@ export function BlogDetailSidebar({ blogId, category, popularTags }: BlogDetailS
                 {popularTags.length > 0 && (
                     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                         <div className="flex items-center gap-2 mb-6">
-                            <Tag className="w-5 h-5 text-[#EE4D2D]" />
+                            <Tag className="w-5 h-5 text-brand-orange" />
                             <h3 className="text-xl font-bold text-gray-900">Trending Tags</h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -27,7 +27,7 @@ export function BlogDetailSidebar({ blogId, category, popularTags }: BlogDetailS
                                 <Link
                                     key={`${tag}-${index}`}
                                     href={`/blog?search=${encodeURIComponent(tag)}`}
-                                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-[#EE4D2D] hover:text-white transition-all font-medium"
+                                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-brand-orange hover:text-white transition-all font-medium"
                                 >
                                     #{tag}
                                 </Link>

@@ -63,9 +63,9 @@ export default function PaymentMethodSelector({
     return (
         <div>
             {/* Credit/Debit Card Section */}
-            <div className="border-2 border-[#EE4D2D] bg-orange-50 rounded-lg p-4">
+            <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 p-5 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-5 h-5 rounded-full bg-[#EE4D2D]" aria-hidden />
+                    <div className="w-5 h-5 rounded-full bg-brand-orange" aria-hidden />
                     <div className="flex-grow">
                         <div className="font-semibold text-gray-900">Credit/Debit Card (Stripe)</div>
                         <div className="text-sm text-gray-500">Secure payment with Stripe</div>
@@ -76,7 +76,7 @@ export default function PaymentMethodSelector({
                 {isProcessingCardPayment && stripeClientSecret ? (
                     <>
                         {stripeError ? (
-                            <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                            <div className="mt-4 text-sm text-red-700 bg-red-50 p-4 rounded-2xl border border-red-200">
                                 <p className="font-medium">⚠️ Stripe Error</p>
                                 <p className="text-xs mt-1">{stripeError}</p>
                                 <p className="text-xs mt-1">
@@ -86,14 +86,14 @@ export default function PaymentMethodSelector({
                         ) : isLoadingStripe ? (
                             <div className="mt-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-orange"></div>
                                     <p>Loading Stripe...</p>
                                 </div>
                             </div>
                         ) : stripeInstance ? (
                             <div className="mt-4">
                                 {paymentIntentError ? (
-                                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                                    <div className="text-sm text-red-700 bg-red-50 p-4 rounded-2xl border border-red-200">
                                         <p className="font-medium">⚠️ Payment Intent Error</p>
                                         <p className="text-xs mt-1">{paymentIntentError}</p>
                                         <p className="text-xs mt-2">
@@ -119,7 +119,7 @@ export default function PaymentMethodSelector({
                                 )}
                             </div>
                         ) : (
-                            <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                            <div className="mt-4 text-sm text-red-700 bg-red-50 p-4 rounded-2xl border border-red-200">
                                 <p className="font-medium">⚠️ Stripe not loaded</p>
                                 <p className="text-xs mt-1">Please refresh the page and try again.</p>
                             </div>
@@ -128,15 +128,15 @@ export default function PaymentMethodSelector({
                 ) : isProcessingCardPayment && !stripeClientSecret ? (
                     <div className="mt-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-orange"></div>
                             <p>Preparing payment form...</p>
                         </div>
                     </div>
                 ) : (
                     <div className="mt-4 space-y-3">
-                        <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <p className="font-medium text-blue-900 mb-1">Pay with credit card</p>
-                            <p className="text-blue-700 text-xs">
+                        <div className="text-sm text-gray-700 bg-white p-4 rounded-2xl border border-gray-200">
+                            <p className="font-semibold text-gray-900 mb-1">Pay with credit card</p>
+                            <p className="text-gray-600 text-xs">
                                 Click &quot;Place Order&quot; to continue. Then you will enter your card information to complete the payment.
                             </p>
                         </div>

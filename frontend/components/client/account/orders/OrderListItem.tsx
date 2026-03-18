@@ -8,9 +8,9 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
     const { order } = props;
 
     return (
-        <div className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="border border-gray-200 bg-white p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex-1">
-                <p className="font-bold text-lg text-brand-black">{order.displayId}</p>
+                <p className="font-bold text-lg tracking-tight text-gray-900">{order.displayId}</p>
                 <p className="text-sm text-gray-500">{order.date}</p>
                 <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
             </div>
@@ -19,7 +19,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
                 {order.status && !order.status.toLowerCase().includes("cancelled") && (
                     <Link
                         href={`/delivery/${order.slug || order.orderCode || order.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-800 rounded-full text-xs font-semibold hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
                     >
                         <Truck className="w-3 h-3" />
                         Track Order
@@ -27,7 +27,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
                 )}
                 <Link
                     href={`/orders/${order.slug || order.orderCode || order.id}`}
-                    className="text-sm font-semibold text-[#EE4D2D] hover:underline"
+                    className="text-sm font-semibold text-brand-orange hover:underline"
                 >
                     View Details
                 </Link>
