@@ -17,6 +17,8 @@ import com.CNTTK18.paymentservice.utils.WebhookUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import vn.payos.PayOS;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -48,12 +50,7 @@ public class PaymentServiceImpl implements PaymentService {
             String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : "http://localhost:3000";
             String cancelUrl = request.getCancelUrl() != null ? request.getCancelUrl() : "http://localhost:3000";
 
-            vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest paymentData = vn.payos
-                    .model
-                    .v2
-                    .paymentRequests
-                    .CreatePaymentLinkRequest
-                    .builder()
+            CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest.builder()
                     .orderCode(orderCode)
                     .amount(request.getAmount().longValue())
                     .description(description)
@@ -61,8 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .cancelUrl(cancelUrl)
                     .build();
 
-            vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse data =
-                    payOS.paymentRequests().create(paymentData);
+            CreatePaymentLinkResponse data = payOS.paymentRequests().create(paymentData);
 
             return PaymentResponseDTO.builder()
                     .checkoutUrl(data.getCheckoutUrl())
