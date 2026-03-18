@@ -334,12 +334,7 @@ public class BlogServiceImpl implements BlogService {
             return null;
         }
 
-        URI uri;
-        try {
-            uri = URI.create(normalizedCoverImageUrl);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Cover image URL must be a valid HTTP/HTTPS URL");
-        }
+        URI uri = URI.create(normalizedCoverImageUrl);
 
         String scheme = uri.getScheme();
         String normalizedScheme = scheme == null ? "" : scheme.toLowerCase(Locale.ROOT);
