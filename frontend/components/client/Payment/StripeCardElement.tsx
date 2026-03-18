@@ -2,6 +2,7 @@
 
 import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface StripeCardElementProps {
     clientSecret: string;
@@ -93,7 +94,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                 <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">
                     Card Number
                 </label>
-                <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
+                <div className="border border-gray-300 rounded-2xl p-3 bg-white focus-within:ring-2 focus-within:ring-brand-orange/20 focus-within:border-brand-orange/60 transition-all">
                     <CardNumberElement
                         id="card-number"
                         options={{
@@ -111,7 +112,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                     <label htmlFor="card-expiry" className="block text-sm font-medium text-gray-700">
                         Expiry Date
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
+                    <div className="border border-gray-300 rounded-2xl p-3 bg-white focus-within:ring-2 focus-within:ring-brand-orange/20 focus-within:border-brand-orange/60 transition-all">
                         <CardExpiryElement
                             id="card-expiry"
                             options={{
@@ -127,7 +128,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                     <label htmlFor="card-cvc" className="block text-sm font-medium text-gray-700">
                         CVC
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
+                    <div className="border border-gray-300 rounded-2xl p-3 bg-white focus-within:ring-2 focus-within:ring-brand-orange/20 focus-within:border-brand-orange/60 transition-all">
                         <CardCvcElement
                             id="card-cvc"
                             options={{
@@ -140,13 +141,14 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             </div>
 
             {/* Submit Button */}
-            <button
+            <Button
                 type="submit"
                 disabled={!stripe || isProcessing}
-                className="w-full bg-[#EE4D2D] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#EE4D2D]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
+                variant="brand"
+                className="w-full h-12 rounded-full shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
                 {isProcessing ? "Processing..." : "Confirm Payment"}
-            </button>
+            </Button>
         </form>
     );
 }

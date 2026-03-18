@@ -2,6 +2,7 @@
 
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
+import { Button } from "@/components/ui/Button";
 import { ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,13 +48,13 @@ export default function CartDropdown() {
             {/* Cart Icon Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                className="relative p-2 rounded-full hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
                 aria-label="Shopping cart"
                 title="Shopping cart"
             >
-                <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#EE4D2D] transition-colors" />
+                <ShoppingCart className="w-5 h-5 text-gray-700 hover:text-brand-orange transition-colors" />
                 {cartItemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[#EE4D2D] text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shadow-md">
+                    <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-xs font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-md">
                         {cartItemCount > 99 ? "99+" : cartItemCount}
                     </span>
                 )}
@@ -61,7 +62,7 @@ export default function CartDropdown() {
 
             {/* Dropdown */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
+                <div className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-50 max-h-[600px] flex flex-col overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-200">
                         <h3 className="text-lg font-bold">Shopping Cart ({cartItemCount})</h3>
@@ -80,13 +81,11 @@ export default function CartDropdown() {
                         <div className="flex flex-col items-center justify-center p-8 text-center">
                             <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
                             <p className="text-gray-500 mb-4">Your cart is empty</p>
-                            <Link
-                                href="/restaurants"
-                                onClick={() => setIsOpen(false)}
-                                className="bg-[#EE4D2D] text-white px-6 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors"
-                            >
-                                Start Shopping
-                            </Link>
+                            <Button asChild variant="brand" size="sm" className="px-6">
+                                <Link href="/restaurants" onClick={() => setIsOpen(false)}>
+                                    Start Shopping
+                                </Link>
+                            </Button>
                         </div>
                     ) : (
                         <>
@@ -152,7 +151,7 @@ export default function CartDropdown() {
                                                             <span className="text-sm font-semibold">
                                                                 ${item.price.toFixed(2)} x {item.quantity}
                                                             </span>
-                                                            <span className="text-sm font-bold text-[#EE4D2D]">
+                                                            <span className="text-sm font-bold text-brand-orange">
                                                                 ${(item.price * item.quantity).toFixed(2)}
                                                             </span>
                                                         </div>
@@ -175,7 +174,7 @@ export default function CartDropdown() {
                             <div className="p-4 border-t border-gray-200 bg-gray-50">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-semibold text-lg">Total</span>
-                                    <span className="font-bold text-xl text-[#EE4D2D]">${cartTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-xl text-brand-orange">${cartTotal.toFixed(2)}</span>
                                 </div>
                                 {(() => {
                                     // Group items by restaurant to determine checkout behavior
@@ -197,31 +196,33 @@ export default function CartDropdown() {
                                     return (
                                         <div className="flex gap-2">
                                             {/* View Cart - Always redirects to cart page where user can checkout each restaurant separately */}
-                                            <Link
-                                                href="/cart"
-                                                onClick={() => setIsOpen(false)}
-                                                className="flex-1 text-center bg-white border-2 border-[#EE4D2D] text-[#EE4D2D] px-4 py-2 rounded-md hover:bg-[#EE4D2D]/10 transition-colors font-semibold"
-                                            >
-                                                View Cart
-                                            </Link>
+                                            <Button asChild variant="brandOutline" size="sm" className="flex-1">
+                                                <Link href="/cart" onClick={() => setIsOpen(false)}>
+                                                    View Cart
+                                                </Link>
+                                            </Button>
                                             {/* Checkout - Only allow if single restaurant, otherwise redirect to cart */}
                                             {hasMultipleRestaurants ? (
-                                                <Link
-                                                    href="/cart"
-                                                    onClick={() => setIsOpen(false)}
-                                                    className="flex-1 text-center bg-[#EE4D2D] text-white px-4 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors font-semibold"
+                                                <Button
+                                                    asChild
+                                                    variant="brand"
+                                                    size="sm"
+                                                    className="flex-1"
                                                     title="Please checkout one restaurant at a time"
                                                 >
-                                                    Checkout
-                                                </Link>
+                                                    <Link href="/cart" onClick={() => setIsOpen(false)}>
+                                                        Checkout
+                                                    </Link>
+                                                </Button>
                                             ) : (
-                                                <Link
-                                                    href={`/payment?restaurantId=${firstRestaurantId}`}
-                                                    onClick={() => setIsOpen(false)}
-                                                    className="flex-1 text-center bg-[#EE4D2D] text-white px-4 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors font-semibold"
-                                                >
-                                                    Checkout
-                                                </Link>
+                                                <Button asChild variant="brand" size="sm" className="flex-1">
+                                                    <Link
+                                                        href={`/payment?restaurantId=${firstRestaurantId}`}
+                                                        onClick={() => setIsOpen(false)}
+                                                    >
+                                                        Checkout
+                                                    </Link>
+                                                </Button>
                                             )}
                                         </div>
                                     );

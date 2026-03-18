@@ -171,8 +171,8 @@ export const OrderStatusSidebar = ({
     };
     return (
         <div className="w-full lg:sticky lg:top-24">
-            <div className="border rounded-lg p-6">
-                <h2 className="text-xl font-bold mb-4">Order Status</h2>
+            <div className="border border-gray-200 rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Order Status</h2>
                 <div className="space-y-3 text-gray-600">
                     <div className="flex justify-between items-center">
                         <span>Order Validate</span>
@@ -195,12 +195,12 @@ export const OrderStatusSidebar = ({
 
             {/* Payment Section - Show if payment is needed */}
             {needsPayment && !isCancelled && !isPaymentSuccess && (
-                <div className="border rounded-lg p-6 mt-6" data-payment-form>
-                    <h3 className="text-lg font-bold mb-4">Complete Payment</h3>
+                <div className="border border-gray-200 rounded-2xl bg-white p-6 mt-6 shadow-sm" data-payment-form>
+                    <h3 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Complete Payment</h3>
                     <div className="mb-4">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">Total Amount</span>
-                            <span className="text-2xl font-bold text-[#EE4D2D]">
+                            <span className="text-2xl font-bold text-brand-orange">
                                 ${finalAmount.toFixed(2)}
                             </span>
                         </div>
@@ -221,10 +221,10 @@ export const OrderStatusSidebar = ({
                         <button
                             onClick={handleInitiatePayment}
                             disabled={isProcessingCardPayment}
-                            className={`w-full font-bold py-3 rounded-md transition-colors ${
+                            className={`w-full font-bold py-3 rounded-full transition-colors shadow-sm hover:shadow-md ${
                                 isProcessingCardPayment
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90"
+                                    : "bg-brand-orange text-white hover:bg-brand-orange/90"
                             }`}
                         >
                             {isProcessingCardPayment ? "Preparing payment..." : "Pay Now"}
@@ -235,10 +235,10 @@ export const OrderStatusSidebar = ({
 
             {!isCancelled && !isCompleted ? (
                 <>
-                    <div className="border rounded-lg p-6 mt-6 text-center">
+                    <div className="border border-gray-200 rounded-2xl bg-white p-6 mt-6 text-center shadow-sm">
                         <p className="text-gray-600 mb-2">Your Order Will Come In</p>
                         {status.estimatedTime > 0 ? (
-                            <p className="text-4xl font-bold my-2 text-[#EE4D2D]">
+                            <p className="text-4xl font-bold my-2 text-brand-orange">
                                 {status.estimatedTime} {status.estimatedTime === 1 ? "Minute" : "Minutes"}
                             </p>
                         ) : (
@@ -248,7 +248,7 @@ export const OrderStatusSidebar = ({
                     <button
                         disabled={!canCancel || isCancelled}
                         onClick={handleCancel}
-                        className={`w-full mt-6 font-bold py-3 rounded-md transition-colors ${
+                        className={`w-full mt-6 font-bold py-3 rounded-full transition-colors shadow-sm hover:shadow-md ${
                             !canCancel || isCancelled
                                 ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                                 : "bg-yellow-400 text-black hover:bg-yellow-500"
@@ -259,13 +259,13 @@ export const OrderStatusSidebar = ({
                 </>
             ) : isCompleted ? (
                 <>
-                    <div className="border rounded-lg p-6 mt-6 text-center">
+                    <div className="border border-gray-200 rounded-2xl bg-white p-6 mt-6 text-center shadow-sm">
                         <p className="text-green-600 text-2xl font-bold">Order Completed!</p>
                         <p className="text-gray-600 mt-2">Thank you for your order</p>
                     </div>
                     <button
                         onClick={() => router.push("/orders", { scroll: false })}
-                        className="w-full mt-6 font-bold py-3 rounded-md transition-colors bg-yellow-400 text-black hover:bg-yellow-500"
+                        className="w-full mt-6 font-bold py-3 rounded-full transition-colors bg-yellow-400 text-black hover:bg-yellow-500 shadow-sm hover:shadow-md"
                     >
                         Back to Order List
                     </button>
@@ -278,7 +278,7 @@ export const OrderStatusSidebar = ({
                         </p>
                     </div>
                     <button
-                        className={`cursor-pointer w-full mt-6 font-bold py-3 rounded-md transition-colors  bg-yellow-400 text-black hover:bg-yellow-500 pointer-none:cursor-not-allowed"`}
+                        className="cursor-pointer w-full mt-6 font-bold py-3 rounded-full transition-colors bg-yellow-400 text-black hover:bg-yellow-500 shadow-sm hover:shadow-md"
                         onClick={() => router.push("/orders", { scroll: false })}
                     >
                         Back to Order List

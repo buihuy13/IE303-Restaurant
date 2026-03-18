@@ -2,6 +2,7 @@
 
 import { Logo } from "@/constants";
 import { authApi } from "@/lib/api/authApi";
+import { Button } from "@/components/ui/Button";
 import { Check, Eye, EyeOff, MapPin, Upload } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -166,7 +167,7 @@ export default function MerchantRegisterPageClient() {
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row">
-            <div className="w-full lg:w-1/2 bg-[#EE4D2D] relative overflow-hidden flex items-center justify-center p-8 lg:p-12">
+            <div className="w-full lg:w-1/2 bg-brand-orange relative overflow-hidden flex items-center justify-center p-8 lg:p-12">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
 
                 <div className="relative z-10 max-w-md text-white">
@@ -264,7 +265,7 @@ export default function MerchantRegisterPageClient() {
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                         placeholder="johndoe"
                                     />
                                 </div>
@@ -279,7 +280,7 @@ export default function MerchantRegisterPageClient() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                         placeholder="you@example.com"
                                     />
                                 </div>
@@ -297,7 +298,7 @@ export default function MerchantRegisterPageClient() {
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition pr-10"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition pr-10"
                                             placeholder="••••••••"
                                         />
                                         <button
@@ -324,7 +325,7 @@ export default function MerchantRegisterPageClient() {
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             required
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition pr-10"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition pr-10"
                                             placeholder="••••••••"
                                         />
                                         <button
@@ -354,7 +355,7 @@ export default function MerchantRegisterPageClient() {
                                     value={resName}
                                     onChange={(e) => setResName(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                     placeholder="Enter restaurant name"
                                 />
                             </div>
@@ -369,7 +370,7 @@ export default function MerchantRegisterPageClient() {
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                     placeholder="Enter restaurant address"
                                 />
                             </div>
@@ -390,7 +391,7 @@ export default function MerchantRegisterPageClient() {
                                             onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
                                             required
                                             step="any"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                             placeholder="10.9032198"
                                         />
                                     </div>
@@ -405,19 +406,15 @@ export default function MerchantRegisterPageClient() {
                                             onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
                                             required
                                             step="any"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                             placeholder="106.7750317"
                                         />
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleGetLocation}
-                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#EE4D2D] border border-[#EE4D2D] rounded-md hover:bg-[#EE4D2D]/10 transition-colors"
-                                >
+                                <Button type="button" onClick={handleGetLocation} variant="brandOutline" size="sm">
                                     <MapPin className="h-4 w-4" />
                                     Auto-detect Location
-                                </button>
+                                </Button>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -434,7 +431,7 @@ export default function MerchantRegisterPageClient() {
                                         value={openingTime}
                                         onChange={(e) => setOpeningTime(e.target.value)}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                     />
                                 </div>
                                 <div>
@@ -450,7 +447,7 @@ export default function MerchantRegisterPageClient() {
                                         value={closingTime}
                                         onChange={(e) => setClosingTime(e.target.value)}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                     />
                                 </div>
                             </div>
@@ -465,7 +462,7 @@ export default function MerchantRegisterPageClient() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-orange focus:border-brand-orange transition"
                                     placeholder="0123456789"
                                 />
                             </div>
@@ -524,19 +521,20 @@ export default function MerchantRegisterPageClient() {
                             </p>
                         </div>
 
-                        <button
+                        <Button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 px-6 bg-[#EE4D2D] text-white font-bold rounded-md hover:bg-[#EE4D2D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                            variant="brand"
+                            className="w-full h-12 text-base font-semibold"
                         >
                             {loading ? "Submitting..." : "Submit Registration"}
-                        </button>
+                        </Button>
 
                         <p className="text-center text-sm text-gray-600">
                             Already a partner?{" "}
                             <Link
                                 href="/login"
-                                className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline"
+                                className="font-semibold text-brand-orange hover:text-brand-orange/80 hover:underline"
                             >
                                 Sign In
                             </Link>

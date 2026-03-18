@@ -2,6 +2,7 @@
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Restaurant } from "@/types";
+import { Button } from "@/components/ui/Button";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import ChatWithRestaurantButton from "./ChatWithRestaurantButton";
@@ -25,8 +26,8 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
 
         return (
                 <>
-                        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-                                <h2 className="text-2xl font-bold mb-4 text-gray-900">Restaurant Info</h2>
+                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Quick Actions</h2>
                                 
                                 {/* Opening Hours */}
                                 {restaurant.openingTime && restaurant.closingTime && (
@@ -62,13 +63,14 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
                                 <div className="flex flex-col gap-3">
                                         {/* Create Group Order Button */}
                                         {isAuthenticated && user && (
-                                                <button
+                                                <Button
                                                         onClick={handleCreateGroupOrder}
-                                                        className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors font-medium"
+                                                        variant="brand"
+                                                        className="w-full h-11 rounded-full font-semibold shadow-sm hover:shadow-md"
                                                 >
                                                         <Users className="w-5 h-5" />
                                                         Create Group Order
-                                                </button>
+                                                </Button>
                                         )}
                                         
                                         {/* Chat Button */}
@@ -76,7 +78,7 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
                                                 merchantId={restaurant.merchantId}
                                                 restaurantName={restaurant.resName}
                                                 variant="outline"
-                                                className="w-full px-6 py-3 rounded-lg"
+                                                className="w-full h-11 rounded-full"
                                         />
                                 </div>
                         </div>

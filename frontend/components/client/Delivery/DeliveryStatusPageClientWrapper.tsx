@@ -416,17 +416,17 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     }
 
     return (
-        <div className="custom-container py-12">
+        <div className="custom-container py-8 sm:py-10 lg:py-12">
             {isUpdating && (
-                <div className="fixed top-20 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm font-medium">Updating order status...</span>
+                <div className="fixed top-20 right-4 bg-white/90 backdrop-blur-xl text-gray-900 px-4 py-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-50 flex items-center gap-2 border border-gray-200">
+                    <div className="w-4 h-4 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm font-semibold">Updating order status...</span>
                 </div>
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start">
                 {/* Left column: Order details */}
-                <div className="lg:col-span-2 space-y-6 p-3 sm:p-1 md:p-12">
-                    <h1 className="text-3xl font-bold">
+                <div className="lg:col-span-2 space-y-6">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
                         Order Tracking ({totalItems} {totalItems > 1 ? "items" : "item"})
                     </h1>
 
@@ -435,9 +435,14 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
                     <div className="space-y-8">
                         {Object.entries(groupedItems).map(([shopName, items]) => (
-                            <div key={shopName}>
-                                <h2 className="text-lg font-semibold mb-2">{shopName}</h2>
-                                <div className="space-y-4 border-t">
+                            <div key={shopName} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                <div className="flex items-end justify-between gap-4 mb-4">
+                                    <h2 className="text-lg font-semibold tracking-tight text-gray-900">{shopName}</h2>
+                                    <span className="text-xs font-semibold text-gray-500">
+                                        {items.length} {items.length === 1 ? "item" : "items"}
+                                    </span>
+                                </div>
+                                <div className="space-y-4 border-t border-gray-200 pt-4">
                                     {items.map((item) => {
                                         const imageUrl = getImageUrl(item.imageURL || null);
                                         const finalImageUrl = imageUrl || "/placeholder.png";
@@ -446,11 +451,11 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                         return (
                                         <div
                                             key={item.id}
-                                            className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
+                                            className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0"
                                         >
                                             {/* Product image */}
                                             {hasImage ? (
-                                                <div className="relative w-[64px] h-[64px] rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                                <div className="relative w-[64px] h-[64px] rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 ring-1 ring-gray-200">
                                                     <Image
                                                         src={finalImageUrl}
                                                         alt={item.name}
@@ -461,17 +466,21 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
+                                                <div className="w-[64px] h-[64px] rounded-2xl bg-gray-100 ring-1 ring-gray-200 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
                                                     No Image
                                                 </div>
                                             )}
                                             <div className="flex-grow">
-                                                <p className="font-semibold">{item.name}</p>
-                                                <p className="text-sm text-gray-500">{item.note}</p>
+                                                <p className="font-semibold text-gray-900 leading-snug">{item.name}</p>
+                                                {item.note ? (
+                                                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.note}</p>
+                                                ) : (
+                                                    <p className="text-sm text-gray-400 mt-1">No notes</p>
+                                                )}
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                                                <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                                                <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                                                <p className="font-bold text-brand-orange">${(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
                                         </div>
                                         );

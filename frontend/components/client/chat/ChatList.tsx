@@ -2,6 +2,7 @@
 
 import { useChatStore } from "@/stores/useChatStore";
 import { ChatRoom } from "@/types";
+import { Input } from "@/components/ui/Input";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Search } from "lucide-react";
 import Image from "next/image";
@@ -100,17 +101,17 @@ export default function ChatList({
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
+            <div className="p-4 border-b border-gray-200 bg-white/90 backdrop-blur-xl">
+                <h2 className="text-lg font-bold tracking-tight text-gray-900 mb-3">Messages</h2>
                 {/* Search Bar */}
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
+                    <Input
                         type="text"
                         placeholder="Search for shops..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/20 focus:bg-white transition-all"
+                        className="w-full h-10 pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:bg-white"
                     />
                 </div>
             </div>
@@ -137,13 +138,13 @@ export default function ChatList({
                                     key={room.id}
                                     onClick={() => onSelectRoom(room.id)}
                                     className={`w-full p-4 text-left transition-colors relative hover:bg-gray-50 ${
-                                        isSelected ? "bg-orange-50 border-l-4 border-[#EE4D2D]" : ""
+                                        isSelected ? "bg-brand-orange/5 border-l-4 border-brand-orange" : ""
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         {/* Avatar */}
                                         <div className="relative flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-semibold">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center text-white font-semibold">
                                                 {partnerInfoMap[partnerId]?.avatar ? (
                                                     <Image
                                                         src={partnerInfoMap[partnerId].avatar!}

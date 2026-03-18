@@ -43,15 +43,26 @@ export default function OrderTrackingTimeline({ status }: OrderTrackingTimelineP
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-8">
-            <h3 className="text-lg font-bold mb-6 text-gray-900">Order Status</h3>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
+            <h3 className="text-lg font-bold tracking-tight mb-6 text-gray-900">Order Status</h3>
             <div className="flex items-center justify-between relative">
                 {/* Progress Line */}
                 <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 z-0">
+                    {(() => {
+                        const widthClass =
+                            currentStepIndex <= 0
+                                ? "w-0"
+                                : currentStepIndex === 1
+                                  ? "w-1/3"
+                                  : currentStepIndex === 2
+                                    ? "w-2/3"
+                                    : "w-full";
+                        return (
                     <div
-                        className="h-full bg-[#EE4D2D] transition-all duration-500"
-                        style={{ width: currentStepIndex === 0 ? "0%" : currentStepIndex === steps.length - 1 ? "100%" : `${(currentStepIndex / (steps.length - 1)) * 100}%` }}
+                                className={`h-full bg-brand-orange transition-all duration-500 ${widthClass}`}
                     />
+                        );
+                    })()}
                 </div>
 
                 {/* Steps */}
@@ -64,7 +75,7 @@ export default function OrderTrackingTimeline({ status }: OrderTrackingTimelineP
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                                     isCompleted
-                                        ? "bg-[#EE4D2D] border-[#EE4D2D] text-white"
+                                        ? "bg-brand-orange border-brand-orange text-white"
                                         : "bg-white border-gray-300 text-gray-400"
                                 }`}
                             >
@@ -76,7 +87,7 @@ export default function OrderTrackingTimeline({ status }: OrderTrackingTimelineP
                             </div>
                             <span
                                 className={`mt-2 text-xs font-semibold text-center ${
-                                    isCurrent ? "text-[#EE4D2D]" : isCompleted ? "text-gray-700" : "text-gray-400"
+                                    isCurrent ? "text-brand-orange" : isCompleted ? "text-gray-700" : "text-gray-400"
                                 }`}
                             >
                                 {step.label}

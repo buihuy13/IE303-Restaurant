@@ -8,7 +8,7 @@ export function SettingsSecuritySection() {
             <h2 className="text-xl font-semibold">Two-Factor Authentication (2FA)</h2>
             <p className="mt-2 text-gray-600">Secure your account with an extra layer of protection.</p>
             <div className="mt-4">
-                <Button className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90">Enable 2FA</Button>
+                <Button className="bg-brand-orange text-white hover:bg-brand-orange/90">Enable 2FA</Button>
             </div>
         </div>
     );
