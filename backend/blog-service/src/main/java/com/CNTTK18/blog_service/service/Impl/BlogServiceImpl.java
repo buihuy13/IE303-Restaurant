@@ -1,5 +1,7 @@
 package com.CNTTK18.blog_service.service.Impl;
 
+import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,13 +14,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
+import com.CNTTK18.blog_service.config.properties.BlogImageProperties;
 import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
@@ -34,9 +39,11 @@ import com.CNTTK18.blog_service.service.BlogService;
 import com.CNTTK18.blog_service.service.ImageHandleService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BlogServiceImpl implements BlogService {
     private static final int MAX_SLUG_RETRY = 10;
     private static final String KEY_PUBLIC_ID = "public_id";
@@ -46,6 +53,7 @@ public class BlogServiceImpl implements BlogService {
     private final BlogRepository blogRepository;
     private final BlogImageRepository blogImageRepository;
     private final ImageHandleService imageHandleService;
+    private final BlogImageProperties blogImageProperties;
     private final BlogMapper blogMapper;
 
     @Override
@@ -77,6 +85,7 @@ public class BlogServiceImpl implements BlogService {
         for (BlogImageAsset imageAsset : imageAssets) {
             imageUrls.add(imageAsset.getImageUrl());
         }
+        cleanupStaleOrphanImagesBestEffort();
         return imageUrls;
     }
 
@@ -89,11 +98,12 @@ public class BlogServiceImpl implements BlogService {
         if (BlogStatus.ARCHIVED.equals(status)) {
             throw new IllegalArgumentException("Cannot create blog with ARCHIVED status");
         }
+        String normalizedTitle = normalizeRequiredText(request.getTitle(), "Title must not be blank");
 
         BlogPost newBlog = BlogPost.builder()
                 .authorId(actorId)
-                .title(normalizeRequiredText(request.getTitle(), "Title must not be blank"))
-                .slug(generateUniqueSlug(request.getTitle()))
+                .title(normalizedTitle)
+                .slug(generateUniqueSlug(normalizedTitle))
                 .content(normalizeRequiredText(request.getContent(), "Content must not be blank"))
                 .coverImageUrl(normalizeCoverImageUrl(request.getCoverImageUrl()))
                 .status(status)
@@ -102,6 +112,7 @@ public class BlogServiceImpl implements BlogService {
         syncPublishedAt(newBlog);
         BlogPost savedBlog = blogRepository.save(newBlog);
         syncImageAssets(savedBlog, actorId, Set.of());
+        cleanupStaleOrphanImagesBestEffort();
         return blogMapper.toBlogResponse(blogRepository.save(savedBlog));
     }
 
@@ -168,6 +179,7 @@ public class BlogServiceImpl implements BlogService {
 
         syncPublishedAt(existingBlog);
         syncImageAssets(existingBlog, actorId, previousImageUrls);
+        cleanupStaleOrphanImagesBestEffort();
         return blogMapper.toBlogResponse(blogRepository.save(existingBlog));
     }
 
@@ -317,7 +329,23 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private String normalizeCoverImageUrl(String coverImageUrl) {
-        return normalizeString(coverImageUrl);
+        String normalizedCoverImageUrl = normalizeString(coverImageUrl);
+        if (normalizedCoverImageUrl == null) {
+            return null;
+        }
+
+        URI uri = URI.create(normalizedCoverImageUrl);
+
+        String scheme = uri.getScheme();
+        String normalizedScheme = scheme == null ? "" : scheme.toLowerCase(Locale.ROOT);
+        if (!"http".equals(normalizedScheme) && !"https".equals(normalizedScheme)) {
+            throw new IllegalArgumentException("Cover image URL must be a valid HTTP/HTTPS URL");
+        }
+        if (uri.getHost() == null || uri.getHost().isBlank()) {
+            throw new IllegalArgumentException("Cover image URL must be a valid HTTP/HTTPS URL");
+        }
+
+        return normalizedCoverImageUrl;
     }
 
     private String normalizeString(String value) {
@@ -368,5 +396,27 @@ public class BlogServiceImpl implements BlogService {
             return;
         }
         blogPost.setPublishedAt(null);
+    }
+
+    private void cleanupStaleOrphanImagesBestEffort() {
+        try {
+            Instant cutoff = Instant.now().minus(Duration.ofHours(blogImageProperties.getUnusedRetentionHours()));
+            Pageable pageable = PageRequest.of(
+                    0, blogImageProperties.getOrphanCleanupBatchSize(), Sort.by(Sort.Direction.ASC, "createdAt"));
+            List<BlogImageAsset> orphanImages = blogImageRepository
+                    .findByBlogPostIsNullAndCreatedAtBefore(cutoff, pageable)
+                    .getContent();
+            if (orphanImages.isEmpty()) {
+                return;
+            }
+
+            for (BlogImageAsset orphanImage : orphanImages) {
+                imageHandleService.deleteImage(orphanImage.getPublicId());
+            }
+            blogImageRepository.deleteAll(orphanImages);
+        } catch (Exception ex) {
+            // Cleanup is best-effort and should not block create/update/upload requests.
+            log.warn("Failed to cleanup stale orphan blog images: {}", ex.getMessage());
+        }
     }
 }
