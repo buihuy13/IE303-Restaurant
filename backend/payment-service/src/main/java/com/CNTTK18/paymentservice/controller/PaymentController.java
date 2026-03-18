@@ -37,13 +37,16 @@ public class PaymentController {
         // Chữ ký có thể nằm ở header "signature" hoặc ở trong root data body tùy vào version/config của PayOS
         String signature = headerSignature != null ? headerSignature : (String) webhookBody.get("signature");
 
-        boolean isProcessed = paymentService.processWebhook(webhookBody, signature);
-
-        if (isProcessed) {
-            // PayOS yêu cầu trả về HTTP Status Code 200 kèm chuỗi "success" hoặc JSON chứa code 00 để xác nhận đã nhận
-            return ResponseEntity.ok("success");
-        } else {
-            return ResponseEntity.badRequest().body("failed");
+        try {
+            boolean isProcessed = paymentService.processWebhook(webhookBody, signature);
+            if (!isProcessed) {
+                log.warn("Webhook nhận được nhưng xử lý thất bại (Có thể do sai chữ ký hoặc chỉ là request Test từ PayOS)");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi crash khi xử lý Webhook: ", e);
         }
+
+        // ĐIỀU KIỆN TIÊN QUYẾT TỪ PAYOS: LUÔN TRẢ VỀ 200 OK "success" để xác nhận đã nhận, tránh bị dội lại 400 và block webhook
+        return ResponseEntity.ok("success");
     }
 }

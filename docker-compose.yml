@@ -100,6 +100,8 @@ services:
     postgres:
         image: postgis/postgis:16-3.4   # PostgreSQL + PostGIS
         restart: unless-stopped
+        ports:
+            - "5432:5432" # để spring boot payment-service thọc vào db
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: ${DB_PASSWORD}
