@@ -1,14 +1,15 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product } from "@/types";
-import { CheckCircle2, Clock, Plus } from "lucide-react";
+import { Check, CheckCircle2, Clock, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 type CompactFoodCardProps = {
@@ -29,11 +30,21 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     const setUserId = useCartStore((state) => state.setUserId);
     const { user } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
+    const [justAdded, setJustAdded] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const justAddedTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (justAddedTimerRef.current) {
+                window.clearTimeout(justAddedTimerRef.current);
+            }
+        };
     }, []);
 
     useEffect(() => {
@@ -101,6 +112,26 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
 
+    const restaurantSlug = useMemo(() => {
+        const fromRestaurant = restaurant?.slug;
+        if (typeof fromRestaurant === "string" && fromRestaurant.trim()) return fromRestaurant.trim();
+
+        const fromProduct = (product as unknown as { restaurantSlug?: unknown }).restaurantSlug;
+        if (typeof fromProduct === "string" && fromProduct.trim()) return fromProduct.trim();
+
+        return "";
+    }, [restaurant?.slug, product]);
+
+    const restaurantId = useMemo(() => {
+        const fromRestaurant = (restaurant as unknown as { id?: unknown })?.id;
+        if (typeof fromRestaurant === "string" && fromRestaurant.trim()) return fromRestaurant.trim();
+
+        const fromProduct = (product as unknown as { restaurantId?: unknown }).restaurantId;
+        if (typeof fromProduct === "string" && fromProduct.trim()) return fromProduct.trim();
+
+        return "";
+    }, [restaurant, product]);
+
     // Determine link based on current location
     // If already on restaurant page, link to food detail page
     // Otherwise, link to restaurant page
@@ -110,10 +141,11 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             // On restaurant page, go to food detail
             return `/food/${product.slug}`;
         } else {
-            // Outside restaurant page, go to restaurant page
-            return restaurant?.slug ? `/restaurants/${restaurant.slug}` : `/food/${product.slug}`;
+            // Outside restaurant page, go to restaurant page (search/home should land on restaurant detail)
+            const restaurantTarget = restaurantSlug || restaurantId;
+            return restaurantTarget ? `/restaurants/${restaurantTarget}` : `/restaurants`;
         }
-    }, [pathname, product.slug, restaurant?.slug]);
+    }, [pathname, product.slug, restaurantSlug, restaurantId]);
 
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
@@ -204,6 +236,9 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                     1,
                 );
                 // Toast is handled by cartStore.addItem
+                setJustAdded(true);
+                if (justAddedTimerRef.current) window.clearTimeout(justAddedTimerRef.current);
+                justAddedTimerRef.current = window.setTimeout(() => setJustAdded(false), 900);
             } catch (error) {
                 console.error("Failed to add to cart:", error);
                 // Error toast is handled by cartStore.addItem
@@ -217,13 +252,13 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     );
 
     return (
-        <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+        <div className="group relative bg-white rounded-2xl overflow-hidden border border-gray-200/70 shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-brand-orange/25 focus-within:ring-2 focus-within:ring-brand-orange/15">
             {/* Image Section */}
             <Link
                 href={productLink}
-                className="block relative w-full aspect-square overflow-hidden"
+                className="block relative w-full aspect-[3/2] overflow-hidden"
             >
-                <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg">
+                <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                     <Image
                         src={imageError ? "/placeholder.png" : cardImageUrl}
                         alt={product.productName}
@@ -241,14 +276,14 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                     {/* Placeholder overlay */}
                     {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
-                            <span className="text-3xl">🍽️</span>
+                            <span className="text-4xl">🍽️</span>
                         </div>
                     )}
 
                     {/* Favorite Badge - Top Left */}
                     {isFavorite && (
-                        <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
-                            <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                        <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                            <span className="bg-brand-orange text-white text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
                                 ❤️ Favorite
                             </span>
                         </div>
@@ -256,72 +291,85 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
 
                     {/* Delivery Time Badge - Bottom Left */}
                     {deliveryTime && (
-                        <div className="absolute bottom-1.5 left-1.5 z-20 pointer-events-none">
-                            <div className="bg-white/95 backdrop-blur-sm text-gray-800 text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
-                                <Clock className="w-2.5 h-2.5" />
+                        <div className="absolute bottom-2 left-2 z-20 pointer-events-none">
+                            <div className="bg-white/90 backdrop-blur-md text-gray-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ring-1 ring-black/5">
+                                <Clock className="w-3 h-3" />
                                 <span>{deliveryTime} min</span>
                             </div>
                         </div>
                     )}
-
-                    {/* Quick Add Button - Bottom Right Corner */}
-                    <button
-                        onClick={handleAddToCart}
-                        disabled={isAdding || !isMounted}
-                        className="absolute bottom-2 right-2 z-30 w-8 h-8 bg-[#EE4D2D] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#EE4D2D]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
-                        title="Add to cart"
-                    >
-                        {isAdding ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <Plus className="w-4 h-4" />
-                        )}
-                    </button>
                 </div>
             </Link>
 
             {/* Content Section */}
-            <div className="p-3 space-y-1.5">
-                {/* Product Name - Truncate 1 line */}
-                <Link
-                    href={productLink}
-                >
-                    <h3
-                        className="text-sm font-bold text-gray-900 line-clamp-1 truncate mt-1 hover:text-[#EE4D2D] transition-colors"
-                        title={product.productName}
-                    >
-                        {product.productName && product.productName.length > 0
-                            ? product.productName.charAt(0).toUpperCase() + product.productName.slice(1)
-                            : product.productName}
-                    </h3>
-                </Link>
-
-                {/* Restaurant Name with Verified Icon */}
-                <div className="flex items-center gap-1.5">
-                    <p className="text-xs text-gray-500 line-clamp-1 flex-1">{restaurant?.resName || "Restaurant"}</p>
-                    <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
+            <div className="p-4">
+                {/* Name + restaurant */}
+                <div className="min-h-[52px]">
+                    <Link href={productLink}>
+                        <h3
+                            className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug hover:text-brand-orange transition-colors"
+                            title={product.productName}
+                        >
+                            {product.productName && product.productName.length > 0
+                                ? product.productName.charAt(0).toUpperCase() + product.productName.slice(1)
+                                : product.productName}
+                        </h3>
+                    </Link>
+                    <div className="mt-1 flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 line-clamp-1 flex-1">{restaurant?.resName || "Restaurant"}</p>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" aria-label="Verified" />
+                    </div>
                 </div>
 
-                {/* Rating with Review Count */}
-                {product.rating > 0 && (
-                    <div className="flex items-center gap-1.5">
-                        <div className="flex items-center gap-1">
-                            <span className="text-xs text-yellow-500">⭐</span>
-                            <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
+                {/* Meta row */}
+                <div className="mt-3 flex items-center justify-between gap-3">
+                    {product.rating > 0 ? (
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-yellow-500">⭐</span>
+                            <span className="font-semibold text-gray-800">{product.rating.toFixed(1)}</span>
+                            {formatReviewCount && <span className="text-gray-500">({formatReviewCount})</span>}
                         </div>
-                        {formatReviewCount && (
-                            <span className="text-xs text-gray-500">({formatReviewCount} reviews)</span>
+                    ) : (
+                        <div className="text-xs text-gray-400">No ratings yet</div>
+                    )}
+                    <div className="text-xs text-gray-400 whitespace-nowrap" aria-hidden="true">
+                        &nbsp;
+                    </div>
+                </div>
+
+                {/* Price + CTA */}
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        {formatPrice ? (
+                            <p className="text-base font-bold text-brand-orange">${formatPrice}</p>
+                        ) : (
+                            <p className="text-xs text-gray-400">Price not available</p>
                         )}
                     </div>
-                )}
 
-                {/* Price */}
-                <div className="pt-1">
-                    {formatPrice ? (
-                        <p className="text-base font-bold text-[#EE4D2D]">${formatPrice}</p>
-                    ) : (
-                        <p className="text-xs text-gray-400">Price not available</p>
-                    )}
+                    <Button
+                        onClick={handleAddToCart}
+                        disabled={isAdding || !isMounted}
+                        variant="brandSoft"
+                        size="sm"
+                        className="h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
+                        title="Add to cart"
+                        aria-label="Add to cart"
+                    >
+                        {isAdding ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : justAdded ? (
+                            <>
+                                <Check className="w-4 h-4" />
+                                <span className="ml-1.5 text-sm font-semibold">Added</span>
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="w-4 h-4" />
+                                <span className="ml-1.5 text-sm font-semibold">Add</span>
+                            </>
+                        )}
+                    </Button>
                 </div>
             </div>
         </div>

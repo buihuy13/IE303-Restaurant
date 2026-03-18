@@ -33,13 +33,14 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggleSelect}
-                    className="w-5 h-5 text-[#EE4D2D] border-gray-300 rounded focus:ring-[#EE4D2D] focus:ring-2 cursor-pointer"
+                    aria-label={isSelected ? "Deselect item" : "Select item"}
+                    className="w-5 h-5 text-brand-orange border-gray-300 rounded focus:ring-brand-orange focus:ring-2 cursor-pointer"
                 />
             </div>
 
             {/* Product Image - Square */}
             {hasImage ? (
-                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
                     <Image
                         src={finalImageUrl}
                         alt={item.name}
@@ -50,7 +51,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                     />
                 </div>
             ) : (
-                <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 text-[#EE4D2D] flex-shrink-0">
+                <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-orange-200 text-brand-orange flex-shrink-0 ring-1 ring-orange-200">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                             strokeLinecap="round"
@@ -84,7 +85,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
 
                 {/* Quantity Control */}
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="flex items-center border border-gray-300 rounded-full overflow-hidden bg-white shadow-sm">
                         <button
                             title="Decrease item"
                             onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity - 1)}
@@ -93,13 +94,13 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                         >
                             <Minus className="w-4 h-4 text-gray-600" />
                         </button>
-                        <span className="px-4 py-1.5 font-semibold text-gray-900 min-w-[2.5rem] text-center bg-white">
+                        <span className="px-4 py-1.5 font-semibold text-gray-900 min-w-[2.5rem] text-center bg-white border-x border-gray-200">
                             {item.quantity}
                         </span>
                         <button
                             title="Increase item"
                             onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity + 1)}
-                            className="p-2 hover:bg-[#EE4D2D]/10 hover:text-[#EE4D2D] transition-colors"
+                            className="p-2 hover:bg-brand-orange/10 hover:text-brand-orange transition-colors"
                         >
                             <Plus className="w-4 h-4" />
                         </button>
@@ -118,7 +119,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
 
             {/* Total Item Price - Orange, Bold */}
             <div className="flex-shrink-0 text-right">
-                <p className="font-bold text-lg text-[#EE4D2D]">{formatPriceUSD(itemTotal)} $</p>
+                <p className="font-bold text-lg text-brand-orange">{formatPriceUSD(itemTotal)} $</p>
             </div>
         </div>
     );

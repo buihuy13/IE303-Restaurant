@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 export default function PaymentPage() {
     return (
-        <section>
+        <section className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white">
             <Suspense fallback={<GlobalLoader label="Loading" sublabel="Setting up checkout" />}>
                 <PaymentPageContainer />
             </Suspense>

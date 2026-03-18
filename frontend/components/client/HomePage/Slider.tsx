@@ -69,7 +69,7 @@ export default function Slider() {
                         >
                                 {reviews.map((review) => (
                                         <SwiperSlide key={review.id}>
-                                                <div className="p-6 bg-white rounded-2xl shadow-md h-full flex flex-col">
+                                                <div className="p-6 bg-white rounded-2xl shadow-sm ring-1 ring-black/5 h-full flex flex-col hover:shadow-md transition-shadow">
                                                         <RatingStar rating={5} />
                                                         <p className="mt-[16px] text-gray-700 flex-grow">
                                                                 {review.text}

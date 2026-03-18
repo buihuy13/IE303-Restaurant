@@ -4,6 +4,8 @@ import { Message } from "@/types";
 import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface ChatWindowProps {
     messages: Message[];
@@ -189,7 +191,7 @@ export default function ChatWindow({
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header - Sticky Top */}
-            <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-white shadow-sm">
+            <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-white/90 backdrop-blur-xl shadow-sm">
                 <div className="flex items-center gap-3">
                     {/* Mobile Back Button */}
                     {onBack && (
@@ -204,7 +206,7 @@ export default function ChatWindow({
                     )}
 
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         <span>{partnerName.charAt(0).toUpperCase()}</span>
                     </div>
 
@@ -216,7 +218,7 @@ export default function ChatWindow({
                     {/* Visit Shop Button */}
                     <Link
                         href={`/restaurants?merchantId=${partnerId}`}
-                        className="px-3 py-1.5 text-xs font-semibold border border-[#EE4D2D] text-[#EE4D2D] rounded-lg hover:bg-[#EE4D2D]/10 transition-colors whitespace-nowrap"
+                        className="px-3 py-1.5 text-xs font-semibold border border-brand-orange/40 text-brand-orange rounded-full hover:bg-brand-orange/10 transition-colors whitespace-nowrap"
                     >
                         Visit Shop
                     </Link>
@@ -230,11 +232,15 @@ export default function ChatWindow({
             >
                 {isLoading && sortedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[400px]">
-                        <Loader2 className="w-6 h-6 animate-spin text-[#EE4D2D]" />
+                        <Loader2 className="w-6 h-6 animate-spin text-brand-orange" />
                     </div>
                 ) : sortedMessages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full min-h-[400px] text-gray-400">
-                        <p className="text-sm">No messages yet. Start the conversation!</p>
+                    <div className="flex items-center justify-center h-full min-h-[400px] p-6">
+                        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm text-center">
+                            <div className="text-5xl mb-3">👋</div>
+                            <p className="text-gray-900 font-semibold">No messages yet</p>
+                            <p className="text-sm text-gray-600 mt-1">Send a message to start the conversation.</p>
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -248,7 +254,7 @@ export default function ChatWindow({
                                 >
                                     {/* Avatar for received messages */}
                                     {!isOwnMessage && (
-                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                                             <span>{partnerName.charAt(0).toUpperCase()}</span>
                                         </div>
                                     )}
@@ -256,10 +262,10 @@ export default function ChatWindow({
                                     {/* Message Bubble */}
                                     <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} flex-shrink-0`}>
                                         <div
-                                            className={`max-w-[75%] md:max-w-[65%] min-w-[120px] rounded-lg px-3 py-2 shadow-sm inline-block text-sm md:text-base leading-relaxed whitespace-normal break-words ${
+                                            className={`max-w-[75%] md:max-w-[65%] min-w-[120px] rounded-2xl px-3 py-2 shadow-sm inline-block text-sm md:text-base leading-relaxed whitespace-normal break-words ${
                                                 isOwnMessage
-                                                    ? "bg-[#EE4D2D] text-white rounded-l-lg rounded-tr-lg"
-                                                    : "bg-gray-100 text-gray-900 rounded-r-lg rounded-tl-lg"
+                                                    ? "bg-brand-orange text-white rounded-tr-2xl rounded-bl-2xl"
+                                                    : "bg-white text-gray-900 border border-gray-200 rounded-tl-2xl rounded-br-2xl"
                                             }`}
                                         >
                                             {message.content}
@@ -284,14 +290,14 @@ export default function ChatWindow({
                     {/* Image/Attachment Button */}
                     <button
                         type="button"
-                        className="p-2.5 text-gray-500 hover:text-[#EE4D2D] hover:bg-orange-50 rounded-full transition-colors"
+                        className="p-2.5 text-gray-500 hover:text-brand-orange hover:bg-orange-50 rounded-full transition-colors"
                         title="Send image"
                     >
                         <Paperclip className="w-5 h-5" />
                     </button>
 
                     {/* Input Field */}
-                    <input
+                    <Input
                         ref={inputRef}
                         type="text"
                         value={inputValue}
@@ -311,18 +317,20 @@ export default function ChatWindow({
                         }}
                         placeholder={isConnected ? "Type a message..." : "Connecting..."}
                         disabled={!isConnected}
-                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/20 focus:border-[#EE4D2D] disabled:bg-gray-100 disabled:cursor-not-allowed transition-all"
+                        className="flex-1 h-11 rounded-full px-4 py-2.5 border border-gray-200 bg-gray-50 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
 
                     {/* Send Button */}
-                    <button
+                    <Button
                         title="Send message"
                         onClick={handleSend}
                         disabled={!isConnected || !inputValue.trim()}
-                        className="p-2.5 bg-[#EE4D2D] text-white rounded-full hover:bg-[#EE4D2D]/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:hover:scale-100"
+                        variant="brand"
+                        size="icon"
+                        className="size-11 rounded-full shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:text-white disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                         <Send className="w-5 h-5" />
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

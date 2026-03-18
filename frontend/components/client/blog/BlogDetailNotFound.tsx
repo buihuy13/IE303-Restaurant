@@ -8,7 +8,7 @@ export function BlogDetailNotFound() {
                 <p className="text-gray-600 mb-4 text-lg">Post not found</p>
                 <Link
                     href="/blog"
-                    className="inline-flex items-center gap-2 text-[#EE4D2D] hover:underline font-medium"
+                    className="inline-flex items-center gap-2 text-brand-orange hover:underline font-medium"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back to list

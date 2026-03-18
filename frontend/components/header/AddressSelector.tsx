@@ -262,9 +262,9 @@ export default function AddressSelector() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-[#EE4D2D]/50 transition-all duration-200 text-sm font-medium text-gray-700 min-w-[180px] max-w-[240px]"
+                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gray-50/70 rounded-full border border-gray-200/60 hover:bg-white hover:border-brand-orange/40 transition-all duration-200 text-sm font-medium text-gray-800 min-w-[200px] max-w-[260px] shadow-sm"
             >
-                <MapPin className="w-4 h-4 text-[#EE4D2D] flex-shrink-0" />
+                <MapPin className="w-4 h-4 text-brand-orange flex-shrink-0" />
                 <span className="truncate text-left flex-1 text-xs">
                     {currentAddress ? `Deliver to: ${displayText}` : "Deliver to: Select address"}
                 </span>
@@ -276,7 +276,7 @@ export default function AddressSelector() {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-[320px] bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                <div className="absolute top-full left-0 mt-2 w-[340px] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-50 overflow-hidden">
                     <div className="p-3 border-b border-gray-100">
                         <h3 className="text-sm font-semibold text-gray-800">Select delivery address</h3>
                     </div>
@@ -288,8 +288,8 @@ export default function AddressSelector() {
                             className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <div className="flex items-center gap-3">
-                                <Navigation className="w-4 h-4 text-[#EE4D2D] mt-0.5 flex-shrink-0" />
-                                <span className="text-sm font-medium text-[#EE4D2D]">
+                                <Navigation className="w-4 h-4 text-brand-orange mt-0.5 flex-shrink-0" />
+                                <span className="text-sm font-medium text-brand-orange">
                                     {isGettingLocation ? "Getting location..." : "📍 Use Current Location"}
                                 </span>
                             </div>
@@ -317,18 +317,18 @@ export default function AddressSelector() {
                                             key={address.id}
                                             onClick={() => handleAddressSelect(locationAddress)}
                                             className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                                                isSelected ? "bg-[#EE4D2D]/5" : ""
+                                                isSelected ? "bg-brand-orange/5" : ""
                                             }`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <MapPin
                                                     className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                                                        isSelected ? "text-[#EE4D2D]" : "text-gray-400"
+                                                        isSelected ? "text-brand-orange" : "text-gray-400"
                                                     }`}
                                                 />
                                                 <span
                                                     className={`text-sm ${
-                                                        isSelected ? "font-medium text-[#EE4D2D]" : "text-gray-700"
+                                                        isSelected ? "font-medium text-brand-orange" : "text-gray-700"
                                                     }`}
                                                 >
                                                     {address.location}
@@ -355,18 +355,18 @@ export default function AddressSelector() {
                                     key={address.id}
                                     onClick={() => handleAddressSelect(address)}
                                     className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                                        isSelected ? "bg-[#EE4D2D]/5" : ""
+                                        isSelected ? "bg-brand-orange/5" : ""
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <MapPin
                                             className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                                                isSelected ? "text-[#EE4D2D]" : "text-gray-400"
+                                                isSelected ? "text-brand-orange" : "text-gray-400"
                                             }`}
                                         />
                                         <span
                                             className={`text-sm ${
-                                                isSelected ? "font-medium text-[#EE4D2D]" : "text-gray-700"
+                                                isSelected ? "font-medium text-brand-orange" : "text-gray-700"
                                             }`}
                                         >
                                             {address.address}

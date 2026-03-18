@@ -2,10 +2,12 @@
 
 import { productApi } from "@/lib/api/productApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Product, Restaurant } from "@/types";
 import { Search, Store, Utensils } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 interface SearchSuggestion {
     type: "restaurant" | "product";
@@ -24,8 +26,19 @@ export default function SearchBar() {
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
+
+    // Sync input with URL query when viewing /search (but don't override while user is typing)
+    useEffect(() => {
+        if (pathname !== "/search") return;
+        if (isFocused) return;
+
+        const q = searchParams.get("q") || "";
+        setSearchQuery(q);
+    }, [pathname, searchParams, isFocused]);
 
     // Debounced search for suggestions
     useEffect(() => {
@@ -123,20 +136,29 @@ export default function SearchBar() {
         };
     }, [showSuggestions]);
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = (e: FormEvent) => {
         e.preventDefault();
 
         // Trim whitespace
         const trimmedQuery = searchQuery.trim();
+        const currentType = (searchParams.get("type") || "foods") as "foods" | "restaurants";
 
-        // If query is empty, redirect to home page (which shows foods by default)
+        // If query is empty, redirect to home page (preserve current type)
         if (!trimmedQuery) {
-            router.push("/?type=foods");
+            router.push(`/?type=${currentType}`);
             return;
         }
 
-        // Redirect to search page
-        router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+        // Redirect to search page, preserving current mode/type when possible
+        // (prevents "jumping" between Foods/Restaurants while searching from header)
+        const params = new URLSearchParams(Array.from(searchParams.entries()));
+        params.set("type", currentType);
+        params.set("q", trimmedQuery);
+        params.delete("page");
+        if (pathname !== "/search") {
+            params.delete("sort");
+        }
+        router.push(`/search?${params.toString()}`);
         setShowSuggestions(false);
     };
 
@@ -175,17 +197,17 @@ export default function SearchBar() {
         <div className="hidden lg:flex flex-1 max-w-2xl relative" ref={suggestionsRef}>
             <form onSubmit={handleSearch} className="w-full">
                 <div className="relative w-full">
-                    <input
+                    <Input
                         type="text"
                         placeholder="Search for food, drinks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={handleInputFocus}
                         onBlur={handleInputBlur}
-                        className={`w-full py-2.5 px-4 pl-11 bg-gray-100 rounded-full text-gray-900 placeholder:text-gray-400 text-sm border transition-all duration-200 ${
+                        className={`h-11 w-full py-2.5 px-4 pl-11 rounded-full text-gray-900 placeholder:text-gray-500 text-sm border transition-all duration-200 ${
                             isFocused
-                                ? "bg-white border-[#EE4D2D]/50 shadow-md ring-2 ring-[#EE4D2D]/20"
-                                : "border-transparent hover:bg-gray-50"
+                                ? "bg-white border-brand-orange/40 shadow-lg ring-2 ring-brand-orange/15"
+                                : "bg-gray-50 border-gray-200/60 hover:bg-white hover:border-gray-200"
                         }`}
                     />
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -194,7 +216,7 @@ export default function SearchBar() {
 
             {/* Suggestions Dropdown */}
             {showSuggestions && (suggestions.length > 0 || isLoadingSuggestions) && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[400px] overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200/80 max-h-[420px] overflow-y-auto z-50 overflow-hidden">
                     {isLoadingSuggestions ? (
                         <div className="p-4 text-center text-gray-500">
                             <div className="animate-pulse">Searching...</div>
@@ -212,9 +234,9 @@ export default function SearchBar() {
                                             <button
                                                 key={`restaurant-${suggestion.id}`}
                                                 onClick={() => handleSuggestionClick(suggestion)}
-                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left"
                                             >
-                                                <Store className="w-4 h-4 text-[#EE4D2D] flex-shrink-0" />
+                                                <Store className="w-4 h-4 text-brand-orange flex-shrink-0" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-sm text-gray-900 truncate">
                                                         {suggestion.name}
@@ -236,7 +258,7 @@ export default function SearchBar() {
                                             <button
                                                 key={`product-${suggestion.id}`}
                                                 onClick={() => handleSuggestionClick(suggestion)}
-                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-left"
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left"
                                             >
                                                 <Utensils className="w-4 h-4 text-brand-orange flex-shrink-0" />
                                                 <div className="flex-1 min-w-0">
@@ -257,12 +279,13 @@ export default function SearchBar() {
                             {/* View All Results */}
                             {searchQuery.trim().length >= 2 && (
                                 <div className="p-2 border-t border-gray-100">
-                                    <button
+                                    <Button
                                         onClick={handleSearch}
-                                        className="w-full px-3 py-2 text-sm font-semibold text-[#EE4D2D] hover:bg-[#EE4D2D]/10 rounded-md transition-colors text-center"
+                                        variant="ghost"
+                                        className="w-full justify-center text-sm font-semibold text-brand-orange hover:bg-brand-orange/10 rounded-xl"
                                     >
                                         View all results for &quot;{searchQuery}&quot;
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </>

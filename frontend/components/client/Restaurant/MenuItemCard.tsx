@@ -4,6 +4,7 @@
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { Button } from "@/components/ui/Button";
 import { type Product } from "@/types";
 import { PlusCircle } from "lucide-react";
 import Image from "next/image";
@@ -117,10 +118,10 @@ export const MenuItemCard = memo(
         return (
             <Link
                 href={`/food/${item.slug}`}
-                className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
+                className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 hover:-translate-y-1 hover:border-brand-orange/30"
             >
                 {/* Image Section - Improved design */}
-                <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-[#EE4D2D]/5 to-orange-500/5 rounded-t-2xl">
+                <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-brand-orange/5 to-orange-500/5 rounded-t-2xl">
                     {hasImage ? (
                         <Image
                             src={cardImageUrl}
@@ -135,7 +136,7 @@ export const MenuItemCard = memo(
                             }}
                         />
                     ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#EE4D2D]/10 to-orange-500/10">
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-orange/10 to-orange-500/10">
                             <div className="text-center">
                                 <span className="text-4xl mb-2 block">🍽️</span>
                                 <span className="text-xs text-gray-600 font-medium">Preparing...</span>
@@ -155,14 +156,16 @@ export const MenuItemCard = memo(
                         </p>
                     )}
                     <div className="flex justify-between items-center mt-auto pt-2">
-                        <p className="font-bold text-lg md:text-xl text-[#EE4D2D]">
+                        <p className="font-bold text-lg md:text-xl text-brand-orange">
                             {hasMultipleSizes && displayPrice ? "From " : ""}
                             {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                         </p>
-                        <button
+                        <Button
                             onClick={handleAddToCart}
                             disabled={isAdding || !isMounted}
-                            className="p-2.5 text-[#EE4D2D] hover:bg-[#EE4D2D]/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50 bg-white hover:shadow-md"
+                            variant="brandOutline"
+                            size="icon"
+                            className="rounded-full border-2 bg-white shadow-sm hover:shadow-md"
                             title="Add to Cart"
                             aria-label="Add to Cart"
                         >
@@ -171,7 +174,7 @@ export const MenuItemCard = memo(
                             ) : (
                                 <PlusCircle className="w-5 h-5" />
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </Link>
