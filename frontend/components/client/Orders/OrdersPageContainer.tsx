@@ -180,8 +180,8 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
     );
 
     return (
-        <div className="custom-container p-3 sm:p-1 md:p-12">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-8 items-start">
+        <div className="custom-container py-8 sm:py-10 md:py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
                 {/* Left Sidebar: User Menu */}
                 <div className="lg:col-span-1">
                     <OrderHistorySidebar />
@@ -190,14 +190,19 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                 {/* Right Content: Order List */}
                 <div className="lg:col-span-3">
                     {/* Filter options */}
-                    <div className="flex justify-between items-center mb-8">
-                        <h1 className="text-xl md:text-3xl font-bold">Your Orders ({formattedCount} orders)</h1>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+                                Your Orders ({formattedCount} orders)
+                            </h1>
+                            <p className="text-sm text-gray-600 mt-1">Track deliveries, view details, or reorder in one click.</p>
+                        </div>
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-600">Sort by:</span>
                             <select
                                 value={sortBy}
                                 onChange={(e) => handleSortChange(e.target.value)}
-                                className="font-semibold border-gray-300 border-2 px-3 py-2 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/20 focus:border-[#EE4D2D] transition-colors cursor-pointer"
+                                className="font-semibold border-gray-300 border px-3 py-2 rounded-full bg-white shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60 transition-colors cursor-pointer"
                                 title="Sort by"
                             >
                                 <option value="recent">Recent</option>
@@ -219,7 +224,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                         )}
 
                         {!isLoading && orders.length === 0 && (
-                            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] bg-white">
+                            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
                                 <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                                     {/* Icon */}
                                     <div className="mb-6 p-6 bg-gray-100 rounded-full">
@@ -239,14 +244,14 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <Link
                                             href="/?type=foods"
-                                            className="bg-[#EE4D2D] text-white px-6 py-3 rounded-full font-bold hover:bg-[#EE4D2D]/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                                            className="bg-brand-orange text-white px-6 py-3 rounded-full font-bold hover:bg-brand-orange/90 transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
                                             Browse Food
                                         </Link>
                                         {onRetry && (
                                             <button
                                                 onClick={onRetry}
-                                                className="border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                                                className="border border-gray-300 bg-white text-gray-800 px-6 py-3 rounded-full font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
                                             >
                                                 Retry
                                             </button>
@@ -311,13 +316,13 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 return (
                                     <div
                                         key={order.id}
-                                        className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
+                                        className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
                                     >
                                         {/* Header Card */}
                                         <div className="border-b border-gray-200 px-5 py-4 bg-white">
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <div className="flex-1">
-                                                    <h2 className="text-lg font-bold text-gray-900 mb-1">
+                                                    <h2 className="text-lg font-bold tracking-tight text-gray-900 mb-1">
                                                         {firstItem?.restaurantName || "Restaurant"}
                                                     </h2>
                                                     <p className="text-sm text-gray-500">{formattedDate}</p>
@@ -333,7 +338,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                 <div className="mt-3">
                                                     <Link
                                                         href={`/delivery/${order.slug || order.id}`}
-                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-800 rounded-full text-sm font-semibold hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
                                                     >
                                                         <Truck className="w-4 h-4" />
                                                         Track Order
@@ -346,7 +351,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
                                             <div className="flex items-center gap-4">
                                                 {hasImage && cardImageUrl ? (
-                                                    <div className="relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-200">
+                                                    <div className="relative h-16 w-16 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-200 ring-1 ring-gray-200">
                                                         <Image
                                                             src={cardImageUrl}
                                                             alt={firstItem?.productName || "Order item"}
@@ -357,7 +362,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <div className="h-16 w-16 flex-shrink-0 rounded-md bg-gray-100 flex items-center justify-center text-gray-300">
+                                                    <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-300">
                                                         <Package className="w-6 h-6" />
                                                     </div>
                                                 )}
@@ -372,20 +377,20 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
 
                                         {/* Footer Card */}
                                         <div className="px-5 py-4 bg-white flex items-center justify-between gap-4">
-                                            <p className="text-xl font-bold text-[#EE4D2D]">
+                                            <p className="text-xl font-bold text-brand-orange">
                                                 {formatCurrency(order.totalAmount)}
                                             </p>
                                             <div className="flex items-center gap-3">
                                                 <Link
                                                     href={`/orders/${order.slug || order.id}`}
-                                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
+                                                    className="px-4 py-2 border border-gray-300 text-gray-800 rounded-full text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
                                                 >
                                                     View Details
                                                 </Link>
                                                 <button
                                                     onClick={() => handleReorder(order)}
                                                     disabled={reorderingOrderId === order.id}
-                                                    className="px-4 py-2 bg-[#EE4D2D] text-white rounded-lg text-sm font-semibold hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="px-4 py-2 bg-brand-orange text-white rounded-full text-sm font-semibold hover:bg-brand-orange/90 transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {reorderingOrderId === order.id ? "Adding..." : "Reorder"}
                                                 </button>

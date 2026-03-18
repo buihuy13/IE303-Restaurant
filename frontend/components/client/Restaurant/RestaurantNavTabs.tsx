@@ -41,12 +41,14 @@ export default function RestaurantNavTabs() {
         return (
                 <div
                         className={cn(
-                                "bg-white transition-all duration-300 z-30 border-b border-gray-200",
-                                isSticky ? "sticky top-0 shadow-lg" : "relative"
+                                "transition-all duration-300 z-30 border-b",
+                                isSticky
+                                        ? "sticky top-0 bg-white/80 backdrop-blur-xl border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
+                                        : "relative bg-white border-gray-200"
                         )}
                 >
                         <div className="custom-container">
-                                <nav className="flex items-center gap-x-2 md:gap-x-8 -mb-px">
+                                <nav className="flex items-center gap-x-2 md:gap-x-3 py-2">
                                         {navLinks.map((link) => {
                                                 const isActive = activeTab === link.name;
                                                 return (
@@ -55,16 +57,13 @@ export default function RestaurantNavTabs() {
                                                                 href={link.href}
                                                                 onClick={() => setActiveTab(link.name)}
                                                                 className={cn(
-                                                                        "py-4 px-2 md:px-0 text-sm md:text-base font-bold transition-all duration-200 relative",
+                                                                        "px-3 py-2 rounded-full text-sm font-semibold transition-all duration-200 relative",
                                                                         isActive
-                                                                                ? "text-[#EE4D2D]"
-                                                                                : "text-gray-500 hover:text-[#EE4D2D]"
+                                                                                ? "bg-brand-orange/10 text-brand-orange"
+                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                                                 )}
                                                         >
                                                                 {link.name}
-                                                                {isActive && (
-                                                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
-                                                                )}
                                                         </a>
                                                 );
                                         })}

@@ -4,6 +4,7 @@ import { getImageUrl } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { Button } from "@/components/ui/Button";
 import { Product } from "@/types";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
@@ -185,13 +186,13 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
     if (layout === "grid") {
         return (
-            <div className="group relative bg-white rounded-lg overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 h-full flex flex-col hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30 max-w-[280px] mx-auto">
+            <div className="group relative bg-white rounded-2xl overflow-visible border border-gray-200 shadow-sm hover:shadow-md transition-[transform,shadow,border-color] duration-300 h-full flex flex-col hover:-translate-y-0.5 hover:border-brand-orange/20 max-w-[280px] mx-auto">
                 {/* Image Section - Rounded top corners */}
                 <Link
                     href={productLink}
                     className="block relative"
                 >
-                    <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-lg">
+                    <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-2xl">
                         <Image
                             src={imageError ? "/placeholder.png" : cardImageUrl}
                             alt={product.productName}
@@ -219,12 +220,12 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         {/* Best Seller/Popular Badges - Top Left */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
                             {isBestSeller && (
-                                <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
                                     🔥 Best Seller
                                 </span>
                             )}
                             {!isBestSeller && isPopular && (
-                                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
                                     ⚡ Bestseller
                                 </span>
                             )}
@@ -233,13 +234,13 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         {/* Rating & Time Badges - Bottom Left Overlay */}
                         <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
                             {product.rating > 0 && (
-                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
                                     <span className="text-yellow-500">⭐</span>
                                     <span>{product.rating.toFixed(1)}</span>
                                 </div>
                             )}
                             {deliveryTime && (
-                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
                                     <span>🕒</span>
                                     <span>{deliveryTime} min</span>
                                 </div>
@@ -256,7 +257,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                     >
                         {/* Product Name - Bold and Larger */}
                         <h3
-                            className="font-bold text-lg text-gray-900 line-clamp-2 mb-2 leading-tight"
+                            className="font-bold text-lg tracking-tight text-gray-900 line-clamp-2 mb-2 leading-tight"
                             title={product.productName}
                         >
                             {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
@@ -288,7 +289,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         {/* Price - Orange-Red color, Prominent */}
                         <div className="mt-auto pt-2 relative pr-14">
                             {formattedPrice ? (
-                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">{formattedPrice}</p>
+                                <p className="text-base md:text-lg font-bold text-brand-orange">{formattedPrice}</p>
                             ) : (
                                 <p className="text-sm text-gray-400">No price</p>
                             )}
@@ -297,10 +298,12 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
                     {/* Circle Add Button - Bottom Right Corner of Image */}
                     <div className="absolute bottom-3 right-3 z-20">
-                        <button
+                        <Button
                             onClick={handleAddToCart}
                             disabled={isAdding || !isMounted}
-                            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#EE4D2D] hover:bg-[#EE4D2D]/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95"
+                            variant="brand"
+                            size="icon"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
                             title="Add to Cart"
                             aria-label="Add to Cart"
                         >
@@ -309,7 +312,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                             ) : (
                                 <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -318,7 +321,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
     // Option 2: Flex Layout (Horizontal) - For long lists - Larger image
     return (
-        <div className="group relative bg-white rounded-2xl overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 flex flex-row h-full hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30">
+        <div className="group relative bg-white rounded-2xl overflow-visible border border-gray-200 shadow-sm hover:shadow-md transition-[transform,shadow,border-color] duration-300 flex flex-row h-full hover:-translate-y-0.5 hover:border-brand-orange/20">
             {/* Image Section - Left - Much larger (60-65% width) */}
             <Link
                 href={productLink}
@@ -350,12 +353,12 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                     {/* Best Seller/Popular Badges - Top Left */}
                     <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
                         {isBestSeller && (
-                            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
                                 🔥 Best Seller
                             </span>
                         )}
                         {!isBestSeller && isPopular && (
-                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
                                 ⚡ Bestseller
                             </span>
                         )}
@@ -364,13 +367,13 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                     {/* Rating & Time Badges - Bottom Left Overlay */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
                         {product.rating > 0 && (
-                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
                                 <span className="text-yellow-500">⭐</span>
                                 <span>{product.rating.toFixed(1)}</span>
                             </div>
                         )}
                         {deliveryTime && (
-                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
                                 <span>🕒</span>
                                 <span>{deliveryTime} min</span>
                             </div>
@@ -429,7 +432,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                     {/* Price - Large, Orange-Red */}
                     <div className="mt-auto mb-4 relative">
                         {formattedPrice ? (
-                            <p className="text-2xl md:text-3xl font-bold text-[#EE4D2D] leading-none">
+                            <p className="text-2xl md:text-3xl font-bold text-brand-orange leading-none">
                                 {formattedPrice}
                             </p>
                         ) : (
@@ -440,10 +443,12 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
                 {/* Circle Add Button - Bottom Right Corner */}
                 <div className="absolute bottom-4 right-4 z-20">
-                    <button
+                    <Button
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
-                        className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#EE4D2D] hover:bg-[#EE4D2D]/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95"
+                        variant="brand"
+                        size="icon"
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
                         title="Add to cart"
                         aria-label="Add to cart"
                     >
@@ -452,7 +457,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         ) : (
                             <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -3,6 +3,7 @@ import { type Category, type Product } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CompactFoodCard } from "../HomePage/CompactFoodCard";
+import { Button } from "@/components/ui/Button";
 
 type MenuProps = {
     restaurantId: string;
@@ -153,7 +154,7 @@ export default function RestaurantMenu({
 
     if (groups.length === 0) {
         return (
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg sm:p-8">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">Menu</h2>
                 </div>
@@ -165,7 +166,7 @@ export default function RestaurantMenu({
     }
 
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg sm:p-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
             <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">Menu</h2>
                 <p className="text-sm text-gray-500">Browse by category</p>
@@ -175,20 +176,19 @@ export default function RestaurantMenu({
             <div className="mb-6 border-b border-gray-200 pb-4">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                     {groups.map((group) => (
-                        <button
+                        <Button
                             key={group.value}
                             type="button"
                             onClick={() => {
                                 const element = categoryRefs.current.get(group.value);
                                 element?.scrollIntoView({ behavior: "smooth", block: "start" });
                             }}
-                            className={
-                                "rounded-full px-4 py-2 text-sm font-semibold transition-all whitespace-nowrap " +
-                                "bg-gray-100 text-gray-700 hover:bg-[#EE4D2D]/10 hover:text-[#EE4D2D]"
-                            }
+                            variant="secondary"
+                            size="sm"
+                            className="rounded-full whitespace-nowrap bg-gray-100 text-gray-800 hover:bg-brand-orange/10 hover:text-brand-orange"
                         >
                             {group.categoryName}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>
@@ -205,8 +205,10 @@ export default function RestaurantMenu({
                         className="scroll-mt-24"
                     >
                         {/* Sticky Category Header */}
-                        <div className="sticky top-20 z-10 bg-white/95 backdrop-blur-sm py-4 mb-6 border-b-2 border-[#EE4D2D] -mx-5 px-5 sm:-mx-8 sm:px-8">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">{group.categoryName}</h3>
+                        <div className="sticky top-20 z-10 -mx-5 mb-6 border-b border-gray-200 bg-white/90 px-5 py-4 backdrop-blur-sm sm:-mx-8 sm:px-8">
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+                                {group.categoryName}
+                            </h3>
                             <p className="text-sm text-gray-500 mt-1">
                                 {group.items.length} {group.items.length === 1 ? "item" : "items"}
                             </p>
@@ -226,7 +228,9 @@ export default function RestaurantMenu({
                                             key={item.id}
                                             id={`product-${item.id}`}
                                             className={`transition-all duration-500 ${
-                                                isHighlighted ? "ring-4 ring-[#EE4D2D] ring-offset-2 rounded-2xl" : ""
+                                                isHighlighted
+                                                    ? "rounded-2xl ring-4 ring-brand-orange/70 ring-offset-2 ring-offset-white"
+                                                    : ""
                                             }`}
                                             ref={(el) => {
                                                 if (isHighlighted && el) {

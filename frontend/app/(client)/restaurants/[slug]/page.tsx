@@ -21,7 +21,7 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
     const reviews = reviewsResponse.data;
 
     return (
-        <main className="bg-gray-50 pb-24">
+        <main className="bg-gradient-to-b from-gray-50 via-gray-50 to-white pb-24">
             <RestaurantHero restaurant={restaurant} />
             <RestaurantNavTabs />
             <div className="custom-container">
@@ -30,7 +30,7 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
             <div className="custom-container ">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
                     {/* Left column: Menu, About, Reviews */}
-                    <div className="lg:col-span-2 space-y-16">
+                    <div className="lg:col-span-2 space-y-10 lg:space-y-12">
                         <ScrollReveal>
                             <section id="menu" className="scroll-mt-24">
                                 <RestaurantMenuWrapper
@@ -64,7 +64,7 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
 
                     {/* Right column: Chat with restaurant (sticky) */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-8">
+                        <div className="sticky top-28">
                             <ScrollReveal delay={0.05}>
                                 <section id="actions" className="scroll-mt-24">
                                     <RestaurantActions restaurant={restaurant} />

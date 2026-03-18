@@ -135,10 +135,12 @@ export default function RestaurantList() {
         return (
                 <div>
                         {/* --- Explore by Category --- */}
-                        <div className="mb-12">
+                        <div className="mb-10">
                                 <div className="flex justify-between items-center mb-4">
-                                        <h2 className="text-2xl font-bold">Explore by category</h2>
-                                        <a href="#" className="text-sm font-semibold text-brand-purple hover:underline">
+                                        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+                                                Explore by category
+                                        </h2>
+                                        <a href="#" className="text-sm font-semibold text-brand-orange hover:underline">
                                                 View All
                                         </a>
                                 </div>
@@ -148,7 +150,7 @@ export default function RestaurantList() {
                                         <button
                                                 title="Scroll left"
                                                 onClick={() => handleScroll(-300)}
-                                                className="p-2 rounded-full bg-white shadow-md cursor-pointer hidden md:block hover:bg-gray-100 transition-colors"
+                                                className="p-2 rounded-full bg-white shadow-sm cursor-pointer hidden md:block hover:bg-gray-100 transition-colors border border-gray-200"
                                         >
                                                 <ChevronLeft className="w-6 h-6" />
                                         </button>
@@ -162,10 +164,10 @@ export default function RestaurantList() {
                                                         <button
                                                                 key={category.cateName}
                                                                 onClick={() => handleCategoryClick(category.cateName)}
-                                                                className={`cursor-pointer capitalize flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 h-24 text-center p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 ${
+                                                                className={`cursor-pointer capitalize flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 h-24 text-center p-3 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 border ${
                                                                         activeCategory === category.cateName
-                                                                                ? "bg-brand-purple text-white shadow-lg"
-                                                                                : "bg-white hover:bg-gray-50 shadow-sm border"
+                                                                                ? "bg-brand-orange text-white shadow-sm border-brand-orange"
+                                                                                : "bg-white hover:bg-gray-50 shadow-sm border-gray-200"
                                                                 }`}
                                                         >
                                                                 <span className="text-3xl">
@@ -187,7 +189,7 @@ export default function RestaurantList() {
                                         <button
                                                 title="Scroll right"
                                                 onClick={() => handleScroll(300)}
-                                                className="p-2 rounded-full bg-white shadow-md cursor-pointer hidden md:block hover:bg-gray-100 transition-colors"
+                                                className="p-2 rounded-full bg-white shadow-sm cursor-pointer hidden md:block hover:bg-gray-100 transition-colors border border-gray-200"
                                         >
                                                 <ChevronRight className="w-6 h-6" />
                                         </button>
@@ -196,7 +198,7 @@ export default function RestaurantList() {
 
                         {/* --- List Header & Layout Toggle --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h2 className="text-xl font-bold">
+                                <h2 className="text-lg md:text-xl font-bold tracking-tight text-gray-900">
                                         {loading || productsLoading ? (
                                                 <span className="inline-block h-6 w-32 bg-gray-200 rounded animate-pulse"></span>
                                         ) : (
@@ -206,13 +208,13 @@ export default function RestaurantList() {
 
                                 {/* Layout Toggle - Only show for food items */}
                                 {searchType === "foods" && !loading && !productsLoading && items && items.length > 0 && (
-                                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+                                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
                                                 <button
                                                         onClick={() => handleLayoutChange("grid")}
                                                         disabled={isTransitioning}
-                                                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                                                                 foodLayout === "grid"
-                                                                        ? "bg-brand-purple text-white shadow-sm"
+                                                                        ? "bg-brand-orange text-white shadow-sm"
                                                                         : "text-gray-600 hover:bg-gray-50"
                                                         } ${isTransitioning ? "opacity-50 cursor-wait" : ""}`}
                                                         title="Grid Layout"
@@ -222,9 +224,9 @@ export default function RestaurantList() {
                                                 <button
                                                         onClick={() => handleLayoutChange("flex")}
                                                         disabled={isTransitioning}
-                                                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                                                                 foodLayout === "flex"
-                                                                        ? "bg-brand-purple text-white shadow-sm"
+                                                                        ? "bg-brand-orange text-white shadow-sm"
                                                                         : "text-gray-600 hover:bg-gray-50"
                                                         } ${isTransitioning ? "opacity-50 cursor-wait" : ""}`}
                                                         title="List Layout"
@@ -294,8 +296,10 @@ export default function RestaurantList() {
 
                         {/* Empty state */}
                         {!loading && !productsLoading && (!items || items.length === 0) && (
-                                <div className="text-center py-12">
-                                        <p className="text-gray-500 text-lg">No {title} found. Try adjusting your filters.</p>
+                                <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+                                        <div className="text-5xl mb-3">🔎</div>
+                                        <p className="text-gray-800 text-lg font-semibold">No {title} found</p>
+                                        <p className="text-gray-600 text-sm mt-1">Try adjusting your filters or search keywords.</p>
                                 </div>
                         )}
                 </div>

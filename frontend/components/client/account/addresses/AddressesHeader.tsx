@@ -14,7 +14,7 @@ export function AddressesHeader(props: { isAdding: boolean; onToggleAdding: () =
             </div>
             <Button
                 onClickFunction={onToggleAdding}
-                className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer flex items-center gap-2"
+                className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer flex items-center gap-2"
             >
                 <Plus size={20} />
                 {isAdding ? "Cancel" : "Add Address"}

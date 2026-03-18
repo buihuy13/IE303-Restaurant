@@ -6,6 +6,7 @@ type GlobalLoaderProps = {
     sublabel?: string;
     className?: string;
     showLogo?: boolean;
+    fullscreen?: boolean;
 };
 
 export default function GlobalLoader({
@@ -13,13 +14,14 @@ export default function GlobalLoader({
     sublabel = "Please wait a moment",
     className,
     showLogo = false,
+    fullscreen = true,
 }: GlobalLoaderProps) {
     return (
         <div
             className={
-                "fixed inset-0 z-[60] flex items-center justify-center " +
-                "bg-gradient-to-b from-brand-purple/10 via-black/10 to-black/20 " +
-                "backdrop-blur-md p-6 " +
+                (fullscreen
+                    ? "fixed inset-0 z-[60] flex items-center justify-center bg-gradient-to-b from-brand-purple/10 via-black/10 to-black/20 backdrop-blur-md p-6 "
+                    : "w-full flex items-center justify-center rounded-2xl border border-gray-200 bg-white/60 backdrop-blur-sm p-10 ") +
                 (className ?? "")
             }
             role="status"

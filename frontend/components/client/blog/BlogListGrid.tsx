@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Clock, Eye, Heart } from "lucide-react";
 import Pagination from "@/components/client/Pagination";
-import { BLOG_CATEGORIES, BRAND_ORANGE } from "@/lib/constants/blog";
+import { BLOG_CATEGORIES } from "@/lib/constants/blog";
 import type { Blog } from "@/types/blog.type";
 
 function formatDate(dateString: string) {
@@ -39,24 +39,18 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
                             ) : (
-                                <div
-                                    className="w-full h-full flex items-center justify-center"
-                                    style={{ backgroundColor: BRAND_ORANGE + "15" }}
-                                >
+                                <div className="w-full h-full flex items-center justify-center bg-brand-orange/10">
                                     <span className="text-5xl">🍽️</span>
                                 </div>
                             )}
                             <div className="absolute top-4 left-4">
-                                <span
-                                    className="px-3 py-1.5 text-white text-xs font-bold rounded-full backdrop-blur-md shadow-lg"
-                                    style={{ backgroundColor: BRAND_ORANGE }}
-                                >
+                                <span className="px-3 py-1.5 text-white text-xs font-bold rounded-full backdrop-blur-md shadow-lg bg-brand-orange">
                                     {BLOG_CATEGORIES.find((c) => c.value === blog.category)?.label ?? "Other"}
                                 </span>
                             </div>
                         </div>
                         <div className="p-6 flex-1 flex flex-col">
-                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-[#EE4D2D] transition-colors">
+                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-brand-orange transition-colors">
                                 {blog.title}
                             </h3>
                             {blog.excerpt && (
@@ -89,10 +83,7 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                                             className="rounded-full object-cover"
                                         />
                                     ) : (
-                                        <div
-                                            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
-                                            style={{ backgroundColor: BRAND_ORANGE }}
-                                        >
+                                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md bg-brand-orange">
                                             {blog.author?.name?.charAt(0).toUpperCase() ?? "?"}
                                         </div>
                                     )}
@@ -107,7 +98,7 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                                         )}
                                     </div>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#EE4D2D] group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
                             </div>
                         </div>
                     </Link>

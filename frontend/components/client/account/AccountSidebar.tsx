@@ -47,8 +47,8 @@ export default function AccountSidebar() {
         };
 
         return (
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900">Account Menu</h3>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                        <h3 className="text-lg font-semibold tracking-tight mb-4 text-gray-900">Account Menu</h3>
                         <nav className="space-y-2">
                                 {navLinks.map((link) => {
                                         const isActive = pathname === link.href;
@@ -56,10 +56,10 @@ export default function AccountSidebar() {
                                                 <Link
                                                         key={link.name}
                                                         href={link.href}
-                                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                                                        className={`flex items-center gap-3 px-4 py-3 rounded-full text-sm font-semibold transition-colors ${
                                                                 isActive
-                                                                        ? "bg-[#EE4D2D] text-white"
-                                                                        : "text-gray-600 hover:bg-orange-50 hover:text-[#EE4D2D]"
+                                                                        ? "bg-brand-orange text-white"
+                                                                        : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
                                                         }`}
                                                 >
                                                         <link.icon className="w-5 h-5" />
@@ -70,7 +70,7 @@ export default function AccountSidebar() {
                                 <hr className="my-4" />
                                 <button
                                         onClick={handleLogout}
-                                        className="flex w-full items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        className="flex w-full items-center gap-3 px-4 py-3 rounded-full text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                                 >
                                         <LogOut className="w-5 h-5" />
                                         <span>Log Out</span>

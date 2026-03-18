@@ -19,8 +19,11 @@ export default function AccountPageClient() {
 
     if (!mounted || loading || ordersLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="animate-spin text-[#EE4D2D]" />
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-brand-orange" />
+                    <div className="text-sm font-semibold text-gray-800">Loading your account...</div>
+                </div>
             </div>
         );
     }
@@ -28,7 +31,11 @@ export default function AccountPageClient() {
     if (!user) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">No user data available</p>
+                <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm max-w-xl mx-auto">
+                    <div className="text-5xl mb-3">👤</div>
+                    <p className="text-gray-800 font-semibold">No user data available</p>
+                    <p className="text-sm text-gray-600 mt-1">Please refresh the page or sign in again.</p>
+                </div>
             </div>
         );
     }

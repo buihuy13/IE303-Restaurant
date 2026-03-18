@@ -45,7 +45,7 @@ export function SettingsPasswordForm(props: SettingsPasswordFormProps) {
                             type={showNewPassword ? "text" : "password"}
                             value={newPassword}
                             onChange={(e) => onNewPasswordChange(e.target.value)}
-                            className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                            className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                             placeholder="Enter new password"
                             required
                             minLength={6}
@@ -68,7 +68,7 @@ export function SettingsPasswordForm(props: SettingsPasswordFormProps) {
                             type={showConfirmPassword ? "text" : "password"}
                             value={confirmPassword}
                             onChange={(e) => onConfirmPasswordChange(e.target.value)}
-                            className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                            className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
                             placeholder="Confirm new password"
                             required
                             minLength={6}
@@ -85,7 +85,7 @@ export function SettingsPasswordForm(props: SettingsPasswordFormProps) {
                 </div>
                 <Button
                     type="submit"
-                    className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
                 >
                     {loading ? (

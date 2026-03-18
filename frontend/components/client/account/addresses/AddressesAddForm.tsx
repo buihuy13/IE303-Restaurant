@@ -48,7 +48,7 @@ export function AddressesAddForm(props: {
                             type="button"
                             onClick={onUseCurrentLocation}
                             disabled={submitting || isLocating}
-                            className="inline-flex items-center gap-2 rounded-md border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-3 py-2 text-sm font-semibold text-[#EE4D2D] hover:bg-[#EE4D2D]/15 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-2 rounded-md border border-brand-orange/30 bg-brand-orange/10 px-3 py-2 text-sm font-semibold text-brand-orange hover:bg-brand-orange/15 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
                             Use Current Location
@@ -58,7 +58,7 @@ export function AddressesAddForm(props: {
                 <div className="flex gap-4">
                     <Button
                         type="submit"
-                        className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={submitting}
                     >
                         {submitting ? (

@@ -1,19 +1,30 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 
 const OrderDetailNotFound = () => {
         const router = useRouter();
 
         return (
-                <div className="flex flex-col items-center justify-center h-screen">
-                        <h1 className="text-2xl font-bold mb-4">Order Detail Not Found</h1>
-                        <button
-                                onClick={() => router.back()}
-                                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
-                        >
-                                Back to Previous Page
-                        </button>
+                <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white flex items-center justify-center p-6">
+                        <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center">
+                                <div className="text-5xl mb-3">🧾</div>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">
+                                        Order not found
+                                </h1>
+                                <p className="text-sm text-gray-600">
+                                        We couldn&apos;t find that order. Please check the link or view your order history.
+                                </p>
+                                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                        <Button type="button" variant="secondary" className="rounded-full" onClick={() => router.back()}>
+                                                Go back
+                                        </Button>
+                                        <Button type="button" variant="brand" className="rounded-full" onClick={() => router.push("/orders")}>
+                                                View orders
+                                        </Button>
+                                </div>
+                        </div>
                 </div>
         );
 };

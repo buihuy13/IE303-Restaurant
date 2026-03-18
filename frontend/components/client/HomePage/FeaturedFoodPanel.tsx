@@ -2,6 +2,7 @@
 
 import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocationStore";
 import { useProductStore } from "@/stores/useProductsStores";
+import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { CompactFoodCard } from "./CompactFoodCard";
@@ -44,13 +45,23 @@ export default function FeaturedFoodPanel() {
     return (
         <div className="w-full">
             {/* Header */}
-            <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                    Featured Foods
-                </h2>
-                <p className="text-sm text-gray-500">
-                    {productsLoading ? "Loading..." : `${featuredProducts.length} featured items`}
-                </p>
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-2">
+                        Featured Foods
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                        {productsLoading ? "Loading..." : `${featuredProducts.length} featured items`}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button asChild variant="brandOutline" size="sm" className="h-9 px-4">
+                        <Link href="/search">View all</Link>
+                    </Button>
+                    <Button asChild variant="brandSoft" size="sm" className="h-9 px-4">
+                        <Link href="/restaurants">Restaurants</Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Food Grid - Responsive Layout */}
@@ -67,7 +78,7 @@ export default function FeaturedFoodPanel() {
                     ))}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-16 min-h-[400px]">
+                <div className="flex flex-col items-center justify-center py-16 min-h-[420px] rounded-2xl border border-dashed border-gray-200 bg-white/60 backdrop-blur-sm">
                     {/* Large Illustration */}
                     <div className="mb-6">
                         <svg
@@ -76,7 +87,7 @@ export default function FeaturedFoodPanel() {
                             viewBox="0 0 200 200"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
-                            className="text-gray-300"
+                            className="text-gray-400"
                         >
                             <circle cx="100" cy="100" r="80" fill="currentColor" opacity="0.1" />
                             <path
@@ -95,27 +106,21 @@ export default function FeaturedFoodPanel() {
                     </div>
 
                     {/* Empty State Content */}
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
                         No featured foods available
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
+                    <p className="text-sm text-gray-600 mb-6 max-w-md text-center">
                         No featured items today, try searching for other foods?
                     </p>
 
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <Link
-                            href="/restaurants"
-                            className="px-6 py-3 bg-[#EE4D2D] text-white rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors text-center shadow-md hover:shadow-lg"
-                        >
-                            View All Restaurants
-                        </Link>
-                        <Link
-                            href="/"
-                            className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-center"
-                        >
-                            Clear Filters
-                        </Link>
+                        <Button asChild variant="brand" className="h-12 px-6 shadow-md hover:shadow-lg">
+                            <Link href="/restaurants">View All Restaurants</Link>
+                        </Button>
+                        <Button asChild variant="outline" className="h-12 px-6">
+                            <Link href="/">Clear Filters</Link>
+                        </Button>
                     </div>
                 </div>
             )}

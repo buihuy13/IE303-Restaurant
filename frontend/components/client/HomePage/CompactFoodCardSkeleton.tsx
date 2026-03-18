@@ -1,10 +1,10 @@
 export const CompactFoodCardSkeleton = () => (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
         {/* Image skeleton with shimmer effect */}
-        <div className="relative w-full aspect-square bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-t-lg" />
+        <div className="relative w-full aspect-[3/2] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-t-xl" />
 
         {/* Content skeleton */}
-        <div className="p-3 space-y-2">
+        <div className="p-4 space-y-2">
             {/* Product name */}
             <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-3/4" />
 

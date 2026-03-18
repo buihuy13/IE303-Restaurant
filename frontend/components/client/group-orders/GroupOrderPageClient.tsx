@@ -27,10 +27,10 @@ export default function GroupOrderPageClient() {
 
     if (loading) {
         return (
-            <main className="bg-gray-50 min-h-screen py-12">
+            <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white py-12">
                 <div className="custom-container">
                     <div className="max-w-4xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-lg p-8">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                             <div className="animate-pulse space-y-4">
                                 <div className="h-8 bg-gray-200 rounded w-1/2" />
                                 <div className="h-4 bg-gray-200 rounded w-3/4" />
@@ -45,11 +45,16 @@ export default function GroupOrderPageClient() {
 
     if (!groupOrder) {
         return (
-            <main className="bg-gray-50 min-h-screen py-12">
+            <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white py-12">
                 <div className="custom-container">
-                    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
-                        <p className="text-gray-600">Group order not found.</p>
-                        <Link href="/" className="text-[#EE4D2D] hover:underline mt-4 inline-block">
+                    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                        <div className="text-5xl mb-3">🧾</div>
+                        <p className="text-gray-900 font-semibold">Group order not found</p>
+                        <p className="text-sm text-gray-600 mt-1">The link may be invalid or the order has ended.</p>
+                        <Link
+                            href="/"
+                            className="inline-flex mt-5 items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-brand-orange ring-1 ring-brand-orange/30 hover:bg-brand-orange/10 transition-colors"
+                        >
                             Back to home
                         </Link>
                     </div>

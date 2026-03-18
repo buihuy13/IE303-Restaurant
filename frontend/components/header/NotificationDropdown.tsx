@@ -140,13 +140,13 @@ export default function NotificationDropdown() {
                     }, 100);
                 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:ring-offset-2"
+                className="relative p-2 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
                 aria-label="Notifications"
                 title="Notifications"
             >
                 <Bell className="w-5 h-5 text-gray-600" />
                 {unread > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
+                    <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
                         {unread > 99 ? "99+" : unread}
                     </span>
                 )}
@@ -161,7 +161,7 @@ export default function NotificationDropdown() {
                         setIsHovering(false);
                         setIsOpen(false);
                     }}
-                    className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[500px] flex flex-col"
+                    className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-50 max-h-[500px] flex flex-col overflow-hidden"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
@@ -179,7 +179,7 @@ export default function NotificationDropdown() {
                                     e.stopPropagation();
                                     markAllAsRead();
                                 }}
-                                className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium transition-colors"
+                                className="text-xs text-brand-orange hover:text-brand-orange/80 font-medium transition-colors"
                                 title="Mark all as read"
                             >
                                 Mark all read
@@ -253,7 +253,7 @@ export default function NotificationDropdown() {
                                                 {/* Unread Indicator */}
                                                 {!notif.read && (
                                                     <div className="flex-shrink-0">
-                                                        <div className="w-2 h-2 bg-[#EE4D2D] rounded-full" />
+                                                        <div className="w-2 h-2 bg-brand-orange rounded-full" />
                                                     </div>
                                                 )}
                                             </div>
@@ -287,7 +287,7 @@ export default function NotificationDropdown() {
                                     setIsOpen(false);
                                     setIsHovering(false);
                                 }}
-                                className="block w-full text-center text-sm font-medium text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors"
+                                className="block w-full text-center text-sm font-medium text-brand-orange hover:text-brand-orange/80 transition-colors"
                             >
                                 View All Orders
                             </Link>

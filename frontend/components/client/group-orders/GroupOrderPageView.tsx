@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DollarSign, Edit, Lock, Trash2, Users, X, Check, Copy } from "lucide-react";
 import { GroupOrderStatus, type GroupOrder } from "@/types/groupOrder.type";
+import { Button } from "@/components/ui/Button";
 
 export interface GroupOrderActionsProps {
     isProcessing: boolean;
@@ -57,17 +58,19 @@ export function GroupOrderPageView({
     getItemImageUrl,
 }: GroupOrderPageViewProps) {
     return (
-        <main className="bg-gray-50 min-h-screen py-12">
+        <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white py-12">
             <div className="custom-container">
                 <div className="max-w-4xl mx-auto space-y-6">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                         <div className="flex items-start justify-between mb-4">
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">{groupOrder.restaurantName}</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">
+                                    {groupOrder.restaurantName}
+                                </h1>
                                 <p className="text-sm text-gray-600">Group Order ID: {groupOrder.groupOrderId}</p>
                             </div>
                             <span
-                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                     groupOrder.status === GroupOrderStatus.OPEN
                                         ? "bg-green-100 text-green-800"
                                         : groupOrder.status === GroupOrderStatus.LOCKED
@@ -88,12 +91,12 @@ export function GroupOrderPageView({
                         </div>
 
                         {groupOrder.groupNote && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <div className="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-200">
                                 <p className="text-sm text-gray-700">{groupOrder.groupNote}</p>
                             </div>
                         )}
 
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-200">
                             <input
                                 type="text"
                                 readOnly
@@ -103,7 +106,7 @@ export function GroupOrderPageView({
                             />
                             <button
                                 onClick={actions.handleCopyLink}
-                                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                                className="p-2 hover:bg-white rounded-full transition-colors"
                                 title="Copy link"
                             >
                                 <Copy className="w-4 h-4 text-gray-600" />
@@ -113,73 +116,84 @@ export function GroupOrderPageView({
                         <div className="flex flex-wrap gap-3 mt-4">
                             {permissions.canJoin &&
                                 (isAuthenticated && userId ? (
-                                    <Link
-                                        href={`/group-orders/${shareToken}/join`}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90"
-                                    >
-                                        <Users className="w-4 h-4" />
-                                        Join
-                                    </Link>
+                                    <Button asChild variant="brand" size="sm" className="h-10 rounded-full shadow-sm">
+                                        <Link href={`/group-orders/${shareToken}/join`}>
+                                            <Users className="w-4 h-4" />
+                                            Join
+                                        </Link>
+                                    </Button>
                                 ) : (
-                                    <Link
-                                        href={`/login?redirect=${encodeURIComponent(`/group-orders/${shareToken}/join`)}`}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90"
-                                    >
-                                        <Users className="w-4 h-4" />
-                                        Sign in to join
-                                    </Link>
+                                    <Button asChild variant="brand" size="sm" className="h-10 rounded-full shadow-sm">
+                                        <Link
+                                            href={`/login?redirect=${encodeURIComponent(`/group-orders/${shareToken}/join`)}`}
+                                        >
+                                            <Users className="w-4 h-4" />
+                                            Sign in to join
+                                        </Link>
+                                    </Button>
                                 ))}
 
                             {isAuthenticated && userId && permissions.canLock && (
-                                <button
+                                <Button
                                     onClick={actions.handleLock}
                                     disabled={actions.isProcessing}
-                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-10 rounded-full shadow-sm border border-yellow-200 bg-yellow-50 text-yellow-900 hover:bg-yellow-100"
                                 >
                                     <Lock className="w-4 h-4" />
                                     Lock
-                                </button>
+                                </Button>
                             )}
                             {isAuthenticated && userId && permissions.canConfirm && (
-                                <button
+                                <Button
                                     onClick={actions.handleConfirm}
                                     disabled={actions.isProcessing}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-10 rounded-full shadow-sm border border-green-200 bg-green-50 text-green-900 hover:bg-green-100"
                                 >
                                     <Check className="w-4 h-4" />
                                     Confirm
-                                </button>
+                                </Button>
                             )}
                             {isAuthenticated && userId && permissions.canCancel && (
-                                <button
+                                <Button
                                     onClick={actions.handleCancel}
                                     disabled={actions.isProcessing}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-10 rounded-full shadow-sm border border-red-200 bg-red-50 text-red-900 hover:bg-red-100"
                                 >
                                     <X className="w-4 h-4" />
                                     Cancel
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4 flex items-center gap-2">
                             <Users className="w-5 h-5" />
                             Participants ({groupOrder.participants.length})
                         </h2>
                         <div className="space-y-4">
                             {groupOrder.participants.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">No participants yet.</p>
+                                <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+                                    <p className="text-sm text-gray-600">No participants yet.</p>
+                                </div>
                             ) : (
                                 groupOrder.participants.map((participant) => (
-                                    <div key={participant.userId} className="border border-gray-200 rounded-lg p-4">
+                                    <div
+                                        key={participant.userId}
+                                        className="border border-gray-200 rounded-2xl p-4 hover:shadow-sm transition-shadow"
+                                    >
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
-                                                <p className="font-medium text-gray-900">{participant.userName}</p>
+                                                <p className="font-semibold text-gray-900">{participant.userName}</p>
                                                 <div className="flex gap-2 mt-1">
                                                     {participant.userId === groupOrder.creatorId && (
-                                                        <span className="text-xs text-[#EE4D2D]">(Creator)</span>
+                                                        <span className="text-xs text-brand-orange">(Creator)</span>
                                                     )}
                                                     {participant.userId === userId && (
                                                         <span className="text-xs text-blue-600">(You)</span>
@@ -207,7 +221,7 @@ export function GroupOrderPageView({
                                                         {participant.userId === userId && (
                                                             <Link
                                                                 href={`/group-orders/${shareToken}/join`}
-                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                                                                 title="Edit items"
                                                             >
                                                                 <Edit className="w-4 h-4 text-gray-600" />
@@ -223,7 +237,7 @@ export function GroupOrderPageView({
                                                                     )
                                                                 }
                                                                 disabled={actions.isProcessing}
-                                                                className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                                className="p-2 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
                                                                 title={
                                                                     participant.userId === userId
                                                                         ? "Leave group order"
@@ -255,7 +269,7 @@ export function GroupOrderPageView({
                                                             className="flex items-center gap-3 text-sm"
                                                         >
                                                             {hasImage ? (
-                                                                <div className="relative h-12 w-12 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
+                                                                <div className="relative h-12 w-12 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
                                                                     <Image
                                                                         src={imageUrl!}
                                                                         alt={item.productName}
@@ -266,7 +280,7 @@ export function GroupOrderPageView({
                                                                     />
                                                                 </div>
                                                             ) : (
-                                                                <div className="h-12 w-12 flex-shrink-0 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                                                                <div className="h-12 w-12 flex-shrink-0 rounded-2xl bg-gray-100 ring-1 ring-gray-200 flex items-center justify-center text-gray-400 text-xs">
                                                                     No Image
                                                                 </div>
                                                             )}
@@ -289,8 +303,8 @@ export function GroupOrderPageView({
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4 flex items-center gap-2">
                             <DollarSign className="w-5 h-5" />
                             Summary
                         </h2>
@@ -317,8 +331,8 @@ export function GroupOrderPageView({
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Delivery Address</h2>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4">Delivery Address</h2>
                         <p className="text-gray-700">
                             {groupOrder.deliveryAddress.street}, {groupOrder.deliveryAddress.city}
                             {groupOrder.deliveryAddress.state && `, ${groupOrder.deliveryAddress.state}`}

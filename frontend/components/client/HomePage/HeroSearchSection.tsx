@@ -1,9 +1,12 @@
 "use client";
 
 import { useCategoryStore } from "@/stores/categoryStore";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 // Category icons with diverse emojis
 const categoryIcons: { [key: string]: string } = {
@@ -94,44 +97,48 @@ export default function HeroSearchSection() {
             {/* Background Image with Overlay */}
             <div className="absolute inset-0 z-0">
                 <div
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
-                    style={{
-                        backgroundImage:
-                            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')",
-                    }}
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full bg-[url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')]"
                 />
-                <div className="absolute inset-0 bg-black/60 w-full h-full" />
+                {/* Premium overlay stack: vignette + radial lift + bottom gradient */}
+                <div className="absolute inset-0 bg-black/55 w-full h-full" />
+                <div className="absolute inset-0 bg-[radial-gradient(1200px_circle_at_50%_35%,rgba(255,255,255,0.12),transparent_55%)]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/25" />
             </div>
 
             {/* Content - Centered */}
             <div className="relative z-10 container mx-auto px-4 text-center text-white">
                 {/* Title */}
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight tracking-tight drop-shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
                     Order food now,
                     <br />
-                    <span className="text-[#EE4D2D]">super fast delivery</span>
+                    <span className="text-brand-orange drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]">super fast delivery</span>
                 </h1>
-                <p className="text-lg md:text-xl text-white/90 mb-8">
+                <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
                     Over 1000+ delicious dishes, order in just 1 minute
                 </p>
 
                 {/* Search Bar - Wider and More Prominent */}
                 <form onSubmit={handleSearch} className="mb-8 max-w-2xl mx-auto">
                     <div className="relative">
-                        <input
+                        <Input
                             type="text"
                             placeholder="Search for beef noodle soup, bubble tea, fried chicken..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full py-4 pl-14 pr-6 bg-white rounded-full text-gray-900 placeholder:text-gray-400 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50"
+                            className={cn(
+                                "h-14 w-full py-4 pl-14 pr-32 rounded-full text-gray-900 placeholder:text-gray-500 text-base shadow-2xl",
+                                "bg-white/95 backdrop-blur-md border border-white/40",
+                                "focus-visible:ring-brand-orange/40",
+                            )}
                         />
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <button
+                        <Button
                             type="submit"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-[#EE4D2D] text-white rounded-full font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-lg"
+                            variant="brand"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6 py-2 shadow-lg hover:shadow-xl"
                         >
                             Search
-                        </button>
+                        </Button>
                     </div>
                 </form>
 
@@ -140,20 +147,21 @@ export default function HeroSearchSection() {
                     <p className="text-white/80 text-sm mb-4 font-medium">Popular Categories:</p>
                     <div className="flex flex-wrap justify-center gap-3">
                         {/* All Category */}
-                        <button
+                        <Button
+                            type="button"
                             onClick={() => {
                                 // Redirect to search page without category filter
                                 router.push(`/search`);
                             }}
-                            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                                !activeCategory
-                                    ? "bg-[#EE4D2D] text-white shadow-lg"
-                                    : "bg-white/90 text-gray-700 hover:bg-white"
-                            }`}
+                            variant={!activeCategory ? "brand" : "secondary"}
+                            className={cn(
+                                "rounded-full shadow-sm transition-all",
+                                !activeCategory ? "shadow-lg" : "bg-white/90 text-gray-800 hover:bg-white",
+                            )}
                         >
                             <span>🍽️</span>
                             <span>All</span>
-                        </button>
+                        </Button>
 
                         {/* Popular Categories */}
                         {allCategories.map((cat) => {
@@ -164,18 +172,19 @@ export default function HeroSearchSection() {
                             const isActive = activeCategory === categoryName;
 
                             return (
-                                <button
+                                <Button
                                     key={categoryName}
                                     onClick={() => handleCategoryClick(categoryName)}
-                                    className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                                        isActive
-                                            ? "bg-[#EE4D2D] text-white shadow-lg"
-                                            : "bg-white/90 text-gray-700 hover:bg-white"
-                                    }`}
+                                    type="button"
+                                    variant={isActive ? "brand" : "secondary"}
+                                    className={cn(
+                                        "rounded-full shadow-sm transition-all",
+                                        isActive ? "shadow-lg" : "bg-white/90 text-gray-800 hover:bg-white",
+                                    )}
                                 >
                                     <span>{icon}</span>
                                     <span>{displayName}</span>
-                                </button>
+                                </Button>
                             );
                         })}
                     </div>
