@@ -40,13 +40,15 @@ public class PaymentController {
         try {
             boolean isProcessed = paymentService.processWebhook(webhookBody, signature);
             if (!isProcessed) {
-                log.warn("Webhook nhận được nhưng xử lý thất bại (Có thể do sai chữ ký hoặc chỉ là request Test từ PayOS)");
+                log.warn(
+                        "Webhook nhận được nhưng xử lý thất bại (Có thể do sai chữ ký hoặc chỉ là request Test từ PayOS)");
             }
         } catch (Exception e) {
             log.error("Lỗi crash khi xử lý Webhook: ", e);
         }
 
-        // ĐIỀU KIỆN TIÊN QUYẾT TỪ PAYOS: LUÔN TRẢ VỀ 200 OK "success" để xác nhận đã nhận, tránh bị dội lại 400 và block webhook
+        // ĐIỀU KIỆN TIÊN QUYẾT TỪ PAYOS: LUÔN TRẢ VỀ 200 OK "success" để xác nhận đã nhận, tránh bị dội lại 400 và
+        // block webhook
         return ResponseEntity.ok("success");
     }
 }
