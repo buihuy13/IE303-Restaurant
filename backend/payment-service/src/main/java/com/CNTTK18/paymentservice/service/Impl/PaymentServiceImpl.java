@@ -2,11 +2,12 @@ package com.CNTTK18.paymentservice.service.Impl;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
+import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
+import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
 import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
@@ -28,23 +29,51 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayOSProperties payOSProperties;
 
     @Override
-    public String createPaymentLink(UUID userId, Long amount) {
+    public PaymentResponseDTO createPaymentLink(PaymentRequestDTO request) {
         // 1. Khởi tạo Order Code duy nhất (Random System limit của Java Long)
         Long orderCode = System.currentTimeMillis() % 1000000000L;
 
         // 2. Lưu tạm giao dịch xuống DB với trạng thái PENDING
         PaymentTransaction transaction = PaymentTransaction.builder()
-                .userId(userId)
-                .amount(amount)
+                .userId(request.getUserId())
+                .amount(request.getAmount().longValue())
                 .orderCode(orderCode)
                 .status(PaymentStatus.PENDING)
                 .build();
         paymentTransactionRepository.save(transaction);
 
-        // 3. TODO: Khởi tạo PaymentData theo chuẩn PayOS SDK và gọi API tạo Link
-        // (Sẽ logic chi tiết sau bằng SDK PayOS)
+        try {
+            // 3. Khởi tạo PaymentData theo chuẩn PayOS SDK và gọi API tạo Link
+            String description = request.getDescription() != null ? request.getDescription() : "Thanh toan don hang";
+            String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : "http://localhost:3000";
+            String cancelUrl = request.getCancelUrl() != null ? request.getCancelUrl() : "http://localhost:3000";
 
-        return "https://pay.payos.vn/dummy-link-for-now";
+            vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest paymentData = vn.payos
+                    .model
+                    .v2
+                    .paymentRequests
+                    .CreatePaymentLinkRequest
+                    .builder()
+                    .orderCode(orderCode)
+                    .amount(request.getAmount().longValue())
+                    .description(description)
+                    .returnUrl(returnUrl)
+                    .cancelUrl(cancelUrl)
+                    .build();
+
+            vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse data =
+                    payOS.paymentRequests().create(paymentData);
+
+            return PaymentResponseDTO.builder()
+                    .checkoutUrl(data.getCheckoutUrl())
+                    .orderCode(orderCode)
+                    .paymentLinkId(data.getPaymentLinkId())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo payment link với PayOS", e);
+            throw new RuntimeException("Không thể tạo link thanh toán PayOS", e);
+        }
     }
 
     @Override
