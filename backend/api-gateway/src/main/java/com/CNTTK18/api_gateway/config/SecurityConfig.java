@@ -91,6 +91,11 @@ public class SecurityConfig {
                 .hasAnyRole("ADMIN")
                 .pathMatchers(HttpMethod.DELETE, "/api/restaurant/image/*")
                 .hasAnyRole("ADMIN", "MERCHANT")
+                // payment-service
+                .pathMatchers(HttpMethod.POST, "/api/payments/webhook")
+                .permitAll() // note: PayOS là server-to-server, không có JWT
+                .pathMatchers("/api/payments/**")
+                .hasRole("USER")
                 .anyExchange()
                 .authenticated();
     }
