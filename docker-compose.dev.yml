@@ -85,9 +85,9 @@ services:
         healthcheck:
             test: [ "CMD", "nc", "-z", "localhost", "3000" ]
             
-    postgres:
-        ports:
-            - "5432:5432"
+    # postgres:
+    #     ports:
+    #         - "5432:5432"
 
     ngrok:
         image: ngrok/ngrok:latest

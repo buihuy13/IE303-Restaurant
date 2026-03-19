@@ -40,7 +40,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
         JOIN restaurant_categories rc ON r.id = rc.restaurant_id
         JOIN categories c ON c.id = rc.category_id
         WHERE r.enabled = true
-        AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
             r.geom::geography,
@@ -55,7 +55,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
         JOIN restaurant_categories rc ON r.id = rc.restaurant_id
         JOIN categories c ON c.id = rc.category_id
         WHERE r.enabled = true
-        AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
             r.geom::geography,
