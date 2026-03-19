@@ -4,10 +4,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
 import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
+import com.CNTTK18.paymentservice.exception.PaymentCreationException;
 import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
@@ -31,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayOSProperties payOSProperties;
 
     @Override
+    @Transactional
     public PaymentResponseDTO createPaymentLink(PaymentRequestDTO request) {
         // 1. Khởi tạo Order Code duy nhất (Random System limit của Java Long)
         Long orderCode = System.currentTimeMillis() % 1000000000L;
@@ -68,7 +71,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         } catch (Exception e) {
             log.error("Lỗi khi tạo payment link với PayOS", e);
-            throw new RuntimeException("Không thể tạo link thanh toán PayOS", e);
+            throw new PaymentCreationException("Không thể tạo link thanh toán PayOS", e);
         }
     }
 

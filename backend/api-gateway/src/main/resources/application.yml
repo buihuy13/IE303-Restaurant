@@ -116,6 +116,19 @@ spring:
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/v3/api-docs/restaurant-service
+                # payment-service
+                - id: payment-service
+                  uri: lb://payment-service
+                  predicates:
+                      - Path=/api/payments/**
+                - id: payment-service-webhook
+                  uri: lb://payment-service
+                  predicates:
+                      - Path=/payment/payos-webhook
+                - id: payment-service-docs
+                  uri: lb://payment-service
+                  predicates:
+                      - Path=/v3/api-docs/payment-service
 
 eureka:
     instance:
@@ -143,6 +156,8 @@ springdoc:
               url: /v3/api-docs/recommendation-service
             - name: Restaurant Service
               url: /v3/api-docs/restaurant-service
+            - name: Payment Service
+              url: /v3/api-docs/payment-service
 
 
 # resilience4j config (circuit breaker)
