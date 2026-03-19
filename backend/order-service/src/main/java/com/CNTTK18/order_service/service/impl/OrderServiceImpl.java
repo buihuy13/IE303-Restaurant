@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,8 +46,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderResponse> checkout(UUID userId, CheckoutRequest request) {
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Cart not found"));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Cart not found"));
 
         List<Order> newOrders = new ArrayList<>();
         List<CartRestaurantGroup> groupsToRemove = new ArrayList<>();
@@ -60,9 +58,11 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new BadRequestException("Restaurant " + restaurantId + " not found in cart"));
 
             // Final validation: check if restaurant is still enabled
-            ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
+            ResClientResponse resInfo =
+                    restaurantClient.getRestaurant(restaurantId).block();
             if (resInfo == null || !resInfo.isEnabled()) {
-                throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId) + " is currently unavailable");
+                throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
+                        + " is currently unavailable");
             }
 
             BigDecimal totalPrice = group.getItems().stream()
@@ -101,7 +101,7 @@ public class OrderServiceImpl implements OrderService {
         // Update Cart
         cart.getRestaurants().removeAll(groupsToRemove);
         cartRepository.save(cart);
-        
+
         // Invalidate user cart cache
         redisTemplate.delete("cart:" + userId);
         // Invalidate user orders list cache
@@ -114,14 +114,15 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size) {
         String cacheKey = ORDERS_USER_CACHE_PREFIX + userId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
-        
+        List<OrderResponse> cached =
+                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+
         if (cached != null) return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByUserId(userId, pageable);
         List<OrderResponse> responseList = orderMapper.toResponseList(orders.getContent());
-        
+
         redisTemplate.opsForValue().set(cacheKey, responseList, 5, TimeUnit.MINUTES);
         return responseList;
     }
@@ -130,29 +131,28 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size) {
         String cacheKey = ORDERS_RES_CACHE_PREFIX + restaurantId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
-        
+        List<OrderResponse> cached =
+                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+
         if (cached != null) return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByRestaurantId(restaurantId, pageable);
         List<OrderResponse> responseList = orderMapper.toResponseList(orders.getContent());
-        
+
         redisTemplate.opsForValue().set(cacheKey, responseList, 2, TimeUnit.MINUTES);
         return responseList;
     }
 
     @Override
     public OrderResponse getOrderById(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
         return orderMapper.toResponse(order);
     }
 
     @Override
     public OrderResponse updateStatus(UUID orderId, UpdateOrderStatusRequest request) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         // Validation Rule: Can only set to COMPLETED if Paid
         if (request.getStatus() == OrderStatus.COMPLETED && order.getPaymentStatus() != PaymentStatus.PAID) {
@@ -161,7 +161,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(request.getStatus());
         Order saved = orderRepository.save(order);
-        
+
         // Invalidate caches
         clearRestaurantOrderCache(order.getRestaurantId());
         clearUserOrderCache(order.getUserId());
@@ -171,8 +171,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse cancelOrder(UUID userId, UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (!order.getUserId().equals(userId)) {
             throw new BadRequestException("You are not authorized to cancel this order");
@@ -184,7 +183,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         Order saved = orderRepository.save(order);
-        
+
         clearUserOrderCache(userId);
         clearRestaurantOrderCache(order.getRestaurantId());
 
@@ -193,13 +192,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void updatePaymentStatus(UUID orderId, boolean success, Long orderCode, String paymentLinkId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         order.setPaymentStatus(success ? PaymentStatus.PAID : PaymentStatus.FAILED);
         order.setOrderCode(orderCode);
         order.setPaymentLinkId(paymentLinkId);
-        
+
         orderRepository.save(order);
         clearUserOrderCache(order.getUserId());
     }

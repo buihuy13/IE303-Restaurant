@@ -8,7 +8,10 @@ import com.CNTTK18.order_service.dto.cart.response.CartResponse;
 
 public interface CartService {
     CartResponse getCart(UUID userId);
+
     CartResponse addToCart(UUID userId, AddToCartRequest request);
+
     CartResponse updateCartItem(UUID userId, UpdateCartItemRequest request);
+
     void clearCart(UUID userId);
 }

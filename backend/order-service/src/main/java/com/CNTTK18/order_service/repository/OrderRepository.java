@@ -12,5 +12,6 @@ import com.CNTTK18.order_service.model.Order;
 @Repository
 public interface OrderRepository extends MongoRepository<Order, UUID> {
     Page<Order> findByUserId(UUID userId, Pageable pageable);
+
     Page<Order> findByRestaurantId(UUID restaurantId, Pageable pageable);
 }

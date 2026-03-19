@@ -9,10 +9,16 @@ import com.CNTTK18.order_service.dto.order.response.OrderResponse;
 
 public interface OrderService {
     List<OrderResponse> checkout(UUID userId, CheckoutRequest request);
+
     List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size);
+
     List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size);
+
     OrderResponse getOrderById(UUID orderId);
+
     OrderResponse updateStatus(UUID orderId, UpdateOrderStatusRequest request);
+
     OrderResponse cancelOrder(UUID userId, UUID orderId);
+
     void updatePaymentStatus(UUID orderId, boolean success, Long orderCode, String paymentLinkId);
 }

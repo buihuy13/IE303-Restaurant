@@ -49,23 +49,26 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartResponse addToCart(UUID userId, AddToCartRequest request) {
         Cart cart = getCartModel(userId);
-        
+
         // Validate restaurant with restaurant-service
-        ResClientResponse resInfo = restaurantClient.getRestaurant(request.getRestaurantId()).block();
+        ResClientResponse resInfo =
+                restaurantClient.getRestaurant(request.getRestaurantId()).block();
         if (resInfo == null) throw new NotFoundException("Restaurant not found");
         if (!resInfo.isEnabled()) throw new BadRequestException("Restaurant is currently disabled");
 
         // Validate product with restaurant-service
-        ProductClientResponse productInfo = restaurantClient.getProduct(request.getProductId()).block();
+        ProductClientResponse productInfo =
+                restaurantClient.getProduct(request.getProductId()).block();
         if (productInfo == null) throw new NotFoundException("Product not found");
-        
+
         // Verify product belongs to the restaurant
         if (!productInfo.getRestaurantId().equals(request.getRestaurantId())) {
             throw new BadRequestException("Product does not belong to the specified restaurant");
         }
 
         // Validate product size with restaurant-service
-        ProductSizeClientResponse sizeInfo = restaurantClient.getProductSize(request.getProductSizeId()).block();
+        ProductSizeClientResponse sizeInfo =
+                restaurantClient.getProductSize(request.getProductSizeId()).block();
         if (sizeInfo == null) throw new NotFoundException("Product size not found");
 
         // Find or create restaurant group
@@ -108,13 +111,13 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartResponse updateCartItem(UUID userId, UpdateCartItemRequest request) {
         Cart cart = getCartModel(userId);
-        
+
         boolean removed = false;
         for (CartRestaurantGroup group : cart.getRestaurants()) {
             Optional<CartItem> itemOpt = group.getItems().stream()
                     .filter(i -> i.getProductSizeId().equals(request.getProductSizeId()))
                     .findFirst();
-            
+
             if (itemOpt.isPresent()) {
                 if (request.getQuantity() <= 0) {
                     group.getItems().remove(itemOpt.get());
@@ -125,7 +128,7 @@ public class CartServiceImpl implements CartService {
                 break;
             }
         }
-        
+
         if (!removed && request.getQuantity() > 0) {
             throw new NotFoundException("Item not found in cart");
         }
@@ -145,14 +148,13 @@ public class CartServiceImpl implements CartService {
     private Cart getCartModel(UUID userId) {
         String cacheKey = CART_CACHE_KEY_PREFIX + userId;
         Cart cart = (Cart) redisTemplate.opsForValue().get(cacheKey);
-        
+
         if (cart == null) {
-            cart = cartRepository.findByUserId(userId)
-                    .orElseGet(() -> Cart.builder()
-                            .id(userId.toString())
-                            .userId(userId)
-                            .restaurants(new ArrayList<>())
-                            .build());
+            cart = cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder()
+                    .id(userId.toString())
+                    .userId(userId)
+                    .restaurants(new ArrayList<>())
+                    .build());
             redisTemplate.opsForValue().set(cacheKey, cart, CART_CACHE_TTL, TimeUnit.DAYS);
         }
         return cart;

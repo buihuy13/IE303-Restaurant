@@ -18,7 +18,8 @@ public class RestaurantClient {
     private final WebClient.Builder webClientBuilder;
 
     public Mono<ProductSizeClientResponse> getProductSize(UUID productSizeId) {
-        return webClientBuilder.build()
+        return webClientBuilder
+                .build()
                 .get()
                 .uri("http://restaurant-service/api/productsize/{id}", productSizeId)
                 .retrieve()
@@ -26,7 +27,8 @@ public class RestaurantClient {
     }
 
     public Mono<ProductClientResponse> getProduct(UUID productId) {
-        return webClientBuilder.build()
+        return webClientBuilder
+                .build()
                 .get()
                 .uri("http://restaurant-service/api/products/admin/{id}", productId)
                 .retrieve()
@@ -34,7 +36,8 @@ public class RestaurantClient {
     }
 
     public Mono<ResClientResponse> getRestaurant(UUID restaurantId) {
-        return webClientBuilder.build()
+        return webClientBuilder
+                .build()
                 .get()
                 .uri("http://restaurant-service/api/restaurants/{id}", restaurantId)
                 .retrieve()

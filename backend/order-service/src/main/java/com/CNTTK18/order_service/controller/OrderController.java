@@ -6,7 +6,6 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,8 +36,7 @@ public class OrderController {
     @PostMapping("/checkout")
     @Operation(summary = "Checkout selected restaurants' items from cart")
     public ResponseEntity<List<OrderResponse>> checkout(
-            Authentication authentication, 
-            @Valid @RequestBody CheckoutRequest request) {
+            Authentication authentication, @Valid @RequestBody CheckoutRequest request) {
         UUID userId = getUserId(authentication);
         return ResponseEntity.ok(orderService.checkout(userId, request));
     }
@@ -71,16 +69,13 @@ public class OrderController {
     @PutMapping("/{id}/status")
     @Operation(summary = "Update order status (Merchants)")
     public ResponseEntity<OrderResponse> updateStatus(
-            @PathVariable UUID id, 
-            @Valid @RequestBody UpdateOrderStatusRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody UpdateOrderStatusRequest request) {
         return ResponseEntity.ok(orderService.updateStatus(id, request));
     }
 
     @PutMapping("/{id}/cancel")
     @Operation(summary = "Cancel order (Customers - only if PENDING)")
-    public ResponseEntity<OrderResponse> cancelOrder(
-            Authentication authentication,
-            @PathVariable UUID id) {
+    public ResponseEntity<OrderResponse> cancelOrder(Authentication authentication, @PathVariable UUID id) {
         UUID userId = getUserId(authentication);
         return ResponseEntity.ok(orderService.cancelOrder(userId, id));
     }

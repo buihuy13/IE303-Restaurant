@@ -13,8 +13,10 @@ import com.CNTTK18.order_service.model.OrderItem;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface OrderMapper {
     OrderResponse toResponse(Order order);
+
     List<OrderResponse> toResponseList(List<Order> orders);
-    
+
     OrderItemResponse toItemResponse(OrderItem item);
+
     List<OrderItemResponse> toItemResponseList(List<OrderItem> items);
 }
