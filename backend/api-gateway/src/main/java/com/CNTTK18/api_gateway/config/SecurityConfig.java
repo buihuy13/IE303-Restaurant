@@ -23,7 +23,8 @@ public class SecurityConfig {
     private final HeaderForwardFilter headerForwardFilter;
 
     private static final String[] PUBLIC_PATHS = {
-        "/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**", "/ws", "/api/users/register"
+        "/actuator/**", "/eureka/**", "/api-docs/**", "/v3/api-docs/**", "/ws", "/api/users/register",
+        "/api/payments/webhook"
     };
 
     @Bean
@@ -92,8 +93,6 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.DELETE, "/api/restaurant/image/*")
                 .hasAnyRole("ADMIN", "MERCHANT")
                 // payment-service
-                .pathMatchers(HttpMethod.POST, "/api/payments/webhook")
-                .permitAll() // note: PayOS là server-to-server, không có JWT
                 .pathMatchers("/api/payments/**")
                 .hasRole("USER")
                 .anyExchange()
