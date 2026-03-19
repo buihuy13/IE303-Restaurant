@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
 import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
+import com.CNTTK18.paymentservice.exception.PaymentCreationException;
 import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
@@ -68,7 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         } catch (Exception e) {
             log.error("Lỗi khi tạo payment link với PayOS", e);
-            throw new RuntimeException("Không thể tạo link thanh toán PayOS", e);
+            throw new PaymentCreationException("Không thể tạo link thanh toán PayOS", e);
         }
     }
 
