@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class CartRestaurantGroup {
     private UUID restaurantId;
     private String restaurantName;
-    
+
     @Builder.Default
     private List<CartItem> items = new ArrayList<>();
 }

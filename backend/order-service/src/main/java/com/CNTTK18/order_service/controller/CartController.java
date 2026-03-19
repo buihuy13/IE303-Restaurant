@@ -41,8 +41,7 @@ public class CartController {
     @PostMapping
     @Operation(summary = "Add item to cart")
     public ResponseEntity<CartResponse> addToCart(
-            Authentication authentication, 
-            @Valid @RequestBody AddToCartRequest request) {
+            Authentication authentication, @Valid @RequestBody AddToCartRequest request) {
         UUID userId = getUserId(authentication);
         return ResponseEntity.ok(cartService.addToCart(userId, request));
     }
@@ -50,8 +49,7 @@ public class CartController {
     @PutMapping
     @Operation(summary = "Update cart item quantity")
     public ResponseEntity<CartResponse> updateCartItem(
-            Authentication authentication, 
-            @Valid @RequestBody UpdateCartItemRequest request) {
+            Authentication authentication, @Valid @RequestBody UpdateCartItemRequest request) {
         UUID userId = getUserId(authentication);
         return ResponseEntity.ok(cartService.updateCartItem(userId, request));
     }

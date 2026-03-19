@@ -37,7 +37,7 @@ public class Order {
 
     @Indexed
     private UUID restaurantId;
-    
+
     private String restaurantName;
 
     @Builder.Default
