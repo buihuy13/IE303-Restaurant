@@ -18,10 +18,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(PaymentCreationException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handlePaymentCreationException(PaymentCreationException ex) {
         ErrorResponse errorResponse = new ErrorResponse("PAYMENT_CREATION_ERROR", ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     // Xử lý exception chung
