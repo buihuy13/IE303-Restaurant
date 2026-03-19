@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
@@ -32,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayOSProperties payOSProperties;
 
     @Override
+    @Transactional
     public PaymentResponseDTO createPaymentLink(PaymentRequestDTO request) {
         // 1. Khởi tạo Order Code duy nhất (Random System limit của Java Long)
         Long orderCode = System.currentTimeMillis() % 1000000000L;
