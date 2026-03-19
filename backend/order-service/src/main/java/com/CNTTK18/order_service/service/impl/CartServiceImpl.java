@@ -47,24 +47,32 @@ public class CartServiceImpl implements CartService {
     public CartResponse addToCart(UUID userId, AddToCartRequest request) {
         Cart cart = getCartModel(userId);
         
-        // Validate with restaurant-service
-        ProductSizeClientResponse sizeInfo = restaurantClient.getProductSize(request.getProductSizeId()).block();
-        if (sizeInfo == null) throw new NotFoundException("Product size not found");
-        
+        // Validate restaurant with restaurant-service
+        ResClientResponse resInfo = restaurantClient.getRestaurant(request.getRestaurantId()).block();
+        if (resInfo == null) throw new NotFoundException("Restaurant not found");
+        if (!resInfo.isEnabled()) throw new BadRequestException("Restaurant is currently disabled");
+
+        // Validate product with restaurant-service
         ProductClientResponse productInfo = restaurantClient.getProduct(request.getProductId()).block();
         if (productInfo == null) throw new NotFoundException("Product not found");
+        
+        // Verify product belongs to the restaurant
+        if (!productInfo.getRestaurantId().equals(request.getRestaurantId())) {
+            throw new BadRequestException("Product does not belong to the specified restaurant");
+        }
+
+        // Validate product size with restaurant-service
+        ProductSizeClientResponse sizeInfo = restaurantClient.getProductSize(request.getProductSizeId()).block();
+        if (sizeInfo == null) throw new NotFoundException("Product size not found");
 
         // Find or create restaurant group
         CartRestaurantGroup group = cart.getRestaurants().stream()
                 .filter(g -> g.getRestaurantId().equals(request.getRestaurantId()))
                 .findFirst()
                 .orElseGet(() -> {
-                    ResClientResponse resInfo = restaurantClient.getRestaurant(request.getRestaurantId()).block();
-                    String resName = (resInfo != null) ? resInfo.getResName() : "Unknown Restaurant";
-                    
                     CartRestaurantGroup newGroup = CartRestaurantGroup.builder()
                             .restaurantId(request.getRestaurantId())
-                            .restaurantName(resName)
+                            .restaurantName(resInfo.getResName())
                             .items(new ArrayList<>())
                             .build();
                     cart.getRestaurants().add(newGroup);

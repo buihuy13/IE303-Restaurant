@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.CNTTK18.order_service.client.RestaurantClient;
+import com.CNTTK18.order_service.dto.client.ResClientResponse;
 import com.CNTTK18.order_service.dto.order.request.CheckoutRequest;
 import com.CNTTK18.order_service.dto.order.request.UpdateOrderStatusRequest;
 import com.CNTTK18.order_service.dto.order.response.OrderResponse;
@@ -38,6 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
     private final OrderMapper orderMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RestaurantClient restaurantClient;
 
     private static final String ORDERS_USER_CACHE_PREFIX = "orders:user:";
     private static final String ORDERS_RES_CACHE_PREFIX = "orders:res:";
@@ -55,6 +58,12 @@ public class OrderServiceImpl implements OrderService {
                     .filter(g -> g.getRestaurantId().equals(restaurantId))
                     .findFirst()
                     .orElseThrow(() -> new BadRequestException("Restaurant " + restaurantId + " not found in cart"));
+
+            // Final validation: check if restaurant is still enabled
+            ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
+            if (resInfo == null || !resInfo.isEnabled()) {
+                throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId) + " is currently unavailable");
+            }
 
             BigDecimal totalPrice = group.getItems().stream()
                     .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
