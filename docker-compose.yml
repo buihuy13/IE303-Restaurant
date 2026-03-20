@@ -237,9 +237,42 @@ services:
             - ./.env
         restart: unless-stopped
 
+    mongodb:
+        image: mongo:7
+        container_name: mongodb
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+        volumes:
+            - mongo_data:/data/db
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    order-service:
+        build:
+            context: ./backend
+            dockerfile: ./order-service/Dockerfile
+            args:
+                MODULE_PATH: order-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${ORDER_PORT}
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+
 volumes:
     grafana-data:
     prometheus-data:
     caddy_data:
     caddy_config:
     postgres_data:
+    mongo_data:
