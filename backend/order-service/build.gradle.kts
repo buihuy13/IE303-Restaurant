@@ -18,7 +18,6 @@ dependencies {
 	implementation("io.micrometer:micrometer-tracing-bridge-brave")
 	implementation("io.zipkin.reporter2:zipkin-reporter-brave")
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-	runtimeOnly("org.postgresql:postgresql")  // although using mongo, let's keep it for shared potential or consistency if needed, wait no, let's just stick to mongo
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 	implementation("org.mapstruct:mapstruct:1.6.3")

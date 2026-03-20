@@ -6,7 +6,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 
 @SpringBootApplication
-@EnableDiscoveryClient
 @EnableMongoAuditing
 public class OrderServiceApplication {
     public static void main(String[] args) {
