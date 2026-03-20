@@ -27,6 +27,7 @@ import com.CNTTK18.order_service.service.CartService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -50,10 +51,17 @@ public class CartServiceImpl implements CartService {
     public CartResponse addToCart(UUID userId, AddToCartRequest request) {
         Cart cart = getCartModel(userId);
 
-        // Validate restaurant: existence, enabled status, and opening hours
-        ResClientResponse resInfo =
-                restaurantClient.getRestaurant(request.getRestaurantId()).block();
-        if (resInfo == null) throw new NotFoundException("Restaurant not found");
+        // Fire both HTTP calls to restaurant-service in parallel
+        var fetchResult = Mono.zip(
+                        restaurantClient.getRestaurant(request.getRestaurantId()),
+                        restaurantClient.getProductSize(request.getProductSizeId()))
+                .block();
+        if (fetchResult == null) throw new NotFoundException("Could not reach restaurant service");
+
+        ResClientResponse resInfo = fetchResult.getT1();
+        ProductSizeClientResponse sizeInfo = fetchResult.getT2();
+
+        // Validate restaurant: enabled status and opening hours
         if (!resInfo.isEnabled()) throw new BadRequestException("Restaurant is currently disabled");
 
         LocalTime now = LocalTime.now(VIETNAM_ZONE);
@@ -63,10 +71,7 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Restaurant is currently closed");
         }
 
-        // Validate product size — product info is embedded inside sizeInfo
-        ProductSizeClientResponse sizeInfo =
-                restaurantClient.getProductSize(request.getProductSizeId()).block();
-        if (sizeInfo == null) throw new NotFoundException("Product size not found");
+        // Validate product size and ownership
         if (sizeInfo.getProduct() == null) throw new NotFoundException("Product not found");
 
         // Verify product belongs to the requested restaurant
