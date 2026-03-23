@@ -35,7 +35,15 @@ export default function RestaurantList() {
         const activeCategory = searchParams.get("category") || "";
         const scrollContainerRef = useRef<HTMLDivElement>(null);
         const ITEMS_PER_PAGE = 9;
-        const { restaurants, getAllRestaurants, loading, categories, getAllCategories } = useRestaurantStore();
+        const {
+                restaurants,
+                getAllRestaurants,
+                loading,
+                categories,
+                getAllCategories,
+                restaurantsTotalElements,
+                restaurantsTotalPages,
+        } = useRestaurantStore();
         const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
         const searchType = searchParams.get("type") || "restaurants";
 
@@ -84,7 +92,11 @@ export default function RestaurantList() {
                 }
                 
                 if (searchType === "restaurants") {
-                        // Restaurants search: rely on store to inject default lat/lon if missing.
+                        // Spring Pageable: page is 0-based; UI uses 1-based ?page=
+                        const uiPage = Number(searchParams.get("page")) || 1;
+                        params.delete("page");
+                        params.set("page", String(Math.max(0, uiPage - 1)));
+                        params.set("size", String(ITEMS_PER_PAGE));
                         getAllRestaurants(params);
                 } else if (searchType === "foods") {
                         // Foods search: ensure coordinates are present for distance-based queries.
@@ -129,8 +141,12 @@ export default function RestaurantList() {
         };
 
         const items = searchType === "restaurants" ? restaurants : products;
-        const totalResults = items.length;
+        const totalResults = searchType === "restaurants" ? restaurantsTotalElements : items.length;
         const title = searchType === "restaurants" ? "Restaurants" : "Food Items";
+        const paginationTotalPages =
+                searchType === "restaurants"
+                        ? Math.max(restaurantsTotalPages, 1)
+                        : Math.max(Math.ceil((items?.length || 0) / ITEMS_PER_PAGE), 1);
 
         return (
                 <div>
@@ -287,7 +303,7 @@ export default function RestaurantList() {
                                         </div>
                                         <Pagination
                                                 currentPage={Number(searchParams.get("page")) || 1}
-                                                totalPages={Math.ceil(totalResults / ITEMS_PER_PAGE)}
+                                                totalPages={paginationTotalPages}
                                                 showInfo={true}
                                                 scrollToTop={true}
                                         />

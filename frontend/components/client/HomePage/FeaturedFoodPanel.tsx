@@ -59,7 +59,7 @@ export default function FeaturedFoodPanel() {
                         <Link href="/search">View all</Link>
                     </Button>
                     <Button asChild variant="brandSoft" size="sm" className="h-9 px-4">
-                        <Link href="/restaurants">Restaurants</Link>
+                        <Link href="/search?type=restaurants">Restaurants</Link>
                     </Button>
                 </div>
             </div>
@@ -116,7 +116,7 @@ export default function FeaturedFoodPanel() {
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Button asChild variant="brand" className="h-12 px-6 shadow-md hover:shadow-lg">
-                            <Link href="/restaurants">View All Restaurants</Link>
+                            <Link href="/search?type=restaurants">View All Restaurants</Link>
                         </Button>
                         <Button asChild variant="outline" className="h-12 px-6">
                             <Link href="/">Clear Filters</Link>

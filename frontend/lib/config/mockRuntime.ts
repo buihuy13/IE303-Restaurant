@@ -1,19 +1,9 @@
 /**
- * Cấu hình dùng mock API.
+ * Mock API layers have been removed; restaurant-service, user-service, product, and cart
+ * calls always use the configured API gateway (`NEXT_PUBLIC_API_URL`).
  *
- * - Mặc định:
- *   - **productApi** và **restaurantApi**: luôn gọi backend thật.
- *   - Các API khác: **dùng mock** (không call backend thật).
- * - Nếu sau này muốn tắt mock cho các API còn lại, set:
- *   NEXT_PUBLIC_USE_MOCK="false"
+ * Kept as a stub so old imports of this module do not break.
  */
-
-// Cờ dùng chung cho hầu hết API (userApi, categoryApi, cartApi, ...)
-// Mặc định = true (dùng mock), chỉ khi NEXT_PUBLIC_USE_MOCK="false" mới tắt mock.
-export const USE_MOCK =
-    !(typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_USE_MOCK === "false");
-
-// Hai cờ riêng cho productApi và restaurantApi
-// Luôn là false để bắt buộc gọi backend thật, độc lập với USE_MOCK chung.
+export const USE_MOCK = false;
 export const USE_MOCK_PRODUCT = false;
 export const USE_MOCK_RESTAURANT = false;

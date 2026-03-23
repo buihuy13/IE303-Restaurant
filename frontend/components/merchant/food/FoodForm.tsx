@@ -5,7 +5,7 @@ import { categoryApi } from "@/lib/api/categoryApi";
 import { sizeApi } from "@/lib/api/sizeApi";
 import { Loader2, Plus } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 type SelectedSize = { sizeId: string; price: string };
@@ -43,6 +43,14 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const [imagePreview, setImagePreview] = useState<string>("");
     const [saving, setSaving] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState<SelectedSize[]>([]);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         setLocalCategories(categories);
@@ -232,16 +240,24 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
         }
 
         setSaving(true);
-        try {
-            await onSave({ ...formData, sizeIds: parsedSizes, restaurantId: restaurant.id }, imageFile);
-            toast.success(food ? "Food updated successfully" : "Food created successfully");
-            onCancel();
-        } catch (error) {
-            console.error("Save food error:", error);
-            toast.error("Something went wrong. Please try again.");
-        } finally {
-            setSaving(false);
-        }
+
+        // Kick off upload/save immediately, but don't block navigation.
+        // This optimizes perceived loading time on `/merchant/food/new` and keeps the upload running in background.
+        const savePromise = onSave({ ...formData, sizeIds: parsedSizes, restaurantId: restaurant.id }, imageFile);
+
+        toast.promise(savePromise, {
+            loading: food ? "Updating food..." : "Creating food...",
+            success: food ? "Food updated successfully" : "Food created successfully",
+            error: (err) => {
+                console.error("Save food error:", err);
+                return "Something went wrong. Please try again.";
+            },
+        });
+
+        onCancel();
+        savePromise.finally(() => {
+            if (isMountedRef.current) setSaving(false);
+        });
     };
 
     return (
@@ -252,6 +268,30 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{restaurant.resName}</p>
                 </div>
             )}
+
+            <div>
+                <label
+                    htmlFor="food-image-input"
+                    className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white"
+                >
+                    Food Image
+                </label>
+                <input
+                    id="food-image-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                />
+
+                {imagePreview && imagePreview.trim() !== "" && (
+                    <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+                        <div className="relative aspect-[16/9] w-full">
+                            <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                        </div>
+                    </div>
+                )}
+            </div>
 
             <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
@@ -478,30 +518,6 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     />
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">Available</span>
                 </label>
-            </div>
-
-            <div>
-                <label
-                    htmlFor="food-image-input"
-                    className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white"
-                >
-                    Food Image
-                </label>
-                <input
-                    id="food-image-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-white"
-                />
-
-                {imagePreview && imagePreview.trim() !== "" && (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
-                        <div className="relative aspect-[16/9] w-full">
-                            <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                        </div>
-                    </div>
-                )}
             </div>
 
             <div className="flex flex-col-reverse gap-3 border-t border-gray-200/70 pt-5 sm:flex-row sm:justify-end dark:border-white/10">

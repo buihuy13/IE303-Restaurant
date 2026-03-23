@@ -41,10 +41,10 @@ export default function RestaurantNavTabs() {
         return (
                 <div
                         className={cn(
-                                "transition-all duration-300 z-30 border-b",
+                                "transition-all duration-300 z-30 border-b border-gray-200/70",
                                 isSticky
                                         ? "sticky top-0 bg-white/80 backdrop-blur-xl border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
-                                        : "relative bg-white border-gray-200"
+                                        : "relative bg-white/90 backdrop-blur-sm border-gray-200/70"
                         )}
                 >
                         <div className="custom-container">
@@ -59,8 +59,8 @@ export default function RestaurantNavTabs() {
                                                                 className={cn(
                                                                         "px-3 py-2 rounded-full text-sm font-semibold transition-all duration-200 relative",
                                                                         isActive
-                                                                                ? "bg-brand-orange/10 text-brand-orange"
-                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                                                ? "bg-brand-orange/10 text-brand-orange ring-1 ring-brand-orange/30"
+                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 ring-1 ring-transparent"
                                                                 )}
                                                         >
                                                                 {link.name}

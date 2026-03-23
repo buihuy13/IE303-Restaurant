@@ -1,7 +1,7 @@
+import { fetchAllRestaurantsPages } from "@/lib/api/restaurantApi";
+import type { Restaurant } from "@/types";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { restaurantApi } from "@/lib/api/restaurantApi";
-import type { Restaurant } from "@/types";
 
 export function useAdminRestaurantsData() {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -11,9 +11,8 @@ export function useAdminRestaurantsData() {
         setLoading(true);
         try {
             const params = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" });
-            const response = await restaurantApi.getAllRestaurants(params);
-            const restaurantData = response.data?.content || response.data;
-            setRestaurants(Array.isArray(restaurantData) ? restaurantData : []);
+            const all = await fetchAllRestaurantsPages(params);
+            setRestaurants(all);
         } catch (error) {
             console.error("Failed to fetch restaurants:", error);
             toast.error("Unable to load restaurants list");

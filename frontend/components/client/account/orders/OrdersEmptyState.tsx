@@ -11,7 +11,7 @@ export function OrdersEmptyState() {
                 <p className="text-gray-600 text-sm mb-5">
                     Once you place an order, you’ll be able to track it here.
                 </p>
-                <Link href="/restaurants" className="text-sm font-semibold text-brand-orange hover:underline">
+                <Link href="/search?type=restaurants" className="text-sm font-semibold text-brand-orange hover:underline">
                     Browse Restaurants →
                 </Link>
             </div>
