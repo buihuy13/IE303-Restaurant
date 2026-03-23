@@ -202,10 +202,10 @@ export default function RestaurantMenu({
                         ref={(el) => {
                             if (el) categoryRefs.current.set(group.value, el);
                         }}
-                        className="scroll-mt-24"
+                        className="scroll-mt-20"
                     >
                         {/* Sticky Category Header */}
-                        <div className="sticky top-20 z-10 -mx-5 mb-6 border-b border-gray-200 bg-white/90 px-5 py-4 backdrop-blur-sm sm:-mx-8 sm:px-8">
+                        <div className="sticky top-16 z-10 -mx-5 mb-6 border-b border-gray-200/70 bg-white/80 px-5 py-4 backdrop-blur-xl shadow-[0_8px_25px_rgba(0,0,0,0.05)] sm:-mx-8 sm:px-8">
                             <h3 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
                                 {group.categoryName}
                             </h3>

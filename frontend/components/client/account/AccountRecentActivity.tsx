@@ -47,7 +47,7 @@ export function AccountRecentActivity({ recentOrders }: AccountRecentActivityPro
                 <div className="text-center py-12">
                     <p className="text-gray-500 mb-4">No orders yet</p>
                     <Link
-                        href="/restaurants"
+                        href="/search?type=restaurants"
                         className="text-sm font-bold text-brand-orange hover:text-brand-orange/80 transition-colors inline-flex items-center gap-1"
                     >
                         Start ordering →

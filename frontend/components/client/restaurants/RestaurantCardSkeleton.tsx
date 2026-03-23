@@ -1,28 +1,35 @@
 export const RestaurantCardSkeleton = () => (
         <div className="rounded-2xl overflow-hidden bg-white h-full flex flex-col border border-gray-200 shadow-sm">
-                {/* Image skeleton with shimmer effect */}
-                <div className="relative w-full h-48 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer">
-                        <div className="absolute bottom-3 left-3 h-6 w-40 bg-gray-300/50 rounded-full"></div>
-                        <div className="absolute bottom-3 right-3 h-6 w-20 bg-gray-300/50 rounded-full"></div>
-                </div>
+                <div className="flex gap-4 p-4 sm:p-5 min-h-[160px]">
+                        {/* Image skeleton */}
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer ring-1 ring-black/5">
+                                <div className="absolute inset-0 bg-gradient-to-r from-gray-200/60 via-gray-100/40 to-gray-200/60" />
+                        </div>
 
-                {/* Content skeleton */}
-                <div className="p-4 flex-grow flex flex-col space-y-3">
-                        {/* Title with shimmer */}
-                        <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-3/4"></div>
-
-                        {/* Address with shimmer */}
-                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-5/6"></div>
-                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-2/3"></div>
-
-                        {/* Rating and view details */}
-                        <div className="flex items-center justify-between mt-auto pt-3">
-                                <div className="flex items-center gap-2">
-                                        <div className="h-4 w-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded"></div>
-                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-8"></div>
-                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-16"></div>
+                        {/* Content skeleton */}
+                        <div className="flex-1 min-w-0 flex flex-col">
+                                <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                                <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-3/4" />
+                                                <div className="mt-2 h-5 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-40" />
+                                        </div>
+                                        <div className="h-9 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-full w-28" />
                                 </div>
-                                <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-24"></div>
+
+                                <div className="mt-2 h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-full" />
+                                <div className="mt-1 h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-5/6" />
+
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        <div className="h-7 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-full w-24" />
+                                        <div className="h-7 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-full w-20" />
+                                        <div className="h-7 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-full w-32" />
+                                        <div className="h-7 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-full w-24" />
+                                </div>
+
+                                <div className="mt-auto pt-4 flex items-center justify-between gap-3">
+                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-32" />
+                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-40" />
+                                </div>
                         </div>
                 </div>
         </div>

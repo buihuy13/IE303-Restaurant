@@ -99,13 +99,6 @@ api.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            // If the 401 comes from the "who am I" endpoint, treat it as "invalid/expired session"
-            // and DON'T try to refresh. Just logout and treat as guest.
-            if (originalRequest.url?.includes("/users/accesstoken")) {
-                useAuthStore.getState().logout();
-                return Promise.reject(error);
-            }
-
             // If this is the refresh token endpoint itself, just logout
             if (originalRequest.url?.includes("/users/refreshtoken")) {
                 useAuthStore.getState().logout();
@@ -170,6 +163,12 @@ api.interceptors.response.use(
                 useAuthStore.getState().logout();
                 return Promise.reject(refreshError);
             }
+        }
+
+        // If we already retried and still get 401, treat session as invalid.
+        // This prevents staying "logged in" when refresh didn't actually resolve the auth failure.
+        if (status === 401 && originalRequest?._retry) {
+            useAuthStore.getState().logout();
         }
 
         // For pure network errors (backend down, CORS, etc.) where there is no HTTP response,

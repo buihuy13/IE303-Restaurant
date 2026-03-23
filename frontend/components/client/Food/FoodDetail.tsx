@@ -120,7 +120,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                 </Link>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <Link
-                    href="/restaurants"
+                    href="/search?type=restaurants"
                     className="text-gray-600 hover:text-[#EE4D2D] transition-colors font-medium"
                 >
                     Restaurants

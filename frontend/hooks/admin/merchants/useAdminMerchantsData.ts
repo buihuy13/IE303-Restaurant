@@ -1,10 +1,10 @@
+import { merchantApi } from "@/lib/api/merchantApi";
+import { orderApi } from "@/lib/api/orderApi";
+import { fetchAllRestaurantsPages } from "@/lib/api/restaurantApi";
+import type { Merchant } from "@/types";
+import { OrderStatus } from "@/types/order.type";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { merchantApi } from "@/lib/api/merchantApi";
-import { restaurantApi } from "@/lib/api/restaurantApi";
-import { orderApi } from "@/lib/api/orderApi";
-import { OrderStatus } from "@/types/order.type";
-import type { Merchant } from "@/types";
 
 export interface MerchantWithStats extends Merchant {
     totalRestaurants: number;
@@ -22,8 +22,7 @@ export function useAdminMerchantsData() {
             const baseMerchants = Array.isArray(data) ? data : [];
 
             const params = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" });
-            const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
-            const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
+            const restaurants = await fetchAllRestaurantsPages(params);
 
             const restaurantCountByMerchantId = new Map<string, number>();
             const restaurantIdToMerchantId = new Map<string, string>();

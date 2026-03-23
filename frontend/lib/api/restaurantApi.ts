@@ -2,6 +2,49 @@ import type { Category, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import api from "../axios";
 
+/** Spring Data Page JSON for GET /restaurant */
+export type RestaurantPageResponse = {
+    content: Restaurant[];
+    totalElements: number;
+    totalPages: number;
+    size?: number;
+    number?: number;
+};
+
+const DEFAULT_LIST_LAT = "10.9032198";
+const DEFAULT_LIST_LON = "106.7750317";
+
+/**
+ * Loads every restaurant from the paginated GET /restaurant endpoint (admin dashboards need the full list).
+ */
+export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise<Restaurant[]> {
+    const base = new URLSearchParams(extra ? Array.from(extra.entries()) : []);
+    if (!base.has("lat")) base.set("lat", DEFAULT_LIST_LAT);
+    if (!base.has("lon")) base.set("lon", DEFAULT_LIST_LON);
+
+    const all: Restaurant[] = [];
+    let page = 0;
+    const pageSize = 100;
+    const maxIterations = 50;
+
+    while (page < maxIterations) {
+        const params = new URLSearchParams(base);
+        params.set("page", String(page));
+        params.set("size", String(pageSize));
+
+        const res = await api.get<RestaurantPageResponse>("/restaurant", { params });
+        const data = res.data;
+        const chunk = Array.isArray(data?.content) ? data.content : [];
+        all.push(...chunk);
+
+        const totalPages = typeof data?.totalPages === "number" ? data.totalPages : chunk.length === 0 ? 0 : 1;
+        page += 1;
+        if (page >= totalPages || chunk.length === 0) break;
+    }
+
+    return all;
+}
+
 // Helper to build FormData in the exact format the backend expects
 function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: File): FormData {
     const formData = new FormData();
@@ -55,7 +98,7 @@ export const restaurantApi = {
         return api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`);
     },
     getAllRestaurants: (params: URLSearchParams) => {
-        return api.get<{ content: Restaurant[]; totalElements: number; totalPages: number }>("/restaurant", {
+        return api.get<RestaurantPageResponse>("/restaurant", {
             params: params,
         });
     },

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { productApi } from "@/lib/api/productApi";
 import { Product } from "@/types";
 import { Check, CheckCircle2, Clock, Plus } from "lucide-react";
 import Image from "next/image";
@@ -132,20 +133,47 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return "";
     }, [restaurant, product]);
 
+    const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
+    const isFoodSearchPage = pathname?.startsWith("/search") && searchParams?.get("type") === "foods";
+    const restaurantTarget = restaurantSlug || restaurantId;
+    const needsRestaurantLookup = !isOnRestaurantPage && isFoodSearchPage && !restaurantTarget;
+
     // Determine link based on current location
     // If already on restaurant page, link to food detail page
     // Otherwise, link to restaurant page
     const productLink = useMemo(() => {
-        const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
         if (isOnRestaurantPage) {
             // On restaurant page, go to food detail
             return `/food/${product.slug}`;
         } else {
             // Outside restaurant page, go to restaurant page (search/home should land on restaurant detail)
-            const restaurantTarget = restaurantSlug || restaurantId;
-            return restaurantTarget ? `/restaurants/${restaurantTarget}` : `/restaurants`;
+            // If we don't have enough restaurant info in the product response,
+            // we'll still fallback to /food/[slug], then we can optionally lookup restaurant on click.
+            return restaurantTarget ? `/restaurants/${restaurantTarget}` : `/food/${product.slug}`;
         }
-    }, [pathname, product.slug, restaurantSlug, restaurantId]);
+    }, [isOnRestaurantPage, product.slug, restaurantTarget]);
+
+    const handleCardNavigate = useCallback(
+        async (e: React.MouseEvent) => {
+            if (!needsRestaurantLookup) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            try {
+                const res = await productApi.getRestaurantByProductId(product.id);
+                const restaurant = res.data as { slug?: string } | null;
+                if (restaurant?.slug) {
+                    router.push(`/restaurants/${restaurant.slug}`);
+                    return;
+                }
+            } catch {
+                // ignore and fallback to food detail
+            }
+
+            router.push(`/food/${product.slug}`);
+        },
+        [needsRestaurantLookup, product.id, product.slug, router],
+    );
 
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
@@ -257,6 +285,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             <Link
                 href={productLink}
                 className="block relative w-full aspect-[3/2] overflow-hidden"
+                onClick={handleCardNavigate}
             >
                 <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                     <Image
@@ -305,7 +334,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             <div className="p-4">
                 {/* Name + restaurant */}
                 <div className="min-h-[52px]">
-                    <Link href={productLink}>
+                    <Link href={productLink} onClick={handleCardNavigate}>
                         <h3
                             className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug hover:text-brand-orange transition-colors"
                             title={product.productName}

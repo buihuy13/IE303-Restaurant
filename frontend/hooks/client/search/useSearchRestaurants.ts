@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 
 const PAGE_SIZE = 12;
 const FILTERED_FETCH_SIZE = 60;
+// Backend requires coordinates for /restaurant queries.
+// Keep a safe fallback so first render (before geolocation completes) won't fail with 400.
+const DEFAULT_LIST_LAT = "10.9032198";
+const DEFAULT_LIST_LON = "106.7750317";
 
 function parseTimeToMinutes(hhmm: string) {
     const [h, m] = hhmm.split(":");
@@ -70,10 +74,11 @@ export function useSearchRestaurants(
             setRestaurantsLoading(true);
             try {
                 const params = new URLSearchParams();
-                if (currentAddress) {
-                    params.set("lat", currentAddress.lat.toString());
-                    params.set("lon", currentAddress.lng.toString());
-                }
+                // Always provide coordinates to satisfy backend validation.
+                const lat = currentAddress?.lat ?? Number(DEFAULT_LIST_LAT);
+                const lon = currentAddress?.lng ?? Number(DEFAULT_LIST_LON);
+                params.set("lat", lat.toString());
+                params.set("lon", lon.toString());
 
                 if (query) params.set("search", query);
 

@@ -4,7 +4,7 @@ import Pagination from "@/components/client/Pagination";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { categoryApi } from "@/lib/api/categoryApi";
 import { productApi } from "@/lib/api/productApi";
-import { restaurantApi } from "@/lib/api/restaurantApi";
+import { fetchAllRestaurantsPages } from "@/lib/api/restaurantApi";
 import { sizeApi } from "@/lib/api/sizeApi";
 import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
 import { CheckCircle, Edit, Loader2, Plus, Search, Trash, XCircle } from "lucide-react";
@@ -38,16 +38,16 @@ export default function ProductsList() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [productsRes, categoriesRes, sizesRes, restaurantsRes] = await Promise.all([
+            const [productsRes, categoriesRes, sizesRes, allRestaurants] = await Promise.all([
                 productApi.getAllProducts(new URLSearchParams()),
                 categoryApi.getAllCategories(),
                 sizeApi.getAllSizes(),
-                restaurantApi.getAllRestaurants(new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" })),
+                fetchAllRestaurantsPages(new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" })),
             ]);
             setProducts(productsRes.data.content);
             setCategories(categoriesRes.data);
             setSizes(sizesRes.data);
-            setRestaurants(restaurantsRes.data.content);
+            setRestaurants(allRestaurants);
         } catch (error) {
             console.error("Failed to fetch data:", error);
             toast.error("Failed to load data");
