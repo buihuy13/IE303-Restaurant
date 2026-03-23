@@ -97,7 +97,13 @@ public class ResServiceImpl implements ResService {
         int nearby = (resQuery.getNearby() == null || resQuery.getNearby() > 20000) ? 20000 : resQuery.getNearby();
 
         return resRepository.findRestaurantsWithinDistance(
-                location.getLongitude(), location.getLatitude(), nearby, search, categoryName, resQuery.getEnabled(), newPageable);
+                location.getLongitude(),
+                location.getLatitude(),
+                nearby,
+                search,
+                categoryName,
+                resQuery.getEnabled(),
+                newPageable);
     }
 
     @Override
@@ -221,7 +227,9 @@ public class ResServiceImpl implements ResService {
         if (user == null) {
             throw new ResourceNotFoundException("Không tồn tại user");
         }
-        Restaurants res = resRepository.findRestaurantsByMerchantId(id).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+        Restaurants res = resRepository
+                .findRestaurantsByMerchantId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return resMapper.toResResponse(res);
     }
 
