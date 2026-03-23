@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,7 +23,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
     Optional<Restaurants> findRestaurantById(UUID id);
 
     @EntityGraph(attributePaths = {"categories"})
-    Optional<List<Restaurants>> findRestaurantsByMerchantId(UUID id);
+    Optional<Restaurants> findRestaurantsByMerchantId(UUID id);
 
     @EntityGraph(attributePaths = {"categories"})
     Optional<Restaurants> findBySlug(String slug);
@@ -39,7 +38,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
         FROM restaurants r
         JOIN restaurant_categories rc ON r.id = rc.restaurant_id
         JOIN categories c ON c.id = rc.category_id
-        WHERE r.enabled = true
+        WHERE (:enabled IS NULL OR r.enabled = :enabled)
         AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
@@ -54,7 +53,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
         FROM restaurants r
         JOIN restaurant_categories rc ON r.id = rc.restaurant_id
         JOIN categories c ON c.id = rc.category_id
-        WHERE r.enabled = true
+        WHERE (:enabled IS NULL OR r.enabled = :enabled)
         AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
@@ -70,5 +69,6 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
             @Param("maxDistance") Integer maxDistance,
             @Param("search") String search,
             @Param("categories") String categories,
+            @Param("enabled") Boolean enabled,
             Pageable pageable);
 }
