@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.service;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -33,5 +32,5 @@ public interface ResService {
 
     public void deleteImage(UUID resId, UserRole authUser);
 
-    public List<ResResponse> getRestaurantsByMerchantId(UUID id);
+    public ResResponse getRestaurantsByMerchantId(UUID id);
 }

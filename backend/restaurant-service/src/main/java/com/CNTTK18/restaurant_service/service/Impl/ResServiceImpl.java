@@ -97,7 +97,7 @@ public class ResServiceImpl implements ResService {
         int nearby = (resQuery.getNearby() == null || resQuery.getNearby() > 20000) ? 20000 : resQuery.getNearby();
 
         return resRepository.findRestaurantsWithinDistance(
-                location.getLongitude(), location.getLatitude(), nearby, search, categoryName, newPageable);
+                location.getLongitude(), location.getLatitude(), nearby, search, categoryName, resQuery.getEnabled(), newPageable);
     }
 
     @Override
@@ -209,7 +209,7 @@ public class ResServiceImpl implements ResService {
     }
 
     @Override
-    public List<ResResponse> getRestaurantsByMerchantId(UUID id) {
+    public ResResponse getRestaurantsByMerchantId(UUID id) {
         UserResponse user = webClientBuilder
                 .build()
                 .get()
@@ -221,10 +221,8 @@ public class ResServiceImpl implements ResService {
         if (user == null) {
             throw new ResourceNotFoundException("Không tồn tại user");
         }
-        return resRepository
-                .findRestaurantsByMerchantId(id)
-                .map(list -> list.stream().map(resMapper::toResResponse).toList())
-                .orElse(List.of());
+        Restaurants res = resRepository.findRestaurantsByMerchantId(id).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+        return resMapper.toResResponse(res);
     }
 
     private Restaurants getById(UUID id) {
@@ -251,6 +249,9 @@ public class ResServiceImpl implements ResService {
         if ((!user.getId().equals(authUser.getId()) && !authUser.getRole().equals("MERCHANT"))
                 && !authUser.getRole().equals("ADMIN")) {
             throw new InvalidRequestException("User không phải là merchant hay admin");
+        }
+        if (resRepository.findRestaurantsByMerchantId(user.getId()).isPresent()) {
+            throw new InvalidRequestException("User đã là merchant của 1 restaurant");
         }
     }
 
