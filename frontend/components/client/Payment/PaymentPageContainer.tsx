@@ -18,9 +18,8 @@ import { ArrowLeft, Edit2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import PaymentMethodSelector from "./PaymentMethodSelector";
 
 const SHIPPING_FEE = 0; // Free shipping
 
@@ -52,10 +51,10 @@ export default function PaymentPageClient() {
     const [newAddressLat, setNewAddressLat] = useState<number | null>(null);
     const [newAddressLon, setNewAddressLon] = useState<number | null>(null);
 
-    // Stripe payment states
+    // PayOS redirect after order is created
     const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
-    const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
+    const payosReturnHandledRef = useRef(false);
     const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -90,6 +89,101 @@ export default function PaymentPageClient() {
     const shipping = SHIPPING_FEE; // Always delivery, no pickup
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
+
+    const completeAfterPayOS = useCallback(
+        async (orderIds: string[]) => {
+            setIsPaymentSuccess(true);
+            setIsProcessingCardPayment(false);
+
+            toast.success("Payment successful! Your order has been placed.", {
+                duration: 3000,
+            });
+
+            if (orderIds.length > 0) {
+                try {
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await orderApi.updateOrderStatus(orderIds[0], OrderStatus.COMPLETED);
+                } catch (error) {
+                    console.error("Failed to update order status to completed:", error);
+                }
+            }
+
+            if (orderIds.length > 0) {
+                try {
+                    const order = await orderApi.getOrderById(orderIds[0]);
+                    const redirectSlug = order.slug || orderIds[0];
+                    router.replace(`/delivery/${redirectSlug}?t=${Date.now()}`);
+                } catch (error) {
+                    console.error("Failed to fetch order slug, using orderId:", error);
+                    router.replace(`/delivery/${orderIds[0]}?t=${Date.now()}`);
+                }
+            }
+
+            setTimeout(() => {
+                if (restaurantId) {
+                    const selection = loadCheckoutSelection();
+                    clearCheckoutSelection();
+                    setCheckoutSelection(null);
+
+                    if (selection && selection.restaurantId === restaurantId && selection.itemIds.length > 0) {
+                        (async () => {
+                            for (const itemId of selection.itemIds) {
+                                try {
+                                    await removeItem(itemId, restaurantId, { silent: true });
+                                } catch {
+                                    // ignore
+                                }
+                            }
+                        })();
+                    } else {
+                        clearRestaurant(restaurantId, { silent: true });
+                    }
+                }
+            }, 100);
+        },
+        [router, restaurantId, removeItem, clearRestaurant],
+    );
+
+    useEffect(() => {
+        if (payosReturnHandledRef.current) return;
+        const ret = searchParams.get("payos_return");
+        if (!ret) return;
+
+        if (ret === "cancel") {
+            payosReturnHandledRef.current = true;
+            toast.error("Payment cancelled");
+            setIsProcessingCardPayment(false);
+            const rid = searchParams.get("restaurantId");
+            router.replace(rid ? `/payment?restaurantId=${encodeURIComponent(rid)}` : "/payment");
+            return;
+        }
+
+        if (ret === "success") {
+            payosReturnHandledRef.current = true;
+            const oid = searchParams.get("orderId");
+            let orderIds: string[] = [];
+            if (oid) {
+                orderIds = [oid];
+            } else {
+                const raw = sessionStorage.getItem("payos_pending_checkout");
+                if (raw) {
+                    try {
+                        const p = JSON.parse(raw) as { orderIds?: string[] };
+                        orderIds = p.orderIds ?? [];
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            }
+            sessionStorage.removeItem("payos_pending_checkout");
+            if (orderIds.length === 0) {
+                toast.error("Could not restore order after payment.");
+                return;
+            }
+            setCreatedOrderIds(orderIds);
+            void completeAfterPayOS(orderIds);
+        }
+    }, [searchParams, router, completeAfterPayOS]);
 
     // Fetch user addresses
     useEffect(() => {
@@ -406,7 +500,7 @@ export default function PaymentPageClient() {
                         customizations: customizations || undefined,
                     };
                 }),
-                paymentMethod: "card", // Always use "card" for backend (Stripe)
+                paymentMethod: "card", // PayOS card checkout
                 orderNote: formData.note.trim() ? formData.note.trim() : undefined,
                 userLat: typeof finalLatitude === "number" ? finalLatitude : 0,
                 userLon: typeof finalLongitude === "number" ? finalLongitude : 0,
@@ -414,15 +508,10 @@ export default function PaymentPageClient() {
 
             const order = await orderApi.createOrder(payload);
 
-            // For Stripe payment, DON'T clear cart yet - wait for payment success
-            // Save order ID and slug for payment step
+            // Wait for PayOS redirect — don't clear cart until payment success callback
             setCreatedOrderIds([order.orderId]);
-
-            // Set isProcessingCardPayment to show loading state
             setIsProcessingCardPayment(true);
-
-            // Create payment and show Stripe form
-            await handleCardPayment(order);
+            await handlePayOSRedirect(order);
         } catch (error: unknown) {
             console.error("Failed to create order:", error);
             const errorMessage =
@@ -442,86 +531,45 @@ export default function PaymentPageClient() {
         }
     };
 
-    // Handle card payment with Stripe
-    const handleCardPayment = async (order: { orderId: string }) => {
+    /** Creates PayOS link (`POST /api/payments/create`) and redirects the browser. */
+    const handlePayOSRedirect = async (order: { orderId: string }) => {
         if (!user?.id) {
             toast.error("Please login to complete payment");
             setIsProcessingCardPayment(false);
             return;
         }
 
-        // isProcessingCardPayment is already set to true in handleSubmit
         const loadingToast = toast.loading("Preparing payment...");
 
         try {
-            // Calculate total amount
-            const tax = subtotal * 0.05;
             const calculatedTotal = subtotal + shipping + tax;
+            const origin = typeof window !== "undefined" ? window.location.origin : "";
+            const rid = restaurantId || "";
+            const returnUrl = `${origin}/payment?payos_return=success&orderId=${encodeURIComponent(order.orderId)}&restaurantId=${encodeURIComponent(rid)}`;
+            const cancelUrl = `${origin}/payment?payos_return=cancel&restaurantId=${encodeURIComponent(rid)}`;
 
-            // Create payment
-            const paymentResponse = await paymentApi.createPayment({
+            sessionStorage.setItem(
+                "payos_pending_checkout",
+                JSON.stringify({ orderIds: [order.orderId], restaurantId: rid || null }),
+            );
+
+            const res = await paymentApi.createPayment({
                 orderId: order.orderId,
                 userId: user.id,
                 amount: calculatedTotal,
-                currency: "USD",
                 paymentMethod: "card",
+                returnUrl,
+                cancelUrl,
             });
 
-            // Check response structure
-            if (!paymentResponse) {
-                throw new Error("Payment response is null or undefined");
+            if (!res.checkoutUrl) {
+                throw new Error("Payment service did not return a checkout URL");
             }
 
-            // Backend returns: { success: true, message: "...", data: { clientSecret, paymentId, status } }
-            // But paymentApi.createPayment returns response.data, so it might be the data directly
-            const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
-
-            if (!responseData || typeof responseData !== "object") {
-                throw new Error("Payment response data is missing or invalid");
-            }
-
-            const responseDataObj = responseData as Record<string, unknown>;
-            const clientSecret = responseDataObj.clientSecret as string | undefined;
-            const paymentIdFromResponse = responseDataObj.paymentId as string | undefined;
-
-            if (!clientSecret) {
-                throw new Error("Failed to get payment client secret from backend");
-            }
-
-            if (!paymentIdFromResponse) {
-                throw new Error("Failed to get payment ID from backend");
-            }
-
-            // Set states to show Stripe form
-            setStripeClientSecret(clientSecret);
-
-            // Dismiss loading toast
             toast.dismiss(loadingToast);
-
-            // Scroll to payment form after a short delay to ensure it's rendered
-            setTimeout(() => {
-                const paymentForm = document.querySelector("[data-payment-form]");
-                if (paymentForm) {
-                    // For desktop (payment form is in sticky column), scroll window to show the form
-                    // For mobile, scroll the form into view
-                    if (window.innerWidth >= 1024) {
-                        // Desktop: Scroll window to position payment form in view
-                        const formRect = paymentForm.getBoundingClientRect();
-                        const formTop = formRect.top + window.pageYOffset;
-                        window.scrollTo({
-                            top: formTop - 100, // Offset from top
-                            behavior: "smooth",
-                        });
-                    } else {
-                        // Mobile: Use scrollIntoView
-                        paymentForm.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }
-                }
-            }, 300);
+            window.location.assign(res.checkoutUrl);
         } catch (error: unknown) {
-            // Extract error message
             let errorMessage = "Unable to create payment. Please try again.";
-
             if (error && typeof error === "object") {
                 const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
                 if (errorObj.response?.data?.message) {
@@ -534,97 +582,6 @@ export default function PaymentPageClient() {
             toast.dismiss(loadingToast);
             toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
-            setStripeClientSecret(null);
-        }
-    };
-
-    // Handle payment success
-    const handlePaymentSuccess = async () => {
-        // Stripe webhook will automatically update payment status
-        // No need to call completePayment API - webhook handles it
-
-        // Set payment success flag FIRST to prevent cart empty check from redirecting
-        setIsPaymentSuccess(true);
-
-        // Reset payment states
-        setIsProcessingCardPayment(false);
-        setStripeClientSecret(null);
-
-        // Show success message
-        toast.success("Payment successful! Your order has been placed.", {
-            duration: 3000,
-        });
-
-        // IMPORTANT: Update order status to 'completed' after payment success
-        // This triggers the wallet credit for the merchant
-        // Backend will check paymentStatus = 'paid' before crediting wallet
-        if (createdOrderIds.length > 0) {
-            try {
-                // Wait a bit for webhook to update payment status first
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-                
-                // Update order status to 'completed' to trigger wallet credit
-                await orderApi.updateOrderStatus(createdOrderIds[0], OrderStatus.COMPLETED);
-                console.log("Order status updated to completed, wallet credit should be triggered");
-            } catch (error) {
-                // Log error but don't block the redirect
-                console.error("Failed to update order status to completed:", error);
-                // The order will still be completed later by merchant/admin, wallet will be credited then
-            }
-        }
-
-        // Redirect immediately to prevent cart empty check from triggering
-        // Use router.replace to prevent back navigation to payment page
-        // Redirect to delivery status page (not order details page)
-        if (createdOrderIds.length > 0) {
-            // Fetch order to get slug for redirect
-            try {
-                const order = await orderApi.getOrderById(createdOrderIds[0]);
-                const redirectSlug = order.slug || createdOrderIds[0];
-                // Add timestamp to force Next.js to revalidate and fetch fresh data
-                router.replace(`/delivery/${redirectSlug}?t=${Date.now()}`);
-            } catch (error) {
-                // Fallback to orderId if fetch fails
-                console.error("Failed to fetch order slug, using orderId:", error);
-                router.replace(`/delivery/${createdOrderIds[0]}?t=${Date.now()}`);
-            }
-        }
-
-        // Clear cart silently (no toast) after redirect has started
-        // This happens after redirect so it won't trigger the cart empty check
-        setTimeout(() => {
-            if (restaurantId) {
-                const selection = loadCheckoutSelection();
-                clearCheckoutSelection();
-                setCheckoutSelection(null);
-
-                if (selection && selection.restaurantId === restaurantId && selection.itemIds.length > 0) {
-                    (async () => {
-                        for (const itemId of selection.itemIds) {
-                            try {
-                                await removeItem(itemId, restaurantId, { silent: true });
-                            } catch {
-                                // ignore
-                            }
-                        }
-                    })();
-                } else {
-                    clearRestaurant(restaurantId, { silent: true });
-                }
-            }
-        }, 100);
-    };
-
-    // Handle payment error
-    const handlePaymentError = (error: string) => {
-        // If PaymentIntent is in terminal state, reset states to allow creating new payment
-        if (error.includes("terminal state") || error.includes("terminal") || error.includes("cannot be used")) {
-            toast.error("Payment Intent has been used or expired. Please place the order again.", { duration: 5000 });
-            setIsProcessingCardPayment(false);
-            setStripeClientSecret(null);
-        } else {
-            toast.error(error, { duration: 5000 });
-            // Keep the form visible so user can retry for other errors
         }
     };
 
@@ -885,27 +842,23 @@ export default function PaymentPageClient() {
                     {/* Block B: Payment Method */}
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6" data-payment-form>
                         <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
-                        {isProcessingCardPayment && stripeClientSecret ? (
+                        {isProcessingCardPayment ? (
                             <div className="space-y-4">
-                                <PaymentMethodSelector
-                                    key={stripeClientSecret} // Force re-render when clientSecret changes
-                                    stripeClientSecret={stripeClientSecret}
-                                    isProcessingCardPayment={isProcessingCardPayment}
-                                    onPaymentSuccess={handlePaymentSuccess}
-                                    onPaymentError={handlePaymentError}
-                                />
+                                <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 p-5 text-sm text-gray-700">
+                                    <p className="font-semibold text-gray-900 mb-1">PayOS checkout</p>
+                                    <p className="text-gray-600">
+                                        Opening secure payment page. If nothing happens, allow pop-ups or try again.
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm py-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
+                                    <span>Redirecting...</span>
+                                </div>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="text-gray-500 text-sm py-4 text-center">
-                                    {isProcessingCardPayment ? (
-                                        <div className="flex items-center justify-center space-x-2">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
-                                            <span>Preparing payment form...</span>
-                                        </div>
-                                    ) : (
-                                        "Please click 'Place Order' to continue with payment"
-                                    )}
+                                    Please click &quot;Place Order&quot; — you will be sent to PayOS to pay.
                                 </div>
 
                                 {/* Place Order Button - Only show if not processing card payment */}
@@ -1105,27 +1058,21 @@ export default function PaymentPageClient() {
                 {/* Payment Method */}
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4" data-payment-form>
                     <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
-                    {isProcessingCardPayment && stripeClientSecret ? (
+                    {isProcessingCardPayment ? (
                         <div className="space-y-4">
-                            <PaymentMethodSelector
-                                key={stripeClientSecret} // Force re-render when clientSecret changes
-                                stripeClientSecret={stripeClientSecret}
-                                isProcessingCardPayment={isProcessingCardPayment}
-                                onPaymentSuccess={handlePaymentSuccess}
-                                onPaymentError={handlePaymentError}
-                            />
+                            <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 p-4 text-sm text-gray-700">
+                                <p className="font-semibold text-gray-900 mb-1">PayOS checkout</p>
+                                <p className="text-gray-600 text-xs">Redirecting to secure payment…</p>
+                            </div>
+                            <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm py-2">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
+                                <span>Redirecting...</span>
+                            </div>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             <div className="text-gray-500 text-sm py-4 text-center">
-                                {isProcessingCardPayment ? (
-                                    <div className="flex items-center justify-center space-x-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
-                                        <span>Preparing payment form...</span>
-                                    </div>
-                                ) : (
-                                    "Please click 'Place Order' to continue with payment"
-                                )}
+                                Click &quot;Place Order&quot; to open PayOS payment.
                             </div>
 
                             {/* Place Order Button - Only show if not processing card payment */}

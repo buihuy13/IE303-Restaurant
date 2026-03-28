@@ -3,10 +3,9 @@ import { orderApi } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, PaymentStatus } from "@/types/order.type";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import PaymentMethodSelector from "../Payment/PaymentMethodSelector";
 import { StatusBadge } from "./StatusBadge";
 
 type StatusType = "Pending" | "Success" | "Cancel";
@@ -37,9 +36,10 @@ export const OrderStatusSidebar = ({
     const isCancelled = status.restaurantStatus === "Cancel";
     const isCompleted = orderStatus?.toLowerCase() === "completed";
     const router = useRouter();
-    
-    // Payment states
-    const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const payosReturnHandledRef = useRef(false);
+
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
     const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
     
@@ -52,6 +52,7 @@ export const OrderStatusSidebar = ({
     const isUnpaid = paymentStatus === "pending";
     const needsPayment = isUnpaid && !isPaid; // Only show if explicitly pending and not paid
     const finalAmount = order?.finalAmount || 0;
+
     const handleCancel = async () => {
         if (!canCancel || isCancelled) return;
         const reason = window.prompt("Why are you cancelling this order?", "Changed my mind");
@@ -85,42 +86,29 @@ export const OrderStatusSidebar = ({
         const loadingToast = toast.loading("Preparing payment...");
 
         try {
-            // Calculate total amount (tax is already included in finalAmount from backend)
             const calculatedTotal = finalAmount;
+            const origin = typeof window !== "undefined" ? window.location.origin : "";
+            const basePath = pathname || "";
+            const returnUrl = `${origin}${basePath}?payos_return=success&orderId=${encodeURIComponent(order.orderId)}`;
+            const cancelUrl = `${origin}${basePath}?payos_return=cancel`;
 
-            // Create payment
-            const paymentResponse = await paymentApi.createPayment({
+            sessionStorage.setItem(`payos_delivery_${order.orderId}`, "1");
+
+            const res = await paymentApi.createPayment({
                 orderId: order.orderId,
                 userId: user.id,
                 amount: calculatedTotal,
-                currency: "USD",
                 paymentMethod: "card",
+                returnUrl,
+                cancelUrl,
             });
 
-            // Check response structure
-            if (!paymentResponse) {
-                throw new Error("Payment response is null or undefined");
+            if (!res.checkoutUrl) {
+                throw new Error("Payment service did not return a checkout URL");
             }
 
-            // Backend returns: { success: true, message: "...", data: { clientSecret, paymentId, status } }
-            const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
-
-            if (!responseData || typeof responseData !== "object") {
-                throw new Error("Payment response data is missing or invalid");
-            }
-
-            const responseDataObj = responseData as Record<string, unknown>;
-            const clientSecret = responseDataObj.clientSecret as string | undefined;
-
-            if (!clientSecret) {
-                throw new Error("Failed to get payment client secret from backend");
-            }
-
-            // Set states to show Stripe form
-            setStripeClientSecret(clientSecret);
-
-            // Dismiss loading toast
             toast.dismiss(loadingToast);
+            window.location.assign(res.checkoutUrl);
         } catch (error: unknown) {
             // Extract error message
             let errorMessage = "Unable to create payment. Please try again.";
@@ -137,38 +125,46 @@ export const OrderStatusSidebar = ({
             toast.dismiss(loadingToast);
             toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
-            setStripeClientSecret(null);
         }
     };
 
-    // Handle payment success
-    const handlePaymentSuccess = async () => {
+    const handlePaymentSuccess = useCallback(async () => {
         setIsPaymentSuccess(true);
         setIsProcessingCardPayment(false);
-        setStripeClientSecret(null);
 
         toast.success("Payment successful! Your order has been paid.", {
             duration: 3000,
         });
 
-        // Refresh order data to update paymentStatus
         if (onOrderUpdate) {
             onOrderUpdate();
         } else {
             router.refresh();
         }
-    };
+    }, [onOrderUpdate, router]);
 
-    // Handle payment error
-    const handlePaymentError = (error: string) => {
-        if (error.includes("terminal state") || error.includes("terminal") || error.includes("cannot be used")) {
-            toast.error("Payment Intent has been used or expired. Please try again.", { duration: 5000 });
+    useEffect(() => {
+        if (payosReturnHandledRef.current) return;
+        const ret = searchParams.get("payos_return");
+        if (!ret) return;
+
+        if (ret === "cancel") {
+            payosReturnHandledRef.current = true;
+            toast.error("Payment cancelled");
             setIsProcessingCardPayment(false);
-            setStripeClientSecret(null);
-        } else {
-            toast.error(error, { duration: 5000 });
+            router.replace(pathname);
+            return;
         }
-    };
+
+        if (ret === "success") {
+            payosReturnHandledRef.current = true;
+            sessionStorage.removeItem(`payos_delivery_${orderId}`);
+            setIsProcessingCardPayment(false);
+            void handlePaymentSuccess();
+            router.replace(pathname);
+        }
+    }, [searchParams, pathname, router, orderId, handlePaymentSuccess]);
+
     return (
         <div className="w-full lg:sticky lg:top-24">
             <div className="border border-gray-200 rounded-2xl bg-white p-6 shadow-sm">
@@ -209,14 +205,13 @@ export const OrderStatusSidebar = ({
                         </p>
                     </div>
                     
-                    {isProcessingCardPayment && stripeClientSecret ? (
-                        <PaymentMethodSelector
-                            key={stripeClientSecret}
-                            stripeClientSecret={stripeClientSecret}
-                            isProcessingCardPayment={isProcessingCardPayment}
-                            onPaymentSuccess={handlePaymentSuccess}
-                            onPaymentError={handlePaymentError}
-                        />
+                    {isProcessingCardPayment ? (
+                        <div className="text-center text-sm text-gray-600 py-2">
+                            <div className="inline-flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-orange" />
+                                Redirecting to PayOS…
+                            </div>
+                        </div>
                     ) : (
                         <button
                             onClick={handleInitiatePayment}
@@ -227,7 +222,7 @@ export const OrderStatusSidebar = ({
                                     : "bg-brand-orange text-white hover:bg-brand-orange/90"
                             }`}
                         >
-                            {isProcessingCardPayment ? "Preparing payment..." : "Pay Now"}
+                            Pay Now
                         </button>
                     )}
                 </div>

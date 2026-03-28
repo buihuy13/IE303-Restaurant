@@ -211,8 +211,13 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
         }
 
         const restaurantRecord = restaurant as Record<string, unknown>;
+        const rawResId = restaurantRecord["restaurantId"];
         const restaurantId =
-            typeof restaurantRecord["restaurantId"] === "string" ? restaurantRecord["restaurantId"] : "";
+            typeof rawResId === "string"
+                ? rawResId
+                : rawResId != null && (typeof rawResId === "number" || typeof rawResId === "bigint")
+                  ? String(rawResId)
+                  : "";
         const restaurantName =
             typeof restaurantRecord["restaurantName"] === "string" ? restaurantRecord["restaurantName"] : "";
         const restaurantItems = restaurantRecord["items"];
@@ -227,12 +232,30 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
             }
 
             const itemRecord = item as Record<string, unknown>;
-            const productId = typeof itemRecord["productId"] === "string" ? itemRecord["productId"] : undefined;
+            const rawPid = itemRecord["productId"];
+            const productId =
+                typeof rawPid === "string"
+                    ? rawPid
+                    : rawPid != null && (typeof rawPid === "number" || typeof rawPid === "bigint")
+                      ? String(rawPid)
+                      : undefined;
             const productName = typeof itemRecord["productName"] === "string" ? itemRecord["productName"] : undefined;
-            const price = typeof itemRecord["price"] === "number" ? itemRecord["price"] : undefined;
-            const quantity = typeof itemRecord["quantity"] === "number" ? itemRecord["quantity"] : undefined;
+            const rawPrice = itemRecord["price"];
+            const price =
+                typeof rawPrice === "number"
+                    ? rawPrice
+                    : typeof rawPrice === "string" && rawPrice.trim() !== ""
+                      ? Number(rawPrice)
+                      : undefined;
+            const rawQty = itemRecord["quantity"];
+            const quantity =
+                typeof rawQty === "number"
+                    ? rawQty
+                    : typeof rawQty === "string" && rawQty.trim() !== ""
+                      ? Number(rawQty)
+                      : undefined;
 
-            if (!productId || !productName || price === undefined || quantity === undefined) {
+            if (!productId || !productName || price === undefined || !Number.isFinite(price) || quantity === undefined || !Number.isFinite(quantity)) {
                 return;
             }
 
@@ -245,7 +268,7 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                     ? rawCartItemImage.trim()
                     : undefined;
 
-            const rawImageURL = itemRecord["imageURL"];
+            const rawImageURL = itemRecord["imageURL"] ?? itemRecord["imageUrl"] ?? itemRecord["image_url"];
             const imageFromRecord =
                 typeof rawImageURL === "string" && rawImageURL.trim() !== "" ? rawImageURL.trim() : undefined;
             const imageFromOptions =

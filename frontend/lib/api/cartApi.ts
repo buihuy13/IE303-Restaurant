@@ -1,4 +1,5 @@
 import api from "../axios";
+import { withOrderServiceBase } from "./serviceBaseConfig";
 
 export interface CartItem {
     productId: string;
@@ -56,12 +57,12 @@ export interface AddItemToCartRequest {
 
 export const cartApi = {
     getCart: async (userId: string) => {
-        const response = await api.get<CartResponse>(`/cart/${userId}`);
+        const response = await api.get<CartResponse>(`/cart/${userId}`, withOrderServiceBase());
         return response.data;
     },
 
     addItemToCart: async (userId: string, data: AddItemToCartRequest) => {
-        const response = await api.post<CartResponse>(`/cart/${userId}`, data);
+        const response = await api.post<CartResponse>(`/cart/${userId}`, data, withOrderServiceBase());
         return response.data;
     },
 
@@ -73,11 +74,15 @@ export const cartApi = {
         sizeId?: string,
         customizations?: string,
     ) => {
-        const response = await api.patch<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`, {
-            quantity,
-            ...(sizeId && { sizeId }),
-            ...(customizations && { customizations }),
-        });
+        const response = await api.patch<CartResponse>(
+            `/cart/${userId}/restaurant/${restaurantId}/item/${productId}`,
+            {
+                quantity,
+                ...(sizeId && { sizeId }),
+                ...(customizations && { customizations }),
+            },
+            withOrderServiceBase(),
+        );
         return response.data;
     },
 
@@ -93,17 +98,20 @@ export const cartApi = {
         if (customizations) params.append("customizations", customizations);
         const queryString = params.toString();
         const url = `/cart/${userId}/restaurant/${restaurantId}/item/${productId}${queryString ? `?${queryString}` : ""}`;
-        const response = await api.delete<CartResponse>(url);
+        const response = await api.delete<CartResponse>(url, withOrderServiceBase());
         return response.data;
     },
 
     clearRestaurant: async (userId: string, restaurantId: string) => {
-        const response = await api.delete<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}`);
+        const response = await api.delete<CartResponse>(
+            `/cart/${userId}/restaurant/${restaurantId}`,
+            withOrderServiceBase(),
+        );
         return response.data;
     },
 
     clearCart: async (userId: string) => {
-        const response = await api.delete<CartResponse>(`/cart/${userId}`);
+        const response = await api.delete<CartResponse>(`/cart/${userId}`, withOrderServiceBase());
         return response.data;
     },
 };
