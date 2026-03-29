@@ -55,8 +55,8 @@ public class OrderServiceImpl implements OrderService {
         Cart cart = loadCartOrThrow(userId);
         CheckoutBuildResult checkoutBuildResult = buildOrdersAndGroupsToRemove(userId, request, cart);
 
-        List<Order> savedOrders = saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(),
-                checkoutBuildResult.groupsToRemove());
+        List<Order> savedOrders =
+                saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(), checkoutBuildResult.groupsToRemove());
 
         invalidateCheckoutCaches(userId);
 
@@ -67,10 +67,10 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size) {
         String cacheKey = ORDERS_USER_CACHE_PREFIX + userId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+        List<OrderResponse> cached =
+                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cached != null)
-            return cached;
+        if (cached != null) return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByUserId(userId, pageable);
@@ -84,10 +84,10 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size) {
         String cacheKey = ORDERS_RES_CACHE_PREFIX + restaurantId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+        List<OrderResponse> cached =
+                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cached != null)
-            return cached;
+        if (cached != null) return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByRestaurantId(restaurantId, pageable);
@@ -158,15 +158,13 @@ public class OrderServiceImpl implements OrderService {
     private void clearUserOrderCache(UUID userId) {
         String pattern = ORDERS_USER_CACHE_PREFIX + userId + ":*";
         java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty())
-            redisTemplate.delete(keys);
+        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
     }
 
     private void clearRestaurantOrderCache(UUID restaurantId) {
         String pattern = ORDERS_RES_CACHE_PREFIX + restaurantId + ":*";
         java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty())
-            redisTemplate.delete(keys);
+        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
     }
 
     /** Load user cart or fail fast when cart does not exist. */
@@ -275,6 +273,5 @@ public class OrderServiceImpl implements OrderService {
         clearUserOrderCache(userId);
     }
 
-    private record CheckoutBuildResult(List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {
-    }
+    private record CheckoutBuildResult(List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {}
 }

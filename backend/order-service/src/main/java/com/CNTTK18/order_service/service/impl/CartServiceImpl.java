@@ -130,8 +130,8 @@ public class CartServiceImpl implements CartService {
      */
     private AddToCartFetchResult fetchRestaurantAndProductInfo(AddToCartRequest request) {
         var fetchResult = Mono.zip(
-                restaurantClient.getRestaurant(request.getRestaurantId()),
-                restaurantClient.getProductSize(request.getProductSizeId()))
+                        restaurantClient.getRestaurant(request.getRestaurantId()),
+                        restaurantClient.getProductSize(request.getProductSizeId()))
                 .block();
 
         if (fetchResult == null) {
@@ -211,6 +211,5 @@ public class CartServiceImpl implements CartService {
         group.getItems().add(newItem);
     }
 
-    private record AddToCartFetchResult(ResClientResponse resInfo, ProductSizeClientResponse sizeInfo) {
-    }
+    private record AddToCartFetchResult(ResClientResponse resInfo, ProductSizeClientResponse sizeInfo) {}
 }
