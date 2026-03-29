@@ -7,6 +7,9 @@ import { create } from "zustand";
 interface RestaurantState {
     restaurant: Restaurant | null;
     restaurants: Restaurant[];
+    /** From last GET /restaurant (Spring Page), for client list pagination */
+    restaurantsTotalElements: number;
+    restaurantsTotalPages: number;
     products: Product[];
     categories: Category[];
     reviews: Review[];
@@ -31,6 +34,8 @@ interface RestaurantState {
 export const useRestaurantStore = create<RestaurantState>((set, get) => ({
     restaurant: null,
     restaurants: [],
+    restaurantsTotalElements: 0,
+    restaurantsTotalPages: 0,
     products: [],
     categories: [],
     reviews: [],
@@ -125,7 +130,22 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                 : data && typeof data === "object" && "content" in data && Array.isArray(data.content)
                   ? data.content
                   : [];
-            set({ restaurants: restaurantsArray, loading: false });
+            const totalElements =
+                data && typeof data === "object" && "totalElements" in data && typeof data.totalElements === "number"
+                    ? data.totalElements
+                    : restaurantsArray.length;
+            const totalPages =
+                data && typeof data === "object" && "totalPages" in data && typeof data.totalPages === "number"
+                    ? data.totalPages
+                    : restaurantsArray.length > 0
+                      ? 1
+                      : 0;
+            set({
+                restaurants: restaurantsArray,
+                restaurantsTotalElements: totalElements,
+                restaurantsTotalPages: totalPages,
+                loading: false,
+            });
         } catch (err: any) {
             set({
                 error: err.message || "Failed to load restaurant data.",

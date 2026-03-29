@@ -26,7 +26,7 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
 
         return (
                 <>
-                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <div className="rounded-2xl border-0 bg-transparent p-0 shadow-none">
                                 <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Quick Actions</h2>
                                 
                                 {/* Opening Hours */}

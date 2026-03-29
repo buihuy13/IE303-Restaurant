@@ -82,7 +82,7 @@ export default function CartDropdown() {
                             <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
                             <p className="text-gray-500 mb-4">Your cart is empty</p>
                             <Button asChild variant="brand" size="sm" className="px-6">
-                                <Link href="/restaurants" onClick={() => setIsOpen(false)}>
+                                <Link href="/search?type=restaurants" onClick={() => setIsOpen(false)}>
                                     Start Shopping
                                 </Link>
                             </Button>

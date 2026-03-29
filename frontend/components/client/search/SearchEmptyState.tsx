@@ -31,7 +31,7 @@ export function SearchEmptyState({ query }: SearchEmptyStateProps) {
                         Reset All
                     </Button>
                     <Button asChild variant="brandOutline" className="h-12 px-6">
-                        <Link href="/restaurants">Browse restaurants</Link>
+                        <Link href="/search?type=restaurants">Browse restaurants</Link>
                     </Button>
                 </div>
             </div>

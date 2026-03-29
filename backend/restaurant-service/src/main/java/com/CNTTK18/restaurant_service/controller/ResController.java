@@ -1,6 +1,5 @@
 package com.CNTTK18.restaurant_service.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -79,7 +78,7 @@ public class ResController {
     @Tag(name = "Get")
     @Operation(summary = "Get restaurants by merchant id")
     @GetMapping("/merchant/{id}")
-    public ResponseEntity<List<ResResponse>> getRestaurantByMerchantId(@PathVariable UUID id) {
+    public ResponseEntity<ResResponse> getRestaurantByMerchantId(@PathVariable UUID id) {
         return ResponseEntity.ok(resService.getRestaurantsByMerchantId(id));
     }
 

@@ -299,7 +299,13 @@ export function SearchPageView({
                             )}
 
                             {productsLoading ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+                                <div
+                                    className={
+                                        searchType === "restaurants"
+                                            ? "grid grid-cols-1 gap-4 md:gap-6"
+                                            : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
+                                    }
+                                >
                                     {Array.from({ length: 8 }).map((_, i) =>
                                         searchType === "restaurants" ? (
                                             <RestaurantCardSkeleton key={`skeleton-${i}`} />
@@ -311,7 +317,7 @@ export function SearchPageView({
                             ) : searchType === "restaurants" ? (
                                 restaurants.length > 0 ? (
                                     <>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+                                        <div className="grid grid-cols-1 gap-4 md:gap-6">
                                             {restaurants.map((restaurant) => (
                                                 <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                                             ))}

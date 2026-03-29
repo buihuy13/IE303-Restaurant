@@ -16,4 +16,5 @@ public class ResQuery {
     private Integer nearby;
     private String rating;
     private String category;
+    private Boolean enabled;
 }

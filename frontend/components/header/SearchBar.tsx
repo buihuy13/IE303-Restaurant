@@ -1,13 +1,13 @@
 "use client";
 
-import { productApi } from "@/lib/api/productApi";
-import { restaurantApi } from "@/lib/api/restaurantApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { productApi } from "@/lib/api/productApi";
+import { restaurantApi } from "@/lib/api/restaurantApi";
 import { Product, Restaurant } from "@/types";
 import { Search, Store, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 interface SearchSuggestion {
     type: "restaurant" | "product";

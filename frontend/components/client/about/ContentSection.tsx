@@ -29,7 +29,7 @@ export default function ContentSection({ image, title, children, reverse = false
                                                 {title}
                                         </h2>
                                         <div className="mt-4 text-base leading-relaxed">{children}</div>
-                                        <Link href="/restaurants">
+                                        <Link href="/search?type=restaurants">
                                                 <Button className="mt-8 bg-brand-purple text-white hover:bg-brand-purple/90">
                                                         Learn More
                                                 </Button>

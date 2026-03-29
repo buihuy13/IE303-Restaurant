@@ -244,8 +244,48 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 isAuthenticated: !!accessToken,
                 loading: false,
             });
-        } catch {
-            // Fallback: nếu backend tạm thời lỗi thì vẫn giữ trải nghiệm đăng nhập bằng JWT claims.
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { status?: number } };
+            const status = axiosErr?.response?.status;
+
+            if (status === 401) {
+                // Access token expired: try refresh explicitly.
+                // If we don't have refreshToken or refresh fails => logout.
+                if (typeof window === "undefined") {
+                    get().logout();
+                    return;
+                }
+
+                const refreshToken = normalizeToken(localStorage.getItem("refreshToken"));
+                if (!refreshToken) {
+                    get().logout();
+                    return;
+                }
+
+                try {
+                    const refreshed = await authApi.refreshAccessToken(refreshToken);
+                    get().setTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.idToken);
+
+                    // Retry fetch profile with the refreshed access token.
+                    const userFromToken = await authApi.getUserByToken();
+                    const resolvedRole = get().authRole ?? userFromToken.role ?? "USER";
+                    set({
+                        user: {
+                            ...userFromToken,
+                            role: resolvedRole,
+                        },
+                        error: null,
+                        isAuthenticated: true,
+                        loading: false,
+                    });
+                    return;
+                } catch {
+                    get().logout();
+                    return;
+                }
+            }
+
+            // Fallback: backend tạm thời lỗi => vẫn giữ trải nghiệm đăng nhập bằng JWT claims.
             const minimalUser = extractUserFromAccessToken(accessToken);
             const resolvedRole = get().authRole ?? minimalUser?.role ?? "USER";
             set({

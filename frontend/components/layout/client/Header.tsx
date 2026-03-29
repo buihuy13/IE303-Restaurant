@@ -120,7 +120,7 @@ export default function Header() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="border border-brand-grey shadow-lg !max-h-[500px] overflow-y-auto">
                                 <DropdownMenuItem className="cursor-pointer">
-                                    <Link href="/restaurants" prefetch={true}>
+                                    <Link href="/search?type=restaurants" prefetch={true}>
                                         Restaurants
                                     </Link>
                                 </DropdownMenuItem>
@@ -300,7 +300,7 @@ export default function Header() {
                                 </Link>
                             )}
                             <Link
-                                href="/restaurants"
+                                href="/search?type=restaurants"
                                 prefetch={true}
                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                             >
