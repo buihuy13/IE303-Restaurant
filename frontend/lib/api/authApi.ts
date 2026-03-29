@@ -1,3 +1,7 @@
+/**
+ * User-service API (`/api/users/**` → axios paths `/users/**` under `NEXT_PUBLIC_API_URL`).
+ * Role/enabled for the session come from Keycloak JWT where the DTO omits them.
+ */
 import { AddressRequest, PageableResponse, User } from "@/types";
 import { refreshKeycloakToken } from "../auth/keycloak";
 import api from "../axios";

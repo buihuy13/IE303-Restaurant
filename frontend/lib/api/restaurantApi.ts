@@ -2,6 +2,12 @@ import type { Category, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import api from "../axios";
 
+/**
+ * Restaurant-service REST clients. Paths are relative to `NEXT_PUBLIC_API_URL` (e.g. `/api`):
+ * `/restaurant`, `/products`, `/category`, `/review`, `/size`, `/productsize` — matching
+ * `ResController`, `ProductController`, `CateController`, `ReviewController`, etc.
+ */
+
 /** Spring Data Page JSON for GET /restaurant */
 export type RestaurantPageResponse = {
     content: Restaurant[];
@@ -13,6 +19,17 @@ export type RestaurantPageResponse = {
 
 const DEFAULT_LIST_LAT = "10.9032198";
 const DEFAULT_LIST_LON = "106.7750317";
+
+/**
+ * `GET /restaurant/merchant/{id}` returns a single {@link ResResponse} (see `ResController`),
+ * not an array. Callers that need a list should use this helper.
+ */
+export function merchantRestaurantsFromResponse(
+    data: Restaurant | Restaurant[] | null | undefined,
+): Restaurant[] {
+    if (data == null) return [];
+    return Array.isArray(data) ? data : [data];
+}
 
 /**
  * Loads every restaurant from the paginated GET /restaurant endpoint (admin dashboards need the full list).
@@ -94,8 +111,9 @@ export const restaurantApi = {
     getByRestaurantId: (restaurantId: string) => {
         return api.get<Restaurant>(`/restaurant/admin/${restaurantId}`);
     },
+    /** Single restaurant for this merchant (backend: `ResController#getRestaurantByMerchantId`). */
     getRestaurantByMerchantId: (merchantId: string) => {
-        return api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`);
+        return api.get<Restaurant>(`/restaurant/merchant/${merchantId}`);
     },
     getAllRestaurants: (params: URLSearchParams) => {
         return api.get<RestaurantPageResponse>("/restaurant", {

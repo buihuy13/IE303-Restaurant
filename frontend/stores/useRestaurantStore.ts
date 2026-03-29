@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { restaurantApi } from "@/lib/api/restaurantApi";
+import { merchantRestaurantsFromResponse, restaurantApi } from "@/lib/api/restaurantApi";
 import type { Category, Product, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import { create } from "zustand";
@@ -95,13 +95,13 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
         set({ loading: true, error: null });
         try {
             const res = await restaurantApi.getRestaurantByMerchantId(merchantId);
-            const data = res.data;
+            const list = merchantRestaurantsFromResponse(res.data);
 
             set({
-                restaurants: data,
-                restaurant: data[0] || null,
-                products: data?.[0]?.products || [],
-                categories: data?.[0]?.cate || [],
+                restaurants: list,
+                restaurant: list[0] || null,
+                products: list[0]?.products || [],
+                categories: list[0]?.cate || [],
                 loading: false,
             });
         } catch (err: any) {
