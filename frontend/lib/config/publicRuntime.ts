@@ -41,6 +41,29 @@ export const API_URL = trimTrailingSlash(
 );
 
 /**
+ * Base URL for order-service (cart + orders). Defaults to {@link API_URL}.
+ * Set when order-service is exposed on another host until the API gateway routes `/api/orders` and `/api/cart`.
+ */
+export const ORDER_API_URL = trimTrailingSlash(
+    getEnv(process.env.NEXT_PUBLIC_ORDER_API_URL) ?? API_URL,
+);
+
+/**
+ * Base URL for payment-service (`/api/payments/**`). Defaults to {@link API_URL}.
+ * Set when payment-service is reached directly (same pattern as order-service).
+ */
+export const PAYMENT_API_URL = trimTrailingSlash(
+    getEnv(process.env.NEXT_PUBLIC_PAYMENT_API_URL) ?? API_URL,
+);
+
+/**
+ * Public site origin for PayOS return/cancel URLs (e.g. `http://localhost:3000`). Optional if you only build URLs in the browser.
+ */
+export const APP_ORIGIN = trimTrailingSlash(
+    pickEnv([process.env.NEXT_PUBLIC_APP_URL], [], ""),
+);
+
+/**
  * Origin for backend/gateway (no trailing slash).
  * Used for SSE and OAuth2 redirect targets.
  *
