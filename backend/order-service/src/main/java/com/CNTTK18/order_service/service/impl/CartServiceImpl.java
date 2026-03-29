@@ -48,70 +48,21 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    /**
+     * Adds one product size to user's cart.
+     *
+     * Flow: load cart -> fetch remote product/restaurant info -> validate -> upsert
+     * item -> persist.
+     */
     public CartResponse addToCart(UUID userId, AddToCartRequest request) {
         Cart cart = getCartModel(userId);
 
-        // Fire both HTTP calls to restaurant-service in parallel
-        var fetchResult = Mono.zip(
-                        restaurantClient.getRestaurant(request.getRestaurantId()),
-                        restaurantClient.getProductSize(request.getProductSizeId()))
-                .block();
-        if (fetchResult == null) throw new NotFoundException("Could not reach restaurant service");
+        AddToCartFetchResult fetchResult = fetchRestaurantAndProductInfo(request);
+        validateRestaurantAvailability(fetchResult.resInfo());
+        validateProductOwnership(fetchResult.sizeInfo(), request.getRestaurantId());
 
-        ResClientResponse resInfo = fetchResult.getT1();
-        ProductSizeClientResponse sizeInfo = fetchResult.getT2();
-
-        // Validate restaurant: enabled status and opening hours
-        if (!resInfo.isEnabled()) throw new BadRequestException("Restaurant is currently disabled");
-
-        LocalTime now = LocalTime.now(VIETNAM_ZONE);
-        if (resInfo.getOpeningTime() != null
-                && resInfo.getClosingTime() != null
-                && (now.isBefore(resInfo.getOpeningTime()) || now.isAfter(resInfo.getClosingTime()))) {
-            throw new BadRequestException("Restaurant is currently closed");
-        }
-
-        // Validate product size and ownership
-        if (sizeInfo.getProduct() == null) throw new NotFoundException("Product not found");
-
-        // Verify product belongs to the requested restaurant
-        if (!sizeInfo.getProduct().getRestaurantId().equals(request.getRestaurantId())) {
-            throw new BadRequestException("Product does not belong to the specified restaurant");
-        }
-
-        // Find or create the restaurant group in cart
-        CartRestaurantGroup group = cart.getRestaurants().stream()
-                .filter(g -> g.getRestaurantId().equals(request.getRestaurantId()))
-                .findFirst()
-                .orElseGet(() -> {
-                    CartRestaurantGroup newGroup = CartRestaurantGroup.builder()
-                            .restaurantId(request.getRestaurantId())
-                            .restaurantName(resInfo.getResName())
-                            .items(new ArrayList<>())
-                            .build();
-                    cart.getRestaurants().add(newGroup);
-                    return newGroup;
-                });
-
-        // Increment quantity if item already exists, otherwise add new
-        Optional<CartItem> existingItem = group.getItems().stream()
-                .filter(i -> i.getProductSizeId().equals(request.getProductSizeId()))
-                .findFirst();
-
-        if (existingItem.isPresent()) {
-            existingItem.get().setQuantity(existingItem.get().getQuantity() + request.getQuantity());
-        } else {
-            CartItem newItem = CartItem.builder()
-                    .productId(sizeInfo.getProduct().getId())
-                    .productSizeId(request.getProductSizeId())
-                    .productName(sizeInfo.getProduct().getName())
-                    .sizeName(sizeInfo.getSizeName())
-                    .price(sizeInfo.getPrice())
-                    .quantity(request.getQuantity())
-                    .imageUrl(sizeInfo.getProduct().getImageUrl())
-                    .build();
-            group.getItems().add(newItem);
-        }
+        CartRestaurantGroup group = getOrCreateRestaurantGroup(cart, request.getRestaurantId(), fetchResult.resInfo());
+        addOrIncrementCartItem(group, request, fetchResult.sizeInfo());
 
         return saveAndReturn(cart);
     }
@@ -172,5 +123,94 @@ public class CartServiceImpl implements CartService {
         cartRepository.save(cart);
         redisTemplate.opsForValue().set(CART_CACHE_KEY_PREFIX + cart.getUserId(), cart, CART_CACHE_TTL, TimeUnit.DAYS);
         return cartMapper.toResponse(cart);
+    }
+
+    /**
+     * Fetches restaurant and product size in parallel to reduce checkout latency.
+     */
+    private AddToCartFetchResult fetchRestaurantAndProductInfo(AddToCartRequest request) {
+        var fetchResult = Mono.zip(
+                restaurantClient.getRestaurant(request.getRestaurantId()),
+                restaurantClient.getProductSize(request.getProductSizeId()))
+                .block();
+
+        if (fetchResult == null) {
+            throw new NotFoundException("Could not reach restaurant service");
+        }
+
+        return new AddToCartFetchResult(fetchResult.getT1(), fetchResult.getT2());
+    }
+
+    /** Ensures restaurant is enabled and currently within opening hours. */
+    private void validateRestaurantAvailability(ResClientResponse resInfo) {
+        if (!resInfo.isEnabled()) {
+            throw new BadRequestException("Restaurant is currently disabled");
+        }
+
+        LocalTime now = LocalTime.now(VIETNAM_ZONE);
+        if (resInfo.getOpeningTime() != null
+                && resInfo.getClosingTime() != null
+                && (now.isBefore(resInfo.getOpeningTime()) || now.isAfter(resInfo.getClosingTime()))) {
+            throw new BadRequestException("Restaurant is currently closed");
+        }
+    }
+
+    /** Ensures selected product size exists and belongs to requested restaurant. */
+    private void validateProductOwnership(ProductSizeClientResponse sizeInfo, UUID restaurantId) {
+        if (sizeInfo.getProduct() == null) {
+            throw new NotFoundException("Product not found");
+        }
+
+        if (!sizeInfo.getProduct().getRestaurantId().equals(restaurantId)) {
+            throw new BadRequestException("Product does not belong to the specified restaurant");
+        }
+    }
+
+    /**
+     * Returns existing restaurant group in cart or creates a new one on first add.
+     */
+    private CartRestaurantGroup getOrCreateRestaurantGroup(Cart cart, UUID restaurantId, ResClientResponse resInfo) {
+        return cart.getRestaurants().stream()
+                .filter(g -> g.getRestaurantId().equals(restaurantId))
+                .findFirst()
+                .orElseGet(() -> {
+                    CartRestaurantGroup newGroup = CartRestaurantGroup.builder()
+                            .restaurantId(restaurantId)
+                            .restaurantName(resInfo.getResName())
+                            .items(new ArrayList<>())
+                            .build();
+                    cart.getRestaurants().add(newGroup);
+                    return newGroup;
+                });
+    }
+
+    /**
+     * Increases quantity when item already exists; otherwise appends a new cart
+     * item.
+     */
+    private void addOrIncrementCartItem(
+            CartRestaurantGroup group, AddToCartRequest request, ProductSizeClientResponse sizeInfo) {
+        Optional<CartItem> existingItem = group.getItems().stream()
+                .filter(i -> i.getProductSizeId().equals(request.getProductSizeId()))
+                .findFirst();
+
+        if (existingItem.isPresent()) {
+            existingItem.get().setQuantity(existingItem.get().getQuantity() + request.getQuantity());
+            return;
+        }
+
+        CartItem newItem = CartItem.builder()
+                .productId(sizeInfo.getProduct().getId())
+                .productSizeId(request.getProductSizeId())
+                .productName(sizeInfo.getProduct().getName())
+                .sizeName(sizeInfo.getSizeName())
+                .price(sizeInfo.getPrice())
+                .quantity(request.getQuantity())
+                .imageUrl(sizeInfo.getProduct().getImageUrl())
+                .build();
+        group.getItems().add(newItem);
+    }
+
+    private record AddToCartFetchResult(ResClientResponse resInfo, ProductSizeClientResponse sizeInfo) {
     }
 }

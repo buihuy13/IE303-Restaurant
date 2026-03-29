@@ -45,67 +45,20 @@ public class OrderServiceImpl implements OrderService {
     private static final String ORDERS_RES_CACHE_PREFIX = "orders:res:";
 
     @Override
+    /**
+     * Creates one order per selected restaurant from the current cart.
+     *
+     * Flow: load cart -> validate/build orders -> persist orders and update cart ->
+     * invalidate caches.
+     */
     public List<OrderResponse> checkout(UUID userId, CheckoutRequest request) {
-        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Cart not found"));
+        Cart cart = loadCartOrThrow(userId);
+        CheckoutBuildResult checkoutBuildResult = buildOrdersAndGroupsToRemove(userId, request, cart);
 
-        List<Order> newOrders = new ArrayList<>();
-        List<CartRestaurantGroup> groupsToRemove = new ArrayList<>();
+        List<Order> savedOrders = saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(),
+                checkoutBuildResult.groupsToRemove());
 
-        for (UUID restaurantId : request.getRestaurantIds()) {
-            CartRestaurantGroup group = cart.getRestaurants().stream()
-                    .filter(g -> g.getRestaurantId().equals(restaurantId))
-                    .findFirst()
-                    .orElseThrow(() -> new BadRequestException("Restaurant " + restaurantId + " not found in cart"));
-
-            // Final validation: check if restaurant is still enabled
-            ResClientResponse resInfo =
-                    restaurantClient.getRestaurant(restaurantId).block();
-            if (resInfo == null || !resInfo.isEnabled()) {
-                throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
-                        + " is currently unavailable");
-            }
-
-            BigDecimal totalPrice = group.getItems().stream()
-                    .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            Order order = Order.builder()
-                    .id(UUID.randomUUID())
-                    .userId(userId)
-                    .restaurantId(restaurantId)
-                    .restaurantName(group.getRestaurantName())
-                    .items(group.getItems().stream()
-                            .map(item -> OrderItem.builder()
-                                    .productId(item.getProductId())
-                                    .productSizeId(item.getProductSizeId())
-                                    .productName(item.getProductName())
-                                    .sizeName(item.getSizeName())
-                                    .price(item.getPrice())
-                                    .quantity(item.getQuantity())
-                                    .build())
-                            .toList())
-                    .totalPrice(totalPrice)
-                    .deliveryAddress(request.getDeliveryAddress())
-                    .note(request.getNote())
-                    .status(OrderStatus.PENDING)
-                    .paymentStatus(PaymentStatus.UNPAID)
-                    .build();
-
-            newOrders.add(order);
-            groupsToRemove.add(group);
-        }
-
-        // Save orders
-        List<Order> savedOrders = orderRepository.saveAll(newOrders);
-
-        // Update Cart
-        cart.getRestaurants().removeAll(groupsToRemove);
-        cartRepository.save(cart);
-
-        // Invalidate user cart cache
-        redisTemplate.delete("cart:" + userId);
-        // Invalidate user orders list cache
-        clearUserOrderCache(userId);
+        invalidateCheckoutCaches(userId);
 
         return orderMapper.toResponseList(savedOrders);
     }
@@ -114,10 +67,10 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size) {
         String cacheKey = ORDERS_USER_CACHE_PREFIX + userId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached =
-                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cached != null) return cached;
+        if (cached != null)
+            return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByUserId(userId, pageable);
@@ -131,10 +84,10 @@ public class OrderServiceImpl implements OrderService {
     @SuppressWarnings("unchecked")
     public List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size) {
         String cacheKey = ORDERS_RES_CACHE_PREFIX + restaurantId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached =
-                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
+        List<OrderResponse> cached = (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cached != null) return cached;
+        if (cached != null)
+            return cached;
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByRestaurantId(restaurantId, pageable);
@@ -205,12 +158,123 @@ public class OrderServiceImpl implements OrderService {
     private void clearUserOrderCache(UUID userId) {
         String pattern = ORDERS_USER_CACHE_PREFIX + userId + ":*";
         java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+        if (keys != null && !keys.isEmpty())
+            redisTemplate.delete(keys);
     }
 
     private void clearRestaurantOrderCache(UUID restaurantId) {
         String pattern = ORDERS_RES_CACHE_PREFIX + restaurantId + ":*";
         java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+        if (keys != null && !keys.isEmpty())
+            redisTemplate.delete(keys);
+    }
+
+    /** Load user cart or fail fast when cart does not exist. */
+    private Cart loadCartOrThrow(UUID userId) {
+        return cartRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Cart not found"));
+    }
+
+    /**
+     * Builds order entities and records the cart groups that should be removed
+     * after successful checkout.
+     */
+    private CheckoutBuildResult buildOrdersAndGroupsToRemove(UUID userId, CheckoutRequest request, Cart cart) {
+        List<Order> newOrders = new ArrayList<>();
+        List<CartRestaurantGroup> groupsToRemove = new ArrayList<>();
+
+        for (UUID restaurantId : request.getRestaurantIds()) {
+            CartRestaurantGroup group = findRestaurantGroupInCartOrThrow(cart, restaurantId);
+            validateRestaurantAvailableForCheckout(restaurantId);
+
+            Order order = buildOrder(userId, restaurantId, group, request);
+            newOrders.add(order);
+            groupsToRemove.add(group);
+        }
+
+        return new CheckoutBuildResult(newOrders, groupsToRemove);
+    }
+
+    /**
+     * Locate the restaurant group in cart; throws if user did not select items from
+     * that restaurant.
+     */
+    private CartRestaurantGroup findRestaurantGroupInCartOrThrow(Cart cart, UUID restaurantId) {
+        return cart.getRestaurants().stream()
+                .filter(g -> g.getRestaurantId().equals(restaurantId))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Restaurant " + restaurantId + " not found in cart"));
+    }
+
+    /**
+     * Re-validates restaurant status at checkout time to avoid creating invalid
+     * orders.
+     */
+    private void validateRestaurantAvailableForCheckout(UUID restaurantId) {
+        ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
+        if (resInfo == null || !resInfo.isEnabled()) {
+            throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
+                    + " is currently unavailable");
+        }
+    }
+
+    /** Convert one cart restaurant group into one pending, unpaid order entity. */
+    private Order buildOrder(UUID userId, UUID restaurantId, CartRestaurantGroup group, CheckoutRequest request) {
+        return Order.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .restaurantId(restaurantId)
+                .restaurantName(group.getRestaurantName())
+                .items(mapToOrderItems(group))
+                .totalPrice(calculateTotalPrice(group))
+                .deliveryAddress(request.getDeliveryAddress())
+                .note(request.getNote())
+                .status(OrderStatus.PENDING)
+                .paymentStatus(PaymentStatus.UNPAID)
+                .build();
+    }
+
+    /** Maps cart items to immutable order line items snapshot. */
+    private List<OrderItem> mapToOrderItems(CartRestaurantGroup group) {
+        return group.getItems().stream()
+                .map(item -> OrderItem.builder()
+                        .productId(item.getProductId())
+                        .productSizeId(item.getProductSizeId())
+                        .productName(item.getProductName())
+                        .sizeName(item.getSizeName())
+                        .price(item.getPrice())
+                        .quantity(item.getQuantity())
+                        .build())
+                .toList();
+    }
+
+    /**
+     * Calculates total price as sum(price * quantity) for all items in a restaurant
+     * group.
+     */
+    private BigDecimal calculateTotalPrice(CartRestaurantGroup group) {
+        return group.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Persists new orders, then removes checked-out groups from cart and saves cart
+     * state.
+     */
+    private List<Order> saveOrdersAndUpdateCart(
+            Cart cart, List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {
+        List<Order> savedOrders = orderRepository.saveAll(newOrders);
+        cart.getRestaurants().removeAll(groupsToRemove);
+        cartRepository.save(cart);
+        return savedOrders;
+    }
+
+    /** Clears cart and user-order list cache keys impacted by checkout. */
+    private void invalidateCheckoutCaches(UUID userId) {
+        redisTemplate.delete("cart:" + userId);
+        clearUserOrderCache(userId);
+    }
+
+    private record CheckoutBuildResult(List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {
     }
 }
