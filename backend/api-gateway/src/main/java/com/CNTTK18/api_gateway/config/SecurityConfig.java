@@ -100,6 +100,19 @@ public class SecurityConfig {
                 // payment-service
                 .pathMatchers("/api/payments/**")
                 .hasRole("USER")
+                // blog-service
+                .pathMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/slug/**")
+                .permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/blogs/images/upload")
+                .hasAnyRole("ADMIN", "MERCHANT")
+                .pathMatchers(HttpMethod.POST, "/api/blogs")
+                .hasAnyRole("ADMIN", "MERCHANT")
+                .pathMatchers(HttpMethod.PUT, "/api/blogs/**")
+                .hasAnyRole("ADMIN", "MERCHANT")
+                .pathMatchers(HttpMethod.DELETE, "/api/blogs/**")
+                .hasAnyRole("ADMIN", "MERCHANT")
+                .pathMatchers(HttpMethod.GET, "/api/blogs/drafts", "/api/blogs/archived", "/api/blogs/**")
+                .authenticated()
                 .anyExchange()
                 .authenticated();
     }
