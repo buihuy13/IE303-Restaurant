@@ -36,6 +36,7 @@ export const paymentApi = {
             (paymentData.orderId ? `Thanh toan don hang ${paymentData.orderId}` : "Thanh toan don hang");
 
         const payload = {
+            orderId: paymentData.orderId,
             userId: paymentData.userId,
             amount: toPayOSAmountVnd(paymentData.amount),
             description,

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentRequestDTO {
+    private UUID orderId;
     private UUID userId;
     private Integer amount; // PayOS nhận amount dạng số nguyên
     private String description;

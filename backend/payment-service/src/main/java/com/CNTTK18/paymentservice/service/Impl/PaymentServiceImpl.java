@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
@@ -31,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final WebhookUtils webhookUtils;
     private final PayOSProperties payOSProperties;
+    private final RestTemplate restTemplate;
 
     @Override
     @Transactional
@@ -41,6 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
         // 2. Lưu tạm giao dịch xuống DB với trạng thái PENDING
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .userId(request.getUserId())
+                .orderId(request.getOrderId())
                 .amount(request.getAmount().longValue())
                 .orderCode(orderCode)
                 .status(PaymentStatus.PENDING)
@@ -98,6 +101,24 @@ public class PaymentServiceImpl implements PaymentService {
                 transaction.setStatus(PaymentStatus.PAID);
                 paymentTransactionRepository.save(transaction);
                 log.info("Giao dịch {} thanh toán thành công!", orderCode);
+
+                // 4. Đồng bộ trạng thái sang order-service
+                try {
+                    String url =
+                            "http://order-service/api/order/{id}/payment?success=true&orderCode={orderCode}&paymentLinkId={paymentLinkId}";
+                    restTemplate.put(
+                            url,
+                            null,
+                            transaction.getOrderId(),
+                            orderCode,
+                            transaction.getPaymentLinkId() != null ? transaction.getPaymentLinkId() : "");
+                    log.info(
+                            "Đã đồng bộ trạng thái thanh toán thành công sang order-service cho đơn hàng {}",
+                            transaction.getOrderId());
+                } catch (Exception e) {
+                    log.error("Lỗi khi đồng bộ trạng thái thanh toán sang order-service: ", e);
+                }
+
                 return true;
             }
         }
