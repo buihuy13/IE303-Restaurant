@@ -24,6 +24,7 @@ public class PaymentRequestDTO {
     @NotNull(message = "amount is required")
     @Positive(message = "amount must be greater than 0")
     private Integer amount; // PayOS nhận amount dạng số nguyên
+
     private String description;
     private String cancelUrl;
     private String returnUrl;
