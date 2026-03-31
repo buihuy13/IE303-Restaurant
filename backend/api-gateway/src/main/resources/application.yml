@@ -41,13 +41,13 @@ spring:
             routes:
                 #eureka
                 - id: eureka
-                  uri: ${EUREKA_SERVER_URI:http://localhost:8761}
+                  uri: ${EUREKA_SERVER_URI}
                   predicates:
                       - Path=/eureka/web
                   filters:
                       - SetPath=/
                 - id: eureka-static
-                  uri: ${EUREKA_SERVER_URI:http://localhost:8761}
+                  uri: ${EUREKA_SERVER_URI}
                   predicates:
                       - Path=/eureka/**
                 #user-service
@@ -146,7 +146,7 @@ eureka:
         #instance-id: ${spring.application.name}:${random.value}
     client:
         service-url:
-            defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+            defaultZone: ${EUREKA_SERVER_URL}
 
 logging:
     level:
