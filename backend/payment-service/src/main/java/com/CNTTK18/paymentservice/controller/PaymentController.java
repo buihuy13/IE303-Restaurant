@@ -2,6 +2,8 @@ package com.CNTTK18.paymentservice.controller;
 
 import java.util.Map;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/create")
-    public ResponseEntity<PaymentResponseDTO> createPaymentLink(@RequestBody PaymentRequestDTO request) {
+    public ResponseEntity<PaymentResponseDTO> createPaymentLink(@Valid @RequestBody PaymentRequestDTO request) {
         log.info(
                 "Nhận yêu cầu tạo payment link cho user: {} với số tiền: {}", request.getUserId(), request.getAmount());
         PaymentResponseDTO responseDTO = paymentService.createPaymentLink(request);
