@@ -211,10 +211,7 @@ public class PaymentServiceImpl implements PaymentService {
             try {
                 rabbitTemplate.convertAndSend(
                         PaymentStatusSyncContract.EXCHANGE, PaymentStatusSyncContract.ROUTING_KEY, event);
-                log.info(
-                        "Đã phát payment status event cho orderId={}, success={}",
-                        transaction.getOrderId(),
-                        success);
+                log.info("Đã phát payment status event cho orderId={}, success={}", transaction.getOrderId(), success);
                 return true;
             } catch (Exception ex) {
                 log.warn(
