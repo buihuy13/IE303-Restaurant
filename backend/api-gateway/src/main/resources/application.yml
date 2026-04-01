@@ -129,6 +129,15 @@ spring:
                   uri: lb://payment-service
                   predicates:
                       - Path=/v3/api-docs/payment-service
+                # blog-service
+                - id: blog-service
+                  uri: lb://blog-service
+                  predicates:
+                      - Path=/api/blogs/**
+                - id: blog-service-docs
+                  uri: lb://blog-service
+                  predicates:
+                      - Path=/v3/api-docs/blog-service
 
 eureka:
     instance:
@@ -158,6 +167,8 @@ springdoc:
               url: /v3/api-docs/restaurant-service
             - name: Payment Service
               url: /v3/api-docs/payment-service
+            - name: Blog Service
+              url: /v3/api-docs/blog-service
 
 
 # resilience4j config (circuit breaker)
