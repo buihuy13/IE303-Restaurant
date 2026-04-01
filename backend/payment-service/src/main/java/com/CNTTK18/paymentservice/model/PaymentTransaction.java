@@ -31,6 +31,10 @@ public class PaymentTransaction {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    // UUID của Order cần thanh toán
+    @Column(name = "order_id", nullable = false)
+    private UUID orderId;
+
     // Mã đơn hàng hệ thống mã hoá gửi cho PayOS (PayOS require int/long)
     @Column(name = "order_code", nullable = false, unique = true)
     private Long orderCode;
