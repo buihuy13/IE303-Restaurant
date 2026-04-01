@@ -5,11 +5,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.web.client.RestTemplate;
 
+import com.CNTTK18.Common.Event.PaymentStatusSyncContract;
+import com.CNTTK18.Common.Event.PaymentStatusSyncEvent;
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
 import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
@@ -30,15 +32,13 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentServiceImpl implements PaymentService {
-    private static final String ORDER_SYNC_URL =
-            "http://order-service/api/order/{id}/payment?success={success}&orderCode={orderCode}&paymentLinkId={paymentLinkId}";
-    private static final int ORDER_SYNC_MAX_RETRIES = 3;
+    private static final int PAYMENT_EVENT_MAX_RETRIES = 3;
 
     private final PayOS payOS;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final WebhookUtils webhookUtils;
     private final PayOSProperties payOSProperties;
-    private final RestTemplate restTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -140,10 +140,10 @@ public class PaymentServiceImpl implements PaymentService {
         transaction.setStatus(nextStatus);
         paymentTransactionRepository.save(transaction);
 
-        // 4. Đồng bộ trạng thái sang order-service. Nếu không sync được thì rollback transaction.
-        boolean synced = syncOrderPaymentStatus(transaction, paymentSuccess, orderCode);
-        if (!synced) {
-            log.error("Không thể đồng bộ trạng thái thanh toán sang order-service cho orderCode={}", orderCode);
+        // 4. Phát event đồng bộ trạng thái sang order-service qua RabbitMQ.
+        boolean published = publishPaymentStatusSyncEvent(transaction, paymentSuccess, orderCode);
+        if (!published) {
+            log.error("Không thể phát payment status event cho orderCode={}", orderCode);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return false;
         }
@@ -202,25 +202,28 @@ public class PaymentServiceImpl implements PaymentService {
         return null;
     }
 
-    private boolean syncOrderPaymentStatus(PaymentTransaction transaction, boolean success, Long orderCode) {
+    private boolean publishPaymentStatusSyncEvent(PaymentTransaction transaction, boolean success, Long orderCode) {
         String paymentLinkId = transaction.getPaymentLinkId() != null ? transaction.getPaymentLinkId() : "";
+        PaymentStatusSyncEvent event =
+                new PaymentStatusSyncEvent(transaction.getOrderId(), success, orderCode, paymentLinkId);
 
-        for (int attempt = 1; attempt <= ORDER_SYNC_MAX_RETRIES; attempt++) {
+        for (int attempt = 1; attempt <= PAYMENT_EVENT_MAX_RETRIES; attempt++) {
             try {
-                restTemplate.put(ORDER_SYNC_URL, null, transaction.getOrderId(), success, orderCode, paymentLinkId);
+                rabbitTemplate.convertAndSend(
+                        PaymentStatusSyncContract.EXCHANGE, PaymentStatusSyncContract.ROUTING_KEY, event);
                 log.info(
-                        "Đã đồng bộ trạng thái thanh toán sang order-service cho orderId={}, success={}",
+                        "Đã phát payment status event cho orderId={}, success={}",
                         transaction.getOrderId(),
                         success);
                 return true;
             } catch (Exception ex) {
                 log.warn(
-                        "Lần {} không đồng bộ được trạng thái sang order-service (orderId={}, orderCode={})",
+                        "Lần {} phát payment status event thất bại (orderId={}, orderCode={})",
                         attempt,
                         transaction.getOrderId(),
                         orderCode,
                         ex);
-                if (attempt < ORDER_SYNC_MAX_RETRIES) {
+                if (attempt < PAYMENT_EVENT_MAX_RETRIES) {
                     try {
                         TimeUnit.MILLISECONDS.sleep(300L * attempt);
                     } catch (InterruptedException interruptedException) {
