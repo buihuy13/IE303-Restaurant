@@ -38,24 +38,24 @@ export default function Header() {
                 <header
                         className={`sticky top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
                                 isScrolled
-                                        ? "bg-white/80 backdrop-blur-xl border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
-                                        : "bg-white border-gray-100"
+                                        ? "bg-white/85 backdrop-blur-xl border-gray-200/90 shadow-[0_10px_35px_rgba(15,23,42,0.08)]"
+                                        : "bg-white/95 border-gray-100"
                         }`}
                 >
                         <div className="custom-container">
-                                <div className="flex items-center justify-between h-16 lg:h-[72px] px-4 lg:px-6 gap-3 lg:gap-6">
+                                <div className="flex items-center justify-between h-16 lg:h-[74px] gap-3 lg:gap-6">
                                         {/* Left: Logo */}
                                         <div className="flex-shrink-0">
                                                 <LogoComponent />
                                         </div>
 
                                         {/* Center: Address Selector + Search Bar */}
-                                        <div className="hidden lg:flex flex-1 items-center gap-3 mx-6 lg:mx-8">
+                                        <div className="hidden lg:flex flex-1 items-center gap-3 mx-4 xl:mx-8">
                                                 <AddressSelector />
-                                                <div className="flex-1 max-w-2xl">
+                                                <div className="flex-1 max-w-3xl">
                                                         <Suspense
                                                                 fallback={
-                                                                        <div className="h-11 w-full rounded-full bg-gray-50 border border-gray-200 animate-pulse" />
+                                                                        <div className="h-11 w-full rounded-full bg-gray-50 border border-gray-200/80 animate-pulse" />
                                                                 }
                                                         >
                                                                 <SearchBar />
@@ -72,7 +72,7 @@ export default function Header() {
                                                                 asChild
                                                                 variant="brandOutline"
                                                                 size="sm"
-                                                                className="rounded-full whitespace-nowrap shadow-sm hover:shadow-md"
+                                                                className="rounded-full whitespace-nowrap border-brand-orange/70 bg-white/80 shadow-sm hover:shadow-md"
                                                         >
                                                                 <Link href={dashboardPath}>{dashboardLabel}</Link>
                                                         </Button>

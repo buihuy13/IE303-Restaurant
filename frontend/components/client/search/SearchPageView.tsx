@@ -108,14 +108,14 @@ export function SearchPageView({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white">
-            <div className="custom-container py-6 lg:py-8">
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white">
+            <div className="custom-container py-6 lg:py-10">
                 <div className="lg:hidden mb-4">
                     <Button
                         type="button"
                         onClick={onOpenFilters}
                         variant="outline"
-                        className="w-full justify-start gap-2 bg-white"
+                        className="w-full justify-start gap-2 rounded-xl border-gray-200 bg-white shadow-sm"
                     >
                         <Filter className="w-4 h-4" />
                         Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
@@ -130,18 +130,18 @@ export function SearchPageView({
                     />
                 )}
 
-                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
                     <div className="hidden lg:block w-full lg:w-[300px] flex-shrink-0">
                         <SearchFilters initialCategories={initialCategories} searchType={searchType} />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 sm:p-6">
-                            <div className="mb-5 flex items-center gap-2">
+                        <div className="rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] p-4 sm:p-6">
+                            <div className="mb-5 flex items-center gap-2.5">
                                 <Button
                                     type="button"
                                     variant={searchType === "foods" ? "brandSoft" : "secondary"}
                                     size="sm"
-                                    className="rounded-full pr-3"
+                                    className="rounded-full border border-transparent pr-3 shadow-sm"
                                     onClick={() => {
                                         handleSwitchTab("foods");
                                     }}
@@ -156,7 +156,7 @@ export function SearchPageView({
                                     type="button"
                                     variant={searchType === "restaurants" ? "brandSoft" : "secondary"}
                                     size="sm"
-                                    className="rounded-full pr-3"
+                                    className="rounded-full border border-transparent pr-3 shadow-sm"
                                     onClick={() => {
                                         handleSwitchTab("restaurants");
                                     }}
@@ -168,7 +168,7 @@ export function SearchPageView({
                                     )}
                                 </Button>
                             </div>
-                            <div className="mb-6 rounded-2xl border border-brand-orange/20 bg-brand-orange/5 px-4 py-3">
+                            <div className="mb-6 rounded-2xl border border-brand-orange/20 bg-gradient-to-r from-brand-orange/10 via-brand-orange/5 to-transparent px-4 py-3.5">
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-start gap-3">
                                         <span
@@ -190,7 +190,7 @@ export function SearchPageView({
                                         type="button"
                                         variant="brand"
                                         size="sm"
-                                        className="rounded-full h-9 px-4 shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange/20"
+                                        className="h-9 rounded-full px-4 shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange/20"
                                         onClick={() => {
                                         handleSwitchTab(searchType === "foods" ? "restaurants" : "foods");
                                         }}
@@ -213,7 +213,7 @@ export function SearchPageView({
                             <SearchSortBar searchType={searchType} />
 
                             {!hasActiveFilters && (
-                                <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+                                <div className="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4 sm:p-5">
                                     <div className="text-sm font-semibold text-gray-900 mb-2">
                                         {searchType === "restaurants"
                                             ? "Popular restaurants"
@@ -239,7 +239,7 @@ export function SearchPageView({
                                                             type="button"
                                                             variant="secondary"
                                                             size="sm"
-                                                            className="rounded-full bg-white border border-gray-200/70 hover:bg-gray-100"
+                                                            className="rounded-full border border-gray-200/70 bg-white shadow-sm hover:bg-gray-100"
                                                             onClick={() => router.push(`/restaurants/${r.slug}`)}
                                                         >
                                                             {r.resName}
@@ -273,7 +273,7 @@ export function SearchPageView({
                                                             type="button"
                                                             variant="secondary"
                                                             size="sm"
-                                                            className="rounded-full bg-white border border-gray-200/70 hover:bg-gray-100"
+                                                            className="rounded-full border border-gray-200/70 bg-white shadow-sm hover:bg-gray-100"
                                                             onClick={() => {
                                                                 const p = new URLSearchParams(Array.from(searchParams.entries()));
                                                                 p.set("type", "foods");

@@ -51,6 +51,10 @@ services:
             - KC_HOSTNAME_PATH=/auth
             - KC_PROXY=edge
             - KC_HTTP_RELATIVE_PATH=/auth
+            # Ghi đè .env: dev không có service postgres trong compose → trỏ PostgreSQL trên máy host
+            - KC_DB_URL=jdbc:postgresql://host.docker.internal:5432/auth_service
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         ports:  
             - '9090:9091'
         volumes:

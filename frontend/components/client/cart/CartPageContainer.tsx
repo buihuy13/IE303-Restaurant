@@ -183,7 +183,7 @@ export default function CartPageContainer() {
     // Check if cart is empty
     if (items.length === 0 || Object.keys(groupedItems).length === 0) {
         return (
-            <div className="custom-container p-4 sm:p-6 md:p-12">
+            <div className="custom-container py-8 sm:py-10 md:py-12">
                 <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
                     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                         {/* Icon */}
@@ -237,18 +237,18 @@ export default function CartPageContainer() {
     };
 
     return (
-        <div className="custom-container p-4 sm:p-6 md:p-12">
+        <div className="custom-container py-8 sm:py-10 md:py-12">
             {/* Header */}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-6">
+            <h1 className="mb-6 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">
                 Shopping Cart ({totalItems} {totalItems > 1 ? "items" : "item"})
             </h1>
 
             {/* Desktop: 2 Column Layout */}
-            <div className="hidden lg:grid lg:grid-cols-[65%_35%] gap-6">
+            <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
                 {/* Left Column: Cart Items */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div className="rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     {/* Header with Select All */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
@@ -292,7 +292,7 @@ export default function CartPageContainer() {
                 </div>
 
                 {/* Right Column: Order Summary (Sticky) */}
-                <div className="lg:sticky lg:top-24 h-fit">
+                <div className="h-fit lg:sticky lg:top-24">
                     <OrderSummary
                         subtotal={selectedSubtotal}
                         selectedItems={selectedItemsList}
@@ -305,7 +305,7 @@ export default function CartPageContainer() {
             {/* Mobile: Single Column + Fixed Bottom Bar */}
             <div className="lg:hidden">
                 {/* Cart Items */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-24">
+                <div className="mb-24 rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     {/* Header with Select All */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -347,8 +347,8 @@ export default function CartPageContainer() {
                 </div>
 
                 {/* Fixed Bottom Bar */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] z-50 lg:hidden">
-                    <div className="custom-container px-4 py-3">
+                <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/92 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
+                    <div className="custom-container py-3">
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>

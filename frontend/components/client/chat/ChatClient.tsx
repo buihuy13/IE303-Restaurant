@@ -552,11 +552,11 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
     }
 
     return (
-        <div className="h-[calc(100vh-200px)] max-h-[800px] border border-gray-200 rounded-lg overflow-hidden bg-white shadow-lg">
+        <div className="h-[calc(100vh-200px)] max-h-[800px] overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
             {/* Desktop Layout: 2 Columns */}
             <div className="hidden lg:flex h-full">
                 {/* Sidebar - 30% */}
-                <div className="w-[30%] border-r border-gray-200 flex-shrink-0">
+                <div className="w-[30%] flex-shrink-0 border-r border-gray-200">
                     <ChatList
                         rooms={rooms}
                         currentUserId={currentUserId}
@@ -580,7 +580,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                             onMarkAsRead={handleMarkAsRead}
                         />
                     ) : (
-                        <div className="flex items-center justify-center h-full bg-gray-50">
+                        <div className="flex h-full items-center justify-center bg-gray-50">
                             <div className="text-center">
                                 {/* Empty State Illustration */}
                                 <div className="mb-6">
@@ -608,7 +608,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         />
                                     </svg>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Select a conversation</h3>
+                                <h3 className="mb-2 text-lg font-semibold text-gray-800">Select a conversation</h3>
                                 <p className="text-sm text-gray-500">Choose a chat from the list to start messaging</p>
                             </div>
                         </div>
@@ -617,7 +617,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
             </div>
 
             {/* Mobile Layout: Toggle between List and Chat */}
-            <div className="lg:hidden h-full">
+            <div className="h-full lg:hidden">
                 {!showChatWindow ? (
                     <ChatList
                         rooms={rooms}
@@ -639,7 +639,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         onBack={handleBack}
                     />
                 ) : (
-                    <div className="flex items-center justify-center h-full bg-gray-50">
+                    <div className="flex h-full items-center justify-center bg-gray-50">
                         <div className="text-center">
                             <div className="mb-6">
                                 <svg

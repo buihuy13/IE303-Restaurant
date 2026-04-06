@@ -58,10 +58,10 @@ export function GroupOrderPageView({
     getItemImageUrl,
 }: GroupOrderPageViewProps) {
     return (
-        <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white py-12">
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white py-12">
             <div className="custom-container">
                 <div className="max-w-4xl mx-auto space-y-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">
@@ -70,7 +70,7 @@ export function GroupOrderPageView({
                                 <p className="text-sm text-gray-600">Group Order ID: {groupOrder.groupOrderId}</p>
                             </div>
                             <span
-                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
                                     groupOrder.status === GroupOrderStatus.OPEN
                                         ? "bg-green-100 text-green-800"
                                         : groupOrder.status === GroupOrderStatus.LOCKED
@@ -91,12 +91,12 @@ export function GroupOrderPageView({
                         </div>
 
                         {groupOrder.groupNote && (
-                            <div className="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                            <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                                 <p className="text-sm text-gray-700">{groupOrder.groupNote}</p>
                             </div>
                         )}
 
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-200">
+                        <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-3">
                             <input
                                 type="text"
                                 readOnly
@@ -106,7 +106,7 @@ export function GroupOrderPageView({
                             />
                             <button
                                 onClick={actions.handleCopyLink}
-                                className="p-2 hover:bg-white rounded-full transition-colors"
+                                className="rounded-full p-2 transition-colors hover:bg-white"
                                 title="Copy link"
                             >
                                 <Copy className="w-4 h-4 text-gray-600" />
@@ -172,7 +172,7 @@ export function GroupOrderPageView({
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4 flex items-center gap-2">
                             <Users className="w-5 h-5" />
                             Participants ({groupOrder.participants.length})
@@ -186,7 +186,7 @@ export function GroupOrderPageView({
                                 groupOrder.participants.map((participant) => (
                                     <div
                                         key={participant.userId}
-                                        className="border border-gray-200 rounded-2xl p-4 hover:shadow-sm transition-shadow"
+                                        className="rounded-2xl border border-gray-200 p-4 transition-shadow hover:shadow-sm"
                                     >
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
@@ -303,7 +303,7 @@ export function GroupOrderPageView({
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4 flex items-center gap-2">
                             <DollarSign className="w-5 h-5" />
                             Summary
@@ -331,7 +331,7 @@ export function GroupOrderPageView({
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4">Delivery Address</h2>
                         <p className="text-gray-700">
                             {groupOrder.deliveryAddress.street}, {groupOrder.deliveryAddress.city}

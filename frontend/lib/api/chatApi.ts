@@ -2,6 +2,9 @@ import { ChatRoom, Data, MessageFromBackend, Page, ResponseMessage, RoomIdRespon
 import api from "../axios";
 
 export const chatApi = {
+    // Get one-time WebSocket token for handshake
+    getOneTimeToken: (userId: string) => api.get<ResponseMessage>(`/chat/one-time-token/${encodeURIComponent(userId)}`),
+
     // Get roomId from two userIds
     // Encode userIds to handle special characters in URLs
     getRoomId: (userId1: string, userId2: string) =>

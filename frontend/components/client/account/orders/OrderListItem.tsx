@@ -8,7 +8,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
     const { order } = props;
 
     return (
-        <div className="border border-gray-200 bg-white p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-gray-200/90 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center">
             <div className="flex-1">
                 <p className="font-bold text-lg tracking-tight text-gray-900">{order.displayId}</p>
                 <p className="text-sm text-gray-500">{order.date}</p>
@@ -19,7 +19,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
                 {order.status && !order.status.toLowerCase().includes("cancelled") && (
                     <Link
                         href={`/delivery/${order.slug || order.orderCode || order.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-800 rounded-full text-xs font-semibold hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-100"
                     >
                         <Truck className="w-3 h-3" />
                         Track Order

@@ -8,7 +8,7 @@ export function useChatRooms(userId: string | null | undefined) {
 
     useEffect(() => {
         const loadRooms = async () => {
-            if (!userId || userId === "testuserid" || userId.trim() === "") {
+            if (!userId || userId.trim() === "") {
                 setIsLoading(false);
                 setRooms([]);
                 return;

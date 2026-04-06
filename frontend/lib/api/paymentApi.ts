@@ -1,7 +1,6 @@
 import type { CreatePaymentRequest, PayOSPaymentLinkResponse } from "@/types/payment.type";
 import api from "../axios";
 import { APP_ORIGIN } from "../config/publicRuntime";
-import { withPaymentServiceBase } from "./serviceBaseConfig";
 
 /**
  * Maps UI checkout totals to PayOS integer amount (VND).
@@ -44,7 +43,7 @@ export const paymentApi = {
             returnUrl,
         };
 
-        const response = await api.post<PayOSPaymentLinkResponse>("/payments/create", payload, withPaymentServiceBase());
+        const response = await api.post<PayOSPaymentLinkResponse>("/payments/create", payload);
         return response.data;
     },
 };

@@ -1,5 +1,4 @@
 import { Search } from "lucide-react";
-import { BRAND_ORANGE } from "@/lib/constants/blog";
 
 interface BlogListSearchProps {
     searchInput: string;
@@ -19,15 +18,13 @@ export function BlogListSearch({ searchInput, onSearchInputChange, onSearch }: B
                         value={searchInput}
                         onChange={(e) => onSearchInputChange(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && onSearch()}
-                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all text-gray-700 placeholder-gray-400"
-                        style={{ "--tw-ring-color": BRAND_ORANGE } as React.CSSProperties}
+                        className="w-full rounded-xl border-2 border-gray-200 py-3.5 pl-12 pr-4 text-gray-700 placeholder-gray-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                     />
                 </div>
                 <button
                     type="button"
                     onClick={onSearch}
-                    className="px-6 py-3.5 text-white rounded-xl hover:opacity-90 transition-all font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap"
-                    style={{ backgroundColor: BRAND_ORANGE }}
+                    className="whitespace-nowrap rounded-xl bg-brand-orange px-6 py-3.5 font-medium text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-brand-orange/90 hover:shadow-lg"
                 >
                     Search
                 </button>

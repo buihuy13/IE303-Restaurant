@@ -5,59 +5,59 @@ import Link from "next/link";
 
 export default function Footer() {
     return (
-        <footer className="bg-brand-yellowlight py-8 px-6 mt-0">
+        <footer className="mt-0 border-t border-gray-200 bg-gradient-to-b from-white via-orange-50/30 to-brand-yellowlight/55 py-10 md:py-12">
             <div className="custom-container">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
+                <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-12">
                     {/* Left: Logo, Description, Social Icons */}
-                    <div className="md:col-span-4 flex flex-col items-start max-w-xs">
-                        <Link href="/" className="flex items-center mb-2">
+                    <div className="md:col-span-4 flex max-w-xs flex-col items-start">
+                        <Link href="/" className="mb-3 flex items-center">
                             <Image src={Logo} alt="FoodEats Logo" />
                         </Link>
-                        <p className="text-p2 text-brand-grey font-manrope mb-4">
+                        <p className="mb-5 text-sm leading-6 text-brand-grey font-manrope">
                             Food, Drinks, groceries, and more available for delivery and pickup.
                         </p>
-                        <div className="flex space-x-3">
+                        <div className="flex space-x-2.5">
                             <a
                                 href="#"
                                 aria-label="Facebook"
-                                className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
+                                className="flex items-center justify-center rounded-xl bg-brand-black p-2.5 transition hover:-translate-y-0.5 hover:bg-brand-purple"
                             >
                                 <SocialIcons.Facebook size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
                                 aria-label="LinkedIn"
-                                className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
+                                className="flex items-center justify-center rounded-xl bg-brand-black p-2.5 transition hover:-translate-y-0.5 hover:bg-brand-purple"
                             >
                                 <SocialIcons.Linkedin size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
                                 aria-label="Twitter"
-                                className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
+                                className="flex items-center justify-center rounded-xl bg-brand-black p-2.5 transition hover:-translate-y-0.5 hover:bg-brand-purple"
                             >
                                 <SocialIcons.Twitter size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
                                 aria-label="Instagram"
-                                className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
+                                className="flex items-center justify-center rounded-xl bg-brand-black p-2.5 transition hover:-translate-y-0.5 hover:bg-brand-purple"
                             >
                                 <SocialIcons.Instagram size={20} color="#fff" />
                             </a>
                         </div>
                     </div>
                     {/* Right: 4 menu columns */}
-                    <div className="ml-2 md:col-span-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
+                    <div className="md:col-span-8">
+                        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
                             {/* Get Started */}
                             <div>
-                                <h5 className="font-semibold text-brand-black mb-4">Get Started</h5>
-                                <ul className="space-y-3 text-sm text-gray-600">
+                                <h5 className="mb-4 text-base font-semibold text-brand-black">Get Started</h5>
+                                <ul className="space-y-2.5 text-sm text-gray-600">
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             FoodEats Sign In
                                         </a>
@@ -65,7 +65,7 @@ export default function Footer() {
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             FoodEats Sign Up
                                         </a>
@@ -73,7 +73,7 @@ export default function Footer() {
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Become a Rider
                                         </a>
@@ -81,7 +81,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/register?type=merchant"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors flex items-center gap-1"
+                                            className="flex items-center gap-1 text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             <Store className="w-4 h-4" />
                                             Sell with FoodEats
@@ -91,12 +91,12 @@ export default function Footer() {
                             </div>
                             {/* Get Help */}
                             <div>
-                                <h5 className="font-semibold text-brand-black mb-4">Get Help</h5>
-                                <ul className="space-y-3 text-sm text-gray-600">
+                                <h5 className="mb-4 text-base font-semibold text-brand-black">Get Help</h5>
+                                <ul className="space-y-2.5 text-sm text-gray-600">
                                     <li>
                                         <Link
                                             href="/under-development"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Resources
                                         </Link>
@@ -104,7 +104,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/under-development"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Support
                                         </Link>
@@ -112,7 +112,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/contact"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Contact Us
                                         </Link>
@@ -120,7 +120,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/FAQ"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             FAQ
                                         </Link>
@@ -129,12 +129,12 @@ export default function Footer() {
                             </div>
                             {/* Company */}
                             <div>
-                                <h5 className="font-semibold text-brand-black mb-4">Company</h5>
-                                <ul className="space-y-3 text-sm text-gray-600">
+                                <h5 className="mb-4 text-base font-semibold text-brand-black">Company</h5>
+                                <ul className="space-y-2.5 text-sm text-gray-600">
                                     <li>
                                         <Link
                                             href="/about"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             About Us
                                         </Link>
@@ -142,7 +142,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/under-development"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Customer Rights
                                         </Link>
@@ -150,7 +150,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/under-development"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Career
                                         </Link>
@@ -158,7 +158,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/under-development"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Press
                                         </Link>
@@ -166,7 +166,7 @@ export default function Footer() {
                                     <li>
                                         <Link
                                             href="/blog"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Blog
                                         </Link>
@@ -175,12 +175,12 @@ export default function Footer() {
                             </div>
                             {/* FoodEats For */}
                             <div>
-                                <h5 className="font-semibold text-brand-black mb-4">FoodEats For</h5>
-                                <ul className="space-y-3 text-sm text-gray-600">
+                                <h5 className="mb-4 text-base font-semibold text-brand-black">FoodEats For</h5>
+                                <ul className="space-y-2.5 text-sm text-gray-600">
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Enterprise
                                         </a>
@@ -188,7 +188,7 @@ export default function Footer() {
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             For Small Business
                                         </a>
@@ -196,7 +196,7 @@ export default function Footer() {
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Personal
                                         </a>
@@ -204,7 +204,7 @@ export default function Footer() {
                                     <li>
                                         <a
                                             href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                                         >
                                             Riders
                                         </a>
@@ -216,20 +216,20 @@ export default function Footer() {
                 </div>
                 {/* Bottom section */}
 
-                <div className="border-t border-gray-300 mt-8 pt-6 flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-600">
-                    <p className="text-p2 text-brand-grey font-manrope md:text-left text-center w-full md:w-auto">
+                <div className="mt-10 flex w-full flex-col border-t border-gray-300/80 pt-6 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
+                    <p className="w-full text-center text-sm text-brand-grey font-manrope md:w-auto md:text-left">
                         Copyright © 2022 UBILUT All rights reserved.
                     </p>
-                    <div className="flex flex-col md:flex-row md:space-x-6 space-y-2 md:space-y-0 md:text-right text-center w-full md:w-auto md:justify-end">
+                    <div className="mt-2 flex w-full flex-col space-y-2 text-center md:mt-0 md:w-auto md:flex-row md:justify-end md:space-y-0 md:space-x-6 md:text-right">
                         <Link
                             href="/under-development"
-                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                         >
                             Privacy Policy
                         </Link>
                         <Link
                             href="/under-development"
-                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                            className="text-sm text-brand-grey font-manrope transition-colors hover:text-brand-orange"
                         >
                             Terms & Conditions
                         </Link>

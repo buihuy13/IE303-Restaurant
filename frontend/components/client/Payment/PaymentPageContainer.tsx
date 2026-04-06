@@ -592,7 +592,7 @@ export default function PaymentPageClient() {
     // Don't show cart empty message if payment was successful (redirect should happen)
     if (orderItems.length === 0 && !isPaymentSuccess) {
         return (
-            <div className="custom-container p-4 sm:p-6 md:p-12">
+            <div className="custom-container py-8 sm:py-10 md:py-12">
                 <div className="text-center py-12">
                     <p className="text-gray-600 mb-4">Your cart is empty</p>
                     <Button onClick={() => router.push("/cart")} variant="link" className="text-brand-orange">
@@ -609,12 +609,12 @@ export default function PaymentPageClient() {
     }
 
     return (
-        <div className="custom-container p-4 sm:p-6 md:p-12">
+        <div className="custom-container py-8 sm:py-10 md:py-12">
             {/* Header with Back Button */}
-            <div className="mb-6">
+            <div className="mb-7">
                 <Link
                     href="/cart"
-                    className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-orange transition-colors mb-4 group"
+                    className="group mb-4 inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-brand-orange"
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     <span className="text-sm font-medium">Back to Cart</span>
@@ -623,11 +623,11 @@ export default function PaymentPageClient() {
             </div>
 
             {/* Desktop: 2 Column Layout */}
-            <div className="hidden lg:grid lg:grid-cols-[65%_35%] gap-6">
+            <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
                 {/* Left Column: Delivery Details Only */}
                 <div className="space-y-6">
                     {/* Block A: Delivery Details */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Delivery Details</h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -670,7 +670,7 @@ export default function PaymentPageClient() {
                                 </legend>
 
                                 {addresses.length > 0 && (
-                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                    <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-3.5">
                                         <input
                                             type="radio"
                                             name="addressMode"
@@ -697,7 +697,7 @@ export default function PaymentPageClient() {
                                                                 type="button"
                                                                 onClick={() => handleAddressSelect(addr.id)}
                                                                 className={
-                                                                    "w-full rounded-lg border p-3 text-left transition-colors " +
+                                                                    "w-full rounded-xl border p-3 text-left transition-colors " +
                                                                     (selected
                                                                         ? "border-brand-orange bg-brand-orange/5"
                                                                         : "border-gray-200 hover:bg-gray-50")
@@ -724,7 +724,7 @@ export default function PaymentPageClient() {
                                     </label>
                                 )}
 
-                                <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-3.5">
                                     <input
                                         type="radio"
                                         name="addressMode"
@@ -767,7 +767,7 @@ export default function PaymentPageClient() {
                                     onChange={handleChange}
                                     rows={3}
                                     placeholder="Any special instructions..."
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-2.5 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 />
                             </div>
                         </form>
@@ -775,9 +775,9 @@ export default function PaymentPageClient() {
                 </div>
 
                 {/* Right Column: Order Summary + Payment Method */}
-                <div className="space-y-6 lg:sticky lg:top-24 h-fit">
+                <div className="h-fit space-y-6 lg:sticky lg:top-24">
                     {/* Block A: Order Summary */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
 
                         {/* Items List */}
@@ -840,7 +840,7 @@ export default function PaymentPageClient() {
                     </div>
 
                     {/* Block B: Payment Method */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6" data-payment-form>
+                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]" data-payment-form>
                         <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
                         {isProcessingCardPayment ? (
                             <div className="space-y-4">
@@ -863,12 +863,12 @@ export default function PaymentPageClient() {
 
                                 {/* Place Order Button - Only show if not processing card payment */}
                                 {!isProcessingCardPayment && (
-                                    <Button
+                                <Button
                                         type="submit"
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
                                         variant="brand"
-                                        className="w-full h-12 rounded-full shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                                    className="mt-4 h-12 w-full rounded-full shadow-sm hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         {isSubmitting ? "Placing order..." : "Place Order"}
                                     </Button>
@@ -880,9 +880,9 @@ export default function PaymentPageClient() {
             </div>
 
             {/* Mobile: Single Column */}
-            <div className="lg:hidden space-y-6 pb-24">
+            <div className="space-y-6 pb-24 lg:hidden">
                 {/* Delivery Details */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                <div className="rounded-3xl border border-gray-200/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Delivery Details</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-3">
@@ -928,7 +928,7 @@ export default function PaymentPageClient() {
                                     value={selectedAddressId || ""}
                                     onChange={(e) => handleAddressSelect(e.target.value)}
                                     aria-label="Select Address"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange text-sm"
+                                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 >
                                     {addresses.map((addr) => (
                                         <option key={addr.id} value={addr.id}>
@@ -986,14 +986,14 @@ export default function PaymentPageClient() {
                                 onChange={handleChange}
                                 rows={2}
                                 placeholder="Any special instructions..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange text-sm"
+                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                             />
                         </div>
                     </form>
                 </div>
 
                 {/* Order Summary */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                <div className="rounded-3xl border border-gray-200/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
 
                     {/* Items List */}
@@ -1056,7 +1056,7 @@ export default function PaymentPageClient() {
                 </div>
 
                 {/* Payment Method */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4" data-payment-form>
+                <div className="rounded-3xl border border-gray-200/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,0.07)]" data-payment-form>
                     <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
                     {isProcessingCardPayment ? (
                         <div className="space-y-4">

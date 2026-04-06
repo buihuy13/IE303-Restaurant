@@ -40,14 +40,14 @@ export function AccountAddressesPageView({
 }: AccountAddressesPageViewProps) {
     if (!mounted || authLoading || loading) {
         return (
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center min-h-[400px]">
+            <div className="flex min-h-[400px] items-center justify-center rounded-3xl border border-gray-200/90 bg-white p-8 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                 <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
             </div>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+        <div className="space-y-6 rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">My Addresses</h1>
@@ -55,7 +55,7 @@ export function AccountAddressesPageView({
                 </div>
                 <Button
                     onClickFunction={onToggleAdd}
-                    className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer flex items-center gap-2 rounded-full shadow-sm hover:shadow-md transition-shadow"
+                    className="flex cursor-pointer items-center gap-2 rounded-full bg-brand-orange text-white shadow-sm transition-shadow hover:bg-brand-orange/90 hover:shadow-md"
                 >
                     <Plus size={20} />
                     {isAdding ? "Cancel" : "Add Address"}
@@ -94,7 +94,7 @@ export function AccountAddressesPageView({
                                     type="button"
                                     onClick={onUseCurrentLocation}
                                     disabled={submitting || isLocating}
-                                    className="inline-flex items-center gap-2 rounded-md border border-brand-orange/30 bg-brand-orange/10 px-3 py-2 text-sm font-semibold text-brand-orange hover:bg-brand-orange/15 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-3 py-2 text-sm font-semibold text-brand-orange hover:bg-brand-orange/15 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {isLocating ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -108,7 +108,7 @@ export function AccountAddressesPageView({
                         <div className="flex gap-4">
                             <Button
                                 type="submit"
-                                className="bg-brand-orange text-white hover:bg-brand-orange/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="cursor-pointer rounded-full bg-brand-orange text-white hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={submitting}
                             >
                                 {submitting ? (
@@ -123,7 +123,7 @@ export function AccountAddressesPageView({
                             <Button
                                 type="button"
                                 onClickFunction={onCancelAdd}
-                                className="bg-gray-100 text-gray-800 hover:bg-gray-200 cursor-pointer"
+                                className="cursor-pointer rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200"
                             >
                                 Cancel
                             </Button>
@@ -161,7 +161,7 @@ export function AccountAddressesPageView({
                             addresses.map((address) => (
                                 <div
                                     key={address.id}
-                                    className="border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow bg-white"
+                                    className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">

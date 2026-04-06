@@ -14,32 +14,32 @@ export interface JoinGroupOrderPageViewProps {
 
 export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPageViewProps) {
     return (
-        <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white py-12">
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white py-12">
             <div className="custom-container">
                 <div className="max-w-6xl mx-auto">
                     <div className="mb-6">
                         <Link
                             href={`/group-orders/${shareToken}`}
-                            className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-orange transition-colors mb-4"
+                            className="mb-4 inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-brand-orange"
                         >
                             <ArrowLeft className="w-4 h-4" />
                             Back to group order
                         </Link>
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">
+                        <h1 className="mb-2 text-3xl font-bold tracking-tight text-gray-900">
                             {state.isJoined ? "Update your items" : "Join Group Order"}
                         </h1>
                         <p className="text-gray-600">{state.groupOrder?.restaurantName}</p>
                     </div>
 
                     {!state.canJoin && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6">
+                        <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
                             <p className="text-yellow-800">This group order is no longer accepting items.</p>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         <div className="lg:col-span-2">
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                            <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                                 <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4">Menu</h2>
                                 {state.products.length === 0 ? (
                                     <div className="animate-pulse space-y-4 py-2">
@@ -56,7 +56,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                             return (
                                                 <div
                                                     key={product.id}
-                                                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl hover:shadow-sm transition-shadow"
+                                                    className="flex items-center gap-4 rounded-2xl border border-gray-200 p-4 transition-shadow hover:shadow-sm"
                                                 >
                                                     <div className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
                                                         {imageUrl && imageUrl !== "/placeholder.png" ? (
@@ -87,7 +87,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                                         <div className="flex items-center gap-2">
                                                             <button
                                                                 onClick={() => state.handleRemoveItem(product.id)}
-                                                                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                                                className="rounded-full p-1 transition-colors hover:bg-gray-100"
                                                                 aria-label="Decrease quantity"
                                                             >
                                                                 <Minus className="w-5 h-5 text-gray-600" />
@@ -98,7 +98,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                                             <button
                                                                 onClick={() => state.handleAddItem(product)}
                                                                 disabled={!state.canJoin}
-                                                                className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                                                className="rounded-full p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
                                                                 aria-label="Increase quantity"
                                                             >
                                                                 <Plus className="w-5 h-5 text-gray-600" />
@@ -123,7 +123,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                             </div>
                         </div>
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8">
+                            <div className="sticky top-8 rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                                 <h2 className="text-xl font-bold tracking-tight text-gray-900 mb-4 flex items-center gap-2">
                                     <ShoppingCart className="w-5 h-5" />
                                     Selected items
@@ -138,7 +138,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                             {Array.from(state.selectedItems.values()).map((item) => (
                                                 <div
                                                     key={item.productId}
-                                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-200"
+                                                    className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 p-3"
                                                 >
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-medium text-sm text-gray-900 truncate">
@@ -150,7 +150,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                                     </div>
                                                     <button
                                                         onClick={() => state.handleRemoveItem(item.productId)}
-                                                        className="p-2 hover:bg-white rounded-full transition-colors"
+                                                        className="rounded-full p-2 transition-colors hover:bg-white"
                                                         aria-label="Remove item"
                                                     >
                                                         <X className="w-4 h-4 text-gray-600" />
@@ -173,7 +173,7 @@ export function JoinGroupOrderPageView({ shareToken, state }: JoinGroupOrderPage
                                                     state.selectedItems.size === 0
                                                 }
                                                 variant="brand"
-                                                className="w-full h-12 font-medium rounded-full shadow-sm"
+                                                className="h-12 w-full rounded-full font-medium shadow-sm"
                                             >
                                                 {state.isSubmitting
                                                     ? "Processing..."
