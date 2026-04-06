@@ -50,7 +50,7 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         try {
             const wsOrigin = toWebSocketOrigin(WS_BASE_URL);
             // Chat-service handshake requires a one-time token query param.
-            const tokenResponse = await chatApi.getOneTimeToken(userId);
+            const tokenResponse = await chatApi.getOneTimeToken(userId ?? "");
             const oneTimeToken = tokenResponse.data?.message?.trim();
             if (!oneTimeToken) {
                 throw new Error("Missing one-time token for chat WebSocket handshake");

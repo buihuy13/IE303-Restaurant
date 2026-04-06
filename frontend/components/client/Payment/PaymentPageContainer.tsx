@@ -52,7 +52,6 @@ export default function PaymentPageClient() {
     const [newAddressLon, setNewAddressLon] = useState<number | null>(null);
 
     // PayOS redirect after order is created
-    const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
     const payosReturnHandledRef = useRef(false);
     const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
@@ -180,7 +179,6 @@ export default function PaymentPageClient() {
                 toast.error("Could not restore order after payment.");
                 return;
             }
-            setCreatedOrderIds(orderIds);
             void completeAfterPayOS(orderIds);
         }
     }, [searchParams, router, completeAfterPayOS]);
@@ -509,7 +507,6 @@ export default function PaymentPageClient() {
             const order = await orderApi.createOrder(payload);
 
             // Wait for PayOS redirect — don't clear cart until payment success callback
-            setCreatedOrderIds([order.orderId]);
             setIsProcessingCardPayment(true);
             await handlePayOSRedirect(order);
         } catch (error: unknown) {
