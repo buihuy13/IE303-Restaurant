@@ -23,14 +23,14 @@ public class SecurityConfig {
     private final HeaderForwardFilter headerForwardFilter;
 
     private static final String[] PUBLIC_PATHS = {
-            "/actuator/**",
-            "/eureka/**",
-            "/api-docs/**",
-            "/v3/api-docs/**",
-            "/ws",
-            "/api/users/register",
-            "/api/payments/webhook",
-            "/api/sse/**"
+        "/actuator/**",
+        "/eureka/**",
+        "/api-docs/**",
+        "/v3/api-docs/**",
+        "/ws",
+        "/api/users/register",
+        "/api/payments/webhook",
+        "/api/sse/**"
     };
 
     @Bean
@@ -38,8 +38,7 @@ public class SecurityConfig {
         return http
                 // Bật CORS để Spring Security tôn trọng cấu hình globalcors trong
                 // application.yml
-                .cors(cors -> {
-                })
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> configureAuthorization(exchanges))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter())))
