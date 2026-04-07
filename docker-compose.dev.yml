@@ -6,8 +6,10 @@ services:
     rabbitmq:
         image: 'rabbitmq:3-management'
         environment:
-            - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+            - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+        volumes:
+            - rabbitmq-data:/var/lib/rabbitmq
         ports:
             - '5672:5672' #Cho các service kết nối đến
             - '15672:15672' #Dành cho UI
@@ -103,5 +105,6 @@ services:
             - "host.docker.internal:host-gateway"
 
 volumes:
+    rabbitmq-data:
     grafana-data:
     prometheus-data:
