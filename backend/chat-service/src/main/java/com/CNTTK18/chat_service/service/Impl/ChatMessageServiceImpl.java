@@ -33,7 +33,8 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Transactional
     @Override
     public UUID getRoomId(RoomDTO roomDTO) {
-        String roomId = roomDTO.getUserId1().toString() + "_" + roomDTO.getUserId2().toString();
+        String roomId =
+                roomDTO.getUserId1().toString() + "_" + roomDTO.getUserId2().toString();
         if (roomDTO.getUserId1().compareTo(roomDTO.getUserId2()) > 0) {
             return findOrCreateNewRoom(roomDTO, roomId);
         }
