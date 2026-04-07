@@ -101,6 +101,14 @@ export const ORDER_WS_BASE_URL = trimTrailingSlash(
 );
 
 /**
+ * Dedicated origin for notification-service SSE endpoint.
+ * Use this when SSE is exposed on a different host/port than API gateway.
+ */
+export const NOTIFICATION_SSE_ORIGIN = trimTrailingSlash(
+    pickEnv([process.env.NEXT_PUBLIC_NOTIFICATION_SSE_ORIGIN], [], BACKEND_ORIGIN),
+);
+
+/**
  * Keycloak OpenID Connect settings (frontend public client).
  */
 export const KEYCLOAK_BASE_URL = trimTrailingSlash(

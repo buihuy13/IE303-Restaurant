@@ -7,6 +7,27 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+const normalizeId = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
+const isSameId = (left: string | null | undefined, right: string | null | undefined) =>
+    normalizeId(left) === normalizeId(right);
+const toTimestampMs = (value: unknown) => {
+    if (value == null) return 0;
+    if (value instanceof Date) {
+        const ms = value.getTime();
+        return Number.isFinite(ms) ? ms : 0;
+    }
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : 0;
+    }
+    const raw = typeof value === "string" ? value.trim() : String(value).trim();
+    if (!raw) return 0;
+    const normalized = raw.replace(" ", "T").replace(/\.(\d{3})\d+/, ".$1");
+    const needsTimezone = !/[zZ]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized);
+    const withTimezone = needsTimezone ? `${normalized}Z` : normalized;
+    const parsed = new Date(withTimezone).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
 interface ChatWindowProps {
     messages: Message[];
     currentUserId: string;
@@ -67,10 +88,10 @@ export default function ChatWindow({
 
         // Use filtered and sorted messages for scroll detection
         const filteredMessages = messages.filter((message) => {
-            const isFromCurrentUser = message.senderId === currentUserId;
-            const isToCurrentUser = message.receiverId === currentUserId;
-            const isFromPartner = message.senderId === partnerId;
-            const isToPartner = message.receiverId === partnerId;
+            const isFromCurrentUser = isSameId(message.senderId, currentUserId);
+            const isToCurrentUser = isSameId(message.receiverId, currentUserId);
+            const isFromPartner = isSameId(message.senderId, partnerId);
+            const isToPartner = isSameId(message.receiverId, partnerId);
             return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
         });
 
@@ -132,7 +153,7 @@ export default function ChatWindow({
 
     const handleSend = () => {
         const trimmedContent = inputValue.trim();
-        if (!trimmedContent || !isConnected) return;
+        if (!trimmedContent) return;
 
         shouldAutoScrollRef.current = true;
         onSendMessage(trimmedContent, partnerId);
@@ -150,10 +171,10 @@ export default function ChatWindow({
     // Filter messages to only show messages between currentUserId and partnerId
     // This prevents showing messages from other conversations
     const filteredMessages = messages.filter((message) => {
-        const isFromCurrentUser = message.senderId === currentUserId;
-        const isToCurrentUser = message.receiverId === currentUserId;
-        const isFromPartner = message.senderId === partnerId;
-        const isToPartner = message.receiverId === partnerId;
+        const isFromCurrentUser = isSameId(message.senderId, currentUserId);
+        const isToCurrentUser = isSameId(message.receiverId, currentUserId);
+        const isFromPartner = isSameId(message.senderId, partnerId);
+        const isToPartner = isSameId(message.receiverId, partnerId);
         
         // Only show messages where:
         // - Current user sent to partner, OR
@@ -168,9 +189,7 @@ export default function ChatWindow({
             const sameContent = m.content === message.content;
             const sameSender = m.senderId === message.senderId;
             const sameReceiver = m.receiverId === message.receiverId;
-            const timeDiff = Math.abs(
-                new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()
-            );
+            const timeDiff = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(message.timestamp));
             const sameTime = timeDiff < 1000; // Within 1 second
             
             return sameId || (sameContent && sameSender && sameReceiver && sameTime);
@@ -185,7 +204,7 @@ export default function ChatWindow({
 
     // Sort messages by timestamp
     const sortedMessages = [...uniqueMessages].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        (a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp)
     );
 
     return (
@@ -245,7 +264,7 @@ export default function ChatWindow({
                 ) : (
                     <>
                         {sortedMessages.map((message) => {
-                            const isOwnMessage = message.senderId === currentUserId;
+                            const isOwnMessage = isSameId(message.senderId, currentUserId);
 
                             return (
                                 <div
@@ -315,8 +334,7 @@ export default function ChatWindow({
                                 hasMarkedAsReadRef.current = true;
                             }
                         }}
-                        placeholder={isConnected ? "Type a message..." : "Connecting..."}
-                        disabled={!isConnected}
+                        placeholder={isConnected ? "Type a message..." : "Connecting... you can still press Send"}
                         className="h-11 flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 focus:bg-white disabled:cursor-not-allowed disabled:bg-gray-100"
                     />
 
@@ -324,7 +342,7 @@ export default function ChatWindow({
                     <Button
                         title="Send message"
                         onClick={handleSend}
-                        disabled={!isConnected || !inputValue.trim()}
+                        disabled={!inputValue.trim()}
                         variant="brand"
                         size="icon"
                         className="size-11 rounded-full shadow-md transition-transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white disabled:hover:scale-100"
