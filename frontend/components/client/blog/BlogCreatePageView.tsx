@@ -51,10 +51,10 @@ export interface BlogCreatePageViewProps {
 
 export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8">
             <div className="custom-container max-w-4xl">
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/blog" className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                    <Link href="/blog" className="rounded-full p-2 transition-colors hover:bg-gray-200">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
@@ -63,7 +63,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                     </div>
                 </div>
 
-                <form onSubmit={form.handleSubmit} className="bg-white rounded-xl shadow-md p-6 md:p-8 space-y-6">
+                <form onSubmit={form.handleSubmit} className="space-y-6 rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)] md:p-8">
                     <div>
                         <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
                             Title <span className="text-red-500">*</span>
@@ -74,7 +74,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             value={form.title}
                             onChange={(e) => form.setTitle(e.target.value)}
                             placeholder="Enter article title..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                             maxLength={200}
                             required
                         />
@@ -92,7 +92,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             placeholder="Brief description of your article (optional)..."
                             rows={3}
                             maxLength={500}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange resize-none"
+                            className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                         />
                         <p className="text-xs text-gray-500 mt-1">{form.excerpt.length}/500 characters</p>
                     </div>
@@ -100,19 +100,19 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Featured Image</label>
                         {form.imagePreview ? (
-                            <div className="relative w-full h-64 rounded-lg overflow-hidden border-2 border-gray-300">
+                            <div className="relative h-64 w-full overflow-hidden rounded-2xl border-2 border-gray-300">
                                 <Image src={form.imagePreview} alt="Preview" fill className="object-cover" />
                                 <button
                                     type="button"
                                     onClick={form.handleRemoveImage}
-                                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
                                     aria-label="Remove image"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                         ) : (
-                            <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                     <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
                                     <p className="mb-2 text-sm text-gray-500">
@@ -150,7 +150,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             </div>
                         )}
                         {form.images.length < 10 && (
-                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
                                 <div className="flex flex-col items-center justify-center pt-3 pb-3">
                                     <ImageIcon className="w-8 h-8 mb-2 text-gray-400" />
                                     <p className="mb-1 text-sm text-gray-500">
@@ -180,7 +180,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                                 id="category"
                                 value={form.category}
                                 onChange={(e) => form.setCategory(e.target.value as BlogCategory)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 aria-label="Category"
                             >
                                 {BLOG_CATEGORIES_FORM.map((cat) => (
@@ -198,7 +198,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                                 id="status"
                                 value={form.status}
                                 onChange={(e) => form.setStatus(e.target.value as BlogStatus)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 aria-label="Publish status"
                             >
                                 <option value="draft">Draft</option>
@@ -224,12 +224,12 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                                     }
                                 }}
                                 placeholder="Add tags (press Enter)..."
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                                className="flex-1 rounded-xl border border-gray-300 px-4 py-2 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                             />
                             <button
                                 type="button"
                                 onClick={form.handleAddTag}
-                                className="px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity bg-brand-orange"
+                                className="rounded-xl bg-brand-orange px-4 py-2 text-white transition-opacity hover:opacity-90"
                             >
                                 Add
                             </button>
@@ -307,11 +307,11 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                         </p>
                     </div>
 
-                    <div className="flex gap-4 pt-4 border-t border-gray-200">
+                    <div className="flex gap-4 border-t border-gray-200 pt-4">
                         <button
                             type="submit"
                             disabled={form.loading}
-                            className="flex-1 px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-brand-orange"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {form.loading ? (
                                 <>
@@ -324,7 +324,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                         </button>
                         <Link
                             href="/blog"
-                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                            className="rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                         >
                             Cancel
                         </Link>

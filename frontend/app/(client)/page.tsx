@@ -11,14 +11,14 @@ import { Suspense } from "react";
 
 export default function HomePage() {
         return (
-                <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white">
+                <main className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white">
                         {/* 1. HERO SECTION (Full Width) */}
-                        <section className="relative w-full h-[500px] md:h-[600px] flex items-center justify-center">
+                        <section className="relative flex h-[520px] w-full items-center justify-center md:h-[620px]">
                                 <HeroSearchSection />
                         </section>
 
                         {/* 2. FEATURED FOODS SECTION (Container) */}
-                        <section className="container mx-auto px-4 pt-12 pb-10 max-w-7xl">
+                        <section className="custom-container pb-12 pt-14 md:pt-16">
                                 <Suspense fallback={<GlobalLoader fullscreen={false} label="Loading" sublabel="Loading featured foods" />}>
                                         <FeaturedFoodPanel />
                                 </Suspense>
@@ -28,8 +28,8 @@ export default function HomePage() {
                         <section className="relative">
                                 {/* Section divider (clear) */}
                                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
-                                <div className="bg-gray-50 border-t border-gray-200">
-                                        <div className="container mx-auto px-4 pt-12 pb-16 max-w-7xl">
+                                <div className="border-y border-gray-200 bg-white/70 backdrop-blur-[2px]">
+                                        <div className="custom-container pb-16 pt-12 md:pb-20 md:pt-14">
                                                 <FeaturesAction />
                                         </div>
                                         {/* Bottom separator to transition into next section */}

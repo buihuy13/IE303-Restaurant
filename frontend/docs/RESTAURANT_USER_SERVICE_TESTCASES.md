@@ -172,10 +172,10 @@ Các test case giả định:
 Các chức năng chính dùng `userApi`:
 
 - Thông tin profile user.
-- Đổi mật khẩu.
+- Đổi mật khẩu (qua Keycloak account page).
 - Quản lý địa chỉ giao hàng.
 
-### 2.1. Thông tin profile – `GET /api/users/admin/{id}` & `PUT /api/users/profile/{id}`
+### 2.1. Thông tin profile – `GET /api/users/accesstoken`, `GET /api/users/admin/{id}` & `PUT /api/users/{id}`
 
 - **TC-U-01 – Load thông tin user sau login**
   - **Bước**:
@@ -195,12 +195,12 @@ Các chức năng chính dùng `userApi`:
     - Gửi `GET /api/users/admin/{id}`.
     - Hiển thị đầy đủ thông tin user.
 
-- **TC-U-03 – Cập nhật profile – `PUT /api/users/profile/{id}`**
+- **TC-U-03 – Cập nhật profile – `PUT /api/users/{id}`**
   - **Bước**:
     1. Tại trang `/account/settings` (hoặc tab Profile), sửa dữ liệu: username, phone, avatar, …
     2. Submit.
   - **Kỳ vọng**:
-    - Gửi `PUT /api/users/profile/{id}` với body là `Partial<User>`.
+    - Gửi `PUT /api/users/{id}` với body là dữ liệu profile (`username`, `phone`).
     - Nếu backend trả 200:
       - Toast success hiển thị.
       - UI cập nhật theo dữ liệu mới.
@@ -212,28 +212,27 @@ Các chức năng chính dùng `userApi`:
   - **Kỳ vọng**:
     - FE chặn submit, hiển thị message lỗi tương ứng.
 
-### 2.2. Đổi mật khẩu – `PUT /api/users/password/{id}`
+### 2.2. Đổi mật khẩu – điều hướng Keycloak (không gọi endpoint `user-service`)
 
-- **TC-U-10 – Đổi mật khẩu thành công**
+- **TC-U-10 – Điều hướng tới trang đổi mật khẩu Keycloak**
   - **Bước**:
     1. Tại trang `/account/settings`, tab Security/Password.
-    2. Nhập `oldPassword` đúng, `newPassword` thoả điều kiện (độ dài, độ mạnh).
-    3. Submit.
+    2. Nhập `newPassword` và `confirmPassword`.
+    3. Submit form.
   - **Kỳ vọng**:
-    - Gửi `PUT /api/users/password/{id}` với body `{ oldPassword, newPassword }`.
-    - Backend trả OK:
-      - Toast success hiển thị.
-      - Có thể logout và đăng nhập lại để xác nhận mật khẩu mới.
+    - Frontend validate dữ liệu cơ bản (mật khẩu khớp nhau, đủ độ dài).
+    - Frontend redirect sang Keycloak account security page.
+    - Không gọi endpoint đổi mật khẩu trong `user-service`.
 
-- **TC-U-11 – Sai mật khẩu cũ**
+- **TC-U-11 – Validation mật khẩu không hợp lệ ở frontend**
   - **Bước**:
-    1. Nhập `oldPassword` sai.
-    2. Submit.
+    1. Nhập mật khẩu mới và confirm không khớp (hoặc < 6 ký tự).
+    2. Submit form.
   - **Kỳ vọng**:
-    - Backend trả lỗi (400/403).
-    - Frontend hiển thị message lỗi rõ ràng (không lộ chi tiết nhạy cảm).
+    - Frontend hiển thị lỗi rõ ràng.
+    - Không redirect Keycloak khi dữ liệu không hợp lệ.
 
-### 2.3. Địa chỉ giao hàng – `/api/users/addresses/{userId}`, `/api/users/address/{userId}`, `/api/users/address/{addressId}`
+### 2.3. Địa chỉ giao hàng – `/api/users/addresses/{userId}`, `/api/users/address`, `/api/users/address/{addressId}`
 
 - **TC-U-20 – Load danh sách địa chỉ – `GET /api/users/addresses/{userId}`**
   - **Bước**:
@@ -242,14 +241,14 @@ Các chức năng chính dùng `userApi`:
     - Gửi `GET /api/users/addresses/{userId}`.
     - Hiển thị list address (street, city, state, zipCode, country, isDefault).
 
-- **TC-U-21 – Thêm địa chỉ mới – `POST /api/users/address/{userId}`**
+- **TC-U-21 – Thêm địa chỉ mới – `POST /api/users/address`**
   - **Bước**:
     1. Tại `/account/addresses`, bấm **Add address**.
-    2. Nhập đầy đủ `street`, `city`, `state`, `zipCode`, `country`, tick `isDefault` nếu muốn.
+    2. Nhập đầy đủ địa chỉ và chọn suggestion để có tọa độ (`location`, `longitude`, `latitude`).
     3. Submit.
   - **Kỳ vọng**:
-    - Gửi `POST /api/users/address/{userId}` với body `AddressData`.
-    - Backend trả về address mới (có `id`, `isDefault`).
+    - Gửi `POST /api/users/address` với body chứa `userId` + dữ liệu địa chỉ.
+    - Backend trả về address mới (có `id`, `location`, `longitude`, `latitude`).
     - List được refresh, address mới hiển thị.
 
 - **TC-U-22 – Xóa địa chỉ – `DELETE /api/users/address/{addressId}`**
@@ -260,14 +259,14 @@ Các chức năng chính dùng `userApi`:
     - Gửi `DELETE /api/users/address/{addressId}`.
     - Địa chỉ biến mất khỏi UI.
 
-- **TC-U-23 – Địa chỉ mặc định**
-  - **Chuẩn bị**: User có nhiều địa chỉ, một là `isDefault = true`.
+- **TC-U-23 – Đồng bộ danh sách địa chỉ sau thêm/xóa**
+  - **Chuẩn bị**: User có nhiều địa chỉ.
   - **Bước**:
-    1. Vào `/account/addresses` và kiểm tra hiển thị default.
-    2. Nếu UI cho phép, đổi default sang địa chỉ khác (tạo address mới với `isDefault=true`).
+    1. Vào `/account/addresses`, thêm một địa chỉ mới.
+    2. Xóa một địa chỉ đang có.
   - **Kỳ vọng**:
-    - Chỉ **một** địa chỉ được đánh dấu default trên UI.
-    - FE sync đúng với backend sau refresh.
+    - Danh sách địa chỉ cập nhật đúng sau mỗi thao tác.
+    - FE sync đúng với backend sau refresh trang.
 
 ---
 

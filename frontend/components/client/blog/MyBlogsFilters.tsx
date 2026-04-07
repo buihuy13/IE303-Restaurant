@@ -28,23 +28,23 @@ export function MyBlogsFilters({
     };
 
     return (
-        <div className="mb-8 space-y-4">
+        <div className="mb-8 space-y-4 rounded-3xl border border-gray-200/90 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-6">
             <div className="flex gap-2">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
                     <input
                         type="text"
                         placeholder="Search your articles..."
                         value={searchInput}
                         onChange={(e) => onSearchInputChange(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && onSearch()}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+                        className="w-full rounded-xl border border-gray-300 py-3 pl-10 pr-4 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                     />
                 </div>
                 <button
                     type="button"
                     onClick={onSearch}
-                    className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity font-medium bg-brand-orange"
+                    className="rounded-xl bg-brand-orange px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
                 >
                     Search
                 </button>
@@ -56,10 +56,10 @@ export function MyBlogsFilters({
                         key={cat.value}
                         type="button"
                         onClick={() => onCategoryChange(cat.value)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all mr-2 ${
+                        className={`mr-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                             category === cat.value
-                                ? "bg-brand-orange text-white shadow-md"
-                                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                                ? "bg-brand-orange text-white shadow-sm"
+                                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                         }`}
                     >
                         {cat.label}
@@ -71,8 +71,8 @@ export function MyBlogsFilters({
                 <button
                     type="button"
                     onClick={() => onStatusChange("")}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        status === "" ? "bg-gray-700 text-white" : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                        status === "" ? "bg-gray-700 text-white" : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                     }`}
                 >
                     All
@@ -82,10 +82,10 @@ export function MyBlogsFilters({
                         key={value}
                         type="button"
                         onClick={() => onStatusChange(value as BlogStatus)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                             status === value
                                 ? `${statusClasses[value as BlogStatus]} text-white`
-                                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                         }`}
                     >
                         {label}

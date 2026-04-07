@@ -99,10 +99,10 @@ export default function ChatList({
     });
 
     return (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex h-full flex-col bg-white">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 bg-white/90 backdrop-blur-xl">
-                <h2 className="text-lg font-bold tracking-tight text-gray-900 mb-3">Messages</h2>
+            <div className="border-b border-gray-200 bg-white/90 p-4 backdrop-blur-xl">
+                <h2 className="mb-3 text-lg font-bold tracking-tight text-gray-900">Messages</h2>
                 {/* Search Bar */}
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -111,7 +111,7 @@ export default function ChatList({
                         placeholder="Search for shops..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:bg-white"
+                        className="h-10 w-full rounded-full border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:bg-white"
                     />
                 </div>
             </div>
@@ -137,14 +137,14 @@ export default function ChatList({
                                 <button
                                     key={room.id}
                                     onClick={() => onSelectRoom(room.id)}
-                                    className={`w-full p-4 text-left transition-colors relative hover:bg-gray-50 ${
-                                        isSelected ? "bg-brand-orange/5 border-l-4 border-brand-orange" : ""
+                                    className={`relative w-full p-4 text-left transition-colors hover:bg-gray-50 ${
+                                        isSelected ? "border-l-4 border-brand-orange bg-brand-orange/5" : ""
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         {/* Avatar */}
                                         <div className="relative flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center text-white font-semibold">
+                                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-orange to-orange-600 font-semibold text-white shadow-sm">
                                                 {partnerInfoMap[partnerId]?.avatar ? (
                                                     <Image
                                                         src={partnerInfoMap[partnerId].avatar!}
@@ -160,7 +160,7 @@ export default function ChatList({
                                             </div>
                                             {/* Unread Badge */}
                                             {unreadCount > 0 && !isSelected && (
-                                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                                                     {unreadCount > 9 ? "9+" : unreadCount}
                                                 </span>
                                             )}

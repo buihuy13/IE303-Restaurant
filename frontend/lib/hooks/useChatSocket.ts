@@ -3,6 +3,7 @@
 import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { chatApi } from "../api/chatApi";
 import { WS_BASE_URL, toWebSocketOrigin } from "../config/publicRuntime";
 
 interface UseChatSocketOptions {
@@ -48,14 +49,19 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
         try {
             const wsOrigin = toWebSocketOrigin(WS_BASE_URL);
-            // Connect without a backend-issued one-time token.
-            const wsUrl = `${wsOrigin}/ws`;
+            // Chat-service handshake requires a one-time token query param.
+            const tokenResponse = await chatApi.getOneTimeToken(userId ?? "");
+            const oneTimeToken = tokenResponse.data?.message?.trim();
+            if (!oneTimeToken) {
+                throw new Error("Missing one-time token for chat WebSocket handshake");
+            }
+            const wsUrl = `${wsOrigin}/ws?token=${encodeURIComponent(oneTimeToken)}`;
 
             const client = new Client({
                 webSocketFactory: () => {
                     return new WebSocket(wsUrl);
                 },
-                reconnectDelay: 5000,
+                reconnectDelay: 0,
                 // Server sends heartbeat every 20s, expects client response within 30s
                 // Client will automatically send heartbeat every 25s to keep connection alive
                 heartbeatIncoming: 20000, // Expect heartbeat from server every 20s

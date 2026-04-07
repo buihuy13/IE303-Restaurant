@@ -189,15 +189,15 @@ export default function ChatWindow({
     );
 
     return (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex h-full flex-col bg-white">
             {/* Header - Sticky Top */}
-            <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-white/90 backdrop-blur-xl shadow-sm">
+            <div className="sticky top-0 z-10 border-b border-gray-200 bg-white/90 p-4 shadow-sm backdrop-blur-xl">
                 <div className="flex items-center gap-3">
                     {/* Mobile Back Button */}
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            className="rounded-full p-2 transition-colors hover:bg-gray-100 lg:hidden"
                             aria-label="Go back to chat list"
                             title="Go back"
                         >
@@ -206,7 +206,7 @@ export default function ChatWindow({
                     )}
 
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-orange to-orange-600 text-sm font-bold text-white shadow-sm">
                         <span>{partnerName.charAt(0).toUpperCase()}</span>
                     </div>
 
@@ -218,7 +218,7 @@ export default function ChatWindow({
                     {/* Visit Shop Button */}
                     <Link
                         href={`/restaurants?merchantId=${partnerId}`}
-                        className="px-3 py-1.5 text-xs font-semibold border border-brand-orange/40 text-brand-orange rounded-full hover:bg-brand-orange/10 transition-colors whitespace-nowrap"
+                        className="whitespace-nowrap rounded-full border border-brand-orange/40 px-3 py-1.5 text-xs font-semibold text-brand-orange transition-colors hover:bg-brand-orange/10"
                     >
                         Visit Shop
                     </Link>
@@ -228,7 +228,7 @@ export default function ChatWindow({
             {/* Messages Area - Scrollable */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0 scrollbar-hide"
+                className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4 scrollbar-hide"
             >
                 {isLoading && sortedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -236,7 +236,7 @@ export default function ChatWindow({
                     </div>
                 ) : sortedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[400px] p-6">
-                        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm text-center">
+                        <div className="rounded-3xl border border-gray-200/90 bg-white p-8 text-center shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
                             <div className="text-5xl mb-3">👋</div>
                             <p className="text-gray-900 font-semibold">No messages yet</p>
                             <p className="text-sm text-gray-600 mt-1">Send a message to start the conversation.</p>
@@ -260,7 +260,7 @@ export default function ChatWindow({
                                     )}
 
                                     {/* Message Bubble */}
-                                    <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} flex-shrink-0`}>
+                                    <div className={`flex flex-shrink-0 flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
                                         <div
                                             className={`max-w-[75%] md:max-w-[65%] min-w-[120px] rounded-2xl px-3 py-2 shadow-sm inline-block text-sm md:text-base leading-relaxed whitespace-normal break-words ${
                                                 isOwnMessage
@@ -285,12 +285,12 @@ export default function ChatWindow({
             </div>
 
             {/* Input Area - Sticky Bottom */}
-            <div className="sticky bottom-0 p-4 border-t border-gray-200 bg-white">
+            <div className="sticky bottom-0 border-t border-gray-200 bg-white p-4">
                 <div className="flex items-center gap-2">
                     {/* Image/Attachment Button */}
                     <button
                         type="button"
-                        className="p-2.5 text-gray-500 hover:text-brand-orange hover:bg-orange-50 rounded-full transition-colors"
+                        className="rounded-full p-2.5 text-gray-500 transition-colors hover:bg-orange-50 hover:text-brand-orange"
                         title="Send image"
                     >
                         <Paperclip className="w-5 h-5" />
@@ -317,7 +317,7 @@ export default function ChatWindow({
                         }}
                         placeholder={isConnected ? "Type a message..." : "Connecting..."}
                         disabled={!isConnected}
-                        className="flex-1 h-11 rounded-full px-4 py-2.5 border border-gray-200 bg-gray-50 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="h-11 flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 focus:bg-white disabled:cursor-not-allowed disabled:bg-gray-100"
                     />
 
                     {/* Send Button */}
@@ -327,7 +327,7 @@ export default function ChatWindow({
                         disabled={!isConnected || !inputValue.trim()}
                         variant="brand"
                         size="icon"
-                        className="size-11 rounded-full shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:text-white disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="size-11 rounded-full shadow-md transition-transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white disabled:hover:scale-100"
                     >
                         <Send className="w-5 h-5" />
                     </Button>

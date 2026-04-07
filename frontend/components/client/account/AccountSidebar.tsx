@@ -47,8 +47,8 @@ export default function AccountSidebar() {
         };
 
         return (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                        <h3 className="text-lg font-semibold tracking-tight mb-4 text-gray-900">Account Menu</h3>
+                <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
+                        <h3 className="mb-4 text-lg font-semibold tracking-tight text-gray-900">Account Menu</h3>
                         <nav className="space-y-2">
                                 {navLinks.map((link) => {
                                         const isActive = pathname === link.href;
@@ -56,9 +56,9 @@ export default function AccountSidebar() {
                                                 <Link
                                                         key={link.name}
                                                         href={link.href}
-                                                        className={`flex items-center gap-3 px-4 py-3 rounded-full text-sm font-semibold transition-colors ${
+                                                        className={`flex items-center gap-3 rounded-full px-4 py-3 text-sm font-semibold transition-all ${
                                                                 isActive
-                                                                        ? "bg-brand-orange text-white"
+                                                                        ? "bg-brand-orange text-white shadow-sm"
                                                                         : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
                                                         }`}
                                                 >
@@ -70,7 +70,7 @@ export default function AccountSidebar() {
                                 <hr className="my-4" />
                                 <button
                                         onClick={handleLogout}
-                                        className="flex w-full items-center gap-3 px-4 py-3 rounded-full text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        className="flex w-full cursor-pointer items-center gap-3 rounded-full px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
                                 >
                                         <LogOut className="w-5 h-5" />
                                         <span>Log Out</span>

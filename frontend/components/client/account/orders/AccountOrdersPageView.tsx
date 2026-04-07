@@ -13,7 +13,7 @@ interface AccountOrdersPageViewProps {
 
 export function AccountOrdersPageView({ orders }: AccountOrdersPageViewProps) {
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
             <OrdersHeader />
             {orders.length === 0 ? <OrdersEmptyState /> : <OrdersList orders={orders} />}
         </div>

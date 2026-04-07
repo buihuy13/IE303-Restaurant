@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock, Eye, TrendingUp } from "lucide-react";
-import { BLOG_CATEGORIES, BRAND_ORANGE } from "@/lib/constants/blog";
+import { BLOG_CATEGORIES } from "@/lib/constants/blog";
 import type { Blog } from "@/types/blog.type";
 
 function formatDate(dateString: string) {
@@ -40,10 +40,7 @@ export function BlogListFeatured({ blog }: BlogListFeaturedProps) {
                                 <TrendingUp className="w-4 h-4" />
                                 Featured Post
                             </div>
-                            <div
-                                className="inline-block px-4 py-2 text-white text-sm font-semibold rounded-full shadow-lg"
-                                style={{ backgroundColor: BRAND_ORANGE }}
-                            >
+                            <div className="inline-block rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white shadow-lg">
                                 {categoryLabel}
                             </div>
                             <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight line-clamp-2 group-hover:opacity-90 transition-opacity">
@@ -71,10 +68,7 @@ export function BlogListFeatured({ blog }: BlogListFeaturedProps) {
                                 )}
                             </div>
                             <div className="pt-4">
-                                <div
-                                    className="inline-flex items-center gap-2 px-8 py-4 text-white font-bold rounded-xl hover:opacity-90 transition-all transform hover:translate-x-2 shadow-xl"
-                                    style={{ backgroundColor: BRAND_ORANGE }}
-                                >
+                                <div className="inline-flex transform items-center gap-2 rounded-xl bg-brand-orange px-8 py-4 font-bold text-white shadow-xl transition-all hover:translate-x-2 hover:bg-brand-orange/90">
                                     Read Now
                                     <ArrowRight className="w-5 h-5" />
                                 </div>

@@ -181,7 +181,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
 
     return (
         <div className="custom-container py-8 sm:py-10 md:py-12">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-4 lg:gap-8">
                 {/* Left Sidebar: User Menu */}
                 <div className="lg:col-span-1">
                     <OrderHistorySidebar />
@@ -190,9 +190,9 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                 {/* Right Content: Order List */}
                 <div className="lg:col-span-3">
                     {/* Filter options */}
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+                            <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">
                                 Your Orders ({formattedCount} orders)
                             </h1>
                             <p className="text-sm text-gray-600 mt-1">Track deliveries, view details, or reorder in one click.</p>
@@ -202,7 +202,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                             <select
                                 value={sortBy}
                                 onChange={(e) => handleSortChange(e.target.value)}
-                                className="font-semibold border-gray-300 border px-3 py-2 rounded-full bg-white shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60 transition-colors cursor-pointer"
+                                className="cursor-pointer rounded-full border border-gray-300 bg-white px-3 py-2 font-semibold shadow-sm transition-colors hover:border-gray-400 focus:border-brand-orange/60 focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
                                 title="Sort by"
                             >
                                 <option value="recent">Recent</option>
@@ -224,7 +224,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                         )}
 
                         {!isLoading && orders.length === 0 && (
-                            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                            <div className="overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                                 <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                                     {/* Icon */}
                                     <div className="mb-6 p-6 bg-gray-100 rounded-full">
@@ -244,14 +244,14 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <Link
                                             href="/?type=foods"
-                                            className="bg-brand-orange text-white px-6 py-3 rounded-full font-bold hover:bg-brand-orange/90 transition-all duration-200 shadow-sm hover:shadow-md"
+                                            className="rounded-full bg-brand-orange px-6 py-3 font-bold text-white shadow-sm transition-all duration-200 hover:bg-brand-orange/90 hover:shadow-md"
                                         >
                                             Browse Food
                                         </Link>
                                         {onRetry && (
                                             <button
                                                 onClick={onRetry}
-                                                className="border border-gray-300 bg-white text-gray-800 px-6 py-3 rounded-full font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
+                                                className="rounded-full border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-800 shadow-sm transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
                                             >
                                                 Retry
                                             </button>
@@ -316,10 +316,10 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 return (
                                     <div
                                         key={order.id}
-                                        className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
+                                        className="overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_35px_rgba(15,23,42,0.10)]"
                                     >
                                         {/* Header Card */}
-                                        <div className="border-b border-gray-200 px-5 py-4 bg-white">
+                                        <div className="border-b border-gray-200 bg-white px-5 py-4">
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <div className="flex-1">
                                                     <h2 className="text-lg font-bold tracking-tight text-gray-900 mb-1">
@@ -338,7 +338,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                 <div className="mt-3">
                                                     <Link
                                                         href={`/delivery/${order.slug || order.id}`}
-                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-800 rounded-full text-sm font-semibold hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
+                                                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-100"
                                                     >
                                                         <Truck className="w-4 h-4" />
                                                         Track Order
@@ -348,7 +348,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         </div>
 
                                         {/* Body Card */}
-                                        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                                        <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
                                             <div className="flex items-center gap-4">
                                                 {hasImage && cardImageUrl ? (
                                                     <div className="relative h-16 w-16 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-200 ring-1 ring-gray-200">
@@ -376,21 +376,21 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         </div>
 
                                         {/* Footer Card */}
-                                        <div className="px-5 py-4 bg-white flex items-center justify-between gap-4">
+                                        <div className="flex items-center justify-between gap-4 bg-white px-5 py-4">
                                             <p className="text-xl font-bold text-brand-orange">
                                                 {formatCurrency(order.totalAmount)}
                                             </p>
                                             <div className="flex items-center gap-3">
                                                 <Link
                                                     href={`/orders/${order.slug || order.id}`}
-                                                    className="px-4 py-2 border border-gray-300 text-gray-800 rounded-full text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+                                                    className="rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-50"
                                                 >
                                                     View Details
                                                 </Link>
                                                 <button
                                                     onClick={() => handleReorder(order)}
                                                     disabled={reorderingOrderId === order.id}
-                                                    className="px-4 py-2 bg-brand-orange text-white rounded-full text-sm font-semibold hover:bg-brand-orange/90 transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-orange/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {reorderingOrderId === order.id ? "Adding..." : "Reorder"}
                                                 </button>

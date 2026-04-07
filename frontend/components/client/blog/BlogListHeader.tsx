@@ -8,19 +8,19 @@ interface BlogListHeaderProps {
 
 export function BlogListHeader({ isAuthenticated }: BlogListHeaderProps) {
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
+        <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-1 h-10 rounded-full bg-brand-orange" />
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Food Magazine</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 md:text-5xl">Food Magazine</h1>
                 </div>
-                <p className="text-lg text-gray-600 max-w-2xl">
+                <p className="max-w-2xl text-base text-gray-600 md:text-lg">
                     Discover great articles about food, recipes and cooking tips
                 </p>
             </div>
             {isAuthenticated && (
                 <div className="flex gap-3">
-                    <Button asChild variant="brandOutline" className="rounded-xl px-5 py-2.5 shadow-sm">
+                    <Button asChild variant="brandOutline" className="rounded-xl border-brand-orange/50 bg-white px-5 py-2.5 shadow-sm">
                         <Link href="/blog/my-blogs">
                             <FileText className="w-4 h-4" />
                             My Posts

@@ -87,18 +87,11 @@
         font-size: var(--text-h6);
     }
     p {
-        font-size: var(--text-p1);
-
-        @media (max-width: 640px) {
-            font-size: var(--text-p2);
-        }
+        font-size: 1rem;
+        line-height: 1.65;
     }
     button {
-        font-size: var(--text-button1);
-
-        @media (max-width: 640px) {
-            font-size: var(--text-button2);
-        }
+        font-size: inherit;
     }
 }
 
@@ -108,7 +101,7 @@
         @apply inline-flex py-[15px] px-[35px] items-center justify-center gap-[10px] rounded-[6px] bg-brand-black;
     }
     .custom-container {
-        @apply 2xl:max-w-[1170px] xl:max-w-[1040px] lg:max-w-[832px] md:max-w-[720px] sm:max-w-[540px] mx-auto;
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
     }
 
     .custom-pagination .swiper-pagination-bullet {
@@ -464,7 +457,7 @@
         @apply border-border outline-ring/50;
     }
     body {
-        @apply bg-brand-white text-foreground;
+        @apply bg-brand-white text-foreground antialiased;
         /* Giữ scrollbar luôn hiển thị để tránh giật khi dropdown mở */
         scrollbar-gutter: stable;
     }
