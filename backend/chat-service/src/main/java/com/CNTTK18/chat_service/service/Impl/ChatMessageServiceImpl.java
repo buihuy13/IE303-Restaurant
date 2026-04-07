@@ -1,5 +1,6 @@
 package com.CNTTK18.chat_service.service.Impl;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -32,11 +33,12 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Transactional
     @Override
     public UUID getRoomId(RoomDTO roomDTO) {
-        UUID roomId = UUID.fromString(roomDTO.getUserId1() + "_" + roomDTO.getUserId2());
+        String roomId =
+                roomDTO.getUserId1().toString() + "_" + roomDTO.getUserId2().toString();
         if (roomDTO.getUserId1().compareTo(roomDTO.getUserId2()) > 0) {
             return findOrCreateNewRoom(roomDTO, roomId);
         }
-        roomId = UUID.fromString(roomDTO.getUserId2() + "_" + roomDTO.getUserId1());
+        roomId = roomDTO.getUserId2().toString() + "_" + roomDTO.getUserId1().toString();
         return findOrCreateNewRoom(roomDTO, roomId);
     }
 
@@ -75,10 +77,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         return new ResponseMessage(tokenService.generateToken(userid));
     }
 
-    private UUID findOrCreateNewRoom(RoomDTO roomDTO, UUID roomId) {
-        if (chatRoomRepository.findById(roomId).isEmpty()) {
-            chatRoomRepository.save(new ChatRoom(roomId, roomDTO.getUserId1(), roomDTO.getUserId2(), null, null));
+    private UUID findOrCreateNewRoom(RoomDTO roomDTO, String roomId) {
+        UUID roomUUID = UUID.nameUUIDFromBytes(roomId.getBytes(StandardCharsets.UTF_8));
+        if (chatRoomRepository.findById(roomUUID).isEmpty()) {
+            chatRoomRepository.save(new ChatRoom(roomUUID, roomDTO.getUserId1(), roomDTO.getUserId2(), null, null));
         }
-        return roomId;
+        return roomUUID;
     }
 }
