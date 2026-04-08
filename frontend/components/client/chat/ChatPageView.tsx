@@ -10,9 +10,17 @@ export interface ChatPageViewProps {
     rooms: ChatRoom[];
     isLoading: boolean;
     initialRoomId: string | null;
+    initialPartnerId: string | null;
 }
 
-export function ChatPageView({ isAuthenticated, userId, rooms, isLoading, initialRoomId }: ChatPageViewProps) {
+export function ChatPageView({
+    isAuthenticated,
+    userId,
+    rooms,
+    isLoading,
+    initialRoomId,
+    initialPartnerId,
+}: ChatPageViewProps) {
     if (!isAuthenticated || !userId) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white">
@@ -48,7 +56,12 @@ export function ChatPageView({ isAuthenticated, userId, rooms, isLoading, initia
                     <p className="text-sm text-gray-600 mt-1">Message restaurants and track your conversations.</p>
                 </div>
                 <div className="overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
-                    <ChatClient initialRooms={rooms} currentUserId={userId} initialRoomId={initialRoomId} />
+                    <ChatClient
+                        initialRooms={rooms}
+                        currentUserId={userId}
+                        initialRoomId={initialRoomId}
+                        initialPartnerId={initialPartnerId}
+                    />
                 </div>
             </div>
         </div>

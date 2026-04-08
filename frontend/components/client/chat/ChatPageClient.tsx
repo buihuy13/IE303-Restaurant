@@ -9,6 +9,7 @@ export default function ChatPageClient() {
     const { user, isAuthenticated } = useAuthStore();
     const searchParams = useSearchParams();
     const initialRoomId = searchParams.get("roomId");
+    const initialPartnerId = searchParams.get("partnerId");
     const { rooms, isLoading } = useChatRooms(user?.id);
 
     return (
@@ -18,6 +19,7 @@ export default function ChatPageClient() {
             rooms={rooms}
             isLoading={isLoading}
             initialRoomId={initialRoomId}
+            initialPartnerId={initialPartnerId}
         />
     );
 }

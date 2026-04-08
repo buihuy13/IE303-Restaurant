@@ -30,19 +30,15 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
     const messageHandlersRef = useRef<Map<string, (message: MessageDTO) => void>>(new Map());
 
     // Connect WebSocket when user is authenticated
-    const connect = useCallback(async () => {
-        // Realtime chat WebSocket is temporarily disabled (backend not ready / optional feature).
-        // Keep the hook API intact but avoid opening any WebSocket connection to prevent console errors.
-        return;
-
+    const connect = useCallback(async (): Promise<boolean> => {
         if (!userId || !isAuthenticated || isConnectingRef.current) {
-            return;
+            return false;
         }
 
         // Don't reconnect if already connected
         if (clientRef.current?.connected) {
             setIsConnected(true);
-            return;
+            return true;
         }
 
         isConnectingRef.current = true;
@@ -119,9 +115,12 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
             clientRef.current = client;
             client.activate();
-        } catch {
+            return true;
+        } catch (error) {
+            console.error("[chat-socket] failed to connect", error);
             setIsConnected(false);
             isConnectingRef.current = false;
+            return false;
         }
     }, [userId, isAuthenticated]);
 
@@ -221,9 +220,9 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
     // Send message to a room
     const sendMessage = useCallback(
-        (roomId: string, content: string, receiverId: string) => {
+        (roomId: string, content: string, receiverId: string): boolean => {
             if (!clientRef.current?.connected || !userId) {
-                return;
+                return false;
             }
 
             const message: MessageDTO = {
@@ -239,8 +238,10 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                     body: JSON.stringify(message),
                 });
                 void content;
+                return true;
             } catch {
                 // Silent error handling
+                return false;
             }
         },
         [userId],

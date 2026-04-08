@@ -55,7 +55,7 @@ export default function ChatWithRestaurantButton({
 
             const roomId = await startChat(user.id, merchantId);
             // Navigate to chat page with the roomId
-            router.push(`/chat?roomId=${roomId}`);
+            router.push(`/chat?roomId=${roomId}&partnerId=${merchantId}`);
         } catch (error) {
             console.error("Error starting chat:", error);
             // Show more specific error message
