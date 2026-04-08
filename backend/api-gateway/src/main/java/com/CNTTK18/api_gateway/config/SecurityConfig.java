@@ -29,13 +29,15 @@ public class SecurityConfig {
         "/v3/api-docs/**",
         "/ws",
         "/api/users/register",
-        "/api/payments/webhook"
+        "/api/payments/webhook",
+        "/api/sse/**"
     };
 
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
         return http
-                // Bật CORS để Spring Security tôn trọng cấu hình globalcors trong application.yml
+                // Bật CORS để Spring Security tôn trọng cấu hình globalcors trong
+                // application.yml
                 .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchanges -> configureAuthorization(exchanges))
@@ -46,7 +48,8 @@ public class SecurityConfig {
 
     private AuthorizeExchangeSpec configureAuthorization(AuthorizeExchangeSpec exchanges) {
         return exchanges
-                // Cho phép preflight CORS (OPTIONS) cho mọi path để browser có thể gửi request từ http://localhost:3000
+                // Cho phép preflight CORS (OPTIONS) cho mọi path để browser có thể gửi request
+                // từ http://localhost:3000
                 .pathMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll()
                 .pathMatchers(PUBLIC_PATHS)
