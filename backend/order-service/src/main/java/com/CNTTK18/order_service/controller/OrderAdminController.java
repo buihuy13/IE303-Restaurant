@@ -63,7 +63,8 @@ public class OrderAdminController {
                     LocalDate dateTo) {
         requireAdminRole();
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(orderAdminService.getAllOrders(status, restaurantId, userId, dateFrom, dateTo, pageable));
+        return ResponseEntity.ok(
+                orderAdminService.getAllOrders(status, restaurantId, userId, dateFrom, dateTo, pageable));
     }
 
     @GetMapping("/{orderId}")

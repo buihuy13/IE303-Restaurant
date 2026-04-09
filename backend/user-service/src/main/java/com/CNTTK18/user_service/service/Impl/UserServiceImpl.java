@@ -151,9 +151,7 @@ public class UserServiceImpl implements UserService {
 
         int toIndex = Math.min(fromIndex + safeSize, summaries.size());
         return new PageImpl<>(
-                summaries.subList(fromIndex, toIndex),
-                PageRequest.of(safePage, safeSize),
-                summaries.size());
+                summaries.subList(fromIndex, toIndex), PageRequest.of(safePage, safeSize), summaries.size());
     }
 
     @Override
@@ -234,7 +232,8 @@ public class UserServiceImpl implements UserService {
         boolean isActive = true;
 
         try {
-            UserResource userResource = keycloak.realm(realm).users().get(user.getId().toString());
+            UserResource userResource =
+                    keycloak.realm(realm).users().get(user.getId().toString());
             UserRepresentation representation = userResource.toRepresentation();
 
             fullName = buildFullName(

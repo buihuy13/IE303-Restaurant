@@ -42,8 +42,7 @@ public class DashboardController {
     @GetMapping("/revenue")
     @Operation(summary = "Get revenue analytics by period")
     public ResponseEntity<DashboardStatsDTO.RevenueResponse> getRevenue(
-            @Parameter(description = "Supported values: day, week, month")
-                    @RequestParam(defaultValue = "week")
+            @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period) {
         requireAdminRole();
         return ResponseEntity.ok(dashboardService.getRevenue(period));
@@ -61,8 +60,7 @@ public class DashboardController {
     @GetMapping("/orders/status")
     @Operation(summary = "Get order status summary by period")
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getOrderStatus(
-            @Parameter(description = "Supported values: day, week, month")
-                    @RequestParam(defaultValue = "week")
+            @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period) {
         requireAdminRole();
         return ResponseEntity.ok(dashboardService.getOrderStatusSummary(period));
@@ -90,8 +88,7 @@ public class DashboardController {
     @GetMapping("/top-products")
     @Operation(summary = "Get top selling products")
     public ResponseEntity<DashboardStatsDTO.TopProductsResponse> getTopProducts(
-            @Parameter(description = "Supported values: day, week, month")
-                    @RequestParam(defaultValue = "week")
+            @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
             @Parameter(description = "Number of products") @RequestParam(defaultValue = "5") int limit) {
         requireAdminRole();
@@ -101,8 +98,7 @@ public class DashboardController {
     @GetMapping("/revenue/by-restaurant")
     @Operation(summary = "Get revenue grouped by restaurant")
     public ResponseEntity<DashboardStatsDTO.RevenueByRestaurantResponse> getRevenueByRestaurant(
-            @Parameter(description = "Supported values: day, week, month")
-                    @RequestParam(defaultValue = "week")
+            @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
             @Parameter(description = "Number of restaurants") @RequestParam(defaultValue = "10") int limit) {
         requireAdminRole();

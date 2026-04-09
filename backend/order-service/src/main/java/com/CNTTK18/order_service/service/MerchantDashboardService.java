@@ -35,7 +35,8 @@ public class MerchantDashboardService {
         DateRange dayRange = getRange("day");
         DateRange monthRange = getRange("month");
 
-        long ordersToday = orderRepository.countByRestaurantIdAndCreatedAtBetween(restaurantId, dayRange.start(), dayRange.end());
+        long ordersToday =
+                orderRepository.countByRestaurantIdAndCreatedAtBetween(restaurantId, dayRange.start(), dayRange.end());
         long pendingOrders = orderRepository.countByRestaurantIdAndStatus(restaurantId, OrderStatus.PENDING);
         long completedOrders = orderRepository.countByRestaurantIdAndStatus(restaurantId, OrderStatus.COMPLETED);
         long cancelledOrders = orderRepository.countByRestaurantIdAndStatus(restaurantId, OrderStatus.CANCELLED);
@@ -59,21 +60,23 @@ public class MerchantDashboardService {
         validateRestaurantId(restaurantId);
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.RevenueByDate> breakdown = orderRepository
-                .aggregateRevenueByDayByRestaurant(restaurantId, range.start(), range.end())
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> breakdown =
+                orderRepository.aggregateRevenueByDayByRestaurant(restaurantId, range.start(), range.end()).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
+                        .toList();
 
         BigDecimal totalRevenue = breakdown.stream()
                 .map(DashboardStatsDTO.RevenueByDate::getRevenue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long totalOrders = breakdown.stream().mapToLong(DashboardStatsDTO.RevenueByDate::getOrderCount).sum();
+        long totalOrders = breakdown.stream()
+                .mapToLong(DashboardStatsDTO.RevenueByDate::getOrderCount)
+                .sum();
 
         return DashboardStatsDTO.RevenueResponse.builder()
                 .totalRevenue(totalRevenue)
@@ -115,17 +118,19 @@ public class MerchantDashboardService {
         int safeLimit = limit > 0 ? limit : 5;
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.TopProductItem> items = orderRepository
-                .aggregateTopProductsByRestaurant(restaurantId, range.start(), range.end(), safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.TopProductItem.builder()
-                        .productId(projection.getProductId())
-                        .productName(projection.getProductName())
-                        .sizeName(projection.getSizeName())
-                        .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.TopProductItem> items =
+                orderRepository
+                        .aggregateTopProductsByRestaurant(restaurantId, range.start(), range.end(), safeLimit)
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.TopProductItem.builder()
+                                .productId(projection.getProductId())
+                                .productName(projection.getProductName())
+                                .sizeName(projection.getSizeName())
+                                .totalQuantitySold(projection.getTotalQuantitySold())
+                                .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .build())
+                        .toList();
 
         return DashboardStatsDTO.TopProductsResponse.builder().items(items).build();
     }
@@ -174,9 +179,7 @@ public class MerchantDashboardService {
     }
 
     private BigDecimal sumRevenue(List<Order> orders) {
-        return Optional.ofNullable(orders)
-                .orElseGet(List::of)
-                .stream()
+        return Optional.ofNullable(orders).orElseGet(List::of).stream()
                 .map(Order::getTotalPrice)
                 .filter(value -> value != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

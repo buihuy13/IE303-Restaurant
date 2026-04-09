@@ -3,8 +3,8 @@ package com.CNTTK18.order_service.service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -47,13 +47,13 @@ public class DashboardService {
         CompletableFuture<Long> cancelledFuture =
                 CompletableFuture.supplyAsync(() -> orderRepository.countByStatus(OrderStatus.CANCELLED));
 
-        CompletableFuture<Long> ordersTodayFuture =
-                CompletableFuture.supplyAsync(() -> orderRepository.countByCreatedAtBetween(dayRange.start(), dayRange.end()));
+        CompletableFuture<Long> ordersTodayFuture = CompletableFuture.supplyAsync(
+                () -> orderRepository.countByCreatedAtBetween(dayRange.start(), dayRange.end()));
 
-        CompletableFuture<BigDecimal> revenueTodayFuture = CompletableFuture.supplyAsync(() -> sumRevenue(
-                orderRepository.findCompletedOrdersBetween(dayRange.start(), dayRange.end())));
-        CompletableFuture<BigDecimal> revenueMonthFuture = CompletableFuture.supplyAsync(() -> sumRevenue(
-                orderRepository.findCompletedOrdersBetween(monthRange.start(), monthRange.end())));
+        CompletableFuture<BigDecimal> revenueTodayFuture = CompletableFuture.supplyAsync(
+                () -> sumRevenue(orderRepository.findCompletedOrdersBetween(dayRange.start(), dayRange.end())));
+        CompletableFuture<BigDecimal> revenueMonthFuture = CompletableFuture.supplyAsync(
+                () -> sumRevenue(orderRepository.findCompletedOrdersBetween(monthRange.start(), monthRange.end())));
 
         return DashboardStatsDTO.OverviewResponse.builder()
                 .revenueToday(revenueTodayFuture.join())
@@ -89,7 +89,8 @@ public class DashboardService {
     public DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period) {
         DateRange range = getRange(period);
 
-        long pending = orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.PENDING, range.start(), range.end());
+        long pending =
+                orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.PENDING, range.start(), range.end());
         long confirmed =
                 orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.CONFIRMED, range.start(), range.end());
         long preparing =
@@ -138,17 +139,17 @@ public class DashboardService {
         int safeLimit = limit > 0 ? limit : 5;
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.TopProductItem> items = orderRepository
-                .aggregateTopProducts(range.start(), range.end(), safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.TopProductItem.builder()
-                        .productId(projection.getProductId())
-                        .productName(projection.getProductName())
-                        .sizeName(projection.getSizeName())
-                        .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.TopProductItem> items =
+                orderRepository.aggregateTopProducts(range.start(), range.end(), safeLimit).stream()
+                        .map(projection -> DashboardStatsDTO.TopProductItem.builder()
+                                .productId(projection.getProductId())
+                                .productName(projection.getProductName())
+                                .sizeName(projection.getSizeName())
+                                .totalQuantitySold(projection.getTotalQuantitySold())
+                                .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .build())
+                        .toList();
 
         return DashboardStatsDTO.TopProductsResponse.builder().items(items).build();
     }
@@ -157,18 +158,20 @@ public class DashboardService {
         int safeLimit = limit > 0 ? limit : 10;
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.RevenueByRestaurantItem> items = orderRepository
-                .aggregateRevenueByRestaurant(range.start(), range.end(), safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
-                        .restaurantId(projection.getRestaurantId())
-                        .restaurantName(projection.getRestaurantName())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.RevenueByRestaurantItem> items =
+                orderRepository.aggregateRevenueByRestaurant(range.start(), range.end(), safeLimit).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
+                                .restaurantId(projection.getRestaurantId())
+                                .restaurantName(projection.getRestaurantName())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
-        return DashboardStatsDTO.RevenueByRestaurantResponse.builder().items(items).build();
+        return DashboardStatsDTO.RevenueByRestaurantResponse.builder()
+                .items(items)
+                .build();
     }
 
     public List<OrderResponse> getRecentOrders(int limit) {
@@ -218,22 +221,24 @@ public class DashboardService {
     }
 
     private DashboardStatsDTO.RevenueResponse buildRevenue(DateRange range) {
-        List<DashboardStatsDTO.RevenueByDate> breakdown = orderRepository
-                .aggregateRevenueByDay(range.start(), range.end())
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> breakdown =
+                orderRepository.aggregateRevenueByDay(range.start(), range.end()).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
+                        .toList();
 
         BigDecimal totalRevenue = breakdown.stream()
                 .map(DashboardStatsDTO.RevenueByDate::getRevenue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        long totalOrders = breakdown.stream().mapToLong(DashboardStatsDTO.RevenueByDate::getOrderCount).sum();
+        long totalOrders = breakdown.stream()
+                .mapToLong(DashboardStatsDTO.RevenueByDate::getOrderCount)
+                .sum();
 
         return DashboardStatsDTO.RevenueResponse.builder()
                 .totalRevenue(totalRevenue)
@@ -256,9 +261,7 @@ public class DashboardService {
     }
 
     private BigDecimal sumRevenue(List<Order> orders) {
-        return Optional.ofNullable(orders)
-                .orElseGet(List::of)
-                .stream()
+        return Optional.ofNullable(orders).orElseGet(List::of).stream()
                 .map(Order::getTotalPrice)
                 .filter(value -> value != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -272,7 +275,8 @@ public class DashboardService {
             return safeCurrent.compareTo(BigDecimal.ZERO) == 0 ? 0D : 100D;
         }
 
-        return safeCurrent.subtract(safePrevious)
+        return safeCurrent
+                .subtract(safePrevious)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(safePrevious, 2, java.math.RoundingMode.HALF_UP)
                 .doubleValue();

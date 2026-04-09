@@ -90,7 +90,8 @@ public class OrderAdminService {
         csvBuilder.append("orderCode,restaurantName,totalPrice,status,paymentStatus,createdAt\n");
 
         for (Order order : orders) {
-            csvBuilder.append(safeCsv(order.getOrderCode()))
+            csvBuilder
+                    .append(safeCsv(order.getOrderCode()))
                     .append(',')
                     .append(safeCsv(order.getRestaurantName()))
                     .append(',')
@@ -108,11 +109,7 @@ public class OrderAdminService {
     }
 
     private List<Order> filterOrders(
-            OrderStatus status,
-            UUID restaurantId,
-            UUID userId,
-            LocalDate dateFrom,
-            LocalDate dateTo) {
+            OrderStatus status, UUID restaurantId, UUID userId, LocalDate dateFrom, LocalDate dateTo) {
         Instant start = Optional.ofNullable(dateFrom)
                 .map(date -> date.atStartOfDay(UTC).toInstant())
                 .orElse(null);
@@ -129,9 +126,11 @@ public class OrderAdminService {
                 .filter(order -> restaurantId == null || restaurantId.equals(order.getRestaurantId()))
                 .filter(order -> userId == null || userId.equals(order.getUserId()))
                 .filter(order -> start == null
-                        || (order.getCreatedAt() != null && !order.getCreatedAt().isBefore(start)))
+                        || (order.getCreatedAt() != null
+                                && !order.getCreatedAt().isBefore(start)))
                 .filter(order -> end == null
-                        || (order.getCreatedAt() != null && !order.getCreatedAt().isAfter(end)))
+                        || (order.getCreatedAt() != null
+                                && !order.getCreatedAt().isAfter(end)))
                 .toList();
     }
 

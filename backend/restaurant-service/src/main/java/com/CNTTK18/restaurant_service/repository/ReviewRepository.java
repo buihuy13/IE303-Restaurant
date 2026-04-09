@@ -16,6 +16,7 @@ public interface ReviewRepository extends JpaRepository<Reviews, UUID> {
 
     List<Reviews> findByReviewIdAndReviewType(UUID reviewId, ReviewType reviewType);
 
-    @Query("SELECT COALESCE(AVG(r.rating), 0) FROM Reviews r WHERE r.reviewType = com.CNTTK18.restaurant_service.model.data.ReviewType.RESTAURANT")
+    @Query(
+            "SELECT COALESCE(AVG(r.rating), 0) FROM Reviews r WHERE r.reviewType = com.CNTTK18.restaurant_service.model.data.ReviewType.RESTAURANT")
     Double getAverageRestaurantRating();
 }

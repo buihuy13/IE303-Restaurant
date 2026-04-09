@@ -27,11 +27,11 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
 
     long countByStatusAndCreatedAtBetween(OrderStatus status, Instant start, Instant end);
 
-        long countByRestaurantIdAndCreatedAtBetween(UUID restaurantId, Instant start, Instant end);
+    long countByRestaurantIdAndCreatedAtBetween(UUID restaurantId, Instant start, Instant end);
 
-        long countByRestaurantIdAndStatus(UUID restaurantId, OrderStatus status);
+    long countByRestaurantIdAndStatus(UUID restaurantId, OrderStatus status);
 
-        long countByRestaurantIdAndStatusAndCreatedAtBetween(
+    long countByRestaurantIdAndStatusAndCreatedAtBetween(
             UUID restaurantId, OrderStatus status, Instant start, Instant end);
 
     @Query("{ 'status': 'COMPLETED', 'createdAt': { $gte: ?0, $lte: ?1 } }")
@@ -78,7 +78,8 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
                 "{ $sort: { totalQuantitySold: -1, totalRevenue: -1 } }",
                 "{ $limit: ?3 }"
             })
-    List<TopProductProjection> aggregateTopProductsByRestaurant(UUID restaurantId, Instant start, Instant end, int limit);
+    List<TopProductProjection> aggregateTopProductsByRestaurant(
+            UUID restaurantId, Instant start, Instant end, int limit);
 
     @Aggregation(
             pipeline = {
