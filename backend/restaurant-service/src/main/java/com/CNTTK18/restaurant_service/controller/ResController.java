@@ -26,6 +26,7 @@ import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResQuery;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
+import com.CNTTK18.restaurant_service.dto.restaurant.response.RestaurantAdminStatsResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.service.ResService;
@@ -80,6 +81,13 @@ public class ResController {
     @GetMapping("/merchant/{id}")
     public ResponseEntity<ResResponse> getRestaurantByMerchantId(@PathVariable UUID id) {
         return ResponseEntity.ok(resService.getRestaurantsByMerchantId(id));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get admin restaurant statistics")
+    @GetMapping("/admin/stats")
+    public ResponseEntity<RestaurantAdminStatsResponse> getAdminStats() {
+        return ResponseEntity.ok(resService.getAdminStats());
     }
 
     @Tag(name = "Put")

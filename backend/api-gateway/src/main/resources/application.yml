@@ -50,7 +50,32 @@ spring:
                   uri: ${EUREKA_SERVER_URI}
                   predicates:
                       - Path=/eureka/**
+                # order-service
+                - id: order-service-order
+                  uri: lb://order-service
+                  predicates:
+                      - Path=/api/order/**
+                - id: order-service-orders
+                  uri: lb://order-service
+                  predicates:
+                      - Path=/api/orders/**
+                - id: order-service-cart
+                  uri: lb://order-service
+                  predicates:
+                      - Path=/api/cart/**
+                - id: order-service-dashboard
+                  uri: lb://order-service
+                  predicates:
+                      - Path=/api/dashboard/**
+                - id: order-service-merchant-dashboard
+                  uri: lb://order-service
+                  predicates:
+                      - Path=/api/merchant/dashboard/**
                 #user-service
+                - id: user-service-admin
+                  uri: lb://user-service
+                  predicates:
+                      - Path=/api/users/admin/**
                 - id: user-service
                   uri: lb://user-service
                   predicates:
@@ -92,6 +117,12 @@ spring:
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/api/restaurant/**
+                - id: restaurant-service-admin-plural
+                  uri: lb://restaurant-service
+                  predicates:
+                      - Path=/api/restaurants/admin/**
+                  filters:
+                      - RewritePath=/api/restaurants/(?<segment>.*), /api/restaurant/$\{segment}
                 - id: restaurant-service-cate
                   uri: lb://restaurant-service
                   predicates:

@@ -1,18 +1,27 @@
 package com.CNTTK18.user_service.service.Impl;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.NotFoundException;
 
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +33,9 @@ import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UpdateKeycloakUser;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
+import com.CNTTK18.user_service.dto.response.UserAdminStatsOverviewResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
 import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.mapper.AddressMapper;
 import com.CNTTK18.user_service.mapper.UserMapper;
@@ -33,9 +44,11 @@ import com.CNTTK18.user_service.repository.UserRepository;
 import com.CNTTK18.user_service.service.UserService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final Keycloak keycloak;
     private final UserRepository userRepository;
@@ -97,6 +110,53 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserAdminStatsOverviewResponse getAdminStatsOverview() {
+        LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDate todayUtc = nowUtc.toLocalDate();
+
+        LocalDateTime startToday = todayUtc.atStartOfDay();
+        LocalDateTime startWeek = todayUtc.minusDays(6).atStartOfDay();
+        LocalDateTime startMonth = todayUtc.withDayOfMonth(1).atStartOfDay();
+
+        return UserAdminStatsOverviewResponse.builder()
+                .totalUsers(userRepository.count())
+                .newUsersToday(userRepository.countByCreatedAtBetween(startToday, nowUtc))
+                .newUsersThisWeek(userRepository.countByCreatedAtBetween(startWeek, nowUtc))
+                .newUsersThisMonth(userRepository.countByCreatedAtBetween(startMonth, nowUtc))
+                .build();
+    }
+
+    @Override
+    public Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size > 0 ? size : 10;
+
+        Specification<Users> spec = buildKeywordSpec(keyword);
+        List<Users> users = userRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        String normalizedRole = Optional.ofNullable(role)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .orElse(null);
+
+        List<UserSummaryDTO> summaries = users.stream()
+                .map(this::toUserSummary)
+                .filter(summary -> normalizedRole == null || normalizedRole.equals(summary.getRole()))
+                .toList();
+
+        int fromIndex = safePage * safeSize;
+        if (fromIndex >= summaries.size()) {
+            return new PageImpl<>(List.of(), PageRequest.of(safePage, safeSize), summaries.size());
+        }
+
+        int toIndex = Math.min(fromIndex + safeSize, summaries.size());
+        return new PageImpl<>(
+                summaries.subList(fromIndex, toIndex),
+                PageRequest.of(safePage, safeSize),
+                summaries.size());
+    }
+
+    @Override
     @Transactional
     public void deleteUserById(UUID id, UserRole authUser) {
         checkAuthority(id, authUser);
@@ -150,5 +210,76 @@ public class UserServiceImpl implements UserService {
         } catch (NotFoundException e) {
             throw new ResourceNotFoundException("User not found");
         }
+    }
+
+    private Specification<Users> buildKeywordSpec(String keyword) {
+        String normalizedKeyword = Optional.ofNullable(keyword)
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(String::toLowerCase)
+                .orElse(null);
+
+        if (normalizedKeyword == null) {
+            return (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+        }
+
+        return (root, query, criteriaBuilder) -> criteriaBuilder.or(
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("username")), "%" + normalizedKeyword + "%"),
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), "%" + normalizedKeyword + "%"));
+    }
+
+    private UserSummaryDTO toUserSummary(Users user) {
+        String fullName = user.getUsername();
+        String role = "USER";
+        boolean isActive = true;
+
+        try {
+            UserResource userResource = keycloak.realm(realm).users().get(user.getId().toString());
+            UserRepresentation representation = userResource.toRepresentation();
+
+            fullName = buildFullName(
+                    representation.getFirstName(),
+                    representation.getLastName(),
+                    Optional.ofNullable(representation.getUsername()).orElse(user.getUsername()));
+            isActive = representation.isEnabled();
+
+            List<String> roleNames = userResource.roles().realmLevel().listAll().stream()
+                    .map(RoleRepresentation::getName)
+                    .map(String::toUpperCase)
+                    .collect(Collectors.toList());
+            role = resolveRole(roleNames);
+        } catch (Exception ex) {
+            log.error("Cannot enrich Keycloak metadata for user {}", user.getId(), ex);
+        }
+
+        return UserSummaryDTO.builder()
+                .id(user.getId())
+                .fullName(fullName)
+                .email(user.getEmail())
+                .role(role)
+                .createdAt(user.getCreatedAt())
+                .isActive(isActive)
+                .build();
+    }
+
+    private String buildFullName(String firstName, String lastName, String fallback) {
+        String first = Optional.ofNullable(firstName).map(String::trim).orElse("");
+        String last = Optional.ofNullable(lastName).map(String::trim).orElse("");
+
+        String fullName = (first + " " + last).trim();
+        return fullName.isBlank() ? fallback : fullName;
+    }
+
+    private String resolveRole(List<String> roleNames) {
+        if (roleNames.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        if (roleNames.contains("MERCHANT")) {
+            return "MERCHANT";
+        }
+        if (roleNames.contains("USER")) {
+            return "USER";
+        }
+        return roleNames.isEmpty() ? "USER" : roleNames.get(0);
     }
 }

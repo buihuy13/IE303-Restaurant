@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CNTTK18.user_service.dto.UserRole;
@@ -26,7 +28,10 @@ import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
 import com.CNTTK18.user_service.dto.response.RegisterResponse;
+import com.CNTTK18.user_service.dto.response.UserAdminStatsOverviewResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
+import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.service.AddressService;
 import com.CNTTK18.user_service.service.KeycloakUserService;
 import com.CNTTK18.user_service.service.UserService;
@@ -57,6 +62,26 @@ public class UserController {
     @GetMapping("/admin/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get admin user statistics overview")
+    @GetMapping("/admin/stats/overview")
+    public ResponseEntity<UserAdminStatsOverviewResponse> getAdminStatsOverview() {
+        requireAdminRole();
+        return ResponseEntity.ok(userService.getAdminStatsOverview());
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get admin users with filters")
+    @GetMapping("/admin")
+    public ResponseEntity<Page<UserSummaryDTO>> getAdminUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String keyword) {
+        requireAdminRole();
+        return ResponseEntity.ok(userService.getAdminUsers(page, size, role, keyword));
     }
 
     @Tag(name = "Get")
@@ -127,5 +152,21 @@ public class UserController {
             @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         List<AddressResponse> addresses = userService.getAllAddress(id, authUser);
         return ResponseEntity.ok(addresses);
+    }
+
+    private void requireAdminRole() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                : null;
+
+        if (!(principal instanceof UserRole userRole)) {
+            log.error("Missing user role principal in SecurityContext");
+            throw new ForbiddenException("Access denied");
+        }
+
+        if (!"ADMIN".equals(userRole.getRole())) {
+            log.error("Access denied for role: {}", userRole.getRole());
+            throw new ForbiddenException("Access denied");
+        }
     }
 }
