@@ -111,3 +111,161 @@ java.net.http.HttpTimeoutException: request timed out
 2026-04-11T13:17:50.360+07:00  INFO 30348 --- [order-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-11T13:22:50.375+07:00  INFO 30348 --- [order-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-11T13:27:50.384+07:00  INFO 30348 --- [order-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-11T13:29:22.650+07:00  WARN 30348 --- [order-service] [nio-8083-exec-4] [69d9ea42ce645e0b669a9c792cd89150-1c8b3e73d3ca7666] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.web.servlet.resource.NoResourceFoundException: No static resource api/cart/4b202d4a-5cc8-42f8-b8f4-785305d8d15c.]
+2026-04-11T13:31:47.704+07:00  WARN 30348 --- [order-service] [nio-8083-exec-9] [69d9ead3749024b2004cc7bfca67e2eb-12e590041df63d22] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.web.servlet.resource.NoResourceFoundException: No static resource api/cart/d82d18e0-97be-4cf4-9e23-1ee8f51b2724.]
+2026-04-11T13:32:17.299+07:00  WARN 30348 --- [order-service] [nio-8083-exec-2] [69d9eaf14a2b7caf07acf15a8c6492d4-6d32766df76bc261] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.web.servlet.resource.NoResourceFoundException: No static resource api/cart/d82d18e0-97be-4cf4-9e23-1ee8f51b2724.]
+2026-04-11T13:32:50.390+07:00  INFO 30348 --- [order-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-11T13:33:23.841+07:00  INFO 30348 --- [order-service] [localhost:27017] [                                                 ] org.mongodb.driver.cluster               : Exception in monitor thread while connecting to server localhost:27017
+
+com.mongodb.MongoSocketReadException: Prematurely reached end of stream
+	at com.mongodb.internal.connection.SocketStream.read(SocketStream.java:184) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:824) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveCommandMessageResponse(InternalStreamConnection.java:517) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.InternalStreamConnection.receive(InternalStreamConnection.java:469) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:249) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:176) ~[mongodb-driver-core-5.5.1.jar:na]
+
+2026-04-11T13:33:28.214+07:00  WARN 30348 --- [order-service] [ntContainer#0-1] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it
+
+com.rabbitmq.client.ShutdownSignalException: connection error; protocol method: #method<connection.close>(reply-code=320, reply-text=CONNECTION_FORCED - broker forced connection closure with reason 'shutdown', class-id=0, method-id=0)
+	at com.rabbitmq.client.impl.AMQConnection.startShutdown(AMQConnection.java:1007) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.shutdown(AMQConnection.java:997) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.handleConnectionClose(AMQConnection.java:935) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.processControlCommand(AMQConnection.java:890) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection$1.processAsync(AMQConnection.java:275) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel.handleCompleteInboundCommand(AMQChannel.java:193) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel.handleFrame(AMQChannel.java:125) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.readFrame(AMQConnection.java:741) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.access$400(AMQConnection.java:48) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:688) ~[amqp-client-5.25.0.jar:5.25.0]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-04-11T13:33:28.472+07:00  INFO 30348 --- [order-service] [ntContainer#0-1] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@765ddba8: tags=[[amq.ctag-TJF0iWBcMGVYGJcWTfzs0g]], channel=Cached Rabbit Channel: AMQChannel(amqp://admin@127.0.0.1:5672/,1), conn: Proxy@6ac99caa Shared Rabbit Connection: SimpleConnection@6ccafe42 [delegate=amqp://admin@127.0.0.1:5672/, localPort=65385], acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:28.641+07:00  INFO 30348 --- [order-service] [ntContainer#0-2] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:28.668+07:00 ERROR 30348 --- [order-service] [ntContainer#0-2] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+
+org.springframework.amqp.AmqpIOException: java.io.IOException
+	at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:70) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:632) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createConnection(CachingConnectionFactory.java:726) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createBareChannel(CachingConnectionFactory.java:671) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.getCachedChannelProxy(CachingConnectionFactory.java:644) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.getChannel(CachingConnectionFactory.java:533) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory$ChannelCachingConnectionProxy.createChannel(CachingConnectionFactory.java:1484) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.doExecute(RabbitTemplate.java:2268) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2235) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2215) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueInfo(RabbitAdmin.java:467) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueProperties(RabbitAdmin.java:451) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.attemptDeclarations(AbstractMessageListenerContainer.java:1972) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.redeclareElementsIfNecessary(AbstractMessageListenerContainer.java:1936) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.initialize(SimpleMessageListenerContainer.java:1481) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1322) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.io.IOException: null
+	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:140) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:136) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:406) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1251) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1198) ~[amqp-client-5.25.0.jar:5.25.0]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connectAddresses(AbstractConnectionFactory.java:678) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connect(AbstractConnectionFactory.java:647) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:593) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	... 15 common frames omitted
+Caused by: com.rabbitmq.client.ShutdownSignalException: connection error
+	at com.rabbitmq.utility.ValueOrException.getValue(ValueOrException.java:66) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.utility.BlockingValueOrException.uninterruptibleGetValue(BlockingValueOrException.java:36) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel$BlockingRpcContinuation.getReply(AMQChannel.java:552) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:336) ~[amqp-client-5.25.0.jar:5.25.0]
+	... 20 common frames omitted
+Caused by: java.io.EOFException: null
+	at java.base/java.io.DataInputStream.readUnsignedByte(DataInputStream.java:297) ~[na:na]
+	at com.rabbitmq.client.impl.Frame.readFrom(Frame.java:91) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.SocketFrameHandler.readFrame(SocketFrameHandler.java:199) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:687) ~[amqp-client-5.25.0.jar:5.25.0]
+	... 1 common frames omitted
+
+2026-04-11T13:33:28.674+07:00  INFO 30348 --- [order-service] [ntContainer#0-2] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:33.866+07:00  WARN 30348 --- [order-service] [ntContainer#0-2] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it
+
+org.springframework.amqp.AmqpIOException: java.io.IOException
+	at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:70) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:632) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createConnection(CachingConnectionFactory.java:726) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.createConnection(ConnectionFactoryUtils.java:257) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils$RabbitResourceFactory.createConnection(ConnectionFactoryUtils.java:345) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.doGetTransactionalResourceHolder(ConnectionFactoryUtils.java:140) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.getTransactionalResourceHolder(ConnectionFactoryUtils.java:102) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.getTransactionalResourceHolder(ConnectionFactoryUtils.java:85) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.BlockingQueueConsumer.start(BlockingQueueConsumer.java:625) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.initialize(SimpleMessageListenerContainer.java:1482) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1322) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.io.IOException: null
+	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:140) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:136) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:406) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1251) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1198) ~[amqp-client-5.25.0.jar:5.25.0]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connectAddresses(AbstractConnectionFactory.java:678) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connect(AbstractConnectionFactory.java:647) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:593) ~[spring-rabbit-3.2.6.jar:3.2.6]
+	... 10 common frames omitted
+Caused by: com.rabbitmq.client.ShutdownSignalException: connection error
+	at com.rabbitmq.utility.ValueOrException.getValue(ValueOrException.java:66) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.utility.BlockingValueOrException.uninterruptibleGetValue(BlockingValueOrException.java:36) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQChannel$BlockingRpcContinuation.getReply(AMQChannel.java:552) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:336) ~[amqp-client-5.25.0.jar:5.25.0]
+	... 15 common frames omitted
+Caused by: java.io.EOFException: null
+	at java.base/java.io.DataInputStream.readUnsignedByte(DataInputStream.java:297) ~[na:na]
+	at com.rabbitmq.client.impl.Frame.readFrom(Frame.java:91) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.SocketFrameHandler.readFrame(SocketFrameHandler.java:199) ~[amqp-client-5.25.0.jar:5.25.0]
+	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:687) ~[amqp-client-5.25.0.jar:5.25.0]
+	... 1 common frames omitted
+
+2026-04-11T13:33:33.868+07:00  INFO 30348 --- [order-service] [ntContainer#0-2] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@6d560cdc: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:33.870+07:00  INFO 30348 --- [order-service] [ntContainer#0-3] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:33.885+07:00  INFO 30348 --- [order-service] [localhost:27017] [                                                 ] org.mongodb.driver.cluster               : Exception in monitor thread while connecting to server localhost:27017
+
+com.mongodb.MongoSocketOpenException: Exception opening socket
+	at com.mongodb.internal.connection.SocketStream.lambda$open$0(SocketStream.java:85) ~[mongodb-driver-core-5.5.1.jar:na]
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403) ~[na:na]
+	at com.mongodb.internal.connection.SocketStream.open(SocketStream.java:85) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.InternalStreamConnection.open(InternalStreamConnection.java:233) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:219) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:176) ~[mongodb-driver-core-5.5.1.jar:na]
+Caused by: java.net.ConnectException: Connection refused: getsockopt
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method) ~[na:na]
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:542) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592) ~[na:na]
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327) ~[na:na]
+	at java.base/java.net.Socket.connect(Socket.java:751) ~[na:na]
+	at com.mongodb.internal.connection.SocketStreamHelper.initialize(SocketStreamHelper.java:76) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.SocketStream.initializeSocket(SocketStream.java:104) ~[mongodb-driver-core-5.5.1.jar:na]
+	at com.mongodb.internal.connection.SocketStream.open(SocketStream.java:79) ~[mongodb-driver-core-5.5.1.jar:na]
+	... 3 common frames omitted
+
+2026-04-11T13:33:33.897+07:00 ERROR 30348 --- [order-service] [ntContainer#0-3] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2026-04-11T13:33:33.897+07:00  INFO 30348 --- [order-service] [ntContainer#0-3] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:38.954+07:00  WARN 30348 --- [order-service] [ntContainer#0-3] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2026-04-11T13:33:38.954+07:00  INFO 30348 --- [order-service] [ntContainer#0-3] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@f9bad0d: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:38.957+07:00  INFO 30348 --- [order-service] [ntContainer#0-4] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:38.969+07:00 ERROR 30348 --- [order-service] [ntContainer#0-4] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2026-04-11T13:33:38.969+07:00  INFO 30348 --- [order-service] [ntContainer#0-4] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:44.051+07:00  WARN 30348 --- [order-service] [ntContainer#0-4] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2026-04-11T13:33:44.051+07:00  INFO 30348 --- [order-service] [ntContainer#0-4] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@de5fcf1: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:44.054+07:00  INFO 30348 --- [order-service] [ntContainer#0-5] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:44.067+07:00 ERROR 30348 --- [order-service] [ntContainer#0-5] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2026-04-11T13:33:44.068+07:00  INFO 30348 --- [order-service] [ntContainer#0-5] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:49.153+07:00  WARN 30348 --- [order-service] [ntContainer#0-5] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2026-04-11T13:33:49.154+07:00  INFO 30348 --- [order-service] [ntContainer#0-5] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@4f4877d: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:49.156+07:00  INFO 30348 --- [order-service] [ntContainer#0-6] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:49.158+07:00 ERROR 30348 --- [order-service] [ntContainer#0-6] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2026-04-11T13:33:49.158+07:00  INFO 30348 --- [order-service] [ntContainer#0-6] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:54.278+07:00  WARN 30348 --- [order-service] [ntContainer#0-6] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2026-04-11T13:33:54.279+07:00  INFO 30348 --- [order-service] [ntContainer#0-6] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@37799005: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-04-11T13:33:54.281+07:00  INFO 30348 --- [order-service] [ntContainer#0-7] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]
+2026-04-11T13:33:54.282+07:00 ERROR 30348 --- [order-service] [ntContainer#0-7] [                                                 ] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2026-04-11T13:33:54.282+07:00  INFO 30348 --- [order-service] [ntContainer#0-7] [                                                 ] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [localhost:5672]

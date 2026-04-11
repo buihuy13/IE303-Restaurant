@@ -118,3 +118,14 @@ UserAdminStatsOverviewResponse com.CNTTK18.dashboard_service.service.UserStatsAg
 2026-04-11T13:17:42.794+07:00  INFO 25536 --- [dashboard-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-11T13:22:42.798+07:00  INFO 25536 --- [dashboard-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
 2026-04-11T13:27:42.815+07:00  INFO 25536 --- [dashboard-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+List com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getHourlyOrders(LocalDate) executed in 480ms
+TopProductsResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getTopProducts(String,int) executed in 471ms
+RevenueResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getRevenue(String) executed in 479ms
+RevenueCompareResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getRevenueCompare(String) executed in 564ms
+OverviewResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getOverview() executed in 757ms
+OrderStatusResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getOrderStatusSummary(String) executed in 746ms
+RevenueByRestaurantResponse com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getRevenueByRestaurant(String,int) executed in 126ms
+List com.CNTTK18.dashboard_service.service.DashboardAnalyticsService.getRecentOrders(int) executed in 152ms
+RestaurantAdminStatsResponse com.CNTTK18.dashboard_service.service.RestaurantStatsAggregationService.getAdminStats() executed in 621ms
+UserAdminStatsOverviewResponse com.CNTTK18.dashboard_service.service.UserStatsAggregationService.getAdminStatsOverview() executed in 904ms
+2026-04-11T13:32:42.825+07:00  INFO 25536 --- [dashboard-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration

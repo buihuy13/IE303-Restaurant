@@ -58,7 +58,9 @@ export function OrdersTable({
                                 ) : (
                                     <select
                                         value={statusDraftById[order.orderId] ?? order.status}
-                                        onChange={(e) => onStatusDraftChange(order.orderId, e.target.value as OrderStatus)}
+                                        onChange={(e) =>
+                                            onStatusDraftChange(order.orderId, e.target.value as OrderStatus)
+                                        }
                                         disabled={updatingIds.has(order.orderId)}
                                         className="h-10 rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-60"
                                         aria-label="Update order status"
@@ -95,4 +97,3 @@ export function OrdersTable({
         </div>
     );
 }
-

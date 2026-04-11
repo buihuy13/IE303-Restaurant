@@ -6,7 +6,7 @@ import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 interface SSEProviderProps {
-        children: ReactNode;
+    children: ReactNode;
 }
 
 /**
@@ -16,18 +16,18 @@ interface SSEProviderProps {
  * - Handles order accepted/rejected notifications via SSE
  */
 export default function SSEProvider({ children }: SSEProviderProps) {
-        const { user, isAuthenticated } = useAuthStore();
-        const pathname = usePathname();
+    const { user, isAuthenticated } = useAuthStore();
+    const pathname = usePathname();
 
-        const isDashboardRoute = pathname.startsWith("/admin") || pathname.startsWith("/merchant") || pathname.startsWith("/manager");
-        const shouldConnect = isAuthenticated && !!user?.id && user?.role === "USER" && !isDashboardRoute;
+    const isDashboardRoute =
+        pathname.startsWith("/admin") || pathname.startsWith("/merchant") || pathname.startsWith("/manager");
+    const shouldConnect = isAuthenticated && !!user?.id && user?.role === "USER" && !isDashboardRoute;
 
-        // Connect SSE only for customer routes to avoid unnecessary dashboard traffic.
-        useSSE({
-                userId: shouldConnect ? user?.id || null : null,
-                isAuthenticated: shouldConnect,
-        });
+    // Connect SSE only for customer routes to avoid unnecessary dashboard traffic.
+    useSSE({
+        userId: shouldConnect ? user?.id || null : null,
+        isAuthenticated: shouldConnect,
+    });
 
-        return <>{children}</>;
+    return <>{children}</>;
 }
-

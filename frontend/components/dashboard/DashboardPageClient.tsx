@@ -52,30 +52,26 @@ export default function DashboardPageClient() {
 
     const [overview, setOverview] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminOverview>> | null>(null);
     const [revenue, setRevenue] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminRevenue>> | null>(null);
-    const [revenueCompare, setRevenueCompare] = useState<
-        Awaited<ReturnType<typeof dashboardApi.getAdminRevenueCompare>> | null
-    >(null);
-    const [orderStatus, setOrderStatus] = useState<
-        Awaited<ReturnType<typeof dashboardApi.getAdminOrderStatus>> | null
-    >(null);
-    const [hourlyOrders, setHourlyOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminHourlyOrders>>>(
-        [],
+    const [revenueCompare, setRevenueCompare] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getAdminRevenueCompare>
+    > | null>(null);
+    const [orderStatus, setOrderStatus] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminOrderStatus>> | null>(
+        null,
     );
+    const [hourlyOrders, setHourlyOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminHourlyOrders>>>([]);
     const [topProducts, setTopProducts] = useState<
         Awaited<ReturnType<typeof dashboardApi.getAdminTopProducts>>["items"]
     >([]);
     const [revenueByRestaurant, setRevenueByRestaurant] = useState<
         Awaited<ReturnType<typeof dashboardApi.getAdminRevenueByRestaurant>>["items"]
     >([]);
-    const [recentOrders, setRecentOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminRecentOrders>>>(
-        [],
-    );
-    const [userStats, setUserStats] = useState<
-        Awaited<ReturnType<typeof dashboardApi.getAdminUserStatsOverview>> | null
-    >(null);
-    const [restaurantStats, setRestaurantStats] = useState<
-        Awaited<ReturnType<typeof dashboardApi.getAdminRestaurantStats>> | null
-    >(null);
+    const [recentOrders, setRecentOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getAdminRecentOrders>>>([]);
+    const [userStats, setUserStats] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getAdminUserStatsOverview>
+    > | null>(null);
+    const [restaurantStats, setRestaurantStats] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getAdminRestaurantStats>
+    > | null>(null);
 
     const period = useMemo(() => dashboardApi.mapPresetToPeriod(rangePreset), [rangePreset]);
     const comparePeriod = useMemo(() => dashboardApi.mapPeriodForCompare(period), [period]);
@@ -220,9 +216,7 @@ export default function DashboardPageClient() {
                 <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                     <div>
                         <p className="text-xs uppercase tracking-[0.28em] text-white/70">Control Center</p>
-                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">
-                            Admin Dashboard
-                        </h1>
+                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">Admin Dashboard</h1>
                         <p className="mt-2 max-w-2xl text-sm text-white/80 md:text-base">
                             Monitor platform health, order velocity, merchant performance, and growth signals from the
                             new dashboard-service stack.
@@ -286,7 +280,9 @@ export default function DashboardPageClient() {
                 <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-3 dark:border-white/10 dark:bg-boxdark">
                     <div className="mb-4 flex items-center justify-between">
                         <div>
-                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Revenue Flow</h3>
+                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                Revenue Flow
+                            </h3>
                             <p className="text-xs text-bodydark">Revenue and order trend over the selected period</p>
                         </div>
                         <span className="rounded-full bg-brand-yellowlight px-3 py-1 text-xs font-semibold text-brand-black">
@@ -297,7 +293,9 @@ export default function DashboardPageClient() {
                         {loading ? (
                             <div className="h-full animate-pulse rounded-xl bg-gray" />
                         ) : revenueSeries.length === 0 ? (
-                            <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                            <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                No data.
+                            </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={revenueSeries} margin={{ left: 0, right: 16, top: 8, bottom: 0 }}>
@@ -308,7 +306,10 @@ export default function DashboardPageClient() {
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 12 }} />
-                                    <YAxis tick={{ fill: "#6B7280", fontSize: 12 }} tickFormatter={(value) => formatNumber(value)} />
+                                    <YAxis
+                                        tick={{ fill: "#6B7280", fontSize: 12 }}
+                                        tickFormatter={(value) => formatNumber(value)}
+                                    />
                                     <Tooltip
                                         formatter={(value: number, key: string) =>
                                             key === "revenue"
@@ -331,14 +332,18 @@ export default function DashboardPageClient() {
                 </article>
 
                 <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-2 dark:border-white/10 dark:bg-boxdark">
-                    <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Order Composition</h3>
+                    <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                        Order Composition
+                    </h3>
                     <p className="mt-1 text-xs text-bodydark">Distribution by status</p>
 
                     <div className="mt-4 h-[250px]">
                         {loading ? (
                             <div className="h-full animate-pulse rounded-xl bg-gray" />
                         ) : statusSeries.length === 0 ? (
-                            <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                            <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                No data.
+                            </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -362,7 +367,10 @@ export default function DashboardPageClient() {
 
                     <div className="mt-2 grid grid-cols-2 gap-2">
                         {statusSeries.map((item, index) => (
-                            <div key={item.name} className="rounded-lg border border-black/5 p-2.5 text-xs dark:border-white/10">
+                            <div
+                                key={item.name}
+                                className="rounded-lg border border-black/5 p-2.5 text-xs dark:border-white/10"
+                            >
                                 <div className="mb-1 inline-flex items-center gap-2">
                                     <span
                                         className="inline-flex h-2.5 w-2.5 rounded-full"
@@ -379,7 +387,9 @@ export default function DashboardPageClient() {
 
             <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
                 <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-2 dark:border-white/10 dark:bg-boxdark">
-                    <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Orders by Hour</h3>
+                    <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                        Orders by Hour
+                    </h3>
                     <p className="mt-1 text-xs text-bodydark">Today, in UTC</p>
                     <div className="mt-4 h-[300px]">
                         {loading ? (
@@ -420,7 +430,10 @@ export default function DashboardPageClient() {
                                 const width = `${Math.max((item.revenue / maxRevenue) * 100, 6)}%`;
 
                                 return (
-                                    <div key={item.restaurantId || item.restaurantName} className="rounded-lg border border-black/5 p-3 dark:border-white/10">
+                                    <div
+                                        key={item.restaurantId || item.restaurantName}
+                                        className="rounded-lg border border-black/5 p-3 dark:border-white/10"
+                                    >
                                         <div className="mb-1.5 flex items-center justify-between gap-3">
                                             <p className="truncate text-sm font-semibold text-black dark:text-white">
                                                 {index + 1}. {item.restaurantName}
@@ -447,7 +460,9 @@ export default function DashboardPageClient() {
             <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
                     <div className="mb-4 flex items-center justify-between">
-                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Top Products</h3>
+                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                            Top Products
+                        </h3>
                         <Package size={18} className="text-bodydark" />
                     </div>
                     {loading ? (
@@ -461,7 +476,10 @@ export default function DashboardPageClient() {
                     ) : (
                         <div className="space-y-2.5">
                             {topProducts.map((product, index) => (
-                                <div key={`${product.productId}-${index}`} className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10">
+                                <div
+                                    key={`${product.productId}-${index}`}
+                                    className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10"
+                                >
                                     <div>
                                         <p className="text-sm font-semibold text-black dark:text-white">
                                             #{index + 1} {product.productName}
@@ -471,7 +489,9 @@ export default function DashboardPageClient() {
                                             {product.sizeName ? ` • ${product.sizeName}` : ""}
                                         </p>
                                     </div>
-                                    <p className="text-sm font-semibold text-brand-orange">{formatCurrency(product.totalRevenue)}</p>
+                                    <p className="text-sm font-semibold text-brand-orange">
+                                        {formatCurrency(product.totalRevenue)}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -480,7 +500,9 @@ export default function DashboardPageClient() {
 
                 <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
                     <div className="mb-4 flex items-center justify-between">
-                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Recent Orders</h3>
+                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                            Recent Orders
+                        </h3>
                         <Clock3 size={18} className="text-bodydark" />
                     </div>
                     {loading ? (
@@ -503,7 +525,10 @@ export default function DashboardPageClient() {
                                           : "bg-amber-50 text-amber-700";
 
                                 return (
-                                    <div key={order.id} className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10">
+                                    <div
+                                        key={order.id}
+                                        className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10"
+                                    >
                                         <div>
                                             <p className="text-sm font-semibold text-black dark:text-white">
                                                 #{order.orderCode || order.id.slice(0, 8)}
@@ -516,7 +541,9 @@ export default function DashboardPageClient() {
                                             <p className="text-sm font-semibold text-black dark:text-white">
                                                 {formatCurrency(order.totalPrice)}
                                             </p>
-                                            <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}>
+                                            <span
+                                                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}
+                                            >
                                                 {status}
                                             </span>
                                         </div>

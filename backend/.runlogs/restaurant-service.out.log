@@ -1222,3 +1222,852 @@ List com.CNTTK18.restaurant_service.service.Impl.SizeServiceImpl.getAllSize() ex
 2026-04-11T13:28:47.891+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
 2026-04-11T13:28:47.891+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
 2026-04-11T13:28:56.893+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@67cc57aa is alive
+2026-04-11T13:29:10.008+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@e4dbfbd is alive
+2026-04-11T13:29:17.902+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:29:17.902+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:29:19.509+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@44f97de1 is alive
+2026-04-11T13:29:27.593+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@29ae2346 is alive
+2026-04-11T13:29:30.643+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:30.659+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Found thread-bound EntityManager [SessionImpl(474600111<open>)] for JPA transaction
+2026-04-11T13:29:30.659+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Creating new transaction with name [org.springframework.data.jpa.repository.support.SimpleJpaRepository.count]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,readOnly
+2026-04-11T13:29:30.659+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@1502ae49]
+2026-04-11T13:29:30.665+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] org.hibernate.SQL                        : 
+    /* select
+        count(*) 
+    from
+        Restaurants x */ select
+            count(*) 
+        from
+            restaurants r1_0
+Hibernate: 
+    /* select
+        count(*) 
+    from
+        Restaurants x */ select
+            count(*) 
+        from
+            restaurants r1_0
+2026-04-11T13:29:30.679+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:29:30.679+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 63
+2026-04-11T13:29:30.680+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Initiating transaction rollback
+2026-04-11T13:29:30.680+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Rolling back JPA transaction on EntityManager [SessionImpl(474600111<open>)]
+2026-04-11T13:29:30.682+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Not closing pre-bound JPA EntityManager after transaction
+2026-04-11T13:29:30.682+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Found thread-bound EntityManager [SessionImpl(474600111<open>)] for JPA transaction
+2026-04-11T13:29:30.682+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Creating new transaction with name [org.springframework.data.jpa.repository.support.SimpleJpaRepository.count]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,readOnly
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@544bc473]
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] org.hibernate.SQL                        : 
+    /* select
+        count(*) 
+    from
+        Products x */ select
+            count(*) 
+        from
+            products p1_0
+Hibernate: 
+    /* select
+        count(*) 
+    from
+        Products x */ select
+            count(*) 
+        from
+            products p1_0
+2026-04-11T13:29:30.683+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:29:30.683+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "products" does not exist
+  Position: 60
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Initiating transaction rollback
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Rolling back JPA transaction on EntityManager [SessionImpl(474600111<open>)]
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Not closing pre-bound JPA EntityManager after transaction
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Found thread-bound EntityManager [SessionImpl(474600111<open>)] for JPA transaction
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Creating new transaction with name [org.springframework.data.jpa.repository.support.SimpleJpaRepository.count]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,readOnly
+2026-04-11T13:29:30.683+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@68ddf461]
+2026-04-11T13:29:30.724+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] org.hibernate.SQL                        : 
+    /* select
+        count(*) 
+    from
+        Categories x */ select
+            count(*) 
+        from
+            categories c1_0
+Hibernate: 
+    /* select
+        count(*) 
+    from
+        Categories x */ select
+            count(*) 
+        from
+            categories c1_0
+2026-04-11T13:29:30.839+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Initiating transaction commit
+2026-04-11T13:29:30.839+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Committing JPA transaction on EntityManager [SessionImpl(474600111<open>)]
+2026-04-11T13:29:30.840+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.s.orm.jpa.JpaTransactionManager        : Not closing pre-bound JPA EntityManager after transaction
+2026-04-11T13:29:30.886+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9ea4a01f9a6bde3130c3960b15377-1ea00e6acc8fe421] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:30.954+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9ea4a1ad8ed147098f4a981b581b8-3e1dc26c436e3e24] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:30.986+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9ea4a1ad8ed147098f4a981b581b8-3e1dc26c436e3e24] org.hibernate.SQL                        : 
+    /* SELECT
+        COALESCE(AVG(r.rating), 0) 
+    FROM
+        Reviews r 
+    WHERE
+        r.reviewType = com.CNTTK18.restaurant_service.model.data.ReviewType.RESTAURANT */ select
+            coalesce(avg(r1_0.rating), 0) 
+        from
+            reviews r1_0 
+        where
+            r1_0.review_type='RESTAURANT'
+Hibernate: 
+    /* SELECT
+        COALESCE(AVG(r.rating), 0) 
+    FROM
+        Reviews r 
+    WHERE
+        r.reviewType = com.CNTTK18.restaurant_service.model.data.ReviewType.RESTAURANT */ select
+            coalesce(avg(r1_0.rating), 0) 
+        from
+            reviews r1_0 
+        where
+            r1_0.review_type='RESTAURANT'
+2026-04-11T13:29:31.084+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9ea4a1ad8ed147098f4a981b581b8-3e1dc26c436e3e24] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:43.292+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@24b29416 is alive
+2026-04-11T13:29:44.719+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:44.739+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] org.hibernate.SQL                        : 
+    /* dynamic native SQL query */ SELECT
+        DISTINCT r.* 
+    FROM
+        restaurants r 
+    JOIN
+        restaurant_categories rc 
+            ON r.id = rc.restaurant_id 
+    JOIN
+        categories c 
+            ON c.id = rc.category_id 
+    WHERE
+        (
+            ? IS NULL 
+            OR r.enabled = ?
+        ) 
+        AND (
+            ? IS NULL 
+            OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', ?, '%'))
+        ) 
+        AND (
+            ? IS NULL 
+            OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', ?, '%'))
+        ) 
+        AND ST_DWithin(     r.geom::geography,     ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,     ? )  
+    order by
+        r.id asc 
+    fetch
+        first ? rows only
+Hibernate: 
+    /* dynamic native SQL query */ SELECT
+        DISTINCT r.* 
+    FROM
+        restaurants r 
+    JOIN
+        restaurant_categories rc 
+            ON r.id = rc.restaurant_id 
+    JOIN
+        categories c 
+            ON c.id = rc.category_id 
+    WHERE
+        (
+            ? IS NULL 
+            OR r.enabled = ?
+        ) 
+        AND (
+            ? IS NULL 
+            OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', ?, '%'))
+        ) 
+        AND (
+            ? IS NULL 
+            OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', ?, '%'))
+        ) 
+        AND ST_DWithin(     r.geom::geography,     ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,     ? )  
+    order by
+        r.id asc 
+    fetch
+        first ? rows only
+2026-04-11T13:29:44.743+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:29:44.743+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 57
+2026-04-11T13:29:44.768+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* dynamic native SQL query */ SELECT DISTINCT r.*<EOL>FROM restaurants r<EOL>JOIN restaurant_categories rc ON r.id = rc.restaurant_id<EOL>JOIN categories c ON c.id = rc.category_id<EOL>WHERE (? IS NULL OR r.enabled = ?)<EOL>AND (? IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', ?, '%')))<EOL>AND (? IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', ?, '%')))<EOL>AND ST_DWithin(<EOL>    r.geom::geography,<EOL>    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,<EOL>    ?<EOL>)<EOL> order by r.id asc fetch first ? rows only] [ERROR: relation "restaurants" does not exist<EOL>  Position: 57] [n/a]; SQL [n/a]]
+2026-04-11T13:29:44.768+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9ea58698ce7f32af1ef61e93dbd79-54850a40f6d08359] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:29:47.903+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:29:47.903+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:30:03.864+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:30:03.864+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Found thread-bound EntityManager [SessionImpl(2144968589<open>)] for JPA transaction
+2026-04-11T13:30:03.864+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Creating new transaction with name [org.springframework.data.jpa.repository.support.SimpleJpaRepository.findAll]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,readOnly
+2026-04-11T13:30:03.864+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@e213525]
+2026-04-11T13:30:03.876+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        c1_0.id,
+        c1_0.cate_name 
+    from
+        categories c1_0
+Hibernate: 
+    /* <criteria> */ select
+        c1_0.id,
+        c1_0.cate_name 
+    from
+        categories c1_0
+2026-04-11T13:30:03.876+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Initiating transaction commit
+2026-04-11T13:30:03.876+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Committing JPA transaction on EntityManager [SessionImpl(2144968589<open>)]
+2026-04-11T13:30:03.876+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.s.orm.jpa.JpaTransactionManager        : Not closing pre-bound JPA EntityManager after transaction
+List com.CNTTK18.restaurant_service.service.Impl.CateServiceImpl.getAllCategories() executed in 12ms
+2026-04-11T13:30:03.882+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9ea6b6f62a4032ab5f2367956e213-c9b662cf09628352] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:30:05.696+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@5951231d is alive
+2026-04-11T13:30:12.197+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@7056a462 is alive
+2026-04-11T13:30:14.361+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@4b5d4cd is alive
+2026-04-11T13:30:16.673+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@719a6515 is alive
+2026-04-11T13:30:17.907+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:30:17.907+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:30:22.478+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@1b4d9f2e is alive
+2026-04-11T13:30:43.996+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@67cc57aa is alive
+2026-04-11T13:30:47.916+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:30:47.917+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:30:49.567+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@e4dbfbd is alive
+2026-04-11T13:31:01.533+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@44f97de1 is alive
+2026-04-11T13:31:17.917+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:31:17.917+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:31:23.375+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@29ae2346 is alive
+2026-04-11T13:31:26.359+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@24b29416 is alive
+2026-04-11T13:31:42.613+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@5951231d is alive
+2026-04-11T13:31:47.924+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:31:47.924+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:31:50.062+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:51.398+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:31:51.402+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:31:51.402+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:31:51.423+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:31:51.423+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-6] [69d9ead639b68a14edfefc8fb6167542-dd73504f3a5d8c7c] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:51.450+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:51.479+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:31:51.480+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:31:51.481+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:31:51.501+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:31:51.501+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-7] [69d9ead7c455463088996cd3fa860319-fb1b949f1033ed70] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:55.383+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@719a6515 is alive
+2026-04-11T13:31:59.320+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:59.344+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:31:59.344+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:31:59.344+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:31:59.355+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:31:59.355+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-2] [69d9eadf943f95cf2f1e7701174d2886-771ce7e796f53ac0] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:31:59.614+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@1b4d9f2e is alive
+2026-04-11T13:32:04.664+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:04.698+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:32:04.700+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:32:04.700+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:32:04.711+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:32:04.711+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-9] [69d9eae42b6071cfad540a0fa9420884-9f4b2f264c62b766] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:07.350+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@4b5d4cd is alive
+2026-04-11T13:32:10.312+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@7056a462 is alive
+2026-04-11T13:32:17.311+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:17.340+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:32:17.342+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:32:17.342+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:32:17.351+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:32:17.351+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-5] [69d9eaf1b8225234ae8b481c4c11ed0c-63e674eb388b3096] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:17.926+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:32:17.926+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:32:22.769+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:22.793+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:32:22.795+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:32:22.795+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:32:23.063+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:32:23.064+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-4] [69d9eaf6ca249909b893af72a828265c-876f513921a86d08] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:29.123+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@e4dbfbd is alive
+2026-04-11T13:32:31.096+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@67cc57aa is alive
+2026-04-11T13:32:32.941+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:32.968+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:32:32.971+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:32:32.971+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:32:32.983+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:32:32.984+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-1] [69d9eb00aed108c3d72ac4f3647d70ce-30ee6311cc9c61fe] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:32:43.550+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@44f97de1 is alive
+2026-04-11T13:32:47.929+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:32:47.929+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:32:59.280+07:00  INFO 41428 --- [restaurant-service] [rap-executor-%d] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-04-11T13:33:05.131+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:33:05.417+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Found thread-bound EntityManager [SessionImpl(1149170518<open>)] for JPA transaction
+2026-04-11T13:33:05.421+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Creating new transaction with name [com.CNTTK18.restaurant_service.service.Impl.ResServiceImpl.createRestaurant]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+2026-04-11T13:33:05.423+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@5a253116]
+2026-04-11T13:33:05.458+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] org.hibernate.SQL                        : 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+Hibernate: 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.address,
+        c1_0.restaurant_id,
+        c1_1.id,
+        c1_1.cate_name,
+        r1_0.closing_time,
+        r1_0.created_at,
+        r1_0.enabled,
+        r1_0.geom,
+        r1_0.image_url,
+        r1_0.latitude,
+        r1_0.longitude,
+        r1_0.merchant_id,
+        r1_0.opening_time,
+        r1_0.phone,
+        r1_0.public_id,
+        r1_0.rating,
+        r1_0.res_name,
+        r1_0.slug,
+        r1_0.total_review,
+        r1_0.updated_at 
+    from
+        restaurants r1_0 
+    left join
+        restaurant_categories c1_0 
+            on r1_0.id=c1_0.restaurant_id 
+    left join
+        categories c1_1 
+            on c1_1.id=c1_0.category_id 
+    where
+        r1_0.merchant_id=?
+2026-04-11T13:33:05.458+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 42P01
+2026-04-11T13:33:05.458+07:00 ERROR 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: relation "restaurants" does not exist
+  Position: 325
+2026-04-11T13:33:05.458+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Initiating transaction rollback
+2026-04-11T13:33:05.458+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Rolling back JPA transaction on EntityManager [SessionImpl(1149170518<open>)]
+2026-04-11T13:33:05.458+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.s.orm.jpa.JpaTransactionManager        : Not closing pre-bound JPA EntityManager after transaction
+2026-04-11T13:33:05.489+07:00  WARN 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.InvalidDataAccessResourceUsageException: JDBC exception executing SQL [/* <criteria> */ select r1_0.id,r1_0.address,c1_0.restaurant_id,c1_1.id,c1_1.cate_name,r1_0.closing_time,r1_0.created_at,r1_0.enabled,r1_0.geom,r1_0.image_url,r1_0.latitude,r1_0.longitude,r1_0.merchant_id,r1_0.opening_time,r1_0.phone,r1_0.public_id,r1_0.rating,r1_0.res_name,r1_0.slug,r1_0.total_review,r1_0.updated_at from restaurants r1_0 left join restaurant_categories c1_0 on r1_0.id=c1_0.restaurant_id left join categories c1_1 on c1_1.id=c1_0.category_id where r1_0.merchant_id=?] [ERROR: relation "restaurants" does not exist<EOL>  Position: 325] [n/a]; SQL [n/a]]
+2026-04-11T13:33:05.492+07:00 DEBUG 41428 --- [restaurant-service] [nio-8085-exec-3] [69d9eb21887b51bfb4d11d72090e035b-5399ab683ffccb52] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2026-04-11T13:33:09.414+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@24b29416 is alive
+2026-04-11T13:33:17.932+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:33:17.932+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.
+2026-04-11T13:33:19.148+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@29ae2346 is alive
+2026-04-11T13:33:19.533+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@5951231d is alive
+2026-04-11T13:33:32.569+07:00  WARN 41428 --- [restaurant-service] [/api/v2/spans}}] [                                                 ] z.r.i.AsyncReporter$BoundedAsyncReporter : Spans were dropped due to exceptions. All subsequent errors will be logged at FINE level.
+2026-04-11T13:33:32.569+07:00  WARN 41428 --- [restaurant-service] [/api/v2/spans}}] [                                                 ] z.r.i.AsyncReporter$BoundedAsyncReporter : Dropped 1 spans due to ConnectException()
+
+java.net.ConnectException: null
+	at java.net.http/jdk.internal.net.http.HttpClientImpl.send(HttpClientImpl.java:951) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.HttpClientFacade.send(HttpClientFacade.java:133) ~[java.net.http:na]
+	at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinHttpClientSender.postSpans(ZipkinHttpClientSender.java:60) ~[spring-boot-actuator-autoconfigure-3.5.5.jar:3.5.5]
+	at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.HttpSender.postSpans(HttpSender.java:69) ~[spring-boot-actuator-autoconfigure-3.5.5.jar:3.5.5]
+	at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.HttpSender.postSpans(HttpSender.java:41) ~[spring-boot-actuator-autoconfigure-3.5.5.jar:3.5.5]
+	at zipkin2.reporter.BaseHttpSender.send(BaseHttpSender.java:123) ~[zipkin-reporter-3.5.1.jar:na]
+	at zipkin2.reporter.internal.AsyncReporter$BoundedAsyncReporter.flush(AsyncReporter.java:266) ~[zipkin-reporter-3.5.1.jar:na]
+	at zipkin2.reporter.internal.AsyncReporter$Flusher.run(AsyncReporter.java:352) ~[zipkin-reporter-3.5.1.jar:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.net.ConnectException: null
+	at java.net.http/jdk.internal.net.http.common.Utils.toConnectException(Utils.java:1041) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:227) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.checkRetryConnect(PlainHttpConnection.java:280) ~[java.net.http:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$2(PlainHttpConnection.java:238) ~[java.net.http:na]
+	at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:510) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1773) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	... 1 common frames omitted
+Caused by: java.nio.channels.ClosedChannelException: null
+	at java.base/sun.nio.ch.SocketChannelImpl.ensureOpen(SocketChannelImpl.java:202) ~[na:na]
+	at java.base/sun.nio.ch.SocketChannelImpl.beginConnect(SocketChannelImpl.java:786) ~[na:na]
+	at java.base/sun.nio.ch.SocketChannelImpl.connect(SocketChannelImpl.java:874) ~[na:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$1(PlainHttpConnection.java:210) ~[java.net.http:na]
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:571) ~[na:na]
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:212) ~[java.net.http:na]
+	... 9 common frames omitted
+
+2026-04-11T13:33:34.085+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@719a6515 is alive
+2026-04-11T13:33:36.761+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - keepalive: connection org.postgresql.jdbc.PgConnection@1b4d9f2e is alive
+2026-04-11T13:33:47.942+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10/10, idle=10/10, active=0, waiting=0)
+2026-04-11T13:33:47.942+07:00 DEBUG 41428 --- [restaurant-service] [l-1:housekeeper] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Fill pool skipped, pool has sufficient level or currently being filled.

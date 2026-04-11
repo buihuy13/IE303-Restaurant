@@ -35,16 +35,14 @@ export default function MerchantDashboardPageClient() {
     const [loadingRestaurant, setLoadingRestaurant] = useState(true);
     const [loadingDashboard, setLoadingDashboard] = useState(true);
 
-    const [restaurant, setRestaurant] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null>(
-        null,
-    );
-    const [overview, setOverview] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOverview>> | null>(
-        null,
-    );
+    const [restaurant, setRestaurant] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>
+    > | null>(null);
+    const [overview, setOverview] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOverview>> | null>(null);
     const [revenue, setRevenue] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenue>> | null>(null);
-    const [orderStatus, setOrderStatus] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOrderStatus>> | null>(
-        null,
-    );
+    const [orderStatus, setOrderStatus] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getMerchantOrderStatus>
+    > | null>(null);
     const [topProducts, setTopProducts] = useState<
         Awaited<ReturnType<typeof dashboardApi.getMerchantTopProducts>>["items"]
     >([]);
@@ -93,14 +91,15 @@ export default function MerchantDashboardPageClient() {
         const run = async () => {
             setLoadingDashboard(true);
             try {
-                const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] =
-                    await Promise.all([
+                const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] = await Promise.all(
+                    [
                         dashboardApi.getMerchantOverview(restaurant.restaurantId, { period }),
                         dashboardApi.getMerchantRevenue(restaurant.restaurantId, { period }),
                         dashboardApi.getMerchantOrderStatus(restaurant.restaurantId, { period }),
                         dashboardApi.getMerchantTopProducts(restaurant.restaurantId, { period, limit: 6 }),
                         dashboardApi.getMerchantLiveOrders(restaurant.restaurantId),
-                    ]);
+                    ],
+                );
 
                 setOverview(nextOverview);
                 setRevenue(nextRevenue);
@@ -171,7 +170,14 @@ export default function MerchantDashboardPageClient() {
                 hint: `${formatNumber(totalOrders)} orders in selected period`,
             },
         ];
-    }, [orderStatus?.total, overview?.ordersToday, overview?.revenueThisMonth, overview?.revenueToday, revenue?.totalOrders, revenue?.totalRevenue]);
+    }, [
+        orderStatus?.total,
+        overview?.ordersToday,
+        overview?.revenueThisMonth,
+        overview?.revenueToday,
+        revenue?.totalOrders,
+        revenue?.totalRevenue,
+    ]);
 
     return (
         <div className="space-y-6 font-manrope">
@@ -180,7 +186,9 @@ export default function MerchantDashboardPageClient() {
                 <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
                         <p className="text-xs uppercase tracking-[0.24em] text-white/75">Merchant Console</p>
-                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">Merchant Dashboard</h1>
+                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">
+                            Merchant Dashboard
+                        </h1>
                         <p className="mt-2 text-sm text-white/80 md:text-base">
                             Track your restaurant performance, live order flow, and top products from the new
                             dashboard-service APIs.
@@ -246,7 +254,9 @@ export default function MerchantDashboardPageClient() {
                                 >
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">{card.title}</p>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">
+                                                {card.title}
+                                            </p>
                                             <h2 className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
                                                 {card.value}
                                             </h2>
@@ -263,24 +273,37 @@ export default function MerchantDashboardPageClient() {
 
                     <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
                         <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-3 dark:border-white/10 dark:bg-boxdark">
-                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Revenue Trend</h3>
+                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                Revenue Trend
+                            </h3>
                             <p className="mt-1 text-xs text-bodydark">Selected period breakdown</p>
                             <div className="mt-4 h-[300px]">
                                 {loadingDashboard ? (
                                     <div className="h-full animate-pulse rounded-xl bg-gray" />
                                 ) : revenueSeries.length === 0 ? (
-                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                        No data.
+                                    </div>
                                 ) : (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={revenueSeries}>
                                             <defs>
-                                                <linearGradient id="merchantRevenueGradientV2" x1="0" y1="0" x2="0" y2="1">
+                                                <linearGradient
+                                                    id="merchantRevenueGradientV2"
+                                                    x1="0"
+                                                    y1="0"
+                                                    x2="0"
+                                                    y2="1"
+                                                >
                                                     <stop offset="5%" stopColor="#EE4D2D" stopOpacity={0.35} />
                                                     <stop offset="95%" stopColor="#EE4D2D" stopOpacity={0.04} />
                                                 </linearGradient>
                                             </defs>
                                             <XAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 12 }} />
-                                            <YAxis tick={{ fill: "#6B7280", fontSize: 12 }} tickFormatter={(value) => formatNumber(value)} />
+                                            <YAxis
+                                                tick={{ fill: "#6B7280", fontSize: 12 }}
+                                                tickFormatter={(value) => formatNumber(value)}
+                                            />
                                             <Tooltip
                                                 formatter={(value: number, key: string) =>
                                                     key === "revenue"
@@ -302,13 +325,17 @@ export default function MerchantDashboardPageClient() {
                         </article>
 
                         <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-2 dark:border-white/10 dark:bg-boxdark">
-                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Order Status</h3>
+                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                Order Status
+                            </h3>
                             <p className="mt-1 text-xs text-bodydark">Volume by status</p>
                             <div className="mt-4 h-[230px]">
                                 {loadingDashboard ? (
                                     <div className="h-full animate-pulse rounded-xl bg-gray" />
                                 ) : statusSeries.length === 0 ? (
-                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                        No data.
+                                    </div>
                                 ) : (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -321,7 +348,10 @@ export default function MerchantDashboardPageClient() {
                                                 paddingAngle={3}
                                             >
                                                 {statusSeries.map((_, index) => (
-                                                    <Cell key={index} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                                                    <Cell
+                                                        key={index}
+                                                        fill={STATUS_COLORS[index % STATUS_COLORS.length]}
+                                                    />
                                                 ))}
                                             </Pie>
                                             <Tooltip formatter={(value: number) => formatNumber(value)} />
@@ -331,7 +361,10 @@ export default function MerchantDashboardPageClient() {
                             </div>
                             <div className="mt-2 grid grid-cols-2 gap-2">
                                 {statusSeries.map((item, index) => (
-                                    <div key={item.name} className="rounded-lg border border-black/5 p-2.5 text-xs dark:border-white/10">
+                                    <div
+                                        key={item.name}
+                                        className="rounded-lg border border-black/5 p-2.5 text-xs dark:border-white/10"
+                                    >
                                         <div className="mb-1 inline-flex items-center gap-2">
                                             <span
                                                 className="inline-flex h-2.5 w-2.5 rounded-full"
@@ -339,7 +372,9 @@ export default function MerchantDashboardPageClient() {
                                             />
                                             <span className="text-bodydark">{item.name}</span>
                                         </div>
-                                        <p className="font-semibold text-black dark:text-white">{formatNumber(item.value)}</p>
+                                        <p className="font-semibold text-black dark:text-white">
+                                            {formatNumber(item.value)}
+                                        </p>
                                     </div>
                                 ))}
                             </div>
@@ -349,7 +384,9 @@ export default function MerchantDashboardPageClient() {
                     <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                         <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
                             <div className="mb-4 flex items-center justify-between">
-                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Top Products</h3>
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    Top Products
+                                </h3>
                                 <Package size={18} className="text-bodydark" />
                             </div>
                             {loadingDashboard ? (
@@ -387,7 +424,9 @@ export default function MerchantDashboardPageClient() {
 
                         <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
                             <div className="mb-4 flex items-center justify-between">
-                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Live Orders</h3>
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    Live Orders
+                                </h3>
                                 <Clock3 size={18} className="text-bodydark" />
                             </div>
                             {loadingDashboard ? (
@@ -418,13 +457,17 @@ export default function MerchantDashboardPageClient() {
                                                     <p className="text-sm font-semibold text-black dark:text-white">
                                                         #{order.orderCode || order.id.slice(0, 8)}
                                                     </p>
-                                                    <p className="text-xs text-bodydark">{formatNumber(order.itemCount || 0)} items</p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {formatNumber(order.itemCount || 0)} items
+                                                    </p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-sm font-semibold text-black dark:text-white">
                                                         {formatCurrency(order.totalPrice)}
                                                     </p>
-                                                    <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}>
+                                                    <span
+                                                        className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}
+                                                    >
                                                         {status}
                                                     </span>
                                                 </div>
@@ -437,7 +480,9 @@ export default function MerchantDashboardPageClient() {
                     </section>
 
                     <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
-                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Restaurant Snapshot</h3>
+                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                            Restaurant Snapshot
+                        </h3>
                         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_auto] md:items-center">
                             <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray">
                                 {restaurant.imageURL ? (
