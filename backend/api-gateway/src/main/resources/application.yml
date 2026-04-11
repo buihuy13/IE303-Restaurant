@@ -162,9 +162,9 @@ spring:
 
 eureka:
     instance:
-        hostname: localhost
-        prefer-ip-address: false
-        instance-id: ${spring.application.name}:${PORT}:${random.value}
+        #hostname: ${spring.application.name}
+        #prefer-ip-address: false
+        #instance-id: ${spring.application.name}:${random.value}
 
     client:
         service-url:
