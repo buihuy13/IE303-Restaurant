@@ -33,7 +33,8 @@ public class InternalDashboardUserController {
         try {
             return Instant.parse(value);
         } catch (Exception ex) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid instant value: " + value);
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid instant value: " + value);
         }
     }
 }

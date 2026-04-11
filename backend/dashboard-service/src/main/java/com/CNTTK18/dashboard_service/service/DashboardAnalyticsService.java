@@ -39,8 +39,8 @@ public class DashboardAnalyticsService {
         long pendingOrders = orderDashboardDataClient.countByStatus(OrderStatus.PENDING);
         long completedOrders = orderDashboardDataClient.countByStatus(OrderStatus.COMPLETED);
         long cancelledOrders = orderDashboardDataClient.countByStatus(OrderStatus.CANCELLED);
-        long ordersToday =
-                orderDashboardDataClient.countByCreatedBetween(dayRange.start().toString(), dayRange.end().toString());
+        long ordersToday = orderDashboardDataClient.countByCreatedBetween(
+                dayRange.start().toString(), dayRange.end().toString());
 
         BigDecimal revenueToday = buildRevenue(dayRange).getTotalRevenue();
         BigDecimal revenueThisMonth = buildRevenue(monthRange).getTotalRevenue();
@@ -92,7 +92,8 @@ public class DashboardAnalyticsService {
         long cancelled = orderDashboardDataClient.countByStatusBetween(
                 OrderStatus.CANCELLED, range.start().toString(), range.end().toString());
 
-        long total = orderDashboardDataClient.countByCreatedBetween(range.start().toString(), range.end().toString());
+        long total = orderDashboardDataClient.countByCreatedBetween(
+                range.start().toString(), range.end().toString());
 
         return DashboardStatsDTO.OrderStatusResponse.builder()
                 .total(total)
@@ -110,13 +111,13 @@ public class DashboardAnalyticsService {
         Instant start = normalizedDate.atStartOfDay(UTC).toInstant();
         Instant end = normalizedDate.plusDays(1).atStartOfDay(UTC).minusNanos(1).toInstant();
 
-        Map<Integer, Long> hourToOrderCount = orderDashboardDataClient
-                .hourlyOrders(start.toString(), end.toString())
-                .stream()
-                .collect(Collectors.toMap(
-                        projection -> Optional.ofNullable(projection.getHour()).orElse(0),
-                        OrderDataDTO.HourlyOrderItem::getOrderCount,
-                        Long::sum));
+        Map<Integer, Long> hourToOrderCount =
+                orderDashboardDataClient.hourlyOrders(start.toString(), end.toString()).stream()
+                        .collect(Collectors.toMap(
+                                projection -> Optional.ofNullable(projection.getHour())
+                                        .orElse(0),
+                                OrderDataDTO.HourlyOrderItem::getOrderCount,
+                                Long::sum));
 
         List<DashboardStatsDTO.HourlyOrderResponse> responses = new ArrayList<>(24);
         for (int hour = 0; hour <= 23; hour++) {
@@ -133,17 +134,19 @@ public class DashboardAnalyticsService {
         int safeLimit = limit > 0 ? limit : 5;
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.TopProductItem> items = orderDashboardDataClient
-                .topProducts(range.start().toString(), range.end().toString(), safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.TopProductItem.builder()
-                        .productId(projection.getProductId())
-                        .productName(projection.getProductName())
-                        .sizeName(projection.getSizeName())
-                        .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.TopProductItem> items =
+                orderDashboardDataClient
+                        .topProducts(range.start().toString(), range.end().toString(), safeLimit)
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.TopProductItem.builder()
+                                .productId(projection.getProductId())
+                                .productName(projection.getProductName())
+                                .sizeName(projection.getSizeName())
+                                .totalQuantitySold(projection.getTotalQuantitySold())
+                                .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .build())
+                        .toList();
 
         return DashboardStatsDTO.TopProductsResponse.builder().items(items).build();
     }
@@ -152,18 +155,23 @@ public class DashboardAnalyticsService {
         int safeLimit = limit > 0 ? limit : 10;
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.RevenueByRestaurantItem> items = orderDashboardDataClient
-                .revenueByRestaurant(range.start().toString(), range.end().toString(), safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
-                        .restaurantId(projection.getRestaurantId())
-                        .restaurantName(projection.getRestaurantName())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.RevenueByRestaurantItem> items =
+                orderDashboardDataClient
+                        .revenueByRestaurant(
+                                range.start().toString(), range.end().toString(), safeLimit)
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
+                                .restaurantId(projection.getRestaurantId())
+                                .restaurantName(projection.getRestaurantName())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
-        return DashboardStatsDTO.RevenueByRestaurantResponse.builder().items(items).build();
+        return DashboardStatsDTO.RevenueByRestaurantResponse.builder()
+                .items(items)
+                .build();
     }
 
     public List<OrderResponse> getRecentOrders(int limit) {
@@ -212,16 +220,18 @@ public class DashboardAnalyticsService {
     }
 
     private DashboardStatsDTO.RevenueResponse buildRevenue(DateRange range) {
-        List<DashboardStatsDTO.RevenueByDate> breakdown = orderDashboardDataClient
-                .revenueByDay(range.start().toString(), range.end().toString())
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> breakdown =
+                orderDashboardDataClient
+                        .revenueByDay(range.start().toString(), range.end().toString())
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
+                        .toList();
 
         BigDecimal totalRevenue = breakdown.stream()
                 .map(DashboardStatsDTO.RevenueByDate::getRevenue)
@@ -245,7 +255,10 @@ public class DashboardAnalyticsService {
     }
 
     private String normalizePeriod(String period) {
-        return Optional.ofNullable(period).map(String::trim).map(String::toLowerCase).orElse("week");
+        return Optional.ofNullable(period)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .orElse("week");
     }
 
     private double calculateGrowthPercent(BigDecimal current, BigDecimal previous) {

@@ -33,5 +33,4 @@ public interface ResService {
     public void deleteImage(UUID resId, UserRole authUser);
 
     public ResResponse getRestaurantsByMerchantId(UUID id);
-
 }

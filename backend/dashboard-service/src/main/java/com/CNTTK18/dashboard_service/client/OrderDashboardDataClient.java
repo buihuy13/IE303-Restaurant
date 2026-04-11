@@ -56,9 +56,7 @@ public interface OrderDashboardDataClient {
 
     @GetMapping("/internal/dashboard/order-data/top-products")
     List<OrderDataDTO.TopProductItem> topProducts(
-            @RequestParam("start") String start,
-            @RequestParam("end") String end,
-            @RequestParam("limit") int limit);
+            @RequestParam("start") String start, @RequestParam("end") String end, @RequestParam("limit") int limit);
 
     @GetMapping("/internal/dashboard/order-data/top-products-by-restaurant")
     List<OrderDataDTO.TopProductItem> topProductsByRestaurant(
@@ -69,9 +67,7 @@ public interface OrderDashboardDataClient {
 
     @GetMapping("/internal/dashboard/order-data/revenue-by-restaurant")
     List<OrderDataDTO.RevenueByRestaurantItem> revenueByRestaurant(
-            @RequestParam("start") String start,
-            @RequestParam("end") String end,
-            @RequestParam("limit") int limit);
+            @RequestParam("start") String start, @RequestParam("end") String end, @RequestParam("limit") int limit);
 
     @GetMapping("/internal/dashboard/order-data/hourly-orders")
     List<OrderDataDTO.HourlyOrderItem> hourlyOrders(

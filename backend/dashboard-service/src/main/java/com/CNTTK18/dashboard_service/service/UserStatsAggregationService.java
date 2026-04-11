@@ -29,11 +29,14 @@ public class UserStatsAggregationService {
         return UserAdminStatsOverviewResponse.builder()
                 .totalUsers(userDashboardDataClient.countUsers())
                 .newUsersToday(userDashboardDataClient.countUsersByCreatedBetween(
-                        startToday.toInstant(UTC).toString(), nowUtc.toInstant(UTC).toString()))
+                        startToday.toInstant(UTC).toString(),
+                        nowUtc.toInstant(UTC).toString()))
                 .newUsersThisWeek(userDashboardDataClient.countUsersByCreatedBetween(
-                        startWeek.toInstant(UTC).toString(), nowUtc.toInstant(UTC).toString()))
+                        startWeek.toInstant(UTC).toString(),
+                        nowUtc.toInstant(UTC).toString()))
                 .newUsersThisMonth(userDashboardDataClient.countUsersByCreatedBetween(
-                        startMonth.toInstant(UTC).toString(), nowUtc.toInstant(UTC).toString()))
+                        startMonth.toInstant(UTC).toString(),
+                        nowUtc.toInstant(UTC).toString()))
                 .build();
     }
 }

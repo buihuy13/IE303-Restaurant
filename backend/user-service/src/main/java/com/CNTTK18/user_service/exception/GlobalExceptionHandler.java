@@ -113,9 +113,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PropertyReferenceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handlePropertyReferenceException(PropertyReferenceException ex) {
-        String property = ex.getPropertyName() == null || ex.getPropertyName().isBlank()
-                ? ex.getMessage()
-                : ex.getPropertyName();
+        String property =
+                ex.getPropertyName() == null || ex.getPropertyName().isBlank() ? ex.getMessage() : ex.getPropertyName();
         ErrorResponse errorResponse = new ErrorResponse("INVALID_SORT_PROPERTY", "Invalid sort field: " + property);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }

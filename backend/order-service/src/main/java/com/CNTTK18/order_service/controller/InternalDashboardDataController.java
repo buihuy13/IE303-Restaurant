@@ -44,11 +44,13 @@ public class InternalDashboardDataController {
     @GetMapping("/count-by-status-between")
     public ResponseEntity<Long> countByStatusBetween(
             @RequestParam OrderStatus status, @RequestParam String start, @RequestParam String end) {
-        return ResponseEntity.ok(orderRepository.countByStatusAndCreatedAtBetween(status, parseInstant(start), parseInstant(end)));
+        return ResponseEntity.ok(
+                orderRepository.countByStatusAndCreatedAtBetween(status, parseInstant(start), parseInstant(end)));
     }
 
     @GetMapping("/count-by-restaurant-status")
-    public ResponseEntity<Long> countByRestaurantStatus(@RequestParam UUID restaurantId, @RequestParam OrderStatus status) {
+    public ResponseEntity<Long> countByRestaurantStatus(
+            @RequestParam UUID restaurantId, @RequestParam OrderStatus status) {
         return ResponseEntity.ok(orderRepository.countByRestaurantIdAndStatus(restaurantId, status));
     }
 
@@ -75,13 +77,15 @@ public class InternalDashboardDataController {
         Instant startInstant = parseInstant(start);
         Instant endInstant = parseInstant(end);
 
-        List<DashboardStatsDTO.RevenueByDate> result = orderRepository.aggregateRevenueByDay(startInstant, endInstant).stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> result =
+                orderRepository.aggregateRevenueByDay(startInstant, endInstant).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
@@ -92,15 +96,15 @@ public class InternalDashboardDataController {
         Instant startInstant = parseInstant(start);
         Instant endInstant = parseInstant(end);
 
-        List<DashboardStatsDTO.RevenueByDate> result = orderRepository
-                .aggregateRevenueByDayByRestaurant(restaurantId, startInstant, endInstant)
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> result =
+                orderRepository.aggregateRevenueByDayByRestaurant(restaurantId, startInstant, endInstant).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
@@ -112,17 +116,17 @@ public class InternalDashboardDataController {
         Instant endInstant = parseInstant(end);
         int safeLimit = normalizeLimit(limit, 5);
 
-        List<DashboardStatsDTO.TopProductItem> result = orderRepository
-                .aggregateTopProducts(startInstant, endInstant, safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.TopProductItem.builder()
-                        .productId(projection.getProductId())
-                        .productName(projection.getProductName())
-                        .sizeName(projection.getSizeName())
-                        .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.TopProductItem> result =
+                orderRepository.aggregateTopProducts(startInstant, endInstant, safeLimit).stream()
+                        .map(projection -> DashboardStatsDTO.TopProductItem.builder()
+                                .productId(projection.getProductId())
+                                .productName(projection.getProductName())
+                                .sizeName(projection.getSizeName())
+                                .totalQuantitySold(projection.getTotalQuantitySold())
+                                .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
@@ -137,40 +141,40 @@ public class InternalDashboardDataController {
         Instant endInstant = parseInstant(end);
         int safeLimit = normalizeLimit(limit, 5);
 
-        List<DashboardStatsDTO.TopProductItem> result = orderRepository
-                .aggregateTopProductsByRestaurant(restaurantId, startInstant, endInstant, safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.TopProductItem.builder()
-                        .productId(projection.getProductId())
-                        .productName(projection.getProductName())
-                        .sizeName(projection.getSizeName())
-                        .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.TopProductItem> result =
+                orderRepository
+                        .aggregateTopProductsByRestaurant(restaurantId, startInstant, endInstant, safeLimit)
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.TopProductItem.builder()
+                                .productId(projection.getProductId())
+                                .productName(projection.getProductName())
+                                .sizeName(projection.getSizeName())
+                                .totalQuantitySold(projection.getTotalQuantitySold())
+                                .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/revenue-by-restaurant")
     public ResponseEntity<List<DashboardStatsDTO.RevenueByRestaurantItem>> revenueByRestaurant(
-            @RequestParam String start,
-            @RequestParam String end,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam String start, @RequestParam String end, @RequestParam(defaultValue = "10") int limit) {
         Instant startInstant = parseInstant(start);
         Instant endInstant = parseInstant(end);
         int safeLimit = normalizeLimit(limit, 10);
 
-        List<DashboardStatsDTO.RevenueByRestaurantItem> result = orderRepository
-                .aggregateRevenueByRestaurant(startInstant, endInstant, safeLimit)
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
-                        .restaurantId(projection.getRestaurantId())
-                        .restaurantName(projection.getRestaurantName())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.RevenueByRestaurantItem> result =
+                orderRepository.aggregateRevenueByRestaurant(startInstant, endInstant, safeLimit).stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByRestaurantItem.builder()
+                                .restaurantId(projection.getRestaurantId())
+                                .restaurantName(projection.getRestaurantName())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
@@ -181,13 +185,13 @@ public class InternalDashboardDataController {
         Instant startInstant = parseInstant(start);
         Instant endInstant = parseInstant(end);
 
-        List<DashboardStatsDTO.HourlyOrderResponse> result = orderRepository.aggregateHourlyOrders(startInstant, endInstant)
-                .stream()
-                .map(projection -> DashboardStatsDTO.HourlyOrderResponse.builder()
-                        .hour(Optional.ofNullable(projection.getHour()).orElse(0))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .toList();
+        List<DashboardStatsDTO.HourlyOrderResponse> result =
+                orderRepository.aggregateHourlyOrders(startInstant, endInstant).stream()
+                        .map(projection -> DashboardStatsDTO.HourlyOrderResponse.builder()
+                                .hour(Optional.ofNullable(projection.getHour()).orElse(0))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .toList();
 
         return ResponseEntity.ok(result);
     }
@@ -202,10 +206,10 @@ public class InternalDashboardDataController {
     @GetMapping("/live-orders")
     public ResponseEntity<List<OrderSummaryDTO>> liveOrders(@RequestParam UUID restaurantId) {
         List<OrderStatus> statuses = List.of(OrderStatus.PENDING, OrderStatus.CONFIRMED);
-        List<OrderSummaryDTO> result = orderRepository.findByRestaurantIdAndStatusInOrderByCreatedAtAsc(restaurantId, statuses)
-                .stream()
-                .map(this::toSummary)
-                .toList();
+        List<OrderSummaryDTO> result =
+                orderRepository.findByRestaurantIdAndStatusInOrderByCreatedAtAsc(restaurantId, statuses).stream()
+                        .map(this::toSummary)
+                        .toList();
         return ResponseEntity.ok(result);
     }
 

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import com.CNTTK18.dashboard_service.client.OrderDashboardDataClient;
 import com.CNTTK18.dashboard_service.client.RestaurantDashboardDataClient;
 import com.CNTTK18.dashboard_service.dto.dashboard.DashboardStatsDTO;
-import com.CNTTK18.dashboard_service.dto.order.OrderDataDTO;
 import com.CNTTK18.dashboard_service.dto.order.OrderSummaryDTO;
 import com.CNTTK18.dashboard_service.dto.restaurant.ResClientResponse;
 import com.CNTTK18.dashboard_service.exception.BadRequestException;
@@ -64,16 +63,21 @@ public class MerchantDashboardAnalyticsService {
         validateRestaurantId(restaurantId);
         DateRange range = getRange(period);
 
-        List<DashboardStatsDTO.RevenueByDate> breakdown = orderDashboardDataClient
-                .revenueByDayByRestaurant(restaurantId, range.start().toString(), range.end().toString())
-                .stream()
-                .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
-                        .date(projection.getDate())
-                        .revenue(Optional.ofNullable(projection.getRevenue()).orElse(BigDecimal.ZERO))
-                        .orderCount(projection.getOrderCount())
-                        .build())
-                .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
-                .toList();
+        List<DashboardStatsDTO.RevenueByDate> breakdown =
+                orderDashboardDataClient
+                        .revenueByDayByRestaurant(
+                                restaurantId,
+                                range.start().toString(),
+                                range.end().toString())
+                        .stream()
+                        .map(projection -> DashboardStatsDTO.RevenueByDate.builder()
+                                .date(projection.getDate())
+                                .revenue(Optional.ofNullable(projection.getRevenue())
+                                        .orElse(BigDecimal.ZERO))
+                                .orderCount(projection.getOrderCount())
+                                .build())
+                        .sorted(Comparator.comparing(DashboardStatsDTO.RevenueByDate::getDate))
+                        .toList();
 
         BigDecimal totalRevenue = breakdown.stream()
                 .map(DashboardStatsDTO.RevenueByDate::getRevenue)
@@ -94,17 +98,35 @@ public class MerchantDashboardAnalyticsService {
         DateRange range = getRange(period);
 
         long pending = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.PENDING, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.PENDING,
+                range.start().toString(),
+                range.end().toString());
         long confirmed = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.CONFIRMED, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.CONFIRMED,
+                range.start().toString(),
+                range.end().toString());
         long preparing = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.PREPARING, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.PREPARING,
+                range.start().toString(),
+                range.end().toString());
         long delivering = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.DELIVERING, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.DELIVERING,
+                range.start().toString(),
+                range.end().toString());
         long completed = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.COMPLETED, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.COMPLETED,
+                range.start().toString(),
+                range.end().toString());
         long cancelled = orderDashboardDataClient.countByRestaurantStatusBetween(
-                restaurantId, OrderStatus.CANCELLED, range.start().toString(), range.end().toString());
+                restaurantId,
+                OrderStatus.CANCELLED,
+                range.start().toString(),
+                range.end().toString());
 
         long total = orderDashboardDataClient.countByRestaurantCreatedBetween(
                 restaurantId, range.start().toString(), range.end().toString());
@@ -126,14 +148,16 @@ public class MerchantDashboardAnalyticsService {
         DateRange range = getRange(period);
 
         List<DashboardStatsDTO.TopProductItem> items = orderDashboardDataClient
-                .topProductsByRestaurant(restaurantId, range.start().toString(), range.end().toString(), safeLimit)
+                .topProductsByRestaurant(
+                        restaurantId, range.start().toString(), range.end().toString(), safeLimit)
                 .stream()
                 .map(projection -> DashboardStatsDTO.TopProductItem.builder()
                         .productId(projection.getProductId())
                         .productName(projection.getProductName())
                         .sizeName(projection.getSizeName())
                         .totalQuantitySold(projection.getTotalQuantitySold())
-                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue()).orElse(BigDecimal.ZERO))
+                        .totalRevenue(Optional.ofNullable(projection.getTotalRevenue())
+                                .orElse(BigDecimal.ZERO))
                         .build())
                 .toList();
 
@@ -198,7 +222,10 @@ public class MerchantDashboardAnalyticsService {
     }
 
     private String normalizePeriod(String period) {
-        return Optional.ofNullable(period).map(String::trim).map(String::toLowerCase).orElse("week");
+        return Optional.ofNullable(period)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .orElse("week");
     }
 
     public record DateRange(Instant start, Instant end) {}
