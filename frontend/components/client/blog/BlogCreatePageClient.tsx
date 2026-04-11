@@ -9,21 +9,23 @@ import { BlogCreatePageView } from "@/components/client/blog/BlogCreatePageView"
 
 export default function BlogCreatePageClient() {
     const router = useRouter();
-    const { user, isAuthenticated } = useAuthStore();
-    const form = useBlogCreateForm(
-        user?.id,
-        user?.username ?? undefined,
-        typeof user?.avatar === "string" ? user.avatar : undefined,
-    );
+    const { user, isAuthenticated, authRole } = useAuthStore();
+    const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
+    const form = useBlogCreateForm();
 
     useEditorToolbarImageOverride(form.editorImageInputRef, form.content);
 
     useEffect(() => {
-        if (!isAuthenticated || !user) router.push("/login");
-    }, [isAuthenticated, user, router]);
+        if (!isAuthenticated || !user) {
+            router.push("/login");
+            return;
+        }
+        if (!canManageBlogs) {
+            router.push("/blog");
+        }
+    }, [isAuthenticated, user, canManageBlogs, router]);
 
-    if (!isAuthenticated || !user) return null;
+    if (!isAuthenticated || !user || !canManageBlogs) return null;
 
     return <BlogCreatePageView form={form} />;
 }
-

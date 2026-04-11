@@ -3,10 +3,10 @@ import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface BlogListHeaderProps {
-    isAuthenticated: boolean;
+    canManageBlogs: boolean;
 }
 
-export function BlogListHeader({ isAuthenticated }: BlogListHeaderProps) {
+export function BlogListHeader({ canManageBlogs }: BlogListHeaderProps) {
     return (
         <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
@@ -15,10 +15,10 @@ export function BlogListHeader({ isAuthenticated }: BlogListHeaderProps) {
                     <h1 className="text-4xl font-bold text-gray-900 md:text-5xl">Food Magazine</h1>
                 </div>
                 <p className="max-w-2xl text-base text-gray-600 md:text-lg">
-                    Discover great articles about food, recipes and cooking tips
+                    Stories, updates and practical notes from the FoodEats team
                 </p>
             </div>
-            {isAuthenticated && (
+            {canManageBlogs && (
                 <div className="flex gap-3">
                     <Button asChild variant="brandOutline" className="rounded-xl border-brand-orange/50 bg-white px-5 py-2.5 shadow-sm">
                         <Link href="/blog/my-blogs">

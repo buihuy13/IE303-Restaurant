@@ -12,9 +12,10 @@ export function useBlogDetailData(slug: string | undefined) {
         setLoading(true);
         try {
             const response = await blogApi.getBlogBySlug(slug);
-            setBlog(response.data);
+            setBlog(response);
         } catch (error) {
             console.error("Failed to fetch blog:", error);
+            setBlog(null);
             toast.error("Failed to load blog post");
         } finally {
             setLoading(false);
@@ -27,12 +28,5 @@ export function useBlogDetailData(slug: string | undefined) {
         }
     }, [slug, fetchBlog]);
 
-    const incrementCommentsCount = useCallback(() => {
-        setBlog((prev) => {
-            if (!prev) return prev;
-            return { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 };
-        });
-    }, []);
-
-    return { blog, setBlog, loading, fetchBlog, incrementCommentsCount };
+    return { blog, setBlog, loading, fetchBlog };
 }

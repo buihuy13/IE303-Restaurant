@@ -1,64 +1,39 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { blogApi } from "@/lib/api/blogApi";
-import type { Blog, BlogCategory } from "@/types/blog.type";
+import type { Blog } from "@/types/blog.type";
 
 export interface InitialBlogListData {
     blogs: Blog[];
     totalPages: number;
     page: number;
-    category: BlogCategory | "";
-    search: string;
 }
 
-const isSameQuery = (
-    page: number,
-    category: BlogCategory | "",
-    search: string,
-    initialData: InitialBlogListData | null,
-) => {
-    return (
-        !!initialData &&
-        initialData.page === page &&
-        initialData.category === category &&
-        initialData.search === search
-    );
-};
-
-export function useBlogListData(
-    page: number,
-    category: BlogCategory | "",
-    search: string,
-    initialData: InitialBlogListData | null = null,
-) {
-    const shouldUseInitialData = isSameQuery(page, category, search, initialData);
-    const [blogs, setBlogs] = useState<Blog[]>(shouldUseInitialData ? (initialData?.blogs ?? []) : []);
+export function useBlogListData(page: number, initialData: InitialBlogListData | null = null) {
+    const shouldUseInitialData = !!initialData && initialData.page === page;
+    const [blogs, setBlogs] = useState<Blog[]>(shouldUseInitialData ? initialData.blogs : []);
     const [loading, setLoading] = useState(!shouldUseInitialData);
-    const [totalPages, setTotalPages] = useState(shouldUseInitialData ? (initialData?.totalPages ?? 1) : 1);
+    const [totalPages, setTotalPages] = useState(shouldUseInitialData ? initialData.totalPages : 1);
 
     const fetchBlogs = useCallback(async () => {
         setLoading(true);
         try {
             const response = await blogApi.getBlogs({
                 page,
-                limit: 12,
-                category: category || undefined,
-                search: search || undefined,
+                size: 12,
+                sort: "publishedAt,desc",
             });
-            const sorted = [...(response.data || [])].sort((a, b) => {
-                const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
-                const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
-                return dateB - dateA;
-            });
-            setBlogs(sorted);
-            setTotalPages(response.pagination?.pages ?? 1);
+            setBlogs(response.content ?? []);
+            setTotalPages(response.totalPages || 1);
         } catch (error) {
             console.error("Failed to fetch blogs:", error);
             toast.error("Failed to load blog posts");
+            setBlogs([]);
+            setTotalPages(1);
         } finally {
             setLoading(false);
         }
-    }, [page, category, search]);
+    }, [page]);
 
     useEffect(() => {
         if (!shouldUseInitialData || !initialData) return;

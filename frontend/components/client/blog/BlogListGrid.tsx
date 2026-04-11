@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Clock, Eye, Heart } from "lucide-react";
+import { ArrowRight, Calendar, FileText } from "lucide-react";
 import Pagination from "@/components/client/Pagination";
-import { BLOG_CATEGORIES } from "@/lib/constants/blog";
+import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
 import type { Blog } from "@/types/blog.type";
 
-function formatDate(dateString: string) {
+function formatDate(dateString?: string | null) {
+    if (!dateString) return "Unpublished";
     return new Date(dateString).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -23,82 +24,43 @@ interface BlogListGridProps {
 export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: BlogListGridProps) {
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
+            <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
                 {blogs.map((blog) => (
                     <Link
-                        key={blog._id}
+                        key={blog.id}
                         href={`/blog/${blog.slug}`}
-                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 group flex flex-col border border-gray-100"
+                        className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl"
                     >
-                        <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
-                            {blog.featuredImage?.url ? (
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                            {blog.coverImageUrl ? (
                                 <Image
-                                    src={blog.featuredImage.url}
-                                    alt={blog.featuredImage.alt || blog.title}
+                                    src={blog.coverImageUrl}
+                                    alt={blog.title}
                                     fill
-                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-brand-orange/10">
-                                    <span className="text-5xl">🍽️</span>
+                                <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
+                                    <FileText className="h-12 w-12" />
                                 </div>
                             )}
-                            <div className="absolute top-4 left-4">
-                                <span className="px-3 py-1.5 text-white text-xs font-bold rounded-full backdrop-blur-md shadow-lg bg-brand-orange">
-                                    {BLOG_CATEGORIES.find((c) => c.value === blog.category)?.label ?? "Other"}
+                            <div className="absolute left-4 top-4">
+                                <span className="rounded-full bg-brand-orange px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                                    {BLOG_STATUS_LABELS[blog.status].label}
                                 </span>
                             </div>
                         </div>
-                        <div className="p-6 flex-1 flex flex-col">
-                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-brand-orange transition-colors">
+                        <div className="flex flex-1 flex-col p-6">
+                            <h3 className="mb-3 line-clamp-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-brand-orange">
                                 {blog.title}
                             </h3>
-                            {blog.excerpt && (
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">{blog.excerpt}</p>
-                            )}
-                            <div className="flex items-center justify-between text-sm text-gray-500 mb-4 pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1">
-                                        <Eye className="w-4 h-4" />
-                                        <span>{blog.views}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Heart className="w-4 h-4 text-red-500" />
-                                        <span>{blog.likesCount ?? blog.likes?.length ?? 0}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{blog.readTime} min</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <p className="mb-4 line-clamp-3 flex-1 text-sm text-gray-600">{blog.content}</p>
+                            <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-sm text-gray-500">
                                 <div className="flex items-center gap-2">
-                                    {blog.author?.avatar ? (
-                                        <Image
-                                            src={blog.author.avatar}
-                                            alt={blog.author?.name ?? "Author"}
-                                            width={36}
-                                            height={36}
-                                            className="rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md bg-brand-orange">
-                                            {blog.author?.name?.charAt(0).toUpperCase() ?? "?"}
-                                        </div>
-                                    )}
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-semibold text-gray-700">
-                                            {blog.author?.name ?? "Author"}
-                                        </span>
-                                        {blog.publishedAt && (
-                                            <span className="text-xs text-gray-500">
-                                                {formatDate(blog.publishedAt)}
-                                            </span>
-                                        )}
-                                    </div>
+                                    <Calendar className="h-4 w-4" />
+                                    <span>{formatDate(blog.publishedAt ?? blog.createdAt)}</span>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="h-5 w-5 text-gray-400 transition-all group-hover:translate-x-1 group-hover:text-brand-orange" />
                             </div>
                         </div>
                     </Link>

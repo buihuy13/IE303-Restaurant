@@ -8,14 +8,14 @@ export function useBlogDetailShare(blog: Blog | null) {
             try {
                 await navigator.share({
                     title: blog.title,
-                    text: blog.excerpt ?? "",
+                    text: blog.content.slice(0, 140),
                     url: window.location.href,
                 });
             } catch {
-                // User cancelled or error
+                // User cancelled or sharing is unavailable.
             }
         } else {
-            navigator.clipboard.writeText(window.location.href);
+            await navigator.clipboard.writeText(window.location.href);
             toast.success("Link copied!");
         }
     };

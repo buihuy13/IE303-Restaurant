@@ -7,9 +7,9 @@ export function useMyBlogsActions(onDeleted: () => void) {
 
     const handleDelete = async (blogId: string, title: string) => {
         const ok = await confirmAction({
-            title: "Delete blog?",
-            description: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
-            confirmText: "Delete",
+            title: "Archive blog?",
+            description: `Archive "${title}"? You can still find it in archived posts.`,
+            confirmText: "Archive",
             cancelText: "Cancel",
             variant: "danger",
         });
@@ -17,7 +17,7 @@ export function useMyBlogsActions(onDeleted: () => void) {
 
         try {
             await blogApi.deleteBlog(blogId);
-            toast.success("Blog deleted successfully");
+            toast.success("Blog archived successfully");
             onDeleted();
         } catch (error: unknown) {
             console.error("Failed to delete blog:", error);

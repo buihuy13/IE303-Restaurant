@@ -10,25 +10,24 @@ import { useMyBlogsActions } from "@/hooks/client/blog/useMyBlogsActions";
 
 export default function MyBlogsPageClient() {
     const router = useRouter();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, authRole } = useAuthStore();
+    const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const filters = useMyBlogsFilters();
-    const { blogs, loading, totalPages, fetchMyBlogs } = useMyBlogsData(
-        user?.id,
-        filters.page,
-        filters.category,
-        filters.status,
-        filters.search,
-    );
+    const { blogs, loading, totalPages, fetchMyBlogs } = useMyBlogsData(user?.id, filters.page, filters.status);
     const { handleDelete } = useMyBlogsActions(fetchMyBlogs);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isAuthenticated || !user) {
             router.replace("/login");
+            return;
         }
-    }, [isAuthenticated, user, router]);
+        if (!canManageBlogs) {
+            router.replace("/blog");
+        }
+    }, [isAuthenticated, user, canManageBlogs, router]);
 
-    if (!isAuthenticated || !user) return null;
+    if (!isAuthenticated || !user || !canManageBlogs) return null;
 
     const onDelete = async (blogId: string, title: string) => {
         setDeletingId(blogId);
@@ -45,13 +44,8 @@ export default function MyBlogsPageClient() {
             blogs={blogs}
             totalPages={totalPages}
             page={filters.page}
-            searchInput={filters.searchInput}
-            category={filters.category}
             status={filters.status}
             deletingId={deletingId}
-            onSearchInputChange={filters.setSearchInput}
-            onSearch={filters.handleSearch}
-            onCategoryChange={filters.handleCategoryChange}
             onStatusChange={filters.handleStatusChange}
             onPageChange={filters.handlePageChange}
             onDelete={onDelete}

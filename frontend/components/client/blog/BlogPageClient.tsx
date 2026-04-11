@@ -1,6 +1,5 @@
 "use client";
 
-import type { BlogCategory } from "@/types/blog.type";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlogListData, type InitialBlogListData } from "@/hooks/client/blog/useBlogListData";
 import { useBlogListFilters } from "@/hooks/client/blog/useBlogListFilters";
@@ -12,32 +11,22 @@ interface BlogPageClientProps {
 }
 
 export default function BlogPageClient({ initialData }: BlogPageClientProps) {
-    const { isAuthenticated } = useAuthStore();
+    const { authRole } = useAuthStore();
+    const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const filters = useBlogListFilters();
-    const { blogs, loading, totalPages } = useBlogListData(
-        filters.page,
-        filters.category,
-        filters.search,
-        initialData ?? null,
-    );
+    const { blogs, loading, totalPages } = useBlogListData(filters.page, initialData ?? null);
     const { featuredBlog, regularBlogs } = useBlogListFeatured(blogs);
 
     return (
         <BlogPageView
-            isAuthenticated={!!isAuthenticated}
+            canManageBlogs={canManageBlogs}
             loading={loading}
             blogs={blogs}
             totalPages={totalPages}
             page={filters.page}
-            searchInput={filters.searchInput}
-            category={filters.category as BlogCategory | ""}
             featuredBlog={featuredBlog}
             regularBlogs={regularBlogs}
-            onSearchInputChange={filters.setSearchInput}
-            onSearch={filters.handleSearch}
-            onCategoryChange={filters.handleCategoryChange}
             onPageChange={filters.handlePageChange}
         />
     );
 }
-
