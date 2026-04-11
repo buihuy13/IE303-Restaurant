@@ -28,7 +28,6 @@ import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
 import com.CNTTK18.user_service.dto.response.RegisterResponse;
-import com.CNTTK18.user_service.dto.response.UserAdminStatsOverviewResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
 import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
 import com.CNTTK18.user_service.exception.ForbiddenException;
@@ -62,14 +61,6 @@ public class UserController {
     @GetMapping("/admin/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
-    }
-
-    @Tag(name = "Get")
-    @Operation(summary = "Get admin user statistics overview")
-    @GetMapping("/admin/stats/overview")
-    public ResponseEntity<UserAdminStatsOverviewResponse> getAdminStatsOverview() {
-        requireAdminRole();
-        return ResponseEntity.ok(userService.getAdminStatsOverview());
     }
 
     @Tag(name = "Get")

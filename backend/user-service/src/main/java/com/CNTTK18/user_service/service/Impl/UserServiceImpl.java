@@ -1,8 +1,5 @@
 package com.CNTTK18.user_service.service.Impl;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,7 +30,6 @@ import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UpdateKeycloakUser;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
-import com.CNTTK18.user_service.dto.response.UserAdminStatsOverviewResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
 import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
 import com.CNTTK18.user_service.exception.ForbiddenException;
@@ -107,23 +103,6 @@ public class UserServiceImpl implements UserService {
             return userMapper.toUserResponse(createUserIfNotExist(id));
         }
         return userMapper.toUserResponse(optionalUser.get());
-    }
-
-    @Override
-    public UserAdminStatsOverviewResponse getAdminStatsOverview() {
-        LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDate todayUtc = nowUtc.toLocalDate();
-
-        LocalDateTime startToday = todayUtc.atStartOfDay();
-        LocalDateTime startWeek = todayUtc.minusDays(6).atStartOfDay();
-        LocalDateTime startMonth = todayUtc.withDayOfMonth(1).atStartOfDay();
-
-        return UserAdminStatsOverviewResponse.builder()
-                .totalUsers(userRepository.count())
-                .newUsersToday(userRepository.countByCreatedAtBetween(startToday, nowUtc))
-                .newUsersThisWeek(userRepository.countByCreatedAtBetween(startWeek, nowUtc))
-                .newUsersThisMonth(userRepository.countByCreatedAtBetween(startMonth, nowUtc))
-                .build();
     }
 
     @Override

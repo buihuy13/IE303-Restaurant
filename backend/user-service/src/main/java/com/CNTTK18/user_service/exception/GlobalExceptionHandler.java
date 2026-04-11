@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -107,6 +108,16 @@ public class GlobalExceptionHandler {
                         + ex.getMostSpecificCause().getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handlePropertyReferenceException(PropertyReferenceException ex) {
+        String property = ex.getPropertyName() == null || ex.getPropertyName().isBlank()
+                ? ex.getMessage()
+                : ex.getPropertyName();
+        ErrorResponse errorResponse = new ErrorResponse("INVALID_SORT_PROPERTY", "Invalid sort field: " + property);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     // Xử lý exception chung

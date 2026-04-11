@@ -12,7 +12,6 @@ import com.CNTTK18.restaurant_service.dto.restaurant.request.ResQuery;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
-import com.CNTTK18.restaurant_service.dto.restaurant.response.RestaurantAdminStatsResponse;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 
 public interface ResService {
@@ -35,5 +34,4 @@ public interface ResService {
 
     public ResResponse getRestaurantsByMerchantId(UUID id);
 
-    public RestaurantAdminStatsResponse getAdminStats();
 }

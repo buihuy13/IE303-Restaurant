@@ -27,7 +27,6 @@ import com.CNTTK18.restaurant_service.dto.restaurant.request.ResQuery;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.ResRequest;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.UpdateRes;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
-import com.CNTTK18.restaurant_service.dto.restaurant.response.RestaurantAdminStatsResponse;
 import com.CNTTK18.restaurant_service.exception.DistanceDurationException;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
@@ -35,8 +34,6 @@ import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Restaurants;
 import com.CNTTK18.restaurant_service.model.Reviews;
 import com.CNTTK18.restaurant_service.model.data.ReviewType;
-import com.CNTTK18.restaurant_service.repository.CateRepository;
-import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 import com.CNTTK18.restaurant_service.repository.ReviewRepository;
 import com.CNTTK18.restaurant_service.service.DistanceService;
@@ -49,8 +46,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ResServiceImpl implements ResService {
     private final ResRepository resRepository;
-    private final ProductRepository productRepository;
-    private final CateRepository cateRepository;
     private final WebClient.Builder webClientBuilder;
     private final ImageHandleService imageService;
     private final ReviewRepository reviewRepository;
@@ -236,18 +231,6 @@ public class ResServiceImpl implements ResService {
                 .findRestaurantsByMerchantId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return resMapper.toResResponse(res);
-    }
-
-    @Override
-    public RestaurantAdminStatsResponse getAdminStats() {
-        Double averageRestaurantRating = reviewRepository.getAverageRestaurantRating();
-
-        return RestaurantAdminStatsResponse.builder()
-                .totalRestaurants(resRepository.count())
-                .totalProducts(productRepository.count())
-                .totalCategories(cateRepository.count())
-                .averageRating(averageRestaurantRating != null ? averageRestaurantRating : 0D)
-                .build();
     }
 
     private Restaurants getById(UUID id) {

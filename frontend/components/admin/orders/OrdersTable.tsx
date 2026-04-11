@@ -1,5 +1,4 @@
-import { Edit, Eye, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Edit, Loader2 } from "lucide-react";
 import type { Order, OrderStatus } from "@/types/order.type";
 
 interface OrdersTableProps {
@@ -87,13 +86,6 @@ export function OrdersTable({
                                             <Edit className="h-5 w-5" />
                                         )}
                                     </button>
-                                    <Link
-                                        href={`/admin/order/${order.orderId}`}
-                                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                                        title="View Details"
-                                    >
-                                        <Eye className="h-5 w-5" />
-                                    </Link>
                                 </div>
                             </td>
                         </tr>

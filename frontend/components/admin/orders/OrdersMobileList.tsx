@@ -1,5 +1,4 @@
-import { Edit, Eye, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Edit, Loader2 } from "lucide-react";
 import type { Order, OrderStatus } from "@/types/order.type";
 
 interface OrdersMobileListProps {
@@ -109,13 +108,6 @@ export function OrdersMobileList({
                                 <Edit className="h-5 w-5" />
                             )}
                         </button>
-                        <Link
-                            href={`/admin/order/${order.orderId}`}
-                            className="h-11 min-w-11 inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                            title="View Details"
-                        >
-                            <Eye className="h-5 w-5" />
-                        </Link>
                     </div>
                 </div>
             ))}

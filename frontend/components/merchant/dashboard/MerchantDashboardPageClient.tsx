@@ -1,206 +1,68 @@
- "use client";
+"use client";
 
+import { dashboardApi, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
-import { orderApi } from "@/lib/api/orderApi";
-import type { Order } from "@/types/order.type";
-import { useOrderWebSocket } from "@/lib/hooks/useOrderWebSocket";
-import SectionDateFilter from "@/components/dashboard/SectionDateFilter";
-import RevenueTrendChart from "@/components/dashboard/RevenueTrendChart";
-import StatusBreakdown, { type StatusBreakdownRow } from "@/components/dashboard/StatusBreakdown";
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
 import {
+    Activity,
     AlertCircle,
-    BarChart3,
-    CheckCircle2,
-    Clock,
+    Clock3,
     DollarSign,
+    Package,
     ShoppingCart,
     Star,
     Store,
-    TrendingDown,
     TrendingUp,
-    Truck,
-    Package,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
-import { formatDateTime } from "@/lib/formatters";
+import { Area, AreaChart, Pie, PieChart, ResponsiveContainer, Tooltip, Cell, XAxis, YAxis } from "recharts";
 
-interface StatsCardProps {
-    title: string;
-    value: string | number;
-    icon: React.ElementType;
-    trend?: number;
-    trendLabel?: string;
-    bgColor: string;
-    iconColor: string;
+function formatChartDate(dateLike: string): string {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return dateLike;
+    return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
-function StatsCard({ title, value, icon: Icon, trend, trendLabel, bgColor, iconColor }: StatsCardProps) {
-    const isPositive = trend !== undefined && trend > 0;
-    const isNegative = trend !== undefined && trend < 0;
-
-    return (
-        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark transition-all hover:shadow-lg">
-            <div className="flex items-center justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${bgColor}`}>
-                            <Icon className={iconColor} size={20} />
-                        </div>
-                    </div>
-                    <p className="text-sm font-medium text-black dark:text-white mb-1">{title}</p>
-                    <h4 className="text-2xl font-bold text-black dark:text-white mb-2">{value}</h4>
-                    {trend !== undefined && (
-                        <div className="flex items-center gap-1.5">
-                            {isPositive && <TrendingUp size={16} className="text-meta-3" />}
-                            {isNegative && <TrendingDown size={16} className="text-meta-1" />}
-                            <span
-                                className={`text-sm font-medium ${isPositive ? "text-meta-3" : isNegative ? "text-meta-1" : "text-meta-6"}`}
-                            >
-                                {Math.abs(trend)}%
-                            </span>
-                            {trendLabel && (
-                                <span className="text-sm font-medium text-black dark:text-white">{trendLabel}</span>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function useDashboardDateRange(initialPreset: DashboardDateRangePreset = "30d") {
-    const [preset, setPreset] = useState<DashboardDateRangePreset>(initialPreset);
-    const presetQuery = useMemo(() => buildDateRangeQuery(preset), [preset]);
-    const [startDate, setStartDate] = useState<string>(presetQuery.startDate ?? "");
-    const [endDate, setEndDate] = useState<string>(presetQuery.endDate ?? "");
-
-    useEffect(() => {
-        setStartDate(presetQuery.startDate ?? "");
-        setEndDate(presetQuery.endDate ?? "");
-    }, [presetQuery.startDate, presetQuery.endDate]);
-
-    const error = useMemo(() => {
-        if (startDate && endDate && startDate > endDate) return "Start date must be before end date";
-        return null;
-    }, [endDate, startDate]);
-
-    const query = useMemo(() => {
-        if (startDate && endDate && !error) return { startDate, endDate };
-        return presetQuery;
-    }, [endDate, error, presetQuery, startDate]);
-
-    const reset = useCallback(() => {
-        setStartDate(presetQuery.startDate ?? "");
-        setEndDate(presetQuery.endDate ?? "");
-    }, [presetQuery.endDate, presetQuery.startDate]);
-
-    return {
-        preset,
-        startDate,
-        endDate,
-        error,
-        query,
-        setPreset,
-        setStartDate,
-        setEndDate,
-        reset,
-    };
-}
+const STATUS_COLORS = ["#F59E0B", "#6366F1", "#8B5CF6", "#14B8A6", "#10B981", "#EF4444"];
 
 export default function MerchantDashboardPageClient() {
     const { user } = useAuthStore();
 
-    const orderSummaryRange = useDashboardDateRange("30d");
-    const revenueRange = useDashboardDateRange("30d");
-    const topProductsRange = useDashboardDateRange("30d");
-
+    const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
     const [loadingRestaurant, setLoadingRestaurant] = useState(true);
-    const [loadingOverview, setLoadingOverview] = useState(true);
-    const [loadingRevenueTrend, setLoadingRevenueTrend] = useState(true);
-    const [loadingTopProducts, setLoadingTopProducts] = useState(true);
-    const [loadingRecentOrders, setLoadingRecentOrders] = useState(true);
-    const [restaurantOverview, setRestaurantOverview] = useState<{
-        restaurantId: string;
-        restaurantName: string;
-        restaurantSlug: string;
-        restaurantEnabled: boolean;
-        totalProducts: number;
-        rating: number;
-        totalReviews: number;
-        address: string;
-        imageURL?: string | null;
-        openingTime?: string | null;
-        closingTime?: string | null;
-    } | null>(null);
-    const [overview, setOverview] = useState<{
-        totalOrders: number;
-        totalRevenue: number;
-        averageOrderValue: number;
-        pendingOrders: number;
-        confirmedOrders: number;
-        preparingOrders: number;
-        readyOrders: number;
-        completedOrders: number;
-        cancelledOrders: number;
-    } | null>(null);
+    const [loadingDashboard, setLoadingDashboard] = useState(true);
+
+    const [restaurant, setRestaurant] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null>(
+        null,
+    );
+    const [overview, setOverview] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOverview>> | null>(
+        null,
+    );
+    const [revenue, setRevenue] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenue>> | null>(null);
+    const [orderStatus, setOrderStatus] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOrderStatus>> | null>(
+        null,
+    );
     const [topProducts, setTopProducts] = useState<
-        Array<{ productId: string; productName: string; totalQuantity: number; totalRevenue: number }>
+        Awaited<ReturnType<typeof dashboardApi.getMerchantTopProducts>>["items"]
     >([]);
-    const [ratingStats, setRatingStats] = useState<{
-        averageRating: number;
-        totalRatings: number;
-        ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
-    } | null>(null);
-    const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownRow[]>([]);
-    const [revenueTrend, setRevenueTrend] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenueTrend>>>(
-        [],
-    );
-    const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+    const [liveOrders, setLiveOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantLiveOrders>>>([]);
 
-    const fetchOrders = useCallback(async () => {
-        if (!user?.id || !restaurantOverview?.restaurantId) return;
-        try {
-            setLoadingRecentOrders(true);
-            const recent = await orderApi.getOrdersByRestaurant(restaurantOverview.restaurantId, user.id, {
-                page: 1,
-                limit: 5,
-            });
-            setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
-        } catch (error) {
-            console.error("Failed to fetch orders:", error);
-        } finally {
-            setLoadingRecentOrders(false);
-        }
-    }, [user?.id, restaurantOverview?.restaurantId]);
-
-    const handleOrderStatusUpdate = useCallback(
-        (update: { orderId: string; status: string }) => {
-            toast.success(`Order ${update.orderId} updated: ${update.status}`);
-            fetchOrders();
-        },
-        [fetchOrders],
-    );
-
-    const { isConnected: wsConnected } = useOrderWebSocket({
-        restaurantId: restaurantOverview?.restaurantId,
-        onOrderStatusUpdate: handleOrderStatusUpdate,
-    });
+    const period = useMemo(() => dashboardApi.mapPresetToPeriod(rangePreset), [rangePreset]);
 
     useEffect(() => {
-        if (!user?.id) return;
+        if (!user?.id) {
+            setLoadingRestaurant(false);
+            return;
+        }
 
         const run = async () => {
             setLoadingRestaurant(true);
             try {
-                const merchantId = user.id;
-                const restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
-                setRestaurantOverview(restaurant);
+                const data = await dashboardApi.getMerchantRestaurantOverview(user.id);
+                setRestaurant(data);
             } catch (error: unknown) {
                 const status =
                     error && typeof error === "object" && "response" in error
@@ -208,18 +70,12 @@ export default function MerchantDashboardPageClient() {
                         : undefined;
 
                 if (status === 404) {
-                    setRestaurantOverview(null);
-                    setOverview(null);
-                    setTopProducts([]);
-                    setRatingStats(null);
-                    setStatusBreakdown([]);
-                    setRevenueTrend([]);
-                    setRecentOrders([]);
+                    setRestaurant(null);
                     return;
                 }
 
-                console.error("Failed to load merchant restaurant overview:", error);
-                toast.error("Unable to load restaurant overview.");
+                console.error("Failed to load merchant restaurant", error);
+                toast.error("Unable to load restaurant profile.");
             } finally {
                 setLoadingRestaurant(false);
             }
@@ -229,518 +85,401 @@ export default function MerchantDashboardPageClient() {
     }, [user?.id]);
 
     useEffect(() => {
-        if (!user?.id) return;
-        if (!restaurantOverview?.restaurantId) return;
+        if (!restaurant?.restaurantId) {
+            setLoadingDashboard(false);
+            return;
+        }
 
         const run = async () => {
-            setLoadingOverview(true);
+            setLoadingDashboard(true);
             try {
-                const merchantId = user.id;
-                const [ov, ratings, status] = await Promise.all([
-                    dashboardApi.getMerchantOverview(merchantId, orderSummaryRange.query),
-                    dashboardApi.getMerchantRatingStats(merchantId, orderSummaryRange.query),
-                    dashboardApi.getMerchantOrderStatusBreakdown(merchantId, orderSummaryRange.query),
-                ]);
+                const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] =
+                    await Promise.all([
+                        dashboardApi.getMerchantOverview(restaurant.restaurantId, { period }),
+                        dashboardApi.getMerchantRevenue(restaurant.restaurantId, { period }),
+                        dashboardApi.getMerchantOrderStatus(restaurant.restaurantId, { period }),
+                        dashboardApi.getMerchantTopProducts(restaurant.restaurantId, { period, limit: 6 }),
+                        dashboardApi.getMerchantLiveOrders(restaurant.restaurantId),
+                    ]);
 
-                setOverview(ov);
-                setRatingStats({
-                    averageRating: typeof ratings?.averageRating === "number" ? ratings.averageRating : 0,
-                    totalRatings: typeof ratings?.totalRatings === "number" ? ratings.totalRatings : 0,
-                    ratingDistribution:
-                        typeof ratings?.ratingDistribution === "object" && ratings?.ratingDistribution
-                            ? ratings.ratingDistribution
-                            : { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-                });
-                setStatusBreakdown(
-                    (Array.isArray(status) ? status : []).map((row) => ({
-                        status: String(row.status ?? ""),
-                        count: typeof row.count === "number" ? row.count : 0,
-                        totalAmount: typeof row.totalAmount === "number" ? row.totalAmount : 0,
-                    })),
-                );
+                setOverview(nextOverview);
+                setRevenue(nextRevenue);
+                setOrderStatus(nextOrderStatus);
+                setTopProducts(nextTopProducts.items);
+                setLiveOrders(nextLiveOrders);
             } catch (error) {
-                console.error("Failed to load merchant overview:", error);
-                toast.error("Unable to load order summary.");
+                console.error("Failed to load merchant dashboard", error);
+                toast.error("Unable to load merchant dashboard.");
             } finally {
-                setLoadingOverview(false);
+                setLoadingDashboard(false);
             }
         };
 
         run();
-    }, [orderSummaryRange.query, restaurantOverview?.restaurantId, user?.id]);
+    }, [period, restaurant?.restaurantId]);
 
-    useEffect(() => {
-        if (!user?.id) return;
-        if (!restaurantOverview?.restaurantId) return;
+    const revenueSeries = useMemo(
+        () =>
+            (revenue?.breakdown ?? []).map((point) => ({
+                name: formatChartDate(point.date),
+                revenue: point.revenue,
+                orders: point.orderCount,
+            })),
+        [revenue?.breakdown],
+    );
 
-        const run = async () => {
-            setLoadingTopProducts(true);
-            try {
-                const merchantId = user.id;
-                const top = await dashboardApi.getMerchantTopProducts(merchantId, {
-                    limit: 10,
-                    ...topProductsRange.query,
-                });
-                setTopProducts(
-                    (Array.isArray(top) ? top : []).map((p) => ({
-                        productId: String(p.productId),
-                        productName: String(p.productName),
-                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
-                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    })),
-                );
-            } catch (error) {
-                console.error("Failed to load merchant top products:", error);
-                toast.error("Unable to load top products.");
-            } finally {
-                setLoadingTopProducts(false);
-            }
-        };
+    const statusSeries = useMemo(() => {
+        if (!orderStatus) return [];
 
-        run();
-    }, [restaurantOverview?.restaurantId, topProductsRange.query, user?.id]);
+        return [
+            { name: "Pending", value: orderStatus.pending },
+            { name: "Confirmed", value: orderStatus.confirmed },
+            { name: "Preparing", value: orderStatus.preparing },
+            { name: "Delivering", value: orderStatus.delivering },
+            { name: "Completed", value: orderStatus.completed },
+            { name: "Cancelled", value: orderStatus.cancelled },
+        ].filter((item) => item.value > 0);
+    }, [orderStatus]);
 
-    useEffect(() => {
-        if (!user?.id) return;
-        if (!restaurantOverview?.restaurantId) return;
-
-        const run = async () => {
-            setLoadingRevenueTrend(true);
-            try {
-                const merchantId = user.id;
-                const points = await dashboardApi.getMerchantRevenueTrend(merchantId, revenueRange.query);
-                setRevenueTrend(Array.isArray(points) ? points : []);
-            } catch (error) {
-                console.error("Failed to load merchant revenue trend:", error);
-                toast.error("Unable to load revenue trend.");
-            } finally {
-                setLoadingRevenueTrend(false);
-            }
-        };
-
-        run();
-    }, [restaurantOverview?.restaurantId, revenueRange.query, user?.id]);
-
-    useEffect(() => {
-        if (!user?.id) return;
-        if (!restaurantOverview?.restaurantId) return;
-        fetchOrders();
-    }, [fetchOrders, restaurantOverview?.restaurantId, user?.id]);
-
-    const cards = useMemo(() => {
-        const ov = overview;
-        const restaurant = restaurantOverview;
-        const totalOrders = ov?.totalOrders ?? 0;
+    const kpis = useMemo(() => {
+        const totalOrders = orderStatus?.total ?? 0;
+        const averageOrderValue = totalOrders > 0 ? (revenue?.totalRevenue ?? 0) / totalOrders : 0;
 
         return [
             {
-                title: "Total Revenue",
-                value: formatCurrency(ov?.totalRevenue ?? 0),
+                title: "Revenue Today",
+                value: formatCurrency(overview?.revenueToday ?? 0),
                 icon: DollarSign,
-                bgColor: "bg-meta-3/10",
-                iconColor: "text-meta-3",
-                trend: 11.01,
-                trendLabel: "vs last month",
+                hint: "Daily gross revenue",
             },
             {
-                title: "Total Orders",
-                value: totalOrders,
+                title: "Revenue This Month",
+                value: formatCurrency(overview?.revenueThisMonth ?? 0),
+                icon: TrendingUp,
+                hint: `Total orders: ${formatNumber(revenue?.totalOrders ?? 0)}`,
+            },
+            {
+                title: "Orders Today",
+                value: formatNumber(overview?.ordersToday ?? 0),
                 icon: ShoppingCart,
-                bgColor: "bg-primary/10",
-                iconColor: "text-primary",
-                trend: 2.59,
-                trendLabel: "vs last month",
+                hint: "Real-time operational load",
             },
             {
-                title: "Products",
-                value: restaurant?.totalProducts ?? 0,
-                icon: Package,
-                bgColor: "bg-meta-6/10",
-                iconColor: "text-meta-6",
-            },
-            {
-                title: "Avg Rating",
-                value: ratingStats ? ratingStats.averageRating.toFixed(1) : "0.0",
-                icon: Star,
-                bgColor: "bg-warning/10",
-                iconColor: "text-warning",
-                trend: undefined,
-                trendLabel: `${formatNumber(ratingStats?.totalRatings ?? 0)} reviews`,
+                title: "Average Order",
+                value: formatCurrency(averageOrderValue),
+                icon: Activity,
+                hint: `${formatNumber(totalOrders)} orders in selected period`,
             },
         ];
-    }, [overview, restaurantOverview, ratingStats]);
+    }, [orderStatus?.total, overview?.ordersToday, overview?.revenueThisMonth, overview?.revenueToday, revenue?.totalOrders, revenue?.totalRevenue]);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Merchant Dashboard</h1>
-                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
-                        {wsConnected && <span className="text-meta-3">● </span>}
-                        Hello, {user?.username || "Merchant"}!
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <Link
-                        href="/merchant/food/new"
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary py-2 px-4 text-sm font-medium text-white transition hover:bg-opacity-90"
-                    >
-                        <Store size={18} />
-                        Add Menu Item
-                    </Link>
-                </div>
-            </div>
+        <div className="space-y-6 font-manrope">
+            <section className="relative overflow-hidden rounded-2xl border border-white/20 p-6 text-white shadow-xl bg-[radial-gradient(circle_at_10%_20%,rgba(238,77,45,0.35),transparent_40%),radial-gradient(circle_at_92%_0%,rgba(16,185,129,0.26),transparent_36%),linear-gradient(130deg,#18141f_0%,#2c2233_50%,#3f2d3f_100%)] animate-[fadeIn_0.6s_ease-out]">
+                <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+                <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-white/75">Merchant Console</p>
+                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">Merchant Dashboard</h1>
+                        <p className="mt-2 text-sm text-white/80 md:text-base">
+                            Track your restaurant performance, live order flow, and top products from the new
+                            dashboard-service APIs.
+                        </p>
+                    </div>
 
-            {!loadingRestaurant && !restaurantOverview && (
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <select
+                            value={rangePreset}
+                            onChange={(event) => setRangePreset(event.target.value as DashboardDateRangePreset)}
+                            className="rounded-lg border border-white/25 bg-black/20 px-3 py-2 text-sm text-white outline-none"
+                            title="Dashboard range"
+                        >
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d">Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                            <option value="ytd">Year to date</option>
+                            <option value="all">All time</option>
+                        </select>
+
+                        <Link
+                            href="/merchant/food/new"
+                            className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-orange/90"
+                        >
+                            <Store size={16} />
+                            Add Menu Item
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {!loadingRestaurant && !restaurant && (
+                <section className="rounded-2xl border border-yellow-300 bg-yellow-50 p-6 text-yellow-900">
                     <div className="flex items-start gap-3">
                         <AlertCircle className="mt-0.5" size={18} />
                         <div className="flex-1">
                             <p className="font-semibold">Restaurant setup required</p>
                             <p className="mt-1 text-sm opacity-90">
-                                Your account is approved, but you haven’t created a restaurant profile yet. Create one
-                                to unlock dashboard stats, orders, and food management.
+                                Your merchant account is active, but no restaurant profile is linked yet.
                             </p>
-                            <div className="mt-4">
-                                <Link
-                                    href="/merchant/manage/settings"
-                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
-                                >
-                                    <Store size={16} />
-                                    Create restaurant profile
-                                </Link>
-                            </div>
+                            <Link
+                                href="/merchant/manage/settings"
+                                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                            >
+                                <Store size={16} />
+                                Create restaurant profile
+                            </Link>
                         </div>
                     </div>
-                </div>
+                </section>
             )}
 
-            <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-sm font-semibold text-black dark:text-white">Order summary range</p>
-                        <p className="text-xs text-bodydark mt-0.5">Controls the stats cards and order status.</p>
-                    </div>
-
-                    <SectionDateFilter
-                        preset={orderSummaryRange.preset}
-                        startDate={orderSummaryRange.startDate}
-                        endDate={orderSummaryRange.endDate}
-                        error={orderSummaryRange.error}
-                        onPresetChange={orderSummaryRange.setPreset}
-                        onStartDateChange={orderSummaryRange.setStartDate}
-                        onEndDateChange={orderSummaryRange.setEndDate}
-                        onReset={orderSummaryRange.reset}
-                    />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-                {cards.map((stat, index) => (
-                    <StatsCard key={index} {...stat} />
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
-                <div className="space-y-3">
-                    <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                            <div>
-                                <p className="text-sm font-semibold text-black dark:text-white">Revenue trend range</p>
-                                <p className="text-xs text-bodydark mt-0.5">Controls the revenue chart only.</p>
-                            </div>
-
-                            <SectionDateFilter
-                                preset={revenueRange.preset}
-                                startDate={revenueRange.startDate}
-                                endDate={revenueRange.endDate}
-                                error={revenueRange.error}
-                                onPresetChange={revenueRange.setPreset}
-                                onStartDateChange={revenueRange.setStartDate}
-                                onEndDateChange={revenueRange.setEndDate}
-                                onReset={revenueRange.reset}
-                            />
-                        </div>
-                    </div>
-
-                    {loadingRevenueTrend ? (
-                        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                            <p className="text-sm text-bodydark">Loading...</p>
-                        </div>
-                    ) : (
-                        <RevenueTrendChart points={revenueTrend} />
-                    )}
-                </div>
-
-                {loadingOverview ? (
-                    <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                        <p className="text-sm text-bodydark">Loading...</p>
-                    </div>
-                ) : (
-                    <StatusBreakdown rows={statusBreakdown} />
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
-                <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Restaurant Info</h3>
-                    {loadingRestaurant && !restaurantOverview ? (
-                        <div className="text-sm text-bodydark">Loading...</div>
-                    ) : restaurantOverview ? (
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 rounded-xl bg-gray/30 dark:bg-meta-4 flex items-center justify-center overflow-hidden">
-                                    {restaurantOverview.imageURL ? (
-                                        <Image
-                                            src={restaurantOverview.imageURL}
-                                            alt={restaurantOverview.restaurantName}
-                                            width={64}
-                                            height={64}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <Store className="text-bodydark" size={32} />
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="text-lg font-semibold text-black dark:text-white">
-                                            {restaurantOverview.restaurantName}
-                                        </h4>
-                                        <span
-                                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                restaurantOverview.restaurantEnabled
-                                                    ? "bg-success/10 text-success"
-                                                    : "bg-danger/10 text-danger"
-                                            }`}
-                                        >
-                                            {restaurantOverview.restaurantEnabled ? "Active" : "Temporarily Closed"}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-bodydark">{restaurantOverview.address}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                    <Star size={16} className="text-warning fill-warning" />
-                                    <span className="font-medium text-black dark:text-white">
-                                        {restaurantOverview.rating.toFixed(1)}
-                                    </span>
-                                    <span className="text-bodydark">
-                                        ({formatNumber(restaurantOverview.totalReviews)} reviews)
-                                    </span>
-                                </div>
-                                {restaurantOverview.openingTime && restaurantOverview.closingTime && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Clock size={16} className="text-bodydark" />
-                                        <span className="text-bodydark">
-                                            {restaurantOverview.openingTime} - {restaurantOverview.closingTime}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-2 pt-2">
-                                <Link
-                                    href="/merchant/food"
-                                    className="flex-1 text-center rounded-lg border border-stroke py-2 px-3 text-sm font-medium transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
+            {restaurant && (
+                <>
+                    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        {kpis.map((card, index) => {
+                            const Icon = card.icon;
+                            return (
+                                <article
+                                    key={card.title}
+                                    className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-boxdark animate-[fadeInUp_0.55s_ease-out]"
+                                    style={{ animationDelay: `${index * 70}ms` }}
                                 >
-                                    Manage Menu
-                                </Link>
-                                {restaurantOverview.restaurantSlug && (
-                                    <Link
-                                        href={`/restaurants/${encodeURIComponent(restaurantOverview.restaurantSlug)}`}
-                                        className="flex-1 text-center rounded-lg bg-primary py-2 px-3 text-sm font-medium text-white transition hover:bg-opacity-90"
-                                    >
-                                        View Storefront
-                                    </Link>
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">{card.title}</p>
+                                            <h2 className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
+                                                {card.value}
+                                            </h2>
+                                            <p className="mt-1 text-xs text-bodydark">{card.hint}</p>
+                                        </div>
+                                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-yellowlight text-brand-orange">
+                                            <Icon size={18} />
+                                        </span>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-3 dark:border-white/10 dark:bg-boxdark">
+                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Revenue Trend</h3>
+                            <p className="mt-1 text-xs text-bodydark">Selected period breakdown</p>
+                            <div className="mt-4 h-[300px]">
+                                {loadingDashboard ? (
+                                    <div className="h-full animate-pulse rounded-xl bg-gray" />
+                                ) : revenueSeries.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={revenueSeries}>
+                                            <defs>
+                                                <linearGradient id="merchantRevenueGradientV2" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#EE4D2D" stopOpacity={0.35} />
+                                                    <stop offset="95%" stopColor="#EE4D2D" stopOpacity={0.04} />
+                                                </linearGradient>
+                                            </defs>
+                                            <XAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 12 }} />
+                                            <YAxis tick={{ fill: "#6B7280", fontSize: 12 }} tickFormatter={(value) => formatNumber(value)} />
+                                            <Tooltip
+                                                formatter={(value: number, key: string) =>
+                                                    key === "revenue"
+                                                        ? [formatCurrency(value), "Revenue"]
+                                                        : [formatNumber(value), "Orders"]
+                                                }
+                                            />
+                                            <Area
+                                                dataKey="revenue"
+                                                type="monotone"
+                                                stroke="#EE4D2D"
+                                                strokeWidth={2.5}
+                                                fill="url(#merchantRevenueGradientV2)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 )}
                             </div>
-                        </div>
-                    ) : (
-                        <div className="text-sm text-bodydark">No restaurant yet.</div>
-                    )}
-                </div>
+                        </article>
 
-                <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Order Status</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="rounded-lg bg-warning/10 p-4 text-center">
-                            <Clock size={24} className="mx-auto mb-2 text-warning" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Pending Confirmation</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">
-                                {overview?.pendingOrders ?? 0}
-                            </p>
-                        </div>
-                        <div className="rounded-lg bg-primary/10 p-4 text-center">
-                            <Truck size={24} className="mx-auto mb-2 text-primary" />
-                            <p className="text-sm font-medium text-bodydark mb-1">In Progress</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">
-                                {(overview?.confirmedOrders ?? 0) + (overview?.preparingOrders ?? 0)}
-                            </p>
-                        </div>
-                        <div className="rounded-lg bg-meta-3/10 p-4 text-center">
-                            <CheckCircle2 size={24} className="mx-auto mb-2 text-meta-3" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Completed</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">
-                                {overview?.completedOrders ?? 0}
-                            </p>
-                        </div>
-                        <div className="rounded-lg bg-meta-1/10 p-4 text-center">
-                            <AlertCircle size={24} className="mx-auto mb-2 text-meta-1" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Canceled</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">
-                                {overview?.cancelledOrders ?? 0}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
-                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                            <div>
-                                <h3 className="font-semibold text-black dark:text-white">Top Products</h3>
-                                <p className="text-xs text-bodydark mt-0.5">Driven by its own date range.</p>
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-2 dark:border-white/10 dark:bg-boxdark">
+                            <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Order Status</h3>
+                            <p className="mt-1 text-xs text-bodydark">Volume by status</p>
+                            <div className="mt-4 h-[230px]">
+                                {loadingDashboard ? (
+                                    <div className="h-full animate-pulse rounded-xl bg-gray" />
+                                ) : statusSeries.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">No data.</div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={statusSeries}
+                                                dataKey="value"
+                                                nameKey="name"
+                                                innerRadius="56%"
+                                                outerRadius="82%"
+                                                paddingAngle={3}
+                                            >
+                                                {statusSeries.map((_, index) => (
+                                                    <Cell key={index} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: number) => formatNumber(value)} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
-
-                            <SectionDateFilter
-                                preset={topProductsRange.preset}
-                                startDate={topProductsRange.startDate}
-                                endDate={topProductsRange.endDate}
-                                error={topProductsRange.error}
-                                onPresetChange={topProductsRange.setPreset}
-                                onStartDateChange={topProductsRange.setStartDate}
-                                onEndDateChange={topProductsRange.setEndDate}
-                                onReset={topProductsRange.reset}
-                            />
-                        </div>
-                    </div>
-                    <div className="p-6">
-                        {loadingTopProducts ? (
-                            <p className="text-sm text-bodydark">Loading...</p>
-                        ) : topProducts.length === 0 ? (
-                            <p className="text-sm text-bodydark">No data yet.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {topProducts.slice(0, 5).map((product, index) => (
-                                    <div
-                                        key={product.productId}
-                                        className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                                                #{index + 1}
-                                            </span>
-                                            <div>
-                                                <p className="font-medium text-black dark:text-white">
-                                                    {product.productName}
-                                                </p>
-                                                <p className="text-xs text-bodydark">
-                                                    {formatNumber(product.totalQuantity)} sold
-                                                </p>
-                                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                {statusSeries.map((item, index) => (
+                                    <div key={item.name} className="rounded-lg border border-black/5 p-2.5 text-xs dark:border-white/10">
+                                        <div className="mb-1 inline-flex items-center gap-2">
+                                            <span
+                                                className="inline-flex h-2.5 w-2.5 rounded-full"
+                                                style={{ backgroundColor: STATUS_COLORS[index % STATUS_COLORS.length] }}
+                                            />
+                                            <span className="text-bodydark">{item.name}</span>
                                         </div>
-                                        <p className="font-semibold text-meta-3">
-                                            {formatCurrency(product.totalRevenue)}
-                                        </p>
+                                        <p className="font-semibold text-black dark:text-white">{formatNumber(item.value)}</p>
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </article>
+                    </section>
 
-                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
-                        <h3 className="font-semibold text-black dark:text-white">Recent Orders</h3>
-                        <Link href="/merchant/orders" className="text-sm font-medium text-primary hover:underline">
-                            View All
-                        </Link>
-                    </div>
-                    <div className="p-6">
-                        {loadingRecentOrders ? (
-                            <p className="text-sm text-bodydark">Loading...</p>
-                        ) : recentOrders.length === 0 ? (
-                            <p className="text-sm text-bodydark">No orders yet.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {recentOrders.map((order) => {
-                                    const statusColor =
-                                        order.status === "completed"
-                                            ? "bg-meta-3/10 text-meta-3"
-                                            : order.status === "cancelled"
-                                              ? "bg-meta-1/10 text-meta-1"
-                                              : "bg-warning/10 text-warning";
-
-                                    return (
-                                        <div
-                                            key={order.orderId}
-                                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                    <ShoppingCart size={18} className="text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-black dark:text-white">
-                                                        #{order.orderId}
-                                                    </p>
-                                                    <p className="text-xs text-bodydark">
-                                                        {formatDateTime(order.createdAt)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-semibold text-black dark:text-white mb-1">
-                                                    {formatCurrency(order.finalAmount || 0)}
-                                                </p>
-                                                <span
-                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
-                                                >
-                                                    {order.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                    <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Top Products</h3>
+                                <Package size={18} className="text-bodydark" />
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+                            {loadingDashboard ? (
+                                <div className="space-y-3">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="h-11 animate-pulse rounded-lg bg-gray" />
+                                    ))}
+                                </div>
+                            ) : topProducts.length === 0 ? (
+                                <p className="text-sm text-bodydark">No product data.</p>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    {topProducts.map((product, index) => (
+                                        <div
+                                            key={`${product.productId}-${index}`}
+                                            className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10"
+                                        >
+                                            <div>
+                                                <p className="text-sm font-semibold text-black dark:text-white">
+                                                    #{index + 1} {product.productName}
+                                                </p>
+                                                <p className="text-xs text-bodydark">
+                                                    {formatNumber(product.totalQuantitySold)} sold
+                                                    {product.sizeName ? ` • ${product.sizeName}` : ""}
+                                                </p>
+                                            </div>
+                                            <p className="text-sm font-semibold text-brand-orange">
+                                                {formatCurrency(product.totalRevenue)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </article>
 
-            <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Quick Actions</h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <Link
-                        href="/merchant/food"
-                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
-                    >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                            <Store className="text-primary" size={24} />
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Live Orders</h3>
+                                <Clock3 size={18} className="text-bodydark" />
+                            </div>
+                            {loadingDashboard ? (
+                                <div className="space-y-3">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="h-11 animate-pulse rounded-lg bg-gray" />
+                                    ))}
+                                </div>
+                            ) : liveOrders.length === 0 ? (
+                                <p className="text-sm text-bodydark">No active orders right now.</p>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    {liveOrders.slice(0, 8).map((order) => {
+                                        const status = String(order.status || "PENDING").toUpperCase();
+                                        const statusColor =
+                                            status === "COMPLETED"
+                                                ? "bg-green-50 text-green-700"
+                                                : status === "CANCELLED"
+                                                  ? "bg-red-50 text-red-700"
+                                                  : "bg-amber-50 text-amber-700";
+
+                                        return (
+                                            <div
+                                                key={order.id}
+                                                className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-semibold text-black dark:text-white">
+                                                        #{order.orderCode || order.id.slice(0, 8)}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">{formatNumber(order.itemCount || 0)} items</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-semibold text-black dark:text-white">
+                                                        {formatCurrency(order.totalPrice)}
+                                                    </p>
+                                                    <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}>
+                                                        {status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </article>
+                    </section>
+
+                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                        <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">Restaurant Snapshot</h3>
+                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_auto] md:items-center">
+                            <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray">
+                                {restaurant.imageURL ? (
+                                    <Image
+                                        src={restaurant.imageURL}
+                                        alt={restaurant.restaurantName}
+                                        width={64}
+                                        height={64}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-bodydark">
+                                        <Store size={28} />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-black dark:text-white">{restaurant.restaurantName}</p>
+                                <p className="text-sm text-bodydark">{restaurant.address}</p>
+                                <div className="mt-1 inline-flex items-center gap-1 text-xs text-bodydark">
+                                    <Star size={14} className="text-amber-500" />
+                                    {restaurant.rating.toFixed(1)} ({formatNumber(restaurant.totalReviews)} reviews)
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 md:justify-end">
+                                <Link
+                                    href="/merchant/food"
+                                    className="rounded-lg border border-black/10 px-3 py-2 text-sm font-semibold text-black transition hover:bg-gray dark:border-white/10 dark:text-white"
+                                >
+                                    Manage menu
+                                </Link>
+                                <Link
+                                    href="/merchant/reports"
+                                    className="rounded-lg bg-brand-orange px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-orange/90"
+                                >
+                                    Open reports
+                                </Link>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold text-black dark:text-white">Manage Menu Items</p>
-                            <p className="text-sm text-bodydark">Add and edit your menu</p>
-                        </div>
-                    </Link>
-                    <Link
-                        href="/merchant/reports"
-                        className="flex items-center gap-4 rounded-lg border border-stroke p-4 transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
-                    >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-3/10">
-                            <BarChart3 className="text-meta-3" size={24} />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-black dark:text-white">Reports</p>
-                            <p className="text-sm text-bodydark">View detailed analytics</p>
-                        </div>
-                    </Link>
-                </div>
-            </div>
+                    </section>
+                </>
+            )}
         </div>
     );
 }
-

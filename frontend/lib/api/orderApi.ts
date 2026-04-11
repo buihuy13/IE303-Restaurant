@@ -15,6 +15,8 @@ const numUnknown = (v: unknown): number => {
     return 0;
 };
 
+const toBackendOrderStatus = (status: string): string => status.trim().toUpperCase();
+
 /** Maps order-service / Mongo payloads to the frontend Order shape (handles UUID strings, totalPrice, note, etc.). */
 function normalizeOrderDto(raw: unknown): Order {
     if (!raw || typeof raw !== "object") {
@@ -303,6 +305,35 @@ export const orderApi = {
         };
     },
 
+    // Admin API (new order-service contract): GET /api/orders/admin
+    getAdminOrders: async (params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+    }): Promise<{ orders: Order[]; pagination?: Pagination }> => {
+        const search = new URLSearchParams();
+        const pageIndex = Math.max((params?.page ?? 1) - 1, 0);
+        search.append("page", String(pageIndex));
+        search.append("size", String(params?.limit ?? 10));
+        if (params?.status?.trim()) {
+            search.append("status", toBackendOrderStatus(params.status));
+        }
+
+        const response = await api.get<unknown>(`/orders/admin?${search.toString()}`, withOrderServiceBase());
+        const payload = (response.data ?? {}) as Record<string, unknown>;
+        const content = Array.isArray(payload.content) ? payload.content : [];
+
+        return {
+            orders: content.map(normalizeOrderDto),
+            pagination: {
+                page: numUnknown(payload.number) + 1,
+                limit: numUnknown(payload.size),
+                total: numUnknown(payload.totalElements),
+                totalPages: numUnknown(payload.totalPages),
+            },
+        };
+    },
+
     // Get orders by restaurant (Manager/Merchant)
     getOrdersByRestaurant: async (
         restaurantId: string,
@@ -400,6 +431,16 @@ export const orderApi = {
         }
 
         const response = await api.patch(`/orders/${orderId}/status`, payload, withOrderServiceBase());
+        return response.data;
+    },
+
+    // Admin API (new order-service contract): PUT /api/orders/admin/{orderId}/status
+    updateAdminOrderStatus: async (orderId: string, status: OrderStatus) => {
+        const response = await api.put(
+            `/orders/admin/${orderId}/status`,
+            { status: toBackendOrderStatus(status) },
+            withOrderServiceBase(),
+        );
         return response.data;
     },
 

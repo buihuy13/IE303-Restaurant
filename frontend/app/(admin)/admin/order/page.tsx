@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 async function getOrders(): Promise<Order[]> {
-    const result = await orderApi.getAllOrders();
+    const result = await orderApi.getAdminOrders();
     return result.orders;
 }
 

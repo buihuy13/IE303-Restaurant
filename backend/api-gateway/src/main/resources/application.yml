@@ -63,14 +63,23 @@ spring:
                   uri: lb://order-service
                   predicates:
                       - Path=/api/cart/**
-                - id: order-service-dashboard
-                  uri: lb://order-service
+                # dashboard-service
+                - id: dashboard-service-dashboard
+                  uri: lb://dashboard-service
                   predicates:
                       - Path=/api/dashboard/**
-                - id: order-service-merchant-dashboard
-                  uri: lb://order-service
+                - id: dashboard-service-merchant-dashboard
+                  uri: lb://dashboard-service
                   predicates:
                       - Path=/api/merchant/dashboard/**
+                - id: dashboard-service-user-admin-stats
+                  uri: lb://dashboard-service
+                  predicates:
+                      - Path=/api/users/admin/stats/**
+                - id: dashboard-service-restaurant-admin-stats
+                  uri: lb://dashboard-service
+                  predicates:
+                      - Path=/api/restaurant/admin/stats
                 #user-service
                 - id: user-service-admin
                   uri: lb://user-service
@@ -169,6 +178,10 @@ spring:
                   uri: lb://blog-service
                   predicates:
                       - Path=/v3/api-docs/blog-service
+                - id: dashboard-service-docs
+                  uri: lb://dashboard-service
+                  predicates:
+                      - Path=/v3/api-docs/dashboard-service
 
 eureka:
     instance:
@@ -195,6 +208,8 @@ springdoc:
               url: /v3/api-docs/chat-service
             - name: Recommendation Service
               url: /v3/api-docs/recommendation-service
+            - name: Dashboard Service
+              url: /v3/api-docs/dashboard-service
             - name: Restaurant Service
               url: /v3/api-docs/restaurant-service
             - name: Payment Service
