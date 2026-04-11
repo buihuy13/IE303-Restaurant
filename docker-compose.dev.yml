@@ -59,6 +59,8 @@ services:
             - ./keycloak-config/realm.json:/tmp/realm.json:ro
             - ./keycloak-config/init.sh:/tmp/init.sh:ro
             - ./keycloak-config/themes:/opt/keycloak/themes
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
     prometheus:
         image: prom/prometheus:latest
         container_name: 'prometheus'
