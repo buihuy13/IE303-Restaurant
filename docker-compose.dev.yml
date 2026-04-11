@@ -33,6 +33,29 @@ services:
             timeout: 3s # Không response sau 3s thì timeout
             retries: 5 # Thử lại 5 lần trước khi mark là unhealthy
             start_period: 10s # Cho 10s bắt đầu trước khi healthcheck
+    postgres:
+        image: postgis/postgis:16-3.4
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: postgres
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./backend/seed-db/seed-db.sh:/docker-entrypoint-initdb.d/00_seed_db.sh
+            - ./backend/seed-db/user_service.sql:/docker-entrypoint-initdb.d/user_service.sql
+            - ./backend/seed-db/blog_service.sql:/docker-entrypoint-initdb.d/blog_service.sql
+            - ./backend/seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
+            - ./backend/seed-db/payment_service.sql:/docker-entrypoint-initdb.d/payment_service.sql
+            - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 60s
     
     keycloak:
         image: quay.io/keycloak/keycloak:24.0.0
@@ -59,6 +82,9 @@ services:
             - ./keycloak-config/realm.json:/tmp/realm.json:ro
             - ./keycloak-config/init.sh:/tmp/init.sh:ro
             - ./keycloak-config/themes:/opt/keycloak/themes
+        depends_on:
+            postgres:
+                condition: service_healthy
         extra_hosts:
             - "host.docker.internal:host-gateway"
     prometheus:
@@ -110,3 +136,4 @@ volumes:
     rabbitmq-data:
     grafana-data:
     prometheus-data:
+    postgres_data:
