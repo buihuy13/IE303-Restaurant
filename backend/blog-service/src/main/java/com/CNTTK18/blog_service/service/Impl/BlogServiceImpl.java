@@ -136,8 +136,13 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
-    public Page<BlogResponse> getPublishedBlogs(Pageable pageable) {
-        return blogRepository.findAllByStatus(BlogStatus.PUBLISHED, pageable).map(blogMapper::toBlogResponse);
+    public Page<BlogResponse> getPublishedBlogs(UUID authorId, Pageable pageable) {
+        if (authorId == null) {
+            return blogRepository.findAllByStatus(BlogStatus.PUBLISHED, pageable).map(blogMapper::toBlogResponse);
+        }
+        return blogRepository
+                .findAllByAuthorIdAndStatus(authorId, BlogStatus.PUBLISHED, pageable)
+                .map(blogMapper::toBlogResponse);
     }
 
     @Override

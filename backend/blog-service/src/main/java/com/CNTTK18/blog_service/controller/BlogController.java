@@ -230,7 +230,8 @@ public class BlogController {
 
     @Operation(
             summary = "Get all published blogs",
-            description = "Public endpoint. Returns only posts with status PUBLISHED.")
+            description = "Public endpoint. Returns only posts with status PUBLISHED. "
+                    + "When authorId is provided, returns published posts by that author.")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
@@ -241,8 +242,9 @@ public class BlogController {
                                 examples = @ExampleObject(value = PAGED_BLOG_RESPONSE_EXAMPLE)))
     })
     @GetMapping("")
-    public ResponseEntity<Page<BlogResponse>> getPublishedBlogs(Pageable pageable) {
-        return ResponseEntity.ok(blogService.getPublishedBlogs(pageable));
+    public ResponseEntity<Page<BlogResponse>> getPublishedBlogs(
+            @RequestParam(required = false) UUID authorId, Pageable pageable) {
+        return ResponseEntity.ok(blogService.getPublishedBlogs(authorId, pageable));
     }
 
     @Operation(summary = "Get draft blogs by author (default current user)")

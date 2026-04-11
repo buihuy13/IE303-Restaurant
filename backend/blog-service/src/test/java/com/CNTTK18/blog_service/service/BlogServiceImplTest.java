@@ -27,6 +27,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -278,6 +280,48 @@ class BlogServiceImplTest {
         when(blogRepository.findBySlug("draft-slug")).thenReturn(Optional.of(draftBlog));
 
         assertThrows(ResourceNotFoundException.class, () -> blogService.getBlogBySlug("draft-slug"));
+    }
+
+    @Test
+    void getPublishedBlogs_shouldReturnAllPublishedBlogsWhenAuthorIdIsMissing() {
+        Pageable pageable = PageRequest.of(0, 10);
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .title("Published title")
+                .slug("published-title")
+                .content("Published content")
+                .status(BlogStatus.PUBLISHED)
+                .build();
+        when(blogRepository.findAllByStatus(BlogStatus.PUBLISHED, pageable))
+                .thenReturn(new PageImpl<>(List.of(publishedBlog), pageable, 1));
+
+        Page<BlogResponse> response = blogService.getPublishedBlogs(null, pageable);
+
+        assertEquals(1, response.getTotalElements());
+        assertEquals(BLOG_ID, response.getContent().get(0).getId());
+        verify(blogRepository).findAllByStatus(BlogStatus.PUBLISHED, pageable);
+    }
+
+    @Test
+    void getPublishedBlogs_shouldReturnPublishedBlogsByAuthorWhenAuthorIdIsProvided() {
+        Pageable pageable = PageRequest.of(0, 10);
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .title("Published title")
+                .slug("published-title")
+                .content("Published content")
+                .status(BlogStatus.PUBLISHED)
+                .build();
+        when(blogRepository.findAllByAuthorIdAndStatus(AUTHOR_ID, BlogStatus.PUBLISHED, pageable))
+                .thenReturn(new PageImpl<>(List.of(publishedBlog), pageable, 1));
+
+        Page<BlogResponse> response = blogService.getPublishedBlogs(AUTHOR_ID, pageable);
+
+        assertEquals(1, response.getTotalElements());
+        assertEquals(AUTHOR_ID, response.getContent().get(0).getAuthorId());
+        verify(blogRepository).findAllByAuthorIdAndStatus(AUTHOR_ID, BlogStatus.PUBLISHED, pageable);
     }
 
     @Test

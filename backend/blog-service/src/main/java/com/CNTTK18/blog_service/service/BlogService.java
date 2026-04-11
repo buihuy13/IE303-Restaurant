@@ -21,7 +21,7 @@ public interface BlogService {
 
     BlogResponse getBlogBySlug(String slug);
 
-    Page<BlogResponse> getPublishedBlogs(Pageable pageable);
+    Page<BlogResponse> getPublishedBlogs(UUID authorId, Pageable pageable);
 
     Page<BlogResponse> getDraftBlogs(UUID authorId, UserRole authUser, Pageable pageable);
 
