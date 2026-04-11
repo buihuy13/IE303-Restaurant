@@ -26,7 +26,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
-                        .requestMatchers("/api/dashboard/**", "/api/users/admin/stats/**", "/api/restaurant/admin/stats")
+                        .requestMatchers(
+                                "/api/dashboard/**", "/api/users/admin/stats/**", "/api/restaurant/admin/stats")
                         .hasRole("ADMIN")
                         .requestMatchers("/api/merchant/dashboard/**")
                         .hasAnyRole("MERCHANT", "ADMIN")
