@@ -54,27 +54,19 @@ public class SecurityConfig {
                 .permitAll()
                 .pathMatchers(PUBLIC_PATHS)
                 .permitAll()
-                // user-service
-                .pathMatchers("/api/users/admin/**")
+                // dashboard-service
+                .pathMatchers("/api/dashboard/**")
                 .hasRole("ADMIN")
+                .pathMatchers("/api/merchant/dashboard/**")
+                .hasAnyRole("MERCHANT", "ADMIN")
+                // user-service
                 .pathMatchers(HttpMethod.POST, "/api/users/address")
                 .hasRole("USER")
                 .pathMatchers(HttpMethod.DELETE, "/api/users/address")
                 .hasAnyRole("USER", "ADMIN")
                 .pathMatchers(HttpMethod.GET, "/api/users/addresses/**")
                 .hasAnyRole("USER", "ADMIN")
-                // order-service
-                .pathMatchers("/api/dashboard/**")
-                .hasRole("ADMIN")
-                .pathMatchers("/api/orders/admin/**")
-                .hasRole("ADMIN")
-                .pathMatchers("/api/merchant/dashboard/**")
-                .hasAnyRole("MERCHANT", "ADMIN")
-                .pathMatchers("/api/order/**", "/api/orders/**", "/api/cart/**")
-                .authenticated()
                 // restaurant-service
-                .pathMatchers("/api/restaurants/admin/**", "/api/restaurant/admin/**")
-                .hasRole("ADMIN")
                 .pathMatchers(HttpMethod.POST, "/api/category/**")
                 .hasRole("ADMIN")
                 .pathMatchers(HttpMethod.PUT, "/api/category/**")
