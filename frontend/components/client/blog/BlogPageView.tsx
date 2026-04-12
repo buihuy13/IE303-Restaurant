@@ -36,11 +36,9 @@ export function BlogPageView({
     const gridBlogs = shouldShowFeatured ? regularBlogs : blogs;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="min-h-screen bg-white">
             <div className="custom-container py-12">
-                <div className="mb-10 rounded-3xl border border-gray-200/90 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] sm:p-7">
-                    <BlogListHeader canManageBlogs={canManageBlogs} />
-                </div>
+                <BlogListHeader canManageBlogs={canManageBlogs} />
 
                 {loading ? (
                     <BlogListLoading />

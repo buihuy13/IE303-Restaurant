@@ -18,7 +18,7 @@ export function BlogDetailPageView({ loading, blog, onShare }: BlogDetailPageVie
     if (!blog) return <BlogDetailNotFound />;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="min-h-screen bg-white">
             <div className="custom-container py-12">
                 <BlogDetailArticle blog={blog} onShare={onShare} />
             </div>

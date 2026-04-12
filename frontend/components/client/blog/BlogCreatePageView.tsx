@@ -36,10 +36,10 @@ export interface BlogCreatePageViewProps {
 
 export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8">
+        <div className="min-h-screen bg-white py-8">
             <div className="custom-container max-w-4xl">
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/blog" className="rounded-full p-2 transition-colors hover:bg-gray-200">
+                    <Link href="/blog" className="rounded-lg p-2 transition-colors hover:bg-gray-100">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div>
@@ -50,7 +50,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
 
                 <form
                     onSubmit={form.handleSubmit}
-                    className="space-y-6 rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)] md:p-8"
+                    className="space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8"
                 >
                     <div>
                         <label htmlFor="title" className="mb-2 block text-sm font-semibold text-gray-700">
@@ -62,7 +62,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             value={form.title}
                             onChange={(e) => form.setTitle(e.target.value)}
                             placeholder="Enter article title..."
-                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                             maxLength={255}
                             required
                         />
@@ -72,19 +72,19 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                     <div>
                         <label className="mb-2 block text-sm font-semibold text-gray-700">Cover Image</label>
                         {form.coverImagePreview ? (
-                            <div className="relative h-64 w-full overflow-hidden rounded-2xl border-2 border-gray-300">
+                            <div className="relative h-64 w-full overflow-hidden rounded-lg border border-gray-300">
                                 <Image src={form.coverImagePreview} alt="Preview" fill className="object-cover" />
                                 <button
                                     type="button"
                                     onClick={form.handleRemoveCoverImage}
-                                    className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+                                    className="absolute right-2 top-2 rounded-md bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
                                     aria-label="Remove image"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
                             </div>
                         ) : (
-                            <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
+                            <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
                                 <div className="flex flex-col items-center justify-center pb-6 pt-5">
                                     <ImageIcon className="mb-3 h-10 w-10 text-gray-400" />
                                     <p className="mb-2 text-sm text-gray-500">
@@ -110,7 +110,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             id="status"
                             value={form.status}
                             onChange={(e) => form.setStatus(e.target.value as Exclude<BlogStatus, "ARCHIVED">)}
-                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                             aria-label="Publish status"
                         >
                             <option value="DRAFT">Draft</option>
@@ -170,7 +170,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                         <button
                             type="submit"
                             disabled={form.loading}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {form.loading ? (
                                 <>
@@ -183,7 +183,7 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                         </button>
                         <Link
                             href="/blog"
-                            className="rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                            className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                         >
                             Cancel
                         </Link>

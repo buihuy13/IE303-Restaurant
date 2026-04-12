@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Calendar, FileText } from "lucide-react";
 import Pagination from "@/components/client/Pagination";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
+import { getBlogExcerpt } from "@/lib/utils/blogText";
 import type { Blog } from "@/types/blog.type";
 
 function formatDate(dateString?: string | null) {
@@ -29,7 +30,7 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                     <Link
                         key={blog.id}
                         href={`/blog/${blog.slug}`}
-                        className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl"
+                        className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-orange/40 hover:shadow-lg"
                     >
                         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
                             {blog.coverImageUrl ? (
@@ -45,7 +46,7 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                                 </div>
                             )}
                             <div className="absolute left-4 top-4">
-                                <span className="rounded-full bg-brand-orange px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                                <span className="rounded-md bg-brand-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm">
                                     {BLOG_STATUS_LABELS[blog.status].label}
                                 </span>
                             </div>
@@ -54,7 +55,9 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                             <h3 className="mb-3 line-clamp-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-brand-orange">
                                 {blog.title}
                             </h3>
-                            <p className="mb-4 line-clamp-3 flex-1 text-sm text-gray-600">{blog.content}</p>
+                            <p className="mb-4 line-clamp-3 flex-1 text-sm text-gray-600">
+                                {getBlogExcerpt(blog.content)}
+                            </p>
                             <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-sm text-gray-500">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4" />

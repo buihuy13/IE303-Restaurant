@@ -20,7 +20,7 @@ export function MyBlogsHeader() {
                 </div>
                 <Link
                     href="/blog/create"
-                    className="flex items-center gap-2 rounded-xl bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:bg-brand-orange/90"
+                    className="flex items-center gap-2 rounded-lg bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:bg-brand-orange/90"
                 >
                     <Plus className="w-5 h-5" />
                     New Article

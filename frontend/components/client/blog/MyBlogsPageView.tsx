@@ -32,24 +32,24 @@ export function MyBlogsPageView({
     onDelete,
 }: MyBlogsPageViewProps) {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8">
+        <div className="min-h-screen bg-white py-8">
             <div className="custom-container">
                 <MyBlogsHeader />
                 <MyBlogsFilters status={status} onStatusChange={onStatusChange} />
 
                 {loading ? (
                     <div className="py-12 text-center">
-                        <div className="mx-auto max-w-md rounded-3xl border border-gray-200/90 bg-white p-8 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                        <div className="mx-auto max-w-md rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
                             <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-brand-orange" />
                             <p className="mt-4 text-gray-600">Loading...</p>
                         </div>
                     </div>
                 ) : blogs.length === 0 ? (
-                    <div className="rounded-3xl border border-gray-200/90 bg-white py-12 text-center shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 py-12 text-center">
                         <p className="mb-4 text-gray-600">No articles found</p>
                         <Link
                             href="/blog/create"
-                            className="inline-flex items-center gap-2 rounded-xl bg-brand-orange px-6 py-3 font-semibold text-white transition-colors hover:bg-brand-orange/90"
+                            className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-6 py-3 font-semibold text-white transition-colors hover:bg-brand-orange/90"
                         >
                             <Plus className="h-5 w-5" />
                             Create Your First Article

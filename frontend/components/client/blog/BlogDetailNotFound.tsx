@@ -3,8 +3,8 @@ import { ArrowLeft } from "lucide-react";
 
 export function BlogDetailNotFound() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
-            <div className="text-center">
+        <div className="flex min-h-screen items-center justify-center bg-white">
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
                 <p className="text-gray-600 mb-4 text-lg">Post not found</p>
                 <Link
                     href="/blog"
