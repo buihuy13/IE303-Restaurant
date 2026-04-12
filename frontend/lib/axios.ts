@@ -43,6 +43,14 @@ const normalizeToken = (value: string | null): string | null => {
     return v;
 };
 
+const isPublicBlogReadRequest = (config: InternalAxiosRequestConfig) => {
+    const method = (config.method ?? "get").toLowerCase();
+    if (method !== "get") return false;
+
+    const url = config.url ?? "";
+    return url === "/blogs" || url.startsWith("/blogs?") || url.startsWith("/blogs/slug/");
+};
+
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
 let isRefreshing = false; // Flag to prevent multiple refresh attempts
 
@@ -66,6 +74,9 @@ api.interceptors.request.use(
             typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
         const accessToken = accessTokenFromStore || accessTokenFromStorage;
         if (accessToken && config.headers) {
+            if (isPublicBlogReadRequest(config)) {
+                return config;
+            }
             // Only add if the request isn't for refreshing the token itself
             if (!config.url?.includes("/users/refreshtoken")) {
                 config.headers["Authorization"] = `Bearer ${accessToken}`;
