@@ -8,6 +8,7 @@ listOf(
     "notification-service",
     "chat-service",
     "restaurant-service",
+    "dashboard-service",
     "recommendation-service",
     "blog-service",
     "payment-service",

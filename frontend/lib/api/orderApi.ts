@@ -15,6 +15,8 @@ const numUnknown = (v: unknown): number => {
     return 0;
 };
 
+const toBackendOrderStatus = (status: string): string => status.trim().toUpperCase();
+
 /** Maps order-service / Mongo payloads to the frontend Order shape (handles UUID strings, totalPrice, note, etc.). */
 function normalizeOrderDto(raw: unknown): Order {
     if (!raw || typeof raw !== "object") {
@@ -88,15 +90,17 @@ function normalizeOrderDto(raw: unknown): Order {
         : [];
 
     const finalAmount =
-        num(r.finalAmount) || num(r.totalAmount) || num(r.totalPrice) || items.reduce((s, it) => s + it.price * it.quantity, 0);
+        num(r.finalAmount) ||
+        num(r.totalAmount) ||
+        num(r.totalPrice) ||
+        items.reduce((s, it) => s + it.price * it.quantity, 0);
 
     const statusRaw = typeof r.status === "string" ? r.status : String(r.status ?? "");
     const statusLower = statusRaw.toLowerCase();
     const allowed = new Set<string>(Object.values(OrderStatus));
     const status = (allowed.has(statusLower) ? statusLower : OrderStatus.PENDING) as Order["status"];
 
-    const paymentStatusRaw =
-        typeof r.paymentStatus === "string" ? r.paymentStatus.toLowerCase() : "pending";
+    const paymentStatusRaw = typeof r.paymentStatus === "string" ? r.paymentStatus.toLowerCase() : "pending";
 
     let deliveryAddress = { street: "", city: "", state: "", zipCode: "" };
     if (r.deliveryAddress && typeof r.deliveryAddress === "object") {
@@ -105,8 +109,7 @@ function normalizeOrderDto(raw: unknown): Order {
             street: typeof d.street === "string" ? d.street : "",
             city: typeof d.city === "string" ? d.city : "",
             state: typeof d.state === "string" ? d.state : "",
-            zipCode:
-                typeof d.zipCode === "string" ? d.zipCode : typeof d.zip_code === "string" ? d.zip_code : "",
+            zipCode: typeof d.zipCode === "string" ? d.zipCode : typeof d.zip_code === "string" ? d.zip_code : "",
         };
     } else if (typeof r.deliveryAddress === "string" && r.deliveryAddress.trim() !== "") {
         deliveryAddress = { street: r.deliveryAddress, city: "", state: "", zipCode: "" };
@@ -126,8 +129,7 @@ function normalizeOrderDto(raw: unknown): Order {
               : createdAt;
 
     const pm = r.paymentMethod;
-    const paymentMethod: Order["paymentMethod"] =
-        pm === "cash" || pm === "wallet" || pm === "card" ? pm : "card";
+    const paymentMethod: Order["paymentMethod"] = pm === "cash" || pm === "wallet" || pm === "card" ? pm : "card";
 
     return {
         orderId,
@@ -145,12 +147,7 @@ function normalizeOrderDto(raw: unknown): Order {
         paymentMethod,
         status,
         paymentStatus: paymentStatusRaw as Order["paymentStatus"],
-        orderNote:
-            typeof r.orderNote === "string"
-                ? r.orderNote
-                : typeof r.note === "string"
-                  ? r.note
-                  : undefined,
+        orderNote: typeof r.orderNote === "string" ? r.orderNote : typeof r.note === "string" ? r.note : undefined,
         createdAt,
         updatedAt,
     };
@@ -271,7 +268,7 @@ export const orderApi = {
                 const restaurantMatch = errorMessage.match(/Restaurant is currently closed: (.+)/);
                 const restaurantName = restaurantMatch ? restaurantMatch[1] : orderData.restaurantName;
                 throw new Error(
-                    `Restaurant "${restaurantName}" is currently closed. Please check its operating hours and try again later.`
+                    `Restaurant "${restaurantName}" is currently closed. Please check its operating hours and try again later.`,
                 );
             }
 
@@ -303,11 +300,40 @@ export const orderApi = {
         };
     },
 
+    // Admin API (new order-service contract): GET /api/orders/admin
+    getAdminOrders: async (params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+    }): Promise<{ orders: Order[]; pagination?: Pagination }> => {
+        const search = new URLSearchParams();
+        const pageIndex = Math.max((params?.page ?? 1) - 1, 0);
+        search.append("page", String(pageIndex));
+        search.append("size", String(params?.limit ?? 10));
+        if (params?.status?.trim()) {
+            search.append("status", toBackendOrderStatus(params.status));
+        }
+
+        const response = await api.get<unknown>(`/orders/admin?${search.toString()}`, withOrderServiceBase());
+        const payload = (response.data ?? {}) as Record<string, unknown>;
+        const content = Array.isArray(payload.content) ? payload.content : [];
+
+        return {
+            orders: content.map(normalizeOrderDto),
+            pagination: {
+                page: numUnknown(payload.number) + 1,
+                limit: numUnknown(payload.size),
+                total: numUnknown(payload.totalElements),
+                totalPages: numUnknown(payload.totalPages),
+            },
+        };
+    },
+
     // Get orders by restaurant (Manager/Merchant)
     getOrdersByRestaurant: async (
         restaurantId: string,
         merchantId?: string,
-        filters?: { status?: string; page?: number; limit?: number }
+        filters?: { status?: string; page?: number; limit?: number },
     ): Promise<{ orders: Order[]; pagination?: Pagination }> => {
         const params = new URLSearchParams();
         if (merchantId) params.append("merchantId", merchantId);
@@ -348,7 +374,10 @@ export const orderApi = {
             );
             return parseUserOrdersPayload(response.data);
         } catch (error: unknown) {
-            const status = error instanceof AxiosError ? error.response?.status : (error as { response?: { status?: number } })?.response?.status;
+            const status =
+                error instanceof AxiosError
+                    ? error.response?.status
+                    : (error as { response?: { status?: number } })?.response?.status;
             if (status === 404) {
                 return { orders: [], pagination: undefined };
             }
@@ -388,7 +417,7 @@ export const orderApi = {
         status: OrderStatus,
         options?: {
             cancellationReason?: string;
-        }
+        },
     ) => {
         const payload: { status: OrderStatus; cancellationReason?: string } = { status };
 
@@ -400,6 +429,16 @@ export const orderApi = {
         }
 
         const response = await api.patch(`/orders/${orderId}/status`, payload, withOrderServiceBase());
+        return response.data;
+    },
+
+    // Admin API (new order-service contract): PUT /api/orders/admin/{orderId}/status
+    updateAdminOrderStatus: async (orderId: string, status: OrderStatus) => {
+        const response = await api.put(
+            `/orders/admin/${orderId}/status`,
+            { status: toBackendOrderStatus(status) },
+            withOrderServiceBase(),
+        );
         return response.data;
     },
 
@@ -441,7 +480,7 @@ export const orderApi = {
     // Merchant: Get restaurant orders
     getRestaurantOrders: async (
         restaurantId: string,
-        filters?: { status?: string; page?: number; limit?: number }
+        filters?: { status?: string; page?: number; limit?: number },
     ): Promise<{ orders: Order[]; pagination?: Pagination }> => {
         const params = new URLSearchParams();
         if (filters?.status) params.append("status", filters.status);

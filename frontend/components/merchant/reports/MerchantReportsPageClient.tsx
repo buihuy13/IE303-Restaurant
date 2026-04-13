@@ -1,71 +1,51 @@
- "use client";
+"use client";
 
-import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
+import { dashboardApi } from "@/lib/api/dashboardApi";
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { DollarSign, Download, ShoppingBag, Star, Store } from "lucide-react";
+import type { DashboardPeriod } from "@/types/dashboard.type";
+import { AlertCircle, BarChart3, Clock3, Package, ShoppingBag, Sparkles, Store } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
-import Link from "next/link";
 import {
     Area,
-    AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
-    Legend,
+    Cell,
+    ComposedChart,
     Line,
-    LineChart,
     ResponsiveContainer,
     Tooltip,
     XAxis,
     YAxis,
 } from "recharts";
 
-function formatDateLabel(dateLike: string): string {
-    const d = new Date(dateLike);
-    if (Number.isNaN(d.getTime())) return String(dateLike);
-    return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+function formatChartDate(dateLike: string): string {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return dateLike;
+    return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
 export default function MerchantReportsPageClient() {
     const { user } = useAuthStore();
 
-    const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
-    const dateQuery = useMemo(() => buildDateRangeQuery(rangePreset), [rangePreset]);
-
+    const [period, setPeriod] = useState<DashboardPeriod>("month");
     const [loading, setLoading] = useState(true);
-    const [restaurantOverview, setRestaurantOverview] = useState<{
-        restaurantId: string;
-        restaurantName: string;
-        restaurantSlug: string;
-    } | null>(null);
 
-    const [revenueAnalytics, setRevenueAnalytics] = useState<{
-        totalRevenue: number;
-        totalOrders: number;
-        averageOrderValue: number;
-        revenueByRestaurant: Array<{ restaurantName: string; totalRevenue: number; totalOrders: number }>;
-    } | null>(null);
-    const [revenueTrend, setRevenueTrend] = useState<Array<{ name: string; revenue: number; orders: number }>>([]);
-    const [hourlyStats, setHourlyStats] = useState<Array<{ hour: string; orders: number; revenue: number }>>([]);
-    const [weekdayStats, setWeekdayStats] = useState<Array<{ name: string; orders: number; revenue: number }>>([]);
-    const [timeSummary, setTimeSummary] = useState<{
-        peakHour: { hour: number; totalOrders: number; totalRevenue: number };
-        busiestDay: { dayName: string; totalOrders: number; totalRevenue: number };
-    } | null>(null);
-
+    const [restaurant, setRestaurant] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>
+    > | null>(null);
+    const [overview, setOverview] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantOverview>> | null>(null);
+    const [revenue, setRevenue] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenue>> | null>(null);
+    const [orderStatus, setOrderStatus] = useState<Awaited<
+        ReturnType<typeof dashboardApi.getMerchantOrderStatus>
+    > | null>(null);
     const [topProducts, setTopProducts] = useState<
-        Array<{
-            productId: string;
-            productName: string;
-            totalQuantity: number;
-            orderCount: number;
-            totalRevenue: number;
-        }>
+        Awaited<ReturnType<typeof dashboardApi.getMerchantTopProducts>>["items"]
     >([]);
-
-    const [ratingStats, setRatingStats] = useState<{ averageRating: number; totalRatings: number } | null>(null);
+    const [liveOrders, setLiveOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantLiveOrders>>>([]);
 
     useEffect(() => {
         if (!user?.id) {
@@ -76,469 +56,426 @@ export default function MerchantReportsPageClient() {
         const run = async () => {
             setLoading(true);
             try {
-                const merchantId = user.id;
-                let restaurant: Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null = null;
-                try {
-                    restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
-                } catch (error: unknown) {
-                    const status =
-                        error && typeof error === "object" && "response" in error
-                            ? (error as { response?: { status?: number } }).response?.status
-                            : undefined;
-                    if (status === 404) {
-                        setRestaurantOverview(null);
-                        setRevenueAnalytics(null);
-                        setRevenueTrend([]);
-                        setHourlyStats([]);
-                        setWeekdayStats([]);
-                        setTimeSummary(null);
-                        setTopProducts([]);
-                        setRatingStats(null);
-                        return;
-                    }
-                    throw error;
+                const restaurantInfo = await dashboardApi.getMerchantRestaurantOverview(user.id);
+
+                const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] = await Promise.all(
+                    [
+                        dashboardApi.getMerchantOverview(restaurantInfo.restaurantId, { period }),
+                        dashboardApi.getMerchantRevenue(restaurantInfo.restaurantId, { period }),
+                        dashboardApi.getMerchantOrderStatus(restaurantInfo.restaurantId, { period }),
+                        dashboardApi.getMerchantTopProducts(restaurantInfo.restaurantId, { period, limit: 8 }),
+                        dashboardApi.getMerchantLiveOrders(restaurantInfo.restaurantId),
+                    ],
+                );
+
+                setRestaurant(restaurantInfo);
+                setOverview(nextOverview);
+                setRevenue(nextRevenue);
+                setOrderStatus(nextOrderStatus);
+                setTopProducts(nextTopProducts.items);
+                setLiveOrders(nextLiveOrders);
+            } catch (error: unknown) {
+                const status =
+                    error && typeof error === "object" && "response" in error
+                        ? (error as { response?: { status?: number } }).response?.status
+                        : undefined;
+
+                if (status === 404) {
+                    setRestaurant(null);
+                    setOverview(null);
+                    setRevenue(null);
+                    setOrderStatus(null);
+                    setTopProducts([]);
+                    setLiveOrders([]);
+                    return;
                 }
 
-                const [revenue, trend, hourly, timeAnalytics, top, ratings] = await Promise.all([
-                    dashboardApi.getMerchantRevenue(merchantId, dateQuery),
-                    dashboardApi.getMerchantRevenueTrend(merchantId, dateQuery),
-                    dashboardApi.getMerchantHourlyStatistics(merchantId, dateQuery),
-                    dashboardApi.getMerchantTimeAnalytics(merchantId, dateQuery),
-                    dashboardApi.getMerchantTopProducts(merchantId, { limit: 5, ...dateQuery }),
-                    dashboardApi.getMerchantRatingStats(merchantId, dateQuery),
-                ]);
-
-                setRestaurantOverview({
-                    restaurantId: restaurant.restaurantId,
-                    restaurantName: restaurant.restaurantName,
-                    restaurantSlug: restaurant.restaurantSlug,
-                });
-
-                setRevenueAnalytics({
-                    totalRevenue: typeof revenue.totalRevenue === "number" ? revenue.totalRevenue : 0,
-                    totalOrders: typeof revenue.totalOrders === "number" ? revenue.totalOrders : 0,
-                    averageOrderValue: typeof revenue.averageOrderValue === "number" ? revenue.averageOrderValue : 0,
-                    revenueByRestaurant: (Array.isArray(revenue.revenueByRestaurant)
-                        ? revenue.revenueByRestaurant
-                        : []
-                    ).map((r) => ({
-                        restaurantName: r.restaurantName || "Restaurant",
-                        totalRevenue: typeof r.totalRevenue === "number" ? r.totalRevenue : 0,
-                        totalOrders: typeof r.totalOrders === "number" ? r.totalOrders : 0,
-                    })),
-                });
-
-                setRevenueTrend(
-                    (Array.isArray(trend) ? trend : []).map((p) => ({
-                        name: formatDateLabel(p.date),
-                        revenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                        orders: typeof p.totalOrders === "number" ? p.totalOrders : 0,
-                    })),
-                );
-
-                setHourlyStats(
-                    (Array.isArray(hourly) ? hourly : []).map((h) => ({
-                        hour: `${String(h.hour).padStart(2, "0")}:00`,
-                        orders: typeof h.totalOrders === "number" ? h.totalOrders : 0,
-                        revenue: typeof h.totalRevenue === "number" ? h.totalRevenue : 0,
-                    })),
-                );
-
-                setWeekdayStats(
-                    (Array.isArray(timeAnalytics.weekdayStatistics) ? timeAnalytics.weekdayStatistics : []).map(
-                        (d) => ({
-                            name: d.dayName,
-                            orders: typeof d.totalOrders === "number" ? d.totalOrders : 0,
-                            revenue: typeof d.totalRevenue === "number" ? d.totalRevenue : 0,
-                        }),
-                    ),
-                );
-
-                setTimeSummary({
-                    peakHour: timeAnalytics.peakHour,
-                    busiestDay: timeAnalytics.busiestDay,
-                });
-
-                setTopProducts(
-                    (Array.isArray(top) ? top : []).map((p) => ({
-                        productId: p.productId,
-                        productName: p.productName,
-                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
-                        orderCount: typeof p.orderCount === "number" ? p.orderCount : 0,
-                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    })),
-                );
-
-                setRatingStats({
-                    averageRating: typeof ratings.averageRating === "number" ? ratings.averageRating : 0,
-                    totalRatings: typeof ratings.totalRatings === "number" ? ratings.totalRatings : 0,
-                });
-            } catch (error) {
-                console.error("Failed to load merchant reports:", error);
-                toast.error("Failed to load reports.");
+                console.error("Failed to load merchant reports", error);
+                toast.error("Unable to load report data.");
             } finally {
                 setLoading(false);
             }
         };
 
         run();
-    }, [user?.id, dateQuery]);
+    }, [period, user?.id]);
 
-    const handleExport = async () => {
-        if (!user?.id) {
-            toast.error("Please sign in.");
-            return;
-        }
+    const revenueSeries = useMemo(
+        () =>
+            (revenue?.breakdown ?? []).map((point) => ({
+                date: formatChartDate(point.date),
+                revenue: point.revenue,
+                orders: point.orderCount,
+            })),
+        [revenue?.breakdown],
+    );
 
-        if (!dateQuery.startDate || !dateQuery.endDate) {
-            toast.error("Please pick a finite date range to export.");
-            return;
-        }
+    const statusSeries = useMemo(() => {
+        if (!orderStatus) return [];
 
-        try {
-            const { blob, filename } = await dashboardApi.downloadMerchantPdfReport(user.id, {
-                startDate: dateQuery.startDate,
-                endDate: dateQuery.endDate,
-            });
+        return [
+            { name: "Pending", value: orderStatus.pending },
+            { name: "Confirmed", value: orderStatus.confirmed },
+            { name: "Preparing", value: orderStatus.preparing },
+            { name: "Delivering", value: orderStatus.delivering },
+            { name: "Completed", value: orderStatus.completed },
+            { name: "Cancelled", value: orderStatus.cancelled },
+        ];
+    }, [orderStatus]);
 
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("Export report failed:", error);
-            toast.error("Export failed.");
-        }
-    };
+    const topProductSeries = useMemo(
+        () =>
+            topProducts.map((item) => ({
+                name: item.productName.length > 18 ? `${item.productName.slice(0, 18)}...` : item.productName,
+                fullName: item.productName,
+                revenue: item.totalRevenue,
+                sold: item.totalQuantitySold,
+            })),
+        [topProducts],
+    );
 
-    const restaurantsCount = revenueAnalytics?.revenueByRestaurant?.length || 0;
+    const averageOrderValue = useMemo(() => {
+        const totalOrders = revenue?.totalOrders ?? 0;
+        if (!totalOrders) return 0;
+        return (revenue?.totalRevenue ?? 0) / totalOrders;
+    }, [revenue?.totalOrders, revenue?.totalRevenue]);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports Summary</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        {restaurantOverview?.restaurantName
-                            ? `Analytics for ${restaurantOverview.restaurantName}`
-                            : "Merchant analytics"}
-                    </p>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
-                    <select
-                        title="Date range"
-                        value={rangePreset}
-                        onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
-                        className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                        <option value="7d">Last 7 days</option>
-                        <option value="30d">Last 30 days</option>
-                        <option value="90d">Last 90 days</option>
-                        <option value="ytd">Year to date</option>
-                        <option value="all">All time</option>
-                    </select>
+        <div className="space-y-6 font-manrope">
+            <section className="relative overflow-hidden rounded-2xl border border-white/20 p-6 text-white shadow-xl bg-[radial-gradient(circle_at_12%_18%,rgba(238,77,45,0.32),transparent_42%),radial-gradient(circle_at_88%_18%,rgba(124,58,237,0.24),transparent_36%),linear-gradient(130deg,#1A1623_0%,#2A1F37_50%,#392A4A_100%)] animate-[fadeIn_0.6s_ease-out]">
+                <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-white/75">Merchant Insights</p>
+                        <h1 className="mt-2 font-roboto-serif text-3xl font-semibold md:text-4xl">Reports Summary</h1>
+                        <p className="mt-2 text-sm text-white/80 md:text-base">
+                            Deep analytics powered by the new merchant dashboard endpoints.
+                        </p>
+                    </div>
 
-                    <button
-                        onClick={handleExport}
-                        disabled={loading || !dateQuery.startDate || !dateQuery.endDate}
-                        className="flex items-center justify-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-white transition-colors hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <Download className="h-5 w-5" />
-                        Export Report
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <label htmlFor="merchant-reports-period" className="text-xs text-white/80">
+                            Period
+                        </label>
+                        <select
+                            id="merchant-reports-period"
+                            value={period}
+                            onChange={(event) => setPeriod(event.target.value as DashboardPeriod)}
+                            className="rounded-lg border border-white/25 bg-black/20 px-3 py-2 text-sm text-white outline-none"
+                            title="Report period"
+                        >
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month">Month</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            {!loading && !restaurantOverview && (
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+            {!loading && !restaurant && (
+                <section className="rounded-2xl border border-yellow-300 bg-yellow-50 p-6 text-yellow-900">
                     <div className="flex items-start gap-3">
-                        <Store className="mt-0.5" size={18} />
+                        <AlertCircle className="mt-0.5" size={18} />
                         <div className="flex-1">
                             <p className="font-semibold">Restaurant setup required</p>
                             <p className="mt-1 text-sm opacity-90">
-                                Create your restaurant profile to unlock reports and analytics.
+                                Create your restaurant profile first to unlock report analytics.
                             </p>
-                            <div className="mt-4">
+                            <Link
+                                href="/merchant/manage/settings"
+                                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                            >
+                                <Store size={16} />
+                                Create restaurant profile
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {restaurant && (
+                <>
+                    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">Revenue</p>
+                            <p className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
+                                {formatCurrency(revenue?.totalRevenue ?? 0)}
+                            </p>
+                            <p className="mt-1 text-xs text-bodydark">
+                                Today: {formatCurrency(overview?.revenueToday ?? 0)}
+                            </p>
+                        </article>
+
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">Orders</p>
+                            <p className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
+                                {formatNumber(revenue?.totalOrders ?? 0)}
+                            </p>
+                            <p className="mt-1 text-xs text-bodydark">
+                                Today: {formatNumber(overview?.ordersToday ?? 0)}
+                            </p>
+                        </article>
+
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">Average Order</p>
+                            <p className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
+                                {formatCurrency(averageOrderValue)}
+                            </p>
+                            <p className="mt-1 text-xs text-bodydark">From revenue and order volume</p>
+                        </article>
+
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <p className="text-xs uppercase tracking-[0.18em] text-bodydark">Restaurant Rating</p>
+                            <p className="mt-2 font-roboto-serif text-2xl font-semibold text-black dark:text-white">
+                                {restaurant.rating.toFixed(1)}
+                            </p>
+                            <p className="mt-1 text-xs text-bodydark">
+                                {formatNumber(restaurant.totalReviews)} reviews
+                            </p>
+                        </article>
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-3 dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                        Revenue Timeline
+                                    </h3>
+                                    <p className="text-xs text-bodydark">Revenue and order throughput</p>
+                                </div>
+                                <Sparkles size={18} className="text-bodydark" />
+                            </div>
+                            <div className="h-[320px]">
+                                {loading ? (
+                                    <div className="h-full animate-pulse rounded-xl bg-gray" />
+                                ) : revenueSeries.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                        No data.
+                                    </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <ComposedChart data={revenueSeries}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                            <XAxis dataKey="date" tick={{ fill: "#6B7280", fontSize: 12 }} />
+                                            <YAxis
+                                                yAxisId="left"
+                                                tick={{ fill: "#6B7280", fontSize: 12 }}
+                                                tickFormatter={(value) => formatNumber(value)}
+                                            />
+                                            <YAxis
+                                                yAxisId="right"
+                                                orientation="right"
+                                                tick={{ fill: "#6B7280", fontSize: 12 }}
+                                                tickFormatter={(value) => formatNumber(value)}
+                                            />
+                                            <Tooltip
+                                                formatter={(value: number, key: string) =>
+                                                    key === "revenue"
+                                                        ? [formatCurrency(value), "Revenue"]
+                                                        : [formatNumber(value), "Orders"]
+                                                }
+                                            />
+                                            <Area
+                                                yAxisId="left"
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                stroke="#EE4D2D"
+                                                fill="#EE4D2D22"
+                                                strokeWidth={2.5}
+                                            />
+                                            <Line
+                                                yAxisId="right"
+                                                type="monotone"
+                                                dataKey="orders"
+                                                stroke="#3B82F6"
+                                                strokeWidth={2}
+                                                dot={{ r: 3 }}
+                                            />
+                                        </ComposedChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
+                        </article>
+
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm xl:col-span-2 dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    Order Status Mix
+                                </h3>
+                                <BarChart3 size={18} className="text-bodydark" />
+                            </div>
+                            <div className="h-[320px]">
+                                {loading ? (
+                                    <div className="h-full animate-pulse rounded-xl bg-gray" />
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={statusSeries} layout="vertical">
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                            <XAxis type="number" tick={{ fill: "#6B7280", fontSize: 12 }} />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                tick={{ fill: "#6B7280", fontSize: 12 }}
+                                                width={85}
+                                            />
+                                            <Tooltip formatter={(value: number) => formatNumber(value)} />
+                                            <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                                                {statusSeries.map((_, index) => (
+                                                    <Cell
+                                                        key={index}
+                                                        fill={
+                                                            [
+                                                                "#F59E0B",
+                                                                "#6366F1",
+                                                                "#8B5CF6",
+                                                                "#14B8A6",
+                                                                "#10B981",
+                                                                "#EF4444",
+                                                            ][index % 6]
+                                                        }
+                                                    />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
+                        </article>
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    Top Products
+                                </h3>
+                                <Package size={18} className="text-bodydark" />
+                            </div>
+
+                            <div className="h-[300px]">
+                                {loading ? (
+                                    <div className="h-full animate-pulse rounded-xl bg-gray" />
+                                ) : topProductSeries.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-sm text-bodydark">
+                                        No data.
+                                    </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={topProductSeries}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                            <XAxis
+                                                dataKey="name"
+                                                tick={{ fill: "#6B7280", fontSize: 11 }}
+                                                interval={0}
+                                                angle={-20}
+                                                height={65}
+                                                textAnchor="end"
+                                            />
+                                            <YAxis
+                                                tick={{ fill: "#6B7280", fontSize: 12 }}
+                                                tickFormatter={(value) => formatNumber(value)}
+                                            />
+                                            <Tooltip
+                                                formatter={(value: number) => formatCurrency(value)}
+                                                labelFormatter={(label) => {
+                                                    const item = topProductSeries.find((x) => x.name === label);
+                                                    return item?.fullName || String(label);
+                                                }}
+                                            />
+                                            <Bar dataKey="revenue" fill="#EE4D2D" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
+                        </article>
+
+                        <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    Live Order Feed
+                                </h3>
+                                <Clock3 size={18} className="text-bodydark" />
+                            </div>
+
+                            {loading ? (
+                                <div className="space-y-3">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="h-11 animate-pulse rounded-lg bg-gray" />
+                                    ))}
+                                </div>
+                            ) : liveOrders.length === 0 ? (
+                                <div className="rounded-lg border border-black/5 p-4 text-sm text-bodydark dark:border-white/10">
+                                    No active orders.
+                                </div>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    {liveOrders.slice(0, 8).map((order) => {
+                                        const status = String(order.status || "PENDING").toUpperCase();
+                                        const statusColor =
+                                            status === "COMPLETED"
+                                                ? "bg-green-50 text-green-700"
+                                                : status === "CANCELLED"
+                                                  ? "bg-red-50 text-red-700"
+                                                  : "bg-amber-50 text-amber-700";
+
+                                        return (
+                                            <div
+                                                key={order.id}
+                                                className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2.5 dark:border-white/10"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-semibold text-black dark:text-white">
+                                                        #{order.orderCode || order.id.slice(0, 8)}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {formatNumber(order.itemCount || 0)} items
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-semibold text-black dark:text-white">
+                                                        {formatCurrency(order.totalPrice)}
+                                                    </p>
+                                                    <span
+                                                        className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusColor}`}
+                                                    >
+                                                        {status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </article>
+                    </section>
+
+                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h3 className="font-roboto-serif text-xl font-semibold text-black dark:text-white">
+                                    {restaurant.restaurantName}
+                                </h3>
+                                <p className="mt-1 text-sm text-bodydark">{restaurant.address}</p>
+                            </div>
+                            <div className="flex gap-2">
                                 <Link
-                                    href="/merchant/manage/settings"
-                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                                    href="/merchant/dashboard"
+                                    className="rounded-lg border border-black/10 px-3 py-2 text-sm font-semibold text-black transition hover:bg-gray dark:border-white/10 dark:text-white"
                                 >
-                                    Create restaurant profile
+                                    Dashboard
+                                </Link>
+                                <Link
+                                    href="/merchant/food"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-orange/90"
+                                >
+                                    <ShoppingBag size={15} />
+                                    Menu manager
                                 </Link>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </section>
+                </>
             )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-3">
-                        <div className="bg-green-100 dark:bg-green-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-                            <p
-                                className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1 break-words"
-                                title={formatCurrency(revenueAnalytics?.totalRevenue || 0)}
-                            >
-                                {formatCurrency(revenueAnalytics?.totalRevenue || 0)}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
-                                Avg order: {formatCurrency(Math.round(revenueAnalytics?.averageOrderValue || 0))}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-3">
-                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                            <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {formatNumber(revenueAnalytics?.totalOrders || 0)}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
-                                From selected range
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-3">
-                        <div className="bg-purple-100 dark:bg-purple-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                            <Store className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Number of Restaurants</p>
-                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {restaurantsCount}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
-                                With orders in range
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-3">
-                        <div className="bg-orange-100 dark:bg-orange-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                            <Star className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Ratings</p>
-                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {(ratingStats?.averageRating || 0).toFixed(1)}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
-                                {formatNumber(ratingStats?.totalRatings || 0)} ratings
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={revenueTrend}>
-                            <defs>
-                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#9CA3AF" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip
-                                formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
-                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
-                                    return [String(value), name];
-                                }}
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Legend />
-                            <Area
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="#F59E0B"
-                                fillOpacity={1}
-                                fill="url(#colorRevenue)"
-                                name="Revenue ($)"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Orders by hour</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={hourlyStats}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="hour" stroke="#9CA3AF" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip
-                                formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
-                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
-                                    return [String(value), name];
-                                }}
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Legend />
-                            <Bar dataKey="orders" fill="#3B82F6" name="Orders" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue by restaurant</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={revenueAnalytics?.revenueByRestaurant || []} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis type="number" stroke="#9CA3AF" />
-                            <YAxis
-                                dataKey="restaurantName"
-                                type="category"
-                                stroke="#9CA3AF"
-                                width={96}
-                                tick={{ fontSize: 12 }}
-                                tickFormatter={(v: string) => {
-                                    const s = String(v ?? "");
-                                    return s.length > 12 ? `${s.slice(0, 12)}…` : s;
-                                }}
-                            />
-                            <Tooltip
-                                formatter={(value: unknown, name: string) => {
-                                    if (name === "totalRevenue") return [formatCurrency(Number(value || 0)), "Revenue"];
-                                    if (name === "totalOrders") return [formatNumber(Number(value || 0)), "Orders"];
-                                    return [String(value), name];
-                                }}
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Legend />
-                            <Bar dataKey="totalRevenue" fill="#F59E0B" name="Revenue ($)" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Weekday activity</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={weekdayStats}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#9CA3AF" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip
-                                formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
-                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
-                                    return [String(value), name];
-                                }}
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} name="Orders" />
-                            <Line
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="#F59E0B"
-                                strokeWidth={2}
-                                name="Revenue ($)"
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    {timeSummary && (
-                        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                            Peak hour:{" "}
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                {timeSummary.peakHour.hour}:00
-                            </span>
-                            {" · "}
-                            Busiest day:{" "}
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                {timeSummary.busiestDay.dayName}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Top 5 Best Selling Products
-                </h3>
-                {loading ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
-                ) : topProducts.length === 0 ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
-                ) : (
-                    <div className="space-y-4">
-                        {topProducts.map((p, index) => (
-                            <div
-                                key={p.productId || `${p.productName}-${index}`}
-                                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-orange/10 text-brand-orange font-bold text-lg">
-                                        {index + 1}
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold text-gray-900 dark:text-white">{p.productName}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {p.totalQuantity} items • {p.orderCount} orders
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-gray-900 dark:text-white text-lg">
-                                        {formatCurrency(p.totalRevenue)}
-                                    </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {formatCurrency(
-                                            p.orderCount > 0 ? Math.round(p.totalRevenue / p.orderCount) : 0,
-                                        )}
-                                        {" / order"}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
         </div>
     );
 }
-
