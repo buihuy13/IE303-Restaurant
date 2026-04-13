@@ -271,7 +271,7 @@ export const dashboardApi = {
     },
 
     getAdminUserStatsOverview: async (): Promise<UserAdminStatsOverviewResponse> => {
-        const response = await api.get<unknown>("/users/admin/stats/overview");
+        const response = await api.get<unknown>("/dashboard/users/admin/stats/overview");
         const obj = toObject(unwrapData(response.data));
         return {
             totalUsers: toNumber(obj.totalUsers),
@@ -282,7 +282,7 @@ export const dashboardApi = {
     },
 
     getAdminRestaurantStats: async (): Promise<RestaurantAdminStatsResponse> => {
-        const response = await api.get<unknown>("/restaurant/admin/stats");
+        const response = await api.get<unknown>("/dashboard/restaurants/admin/stats");
         const obj = toObject(unwrapData(response.data));
         return {
             totalRestaurants: toNumber(obj.totalRestaurants),

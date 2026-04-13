@@ -29,7 +29,6 @@ public class MerchantDashboardController {
     @Operation(summary = "Get merchant overview metrics")
     public ResponseEntity<DashboardStatsDTO.OverviewResponse> getMerchantOverview(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId) {
-        merchantDashboardAnalyticsService.assertMerchantOrAdminAccess(restaurantId);
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOverview(restaurantId));
     }
 
@@ -39,7 +38,6 @@ public class MerchantDashboardController {
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period) {
-        merchantDashboardAnalyticsService.assertMerchantOrAdminAccess(restaurantId);
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period));
     }
 
@@ -49,7 +47,6 @@ public class MerchantDashboardController {
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period) {
-        merchantDashboardAnalyticsService.assertMerchantOrAdminAccess(restaurantId);
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(restaurantId, period));
     }
 
@@ -57,7 +54,6 @@ public class MerchantDashboardController {
     @Operation(summary = "Get live merchant orders")
     public ResponseEntity<List<OrderSummaryDTO>> getMerchantLiveOrders(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId) {
-        merchantDashboardAnalyticsService.assertMerchantOrAdminAccess(restaurantId);
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantLiveOrders(restaurantId));
     }
 
@@ -68,7 +64,6 @@ public class MerchantDashboardController {
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
             @Parameter(description = "Maximum number of products") @RequestParam(defaultValue = "5") int limit) {
-        merchantDashboardAnalyticsService.assertMerchantOrAdminAccess(restaurantId);
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(restaurantId, period, limit));
     }
 }

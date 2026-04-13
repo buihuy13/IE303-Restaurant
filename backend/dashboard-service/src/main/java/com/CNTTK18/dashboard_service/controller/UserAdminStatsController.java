@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/users/admin/stats")
+@RequestMapping("/api/dashboard/users/admin/stats")
 @RequiredArgsConstructor
 @Tag(name = "Dashboard User Stats", description = "Admin user statistics APIs")
 public class UserAdminStatsController {

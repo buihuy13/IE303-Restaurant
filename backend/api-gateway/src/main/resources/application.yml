@@ -62,11 +62,11 @@ spring:
                 - id: dashboard-service-user-admin-stats
                   uri: lb://dashboard-service
                   predicates:
-                      - Path=/api/users/admin/stats/**
+                      - Path=/api/dashboard/users/admin/stats/**
                 - id: dashboard-service-restaurant-admin-stats
                   uri: lb://dashboard-service
                   predicates:
-                      - Path=/api/restaurant/admin/stats
+                      - Path=/api/dashboard/restaurants/admin/stats
                 #user-service
                 - id: user-service
                   uri: lb://user-service
