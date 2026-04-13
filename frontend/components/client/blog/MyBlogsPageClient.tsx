@@ -13,7 +13,11 @@ export default function MyBlogsPageClient() {
     const { user, isAuthenticated, authRole } = useAuthStore();
     const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const filters = useMyBlogsFilters();
-    const { blogs, loading, totalPages, fetchMyBlogs } = useMyBlogsData(user?.id, filters.page, filters.status);
+    const { blogs, loading, totalPages, stats, dataSource, fetchMyBlogs } = useMyBlogsData(
+        user?.id,
+        filters.page,
+        filters.status,
+    );
     const { handleDelete } = useMyBlogsActions(fetchMyBlogs);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -43,6 +47,8 @@ export default function MyBlogsPageClient() {
             loading={loading}
             blogs={blogs}
             totalPages={totalPages}
+            stats={stats}
+            dataSource={dataSource}
             page={filters.page}
             status={filters.status}
             deletingId={deletingId}

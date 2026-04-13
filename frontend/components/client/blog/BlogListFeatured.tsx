@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar, TrendingUp } from "lucide-react";
 import { getBlogExcerpt } from "@/lib/utils/blogText";
-import type { Blog } from "@/types/blog.type";
+import type { BlogViewModel } from "@/types/blogView.type";
 
 function formatDate(dateString?: string | null) {
     if (!dateString) return "Unpublished";
@@ -14,7 +14,7 @@ function formatDate(dateString?: string | null) {
 }
 
 interface BlogListFeaturedProps {
-    blog: Blog;
+    blog: BlogViewModel;
 }
 
 export function BlogListFeatured({ blog }: BlogListFeaturedProps) {
@@ -39,7 +39,7 @@ export function BlogListFeatured({ blog }: BlogListFeaturedProps) {
                     <div className="max-w-4xl space-y-4">
                         <div className="inline-flex items-center gap-2 rounded-md border border-white/30 bg-white/15 px-3 py-2 text-sm font-bold text-white backdrop-blur-md">
                             <TrendingUp className="h-4 w-4" />
-                            Featured Post
+                            Featured Story
                         </div>
                         <h2 className="line-clamp-2 text-3xl font-bold leading-tight text-white transition-opacity group-hover:opacity-90 md:text-5xl">
                             {blog.title}
@@ -50,6 +50,9 @@ export function BlogListFeatured({ blog }: BlogListFeaturedProps) {
                                 <Calendar className="h-5 w-5" />
                                 <span className="font-medium">{formatDate(blog.publishedAt ?? blog.createdAt)}</span>
                             </div>
+                            <span>{blog.readTime} min read</span>
+                            {blog.category && <span>{blog.category}</span>}
+                            {typeof blog.views === "number" && <span>{blog.views.toLocaleString()} views</span>}
                         </div>
                         <div className="pt-4">
                             <span className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-6 py-3 font-bold text-white transition-all group-hover:translate-x-1 group-hover:bg-brand-orange/90">

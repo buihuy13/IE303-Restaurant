@@ -24,6 +24,7 @@ declare module "react-markdown" {
         children?: string;
         className?: string;
         remarkPlugins?: unknown[];
+        components?: Record<string, React.ElementType>;
     }
 
     const ReactMarkdown: React.ComponentType<ReactMarkdownProps>;

@@ -1,12 +1,14 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
-import type { Blog } from "@/types/blog.type";
+import { getMarkdownHeadings, toMarkdownHeadingId } from "@/lib/utils/blogText";
+import type { BlogViewModel } from "@/types/blogView.type";
 
 function formatDate(dateString?: string | null) {
     if (!dateString) return "Unpublished";
@@ -17,12 +19,21 @@ function formatDate(dateString?: string | null) {
     });
 }
 
+function getHeadingText(children: ReactNode) {
+    if (Array.isArray(children)) return children.join("");
+    return String(children ?? "");
+}
+
 interface BlogDetailArticleProps {
-    blog: Blog;
+    blog: BlogViewModel;
+    relatedPosts: BlogViewModel[];
+    copied: boolean;
     onShare: () => void;
 }
 
-export function BlogDetailArticle({ blog, onShare }: BlogDetailArticleProps) {
+export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogDetailArticleProps) {
+    const headings = getMarkdownHeadings(blog.content);
+
     return (
         <article className="mx-auto max-w-5xl">
             <div className="space-y-10">
@@ -42,16 +53,36 @@ export function BlogDetailArticle({ blog, onShare }: BlogDetailArticleProps) {
                     <h1 className="mb-5 text-3xl font-bold leading-tight tracking-tight text-gray-950 md:text-5xl lg:text-6xl">
                         {blog.title}
                     </h1>
-                    <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 pb-4 text-sm text-gray-500">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(blog.publishedAt ?? blog.createdAt)}</span>
+                    <p className="mb-5 text-lg leading-8 text-gray-600">{blog.excerpt}</p>
+                    <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 pb-5 text-sm text-gray-500">
+                        <div className="flex items-center gap-3">
+                            {blog.author.avatarUrl && (
+                                <Image
+                                    src={blog.author.avatarUrl}
+                                    alt={blog.author.name}
+                                    width={44}
+                                    height={44}
+                                    className="rounded-lg object-cover"
+                                />
+                            )}
+                            <div>
+                                <p className="font-semibold text-gray-950">{blog.author.name}</p>
+                                <p>{blog.author.role}</p>
+                            </div>
+                        </div>
+                        <span className="hidden h-8 w-px bg-gray-200 sm:block" />
+                        <span className="inline-flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            {formatDate(blog.publishedAt ?? blog.createdAt)}
+                        </span>
+                        <span>{blog.readTime} min read</span>
                         <button
                             type="button"
                             onClick={onShare}
                             className="ml-auto inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-brand-orange hover:bg-gray-50 hover:text-brand-orange"
                         >
                             <Share2 className="h-4 w-4" />
-                            Share
+                            {copied ? "Copied" : "Share"}
                         </button>
                     </div>
                 </header>
@@ -62,11 +93,100 @@ export function BlogDetailArticle({ blog, onShare }: BlogDetailArticleProps) {
                     </div>
                 )}
 
-                <div className="prose prose-lg blog-content mx-auto max-w-3xl">
-                    <div className="markdown-body">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
+                <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
+                    <aside className="hidden lg:block">
+                        <div className="sticky top-28 space-y-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">In this story</p>
+                                <div className="mt-4 space-y-2">
+                                    {headings.length > 0 ? (
+                                        headings.map((heading) => (
+                                            <a
+                                                key={heading.id}
+                                                href={`#${heading.id}`}
+                                                className={`block text-sm leading-6 text-gray-700 hover:text-brand-orange ${
+                                                    heading.level === 3 ? "pl-3" : ""
+                                                }`}
+                                            >
+                                                {heading.text}
+                                            </a>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm leading-6 text-gray-600">A short read from the FoodEats table.</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="border-t border-orange-200 pt-4 text-sm text-gray-600">
+                                {blog.category && <p className="font-semibold text-gray-950">{blog.category}</p>}
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {blog.tags.map((tag) => (
+                                        <span key={tag} className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-700">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div className="prose prose-lg blog-content max-w-none">
+                        <div className="markdown-body">
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    h2: ({ children }: { children?: ReactNode }) => {
+                                        const id = toMarkdownHeadingId(getHeadingText(children));
+                                        return <h2 id={id}>{children}</h2>;
+                                    },
+                                    h3: ({ children }: { children?: ReactNode }) => {
+                                        const id = toMarkdownHeadingId(getHeadingText(children));
+                                        return <h3 id={id}>{children}</h3>;
+                                    },
+                                }}
+                            >
+                                {blog.content}
+                            </ReactMarkdown>
+                        </div>
+
+                        {(typeof blog.views === "number" || typeof blog.likes === "number" || typeof blog.commentsCount === "number") && (
+                            <div className="not-prose mt-10 flex flex-wrap gap-3 border-t border-gray-200 pt-6 text-sm text-gray-600">
+                                {typeof blog.views === "number" && (
+                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
+                                        <Eye className="h-4 w-4" />
+                                        {blog.views.toLocaleString()} views
+                                    </span>
+                                )}
+                                {typeof blog.likes === "number" && (
+                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
+                                        <Heart className="h-4 w-4" />
+                                        {blog.likes.toLocaleString()} likes
+                                    </span>
+                                )}
+                                {typeof blog.commentsCount === "number" && (
+                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
+                                        <MessageCircle className="h-4 w-4" />
+                                        {blog.commentsCount.toLocaleString()} comments
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {relatedPosts.length > 0 && (
+                    <section className="border-t border-gray-200 pt-10">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">More stories</p>
+                        <div className="mt-5 grid gap-5 md:grid-cols-3">
+                            {relatedPosts.map((post) => (
+                                <Link key={post.id} href={`/blog/${post.slug}`} className="group rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-orange/50 hover:shadow-lg">
+                                    <p className="text-sm font-semibold leading-6 text-gray-950 group-hover:text-brand-orange">{post.title}</p>
+                                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">{post.excerpt}</p>
+                                    <p className="mt-3 text-xs font-medium text-gray-500">{post.readTime} min read</p>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
         </article>
     );

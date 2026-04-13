@@ -4,7 +4,7 @@ import { ArrowRight, Calendar, FileText } from "lucide-react";
 import Pagination from "@/components/client/Pagination";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
 import { getBlogExcerpt } from "@/lib/utils/blogText";
-import type { Blog } from "@/types/blog.type";
+import type { BlogViewModel } from "@/types/blogView.type";
 
 function formatDate(dateString?: string | null) {
     if (!dateString) return "Unpublished";
@@ -16,7 +16,7 @@ function formatDate(dateString?: string | null) {
 }
 
 interface BlogListGridProps {
-    blogs: Blog[];
+    blogs: BlogViewModel[];
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
@@ -47,11 +47,22 @@ export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: B
                             )}
                             <div className="absolute left-4 top-4">
                                 <span className="rounded-md bg-brand-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm">
-                                    {BLOG_STATUS_LABELS[blog.status].label}
+                                    {blog.category ?? BLOG_STATUS_LABELS[blog.status].label}
                                 </span>
                             </div>
                         </div>
                         <div className="flex flex-1 flex-col p-6">
+                            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
+                                <span>{blog.author.name}</span>
+                                <span>|</span>
+                                <span>{blog.readTime} min read</span>
+                                {typeof blog.commentsCount === "number" && (
+                                    <>
+                                        <span>|</span>
+                                        <span>{blog.commentsCount} comments</span>
+                                    </>
+                                )}
+                            </div>
                             <h3 className="mb-3 line-clamp-2 text-xl font-bold text-gray-900 transition-colors group-hover:text-brand-orange">
                                 {blog.title}
                             </h3>
