@@ -54,23 +54,30 @@ public class OrderController {
     @GetMapping("/restaurant/{restaurantId}")
     @Operation(summary = "Get orders for a restaurant (for merchants)")
     public ResponseEntity<List<OrderResponse>> getRestaurantOrders(
+            Authentication authentication,
             @PathVariable UUID restaurantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(orderService.getRestaurantOrders(restaurantId, page, size));
+        UserRole userRole = (UserRole) authentication.getPrincipal();
+        return ResponseEntity.ok(
+                orderService.getRestaurantOrders(restaurantId, userRole.getId(), userRole.getRole(), page, size));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get order details by ID")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+    public ResponseEntity<OrderResponse> getOrderById(Authentication authentication, @PathVariable UUID id) {
+        UserRole userRole = (UserRole) authentication.getPrincipal();
+        return ResponseEntity.ok(orderService.getOrderById(id, userRole.getId(), userRole.getRole()));
     }
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Update order status (Merchants)")
     public ResponseEntity<OrderResponse> updateStatus(
-            @PathVariable UUID id, @Valid @RequestBody UpdateOrderStatusRequest request) {
-        return ResponseEntity.ok(orderService.updateStatus(id, request));
+            Authentication authentication,
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
+        UserRole userRole = (UserRole) authentication.getPrincipal();
+        return ResponseEntity.ok(orderService.updateStatus(id, userRole.getId(), userRole.getRole(), request));
     }
 
     @PutMapping("/{id}/cancel")

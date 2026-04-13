@@ -82,7 +82,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size) {
+    public List<OrderResponse> getRestaurantOrders(
+            UUID restaurantId, UUID currentUserId, String currentUserRole, int page, int size) {
+        // MERCHANT chỉ được xem đơn hàng của nhà hàng mình quản lý
+        if (!"ADMIN".equals(currentUserRole)) {
+            validateRestaurantOwnership(restaurantId, currentUserId);
+        }
+
         String cacheKey = ORDERS_RES_CACHE_PREFIX + restaurantId + ":page:" + page + ":size:" + size;
         List<OrderResponse> cached =
                 (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
@@ -98,14 +104,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse getOrderById(UUID orderId) {
+    public OrderResponse getOrderById(UUID orderId, UUID currentUserId, String currentUserRole) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+
+        if (!"ADMIN".equals(currentUserRole)) {
+            if ("USER".equals(currentUserRole) || "MERCHANT".equals(currentUserRole)) {
+                boolean isOrderOwner = order.getUserId().equals(currentUserId);
+                boolean isRestaurantOwner = isRestaurantOwner(order.getRestaurantId(), currentUserId);
+                if (!isOrderOwner && !isRestaurantOwner) {
+                    throw new com.CNTTK18.order_service.exception.ForbiddenException(
+                            "You are not authorized to view this order");
+                }
+            }
+        }
+
         return orderMapper.toResponse(order);
     }
 
     @Override
-    public OrderResponse updateStatus(UUID orderId, UpdateOrderStatusRequest request) {
+    public OrderResponse updateStatus(
+            UUID orderId, UUID currentUserId, String currentUserRole, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+
+        // MERCHANT chỉ được cập nhật đơn của nhà hàng mình
+        if (!"ADMIN".equals(currentUserRole)) {
+            validateRestaurantOwnership(order.getRestaurantId(), currentUserId);
+        }
 
         // Validation Rule: Can only set to COMPLETED if Paid
         if (request.getStatus() == OrderStatus.COMPLETED && order.getPaymentStatus() != PaymentStatus.PAID) {
@@ -165,6 +189,35 @@ public class OrderServiceImpl implements OrderService {
         String pattern = ORDERS_RES_CACHE_PREFIX + restaurantId + ":*";
         java.util.Set<String> keys = redisTemplate.keys(pattern);
         if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+    }
+
+    /**
+     * Fetches restaurant info and validates that currentUserId is its merchant owner.
+     * Throws ForbiddenException if not authorized.
+     */
+    private void validateRestaurantOwnership(UUID restaurantId, UUID currentUserId) {
+        ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
+        if (resInfo == null) {
+            throw new NotFoundException("Restaurant not found: " + restaurantId);
+        }
+        if (!currentUserId.equals(resInfo.getMerchantId())) {
+            throw new com.CNTTK18.order_service.exception.ForbiddenException(
+                    "You are not the owner of this restaurant");
+        }
+    }
+
+    /**
+     * Returns true if currentUserId is the merchant owner of the given restaurant.
+     * Used for non-throwing checks (e.g. getOrderById cross-role verification).
+     */
+    private boolean isRestaurantOwner(UUID restaurantId, UUID currentUserId) {
+        try {
+            ResClientResponse resInfo =
+                    restaurantClient.getRestaurant(restaurantId).block();
+            return resInfo != null && currentUserId.equals(resInfo.getMerchantId());
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** Load user cart or fail fast when cart does not exist. */

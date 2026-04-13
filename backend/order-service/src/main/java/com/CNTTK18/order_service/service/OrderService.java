@@ -12,11 +12,13 @@ public interface OrderService {
 
     List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size);
 
-    List<OrderResponse> getRestaurantOrders(UUID restaurantId, int page, int size);
+    List<OrderResponse> getRestaurantOrders(
+            UUID restaurantId, UUID currentUserId, String currentUserRole, int page, int size);
 
-    OrderResponse getOrderById(UUID orderId);
+    OrderResponse getOrderById(UUID orderId, UUID currentUserId, String currentUserRole);
 
-    OrderResponse updateStatus(UUID orderId, UpdateOrderStatusRequest request);
+    OrderResponse updateStatus(
+            UUID orderId, UUID currentUserId, String currentUserRole, UpdateOrderStatusRequest request);
 
     OrderResponse cancelOrder(UUID userId, UUID orderId);
 
