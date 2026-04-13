@@ -7,7 +7,9 @@ import type { MDEditorProps } from "@uiw/react-md-editor";
 import { ArrowLeft, Image as ImageIcon, Loader2, X } from "lucide-react";
 import "@uiw/react-md-editor/markdown-editor.css";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
+import { buildBlogEditorialTemplate } from "@/lib/utils/blogWriting";
 import { BlogEditorPreview } from "@/components/client/blog/BlogEditorPreview";
+import { BlogWritingQualityPanel } from "@/components/client/blog/BlogWritingQualityPanel";
 import type { BlogStatus } from "@/types/blog.type";
 
 type BlogCreateForm = {
@@ -37,6 +39,16 @@ export interface BlogCreatePageViewProps {
 }
 
 export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
+    const handleInsertTemplate = () => {
+        if (
+            form.content.trim() &&
+            !window.confirm("Replace the current draft with the editorial template?")
+        ) {
+            return;
+        }
+        form.setContent(buildBlogEditorialTemplate(form.title));
+    };
+
     return (
         <div className="min-h-screen bg-white py-8">
             <div className="custom-container max-w-7xl">
@@ -125,6 +137,13 @@ export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
                             <label htmlFor="content" className="mb-2 block text-sm font-semibold text-gray-700">
                                 Content <span className="text-red-500">*</span>
                             </label>
+                            <div className="mb-4">
+                                <BlogWritingQualityPanel
+                                    content={form.content}
+                                    coverImageUrl={form.coverImagePreview}
+                                    onInsertTemplate={handleInsertTemplate}
+                                />
+                            </div>
                             <input
                                 ref={form.editorImageInputRef}
                                 type="file"

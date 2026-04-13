@@ -21,8 +21,8 @@ export function BlogEditorPreview({ title, content, coverImageUrl, statusLabel }
             <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">Live preview</p>
-                        <p className="mt-1 text-sm text-gray-500">Frontend only</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">Reader view</p>
+                        <p className="mt-1 text-sm text-gray-500">Current draft</p>
                     </div>
                     <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
                         {statusLabel}

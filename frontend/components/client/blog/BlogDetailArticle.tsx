@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
@@ -27,12 +27,49 @@ function getHeadingText(children: ReactNode) {
 interface BlogDetailArticleProps {
     blog: BlogViewModel;
     relatedPosts: BlogViewModel[];
+    previousPost: BlogViewModel | null;
+    nextPost: BlogViewModel | null;
     copied: boolean;
     onShare: () => void;
 }
 
-export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogDetailArticleProps) {
+function ArticleNavCard({
+    post,
+    label,
+    align = "left",
+}: {
+    post: BlogViewModel | null;
+    label: string;
+    align?: "left" | "right";
+}) {
+    if (!post) {
+        return (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">
+                No {label.toLowerCase()} available
+            </div>
+        );
+    }
+
+    return (
+        <Link
+            href={`/blog/${post.slug}`}
+            className={`group rounded-lg border border-gray-200 bg-white p-5 transition hover:border-brand-orange/50 hover:shadow-lg ${
+                align === "right" ? "text-right" : ""
+            }`}
+        >
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">{label}</p>
+            <p className="mt-3 line-clamp-2 text-base font-bold leading-6 text-gray-950 group-hover:text-brand-orange">
+                {post.title}
+            </p>
+            <p className="mt-2 text-sm text-gray-500">{post.readTime} min read</p>
+        </Link>
+    );
+}
+
+export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, copied, onShare }: BlogDetailArticleProps) {
     const headings = getMarkdownHeadings(blog.content);
+    const hasMetrics =
+        typeof blog.views === "number" || typeof blog.likes === "number" || typeof blog.commentsCount === "number";
 
     return (
         <article className="mx-auto max-w-5xl">
@@ -96,6 +133,14 @@ export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogD
                 <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
                     <aside className="hidden lg:block">
                         <div className="sticky top-28 space-y-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                            <button
+                                type="button"
+                                onClick={onShare}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-all hover:border-brand-orange hover:bg-gray-50 hover:text-brand-orange"
+                            >
+                                <Share2 className="h-4 w-4" />
+                                {copied ? "Copied" : "Share story"}
+                            </button>
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">In this story</p>
                                 <div className="mt-4 space-y-2">
@@ -116,16 +161,32 @@ export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogD
                                     )}
                                 </div>
                             </div>
-                            <div className="border-t border-orange-200 pt-4 text-sm text-gray-600">
+                            <div className="border-t border-gray-200 pt-4 text-sm text-gray-600">
                                 {blog.category && <p className="font-semibold text-gray-950">{blog.category}</p>}
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {blog.tags.map((tag) => (
-                                        <span key={tag} className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-700">
+                                        <span key={tag} className="rounded-md bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
                                             {tag}
                                         </span>
                                     ))}
                                 </div>
                             </div>
+                            {hasMetrics && (
+                                <div className="grid grid-cols-3 gap-2 border-t border-gray-200 pt-4 text-center text-xs text-gray-500">
+                                    <div>
+                                        <p className="font-bold text-gray-950">{(blog.views ?? 0).toLocaleString()}</p>
+                                        <p>Views</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-950">{(blog.likes ?? 0).toLocaleString()}</p>
+                                        <p>Likes</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-950">{(blog.commentsCount ?? 0).toLocaleString()}</p>
+                                        <p>Talks</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </aside>
 
@@ -148,7 +209,7 @@ export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogD
                             </ReactMarkdown>
                         </div>
 
-                        {(typeof blog.views === "number" || typeof blog.likes === "number" || typeof blog.commentsCount === "number") && (
+                        {hasMetrics && (
                             <div className="not-prose mt-10 flex flex-wrap gap-3 border-t border-gray-200 pt-6 text-sm text-gray-600">
                                 {typeof blog.views === "number" && (
                                     <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
@@ -173,6 +234,13 @@ export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogD
                     </div>
                 </div>
 
+                <section className="border-t border-gray-200 pt-10">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <ArticleNavCard post={previousPost} label="Previous story" />
+                        <ArticleNavCard post={nextPost} label="Next story" align="right" />
+                    </div>
+                </section>
+
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-10">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">More stories</p>
@@ -181,7 +249,9 @@ export function BlogDetailArticle({ blog, relatedPosts, copied, onShare }: BlogD
                                 <Link key={post.id} href={`/blog/${post.slug}`} className="group rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-orange/50 hover:shadow-lg">
                                     <p className="text-sm font-semibold leading-6 text-gray-950 group-hover:text-brand-orange">{post.title}</p>
                                     <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">{post.excerpt}</p>
-                                    <p className="mt-3 text-xs font-medium text-gray-500">{post.readTime} min read</p>
+                                    <p className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-gray-500">
+                                        {post.readTime} min read <ArrowRight className="h-3.5 w-3.5" />
+                                    </p>
                                 </Link>
                             ))}
                         </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { mapBlogApiToViewModel } from "@/lib/adapters/blogViewAdapter";
+import { mapPublicBlogApiToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
 import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import { getMockBlogBySlug } from "@/mocks/blog.mock";
@@ -19,7 +19,7 @@ export function useBlogDetailData(slug: string | undefined) {
                 return;
             }
             const response = await blogApi.getBlogBySlug(slug);
-            setBlog(mapBlogApiToViewModel(response));
+            setBlog(mapPublicBlogApiToViewModel(response));
         } catch (error) {
             console.error("Failed to fetch blog:", error);
             setBlog(null);

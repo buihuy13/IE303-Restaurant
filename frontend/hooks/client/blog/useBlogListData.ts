@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { mapBlogApiListToViewModel } from "@/lib/adapters/blogViewAdapter";
+import { mapPublicBlogApiListToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
 import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import { getMockBlogPage } from "@/mocks/blog.mock";
@@ -60,7 +60,7 @@ export function useBlogListData(filters: BlogViewFilters, initialData: InitialBl
             }
 
             const response = await blogApi.getBlogs({ page: 1, size: 1000, sort: "publishedAt,desc" });
-            setSourceBlogs(mapBlogApiListToViewModel(response.content ?? []));
+            setSourceBlogs(mapPublicBlogApiListToViewModel(response.content ?? []));
         } catch (error) {
             console.error("Failed to fetch blogs:", error);
             toast.error("Failed to load blog posts");
