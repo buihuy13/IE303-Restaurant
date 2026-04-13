@@ -2,6 +2,7 @@
 
 import { dashboardApi } from "@/lib/api/dashboardApi";
 import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
+import MerchantAiInsightsPanel from "@/components/merchant/reports/MerchantAiInsightsPanel";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { DashboardPeriod } from "@/types/dashboard.type";
 import { AlertCircle, BarChart3, Clock3, Package, ShoppingBag, Sparkles, Store } from "lucide-react";
@@ -57,23 +58,51 @@ export default function MerchantReportsPageClient() {
             setLoading(true);
             try {
                 const restaurantInfo = await dashboardApi.getMerchantRestaurantOverview(user.id);
-
-                const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] = await Promise.all(
-                    [
-                        dashboardApi.getMerchantOverview(restaurantInfo.restaurantId, { period }),
-                        dashboardApi.getMerchantRevenue(restaurantInfo.restaurantId, { period }),
-                        dashboardApi.getMerchantOrderStatus(restaurantInfo.restaurantId, { period }),
-                        dashboardApi.getMerchantTopProducts(restaurantInfo.restaurantId, { period, limit: 8 }),
-                        dashboardApi.getMerchantLiveOrders(restaurantInfo.restaurantId),
-                    ],
-                );
-
                 setRestaurant(restaurantInfo);
-                setOverview(nextOverview);
-                setRevenue(nextRevenue);
-                setOrderStatus(nextOrderStatus);
-                setTopProducts(nextTopProducts.items);
-                setLiveOrders(nextLiveOrders);
+
+                try {
+                    const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] =
+                        await Promise.all([
+                            dashboardApi.getMerchantOverview(restaurantInfo.restaurantId, { period }),
+                            dashboardApi.getMerchantRevenue(restaurantInfo.restaurantId, { period }),
+                            dashboardApi.getMerchantOrderStatus(restaurantInfo.restaurantId, { period }),
+                            dashboardApi.getMerchantTopProducts(restaurantInfo.restaurantId, { period, limit: 8 }),
+                            dashboardApi.getMerchantLiveOrders(restaurantInfo.restaurantId),
+                        ]);
+
+                    setOverview(nextOverview);
+                    setRevenue(nextRevenue);
+                    setOrderStatus(nextOrderStatus);
+                    setTopProducts(nextTopProducts.items);
+                    setLiveOrders(nextLiveOrders);
+                } catch (analyticsError) {
+                    console.error("Failed to load merchant analytics", analyticsError);
+                    setOverview({
+                        revenueToday: 0,
+                        revenueThisMonth: 0,
+                        ordersToday: 0,
+                        pendingOrders: 0,
+                        completedOrders: 0,
+                        cancelledOrders: 0,
+                    });
+                    setRevenue({
+                        totalRevenue: 0,
+                        totalOrders: 0,
+                        breakdown: [],
+                    });
+                    setOrderStatus({
+                        total: 0,
+                        pending: 0,
+                        confirmed: 0,
+                        preparing: 0,
+                        delivering: 0,
+                        completed: 0,
+                        cancelled: 0,
+                    });
+                    setTopProducts([]);
+                    setLiveOrders([]);
+                    toast("Restaurant loaded. Analytics data is temporarily unavailable.");
+                }
             } catch (error: unknown) {
                 const status =
                     error && typeof error === "object" && "response" in error
@@ -194,6 +223,11 @@ export default function MerchantReportsPageClient() {
 
             {restaurant && (
                 <>
+                    <MerchantAiInsightsPanel
+                        restaurantId={restaurant.restaurantId}
+                        restaurantName={restaurant.restaurantName}
+                    />
+
                     <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <article className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-boxdark">
                             <p className="text-xs uppercase tracking-[0.18em] text-bodydark">Revenue</p>

@@ -52,11 +52,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     // Track processed messages to prevent duplicates from WebSocket (shared across all rooms)
     const processedMessagesRef = useRef<Set<string>>(new Set());
     const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const syncIntervalMsRef = useRef<number>(5000);
+    const syncIntervalMsRef = useRef<number>(30000);
 
     // Load rooms and subscribe to all when user is authenticated and connected
     useEffect(() => {
-        if (!user?.id || !isAuthenticated || !isConnected || roomsLoadedRef.current) {
+        if (!user?.id || !isAuthenticated || !isConnected || !isChatRoute || roomsLoadedRef.current) {
             return;
         }
 
@@ -165,7 +165,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     roomsLoadedRef.current = true;
 
                     // If user has no rooms yet, keep fast polling so first incoming room appears quickly.
-                    const nextIntervalMs = rooms.length === 0 ? 1000 : 30000;
+                    const nextIntervalMs = rooms.length === 0 ? 3000 : 30000;
                     if (syncIntervalMsRef.current !== nextIntervalMs) {
                         syncIntervalMsRef.current = nextIntervalMs;
                         if (syncIntervalRef.current) {
@@ -204,8 +204,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         // User has no chat rooms yet; keep syncing to catch newly created rooms.
                         setRooms([]);
                         roomsLoadedRef.current = true;
-                        if (syncIntervalMsRef.current !== 1000) {
-                            syncIntervalMsRef.current = 1000;
+                        if (syncIntervalMsRef.current !== 3000) {
+                            syncIntervalMsRef.current = 3000;
                             if (syncIntervalRef.current) {
                                 clearInterval(syncIntervalRef.current);
                             }
@@ -221,15 +221,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
             try {
                 await syncRoomsAndSubscriptions();
-                if (syncIntervalRef.current) {
-                    clearInterval(syncIntervalRef.current);
-                }
-                // Poll room list so newly created conversations (when user had no rooms before)
-                // are discovered and subscribed automatically.
-                syncIntervalMsRef.current = 5000;
-                syncIntervalRef.current = setInterval(() => {
-                    void syncRoomsAndSubscriptions();
-                }, syncIntervalMsRef.current);
             } catch {
                 // Silent error handling
             }
@@ -242,7 +233,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 clearInterval(syncIntervalRef.current);
                 syncIntervalRef.current = null;
             }
-            syncIntervalMsRef.current = 5000;
+            syncIntervalMsRef.current = 30000;
         };
     }, [
         user?.id,
@@ -262,7 +253,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         if (!isChatRoute && syncIntervalRef.current) {
             clearInterval(syncIntervalRef.current);
             syncIntervalRef.current = null;
-            syncIntervalMsRef.current = 5000;
+            syncIntervalMsRef.current = 30000;
         }
     }, [isChatRoute]);
 
@@ -276,7 +267,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                 clearInterval(syncIntervalRef.current);
                 syncIntervalRef.current = null;
             }
-            syncIntervalMsRef.current = 5000;
+            syncIntervalMsRef.current = 30000;
         }
     }, [isAuthenticated]);
 
