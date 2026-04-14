@@ -6,7 +6,7 @@ import { useBlogListData, type InitialBlogListData } from "@/hooks/client/blog/u
 import { useBlogListFilters } from "@/hooks/client/blog/useBlogListFilters";
 import { useBlogHeroCarousel } from "@/hooks/client/blog/useBlogHeroCarousel";
 import { BlogPageView } from "@/components/client/blog/BlogPageView";
-import { mockBlogCategories, mockBlogTags } from "@/mocks/blog.mock";
+import { mockBlogCategories } from "@/mocks/blog.mock";
 
 interface BlogPageClientProps {
     initialData?: InitialBlogListData | null;
@@ -34,11 +34,6 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
         if (dataSource === "mock") return mockBlogCategories;
         return Array.from(new Set(sourceBlogs.map((blog) => blog.category).filter(Boolean))) as string[];
     }, [dataSource, sourceBlogs]);
-    const tags = useMemo(() => {
-        if (dataSource === "mock") return mockBlogTags;
-        return Array.from(new Set(sourceBlogs.flatMap((blog) => blog.tags))).slice(0, 12);
-    }, [dataSource, sourceBlogs]);
-
     return (
         <BlogPageView
             canManageBlogs={canManageBlogs}
@@ -51,10 +46,8 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
             category={filters.category}
             sort={filters.sort}
             categories={categories}
-            tags={tags}
             heroBlogs={heroCarousel.heroBlogs}
             activeHeroIndex={heroCarousel.activeIndex}
-            trendingBlogs={sourceBlogs.slice(0, 4)}
             onHeroNext={heroCarousel.goNext}
             onHeroPrevious={heroCarousel.goPrevious}
             onHeroGoToSlide={heroCarousel.goToSlide}

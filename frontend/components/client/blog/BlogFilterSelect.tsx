@@ -48,7 +48,7 @@ export function BlogFilterSelect({ label, value, options, onChange }: BlogFilter
                 onKeyDown={(event) => {
                     if (event.key === "Escape") setOpen(false);
                 }}
-                className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
+                className="flex h-12 w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
             >
                 <span className="truncate">{selectedOption?.label ?? label}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-gray-500 transition-transform ${open ? "rotate-180" : ""}`} />

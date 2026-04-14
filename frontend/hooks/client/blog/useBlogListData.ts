@@ -12,7 +12,7 @@ export interface InitialBlogListData {
     page: number;
 }
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 6;
 
 const getBlogTime = (blog: BlogViewModel) =>
     new Date(blog.publishedAt || blog.updatedAt || blog.createdAt || 0).getTime();

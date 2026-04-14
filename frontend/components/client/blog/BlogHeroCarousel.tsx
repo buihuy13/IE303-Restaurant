@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { ArrowRight, Calendar, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import { getBlogExcerpt } from "@/lib/utils/blogText";
 import { cn } from "@/lib/utils";
 import type { BlogViewModel } from "@/types/blogView.type";
@@ -92,11 +92,11 @@ export function BlogHeroCarousel({
 
                 {blogs.length > 1 && (
                     <>
-                        <div className="absolute right-5 top-5 flex gap-2">
+                        <div className="absolute bottom-5 right-5 flex gap-2">
                             <button
                                 type="button"
                                 onClick={onPrevious}
-                                className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-white backdrop-blur-md transition hover:bg-black/45"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-white backdrop-blur-md transition hover:bg-black/45 md:h-10 md:w-10"
                                 aria-label="Previous featured story"
                             >
                                 <ChevronLeft className="h-5 w-5" />
@@ -104,32 +104,27 @@ export function BlogHeroCarousel({
                             <button
                                 type="button"
                                 onClick={onNext}
-                                className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-white backdrop-blur-md transition hover:bg-black/45"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-white backdrop-blur-md transition hover:bg-black/45 md:h-10 md:w-10"
                                 aria-label="Next featured story"
                             >
                                 <ChevronRight className="h-5 w-5" />
                             </button>
                         </div>
 
-                        <div className="absolute bottom-5 right-5 flex items-center gap-2">
+                        <div className="absolute bottom-4 left-5 flex items-center gap-1.5 md:bottom-5">
                             {blogs.map((blog, index) => (
                                 <button
                                     key={blog.id}
                                     type="button"
                                     onClick={() => onGoToSlide(index)}
                                     className={cn(
-                                        "h-2.5 rounded-full transition-all",
-                                        index === activeIndex ? "w-8 bg-brand-orange" : "w-2.5 bg-white/60 hover:bg-white",
+                                        "h-2 rounded-full transition-all",
+                                        index === activeIndex ? "w-6 bg-brand-orange" : "w-2 bg-white/60 hover:bg-white",
                                     )}
                                     aria-label={`Show featured story ${index + 1}`}
                                     aria-current={index === activeIndex}
                                 />
                             ))}
-                        </div>
-
-                        <div className="absolute bottom-5 left-5 hidden items-center gap-2 text-sm font-medium text-white/75 sm:flex">
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>{activeIndex + 1} / {blogs.length}</span>
                         </div>
                     </>
                 )}
