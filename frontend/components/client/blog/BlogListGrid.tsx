@@ -21,11 +21,12 @@ interface BlogListPaginationProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    buttonClassName?: string;
 }
 
 const formatPage = (page: number) => String(page).padStart(2, "0");
 
-export function BlogListPagination({ currentPage, totalPages, onPageChange }: BlogListPaginationProps) {
+export function BlogListPagination({ currentPage, totalPages, onPageChange, buttonClassName = "" }: BlogListPaginationProps) {
     if (totalPages <= 1) return null;
 
     const canGoPrevious = currentPage > 1;
@@ -38,7 +39,7 @@ export function BlogListPagination({ currentPage, totalPages, onPageChange }: Bl
                 aria-label="Previous page"
                 disabled={!canGoPrevious}
                 onClick={() => onPageChange(currentPage - 1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-orange text-brand-orange transition hover:bg-brand-orange hover:text-white disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-300"
+                className={`flex h-9 w-9 items-center justify-center rounded-full border border-brand-orange text-brand-orange transition hover:bg-brand-orange hover:text-white disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-300 ${buttonClassName}`}
             >
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
             </button>
@@ -52,7 +53,7 @@ export function BlogListPagination({ currentPage, totalPages, onPageChange }: Bl
                 aria-label="Next page"
                 disabled={!canGoNext}
                 onClick={() => onPageChange(currentPage + 1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white transition hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                className={`flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white transition hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${buttonClassName}`}
             >
                 <ChevronRight className="h-5 w-5" strokeWidth={2.2} />
             </button>

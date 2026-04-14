@@ -3,12 +3,30 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Calendar, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { BlogDetailComments } from "@/components/client/blog/BlogDetailComments";
+import { BlogListGrid } from "@/components/client/blog/BlogListGrid";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
 import { getMarkdownHeadings, toMarkdownHeadingId } from "@/lib/utils/blogText";
 import type { BlogViewModel } from "@/types/blogView.type";
+
+interface MarkdownImage {
+    alt: string;
+    url: string;
+}
+
+interface BlogDetailArticleProps {
+    blog: BlogViewModel;
+    relatedPosts: BlogViewModel[];
+    previousPost: BlogViewModel | null;
+    nextPost: BlogViewModel | null;
+    copied: boolean;
+    onShare: () => void;
+}
+
+const MARKDOWN_IMAGE_PATTERN = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
 
 function formatDate(dateString?: string | null) {
     if (!dateString) return "Unpublished";
@@ -24,237 +42,286 @@ function getHeadingText(children: ReactNode) {
     return String(children ?? "");
 }
 
-interface BlogDetailArticleProps {
-    blog: BlogViewModel;
-    relatedPosts: BlogViewModel[];
-    previousPost: BlogViewModel | null;
-    nextPost: BlogViewModel | null;
-    copied: boolean;
-    onShare: () => void;
+function getInitials(name: string) {
+    return name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
 }
 
-function ArticleNavCard({
-    post,
-    label,
-    align = "left",
-}: {
-    post: BlogViewModel | null;
-    label: string;
-    align?: "left" | "right";
-}) {
-    if (!post) {
-        return (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">
-                No {label.toLowerCase()} available
-            </div>
-        );
-    }
+function extractMarkdownImages(content: string): MarkdownImage[] {
+    return Array.from(content.matchAll(MARKDOWN_IMAGE_PATTERN)).map((match) => ({
+        alt: match[1] || "Blog image",
+        url: match[2],
+    }));
+}
+
+function removePromotedImages(content: string, promotedUrls: Set<string>) {
+    if (promotedUrls.size === 0) return content;
+    return content.replace(MARKDOWN_IMAGE_PATTERN, (match, _alt: string, url: string) =>
+        promotedUrls.has(url) ? "" : match,
+    );
+}
+
+function ArticleNavCard({ post, label, direction = "next" }: { post: BlogViewModel | null; label: string; direction?: "previous" | "next" }) {
+    if (!post) return null;
 
     return (
         <Link
             href={`/blog/${post.slug}`}
-            className={`group rounded-lg border border-gray-200 bg-white p-5 transition hover:border-brand-orange/50 hover:shadow-lg ${
-                align === "right" ? "text-right" : ""
-            }`}
+            className="group flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-5 transition hover:border-brand-orange hover:bg-green-50"
         >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">{label}</p>
-            <p className="mt-3 line-clamp-2 text-base font-bold leading-6 text-gray-950 group-hover:text-brand-orange">
-                {post.title}
-            </p>
-            <p className="mt-2 text-sm text-gray-500">{post.readTime} min read</p>
+            {direction === "previous" && (
+                <ArrowLeft className="h-5 w-5 shrink-0 text-brand-orange transition group-hover:-translate-x-1" />
+            )}
+            <div className={direction === "previous" ? "text-right" : ""}>
+                <p className="text-xs font-bold uppercase text-brand-green">{label}</p>
+                <p className="mt-2 line-clamp-2 font-bold leading-6 text-gray-950 transition group-hover:text-green-900">
+                    {post.title}
+                </p>
+            </div>
+            {direction === "next" && (
+                <ArrowRight className="h-5 w-5 shrink-0 text-brand-orange transition group-hover:translate-x-1" />
+            )}
         </Link>
     );
 }
 
+function DetailInfoRow({ label, value }: { label: string; value: ReactNode }) {
+    return (
+        <div className="flex items-center justify-between gap-6 py-3 text-sm">
+            <span className="font-semibold uppercase text-gray-700">{label}</span>
+            <span className="text-right font-medium text-gray-700">{value}</span>
+        </div>
+    );
+}
+
 export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, copied, onShare }: BlogDetailArticleProps) {
-    const headings = getMarkdownHeadings(blog.content);
+    const markdownImages = extractMarkdownImages(blog.content);
+    const heroImageUrl = blog.coverImageUrl || markdownImages[0]?.url || null;
+    const mediaImages = markdownImages
+        .filter((image) => image.url !== heroImageUrl)
+        .slice(0, 2);
+    const promotedImageUrls = new Set(
+        [heroImageUrl, ...mediaImages.map((image) => image.url)].filter(Boolean) as string[],
+    );
+    const contentWithoutPromotedImages = removePromotedImages(blog.content, promotedImageUrls);
+    const headings = getMarkdownHeadings(contentWithoutPromotedImages);
     const hasMetrics =
         typeof blog.views === "number" || typeof blog.likes === "number" || typeof blog.commentsCount === "number";
+    const categoryLabel = blog.category ?? BLOG_STATUS_LABELS[blog.status].label;
 
     return (
-        <article className="mx-auto max-w-5xl">
-            <div className="space-y-10">
-                <header className="mx-auto max-w-3xl">
-                    <div className="mb-5 flex items-center justify-between">
-                        <Link
-                            href="/blog"
-                            className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-brand-orange"
-                        >
-                            <ArrowLeft className="h-3.5 w-3.5" />
-                            <span>Back</span>
-                        </Link>
-                        <span className="inline-block rounded-md bg-brand-orange px-3 py-1 text-xs font-semibold text-white shadow-sm">
-                            {BLOG_STATUS_LABELS[blog.status].label}
-                        </span>
-                    </div>
-                    <h1 className="mb-5 text-3xl font-bold leading-tight tracking-tight text-gray-950 md:text-5xl lg:text-6xl">
-                        {blog.title}
-                    </h1>
-                    <p className="mb-5 text-lg leading-8 text-gray-600">{blog.excerpt}</p>
-                    <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 pb-5 text-sm text-gray-500">
-                        <div className="flex items-center gap-3">
-                            {blog.author.avatarUrl && (
-                                <Image
-                                    src={blog.author.avatarUrl}
-                                    alt={blog.author.name}
-                                    width={44}
-                                    height={44}
-                                    className="rounded-lg object-cover"
-                                />
-                            )}
-                            <div>
-                                <p className="font-semibold text-gray-950">{blog.author.name}</p>
-                                <p>{blog.author.role}</p>
-                            </div>
-                        </div>
-                        <span className="hidden h-8 w-px bg-gray-200 sm:block" />
-                        <span className="inline-flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            {formatDate(blog.publishedAt ?? blog.createdAt)}
-                        </span>
-                        <span>{blog.readTime} min read</span>
-                        <button
-                            type="button"
-                            onClick={onShare}
-                            className="ml-auto inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-brand-orange hover:bg-gray-50 hover:text-brand-orange"
-                        >
-                            <Share2 className="h-4 w-4" />
-                            {copied ? "Copied" : "Share"}
-                        </button>
-                    </div>
-                </header>
-
-                {blog.coverImageUrl && (
-                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-                        <Image src={blog.coverImageUrl} alt={blog.title} fill className="object-cover" priority />
-                    </div>
-                )}
-
-                <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
-                    <aside className="hidden lg:block">
-                        <div className="sticky top-28 space-y-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <article className="mx-auto max-w-7xl">
+            <div className="space-y-14">
+                <header className="overflow-hidden rounded-lg bg-green-50">
+                    <div className="relative aspect-[16/7] min-h-[300px]">
+                        {heroImageUrl ? (
+                            <Image src={heroImageUrl} alt={blog.title} fill className="object-cover" priority />
+                        ) : (
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(41,176,103,0.45),transparent_34%),linear-gradient(135deg,#14532d,#1f4d16)]" />
+                        )}
+                        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/25 to-transparent" />
+                        <div className="absolute left-4 right-4 top-4 flex flex-wrap items-center justify-between gap-3 sm:left-6 sm:right-6 sm:top-6">
+                            <Link
+                                href="/blog"
+                                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white/90 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm backdrop-blur transition hover:bg-white hover:text-brand-orange"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to Blog
+                            </Link>
                             <button
                                 type="button"
                                 onClick={onShare}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-all hover:border-brand-orange hover:bg-gray-50 hover:text-brand-orange"
+                                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-orange/90"
                             >
                                 <Share2 className="h-4 w-4" />
-                                {copied ? "Copied" : "Share story"}
+                                {copied ? "Copied" : "Share"}
                             </button>
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">In this story</p>
-                                <div className="mt-4 space-y-2">
-                                    {headings.length > 0 ? (
-                                        headings.map((heading) => (
-                                            <a
-                                                key={heading.id}
-                                                href={`#${heading.id}`}
-                                                className={`block text-sm leading-6 text-gray-700 hover:text-brand-orange ${
-                                                    heading.level === 3 ? "pl-3" : ""
-                                                }`}
-                                            >
-                                                {heading.text}
-                                            </a>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm leading-6 text-gray-600">A short read from the FoodEats table.</p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="border-t border-gray-200 pt-4 text-sm text-gray-600">
-                                {blog.category && <p className="font-semibold text-gray-950">{blog.category}</p>}
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {blog.tags.map((tag) => (
-                                        <span key={tag} className="rounded-md bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            {hasMetrics && (
-                                <div className="grid grid-cols-3 gap-2 border-t border-gray-200 pt-4 text-center text-xs text-gray-500">
-                                    <div>
-                                        <p className="font-bold text-gray-950">{(blog.views ?? 0).toLocaleString()}</p>
-                                        <p>Views</p>
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-950">{(blog.likes ?? 0).toLocaleString()}</p>
-                                        <p>Likes</p>
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-950">{(blog.commentsCount ?? 0).toLocaleString()}</p>
-                                        <p>Talks</p>
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                    </aside>
+                    </div>
+                </header>
 
-                    <div className="prose prose-lg blog-content max-w-none">
+                <section className="mx-auto max-w-5xl text-center">
+                    <h2 className="text-3xl font-black leading-tight text-brand-green md:text-5xl">{blog.title}</h2>
+                    <p className="mx-auto mt-5 max-w-4xl text-lg leading-8 text-gray-700">{blog.excerpt}</p>
+                </section>
+
+                {mediaImages.length > 0 && (
+                    <section className={`grid gap-5 ${mediaImages.length > 1 ? "md:grid-cols-2" : ""}`}>
+                        {mediaImages.map((image) => (
+                            <div key={image.url} className="relative aspect-[1.45] overflow-hidden rounded-lg bg-gray-100">
+                                <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                            </div>
+                        ))}
+                    </section>
+                )}
+
+                <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+                    <div className="blog-content max-w-none">
                         <div className="markdown-body">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
                                     h2: ({ children }: { children?: ReactNode }) => {
                                         const id = toMarkdownHeadingId(getHeadingText(children));
-                                        return <h2 id={id}>{children}</h2>;
+                                        return (
+                                            <h2 id={id} className="!border-b-0 !pb-0 !text-2xl !text-gray-900 md:!text-3xl">
+                                                {children}
+                                            </h2>
+                                        );
                                     },
                                     h3: ({ children }: { children?: ReactNode }) => {
                                         const id = toMarkdownHeadingId(getHeadingText(children));
-                                        return <h3 id={id}>{children}</h3>;
+                                        return (
+                                            <h3 id={id} className="!text-xl !text-gray-900 md:!text-2xl">
+                                                {children}
+                                            </h3>
+                                        );
                                     },
                                 }}
                             >
-                                {blog.content}
+                                {contentWithoutPromotedImages}
                             </ReactMarkdown>
                         </div>
-
-                        {hasMetrics && (
-                            <div className="not-prose mt-10 flex flex-wrap gap-3 border-t border-gray-200 pt-6 text-sm text-gray-600">
-                                {typeof blog.views === "number" && (
-                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
-                                        <Eye className="h-4 w-4" />
-                                        {blog.views.toLocaleString()} views
-                                    </span>
-                                )}
-                                {typeof blog.likes === "number" && (
-                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
-                                        <Heart className="h-4 w-4" />
-                                        {blog.likes.toLocaleString()} likes
-                                    </span>
-                                )}
-                                {typeof blog.commentsCount === "number" && (
-                                    <span className="inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2">
-                                        <MessageCircle className="h-4 w-4" />
-                                        {blog.commentsCount.toLocaleString()} comments
-                                    </span>
-                                )}
-                            </div>
-                        )}
                     </div>
+
+                    <aside className="space-y-5 lg:sticky lg:top-24">
+                        <section className="rounded-lg bg-[#dcf5d3] p-6">
+                            <h2 className="border-b border-green-900/20 pb-4 text-sm font-black uppercase text-green-950">
+                                Details
+                            </h2>
+                            <div className="divide-y divide-green-900/10">
+                                <DetailInfoRow label="Date" value={formatDate(blog.publishedAt ?? blog.createdAt)} />
+                                <DetailInfoRow label="Category" value={categoryLabel} />
+                                <DetailInfoRow label="Reading" value={`${blog.readTime} minutes`} />
+                            </div>
+                            {hasMetrics && (
+                                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-green-900/20 pt-4 text-center text-xs text-gray-600">
+                                    {typeof blog.views === "number" && (
+                                        <div>
+                                            <Eye className="mx-auto mb-1 h-4 w-4 text-green-900" />
+                                            <p className="font-bold text-green-950">{blog.views.toLocaleString()}</p>
+                                            <p>Views</p>
+                                        </div>
+                                    )}
+                                    {typeof blog.likes === "number" && (
+                                        <div>
+                                            <Heart className="mx-auto mb-1 h-4 w-4 text-green-900" />
+                                            <p className="font-bold text-green-950">{blog.likes.toLocaleString()}</p>
+                                            <p>Likes</p>
+                                        </div>
+                                    )}
+                                    {typeof blog.commentsCount === "number" && (
+                                        <div>
+                                            <MessageCircle className="mx-auto mb-1 h-4 w-4 text-green-900" />
+                                            <p className="font-bold text-green-950">{blog.commentsCount.toLocaleString()}</p>
+                                            <p>Talks</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </section>
+
+                        <section className="rounded-lg bg-[#dcf5d3] p-6">
+                            <h2 className="border-b border-green-900/20 pb-4 text-sm font-black uppercase text-green-950">
+                                Author
+                            </h2>
+                            <div className="mt-6 flex items-center gap-4">
+                                {blog.author.avatarUrl ? (
+                                    <Image
+                                        src={blog.author.avatarUrl}
+                                        alt={blog.author.name}
+                                        width={48}
+                                        height={48}
+                                        className="h-12 w-12 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-black text-green-900">
+                                        {getInitials(blog.author.name)}
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="font-bold text-green-950">{blog.author.name}</p>
+                                    <p className="text-sm text-gray-600">{blog.author.role}</p>
+                                </div>
+                            </div>
+                            <p className="mt-5 leading-7 text-gray-700">
+                                Field notes and practical restaurant ideas from the FoodEats editorial table.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={onShare}
+                                className="mt-5 inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-brand-orange px-5 text-sm font-bold text-white transition hover:bg-brand-orange/90"
+                            >
+                                {copied ? "Copied" : "Share Article"}
+                            </button>
+                        </section>
+
+                        {(blog.tags.length > 0 || headings.length > 0) && (
+                            <section className="rounded-lg bg-white p-1">
+                                {blog.tags.length > 0 && (
+                                    <div className="mb-6">
+                                        <h2 className="border-b border-gray-200 pb-3 text-sm font-black uppercase text-gray-950">
+                                            Tagline
+                                        </h2>
+                                        <div className="mt-4 flex flex-wrap gap-2 text-sm text-gray-600">
+                                            {blog.tags.map((tag) => (
+                                                <span key={tag} className="rounded-lg bg-[#dcf5d3] px-3 py-1.5 font-medium">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {headings.length > 0 && (
+                                    <div>
+                                        <h2 className="border-b border-gray-200 pb-3 text-sm font-black uppercase text-gray-950">
+                                            In This Story
+                                        </h2>
+                                        <div className="mt-4 space-y-2">
+                                            {headings.slice(0, 6).map((heading) => (
+                                                <a
+                                                    key={heading.id}
+                                                    href={`#${heading.id}`}
+                                                    className={`block text-sm leading-6 text-gray-600 transition hover:text-brand-orange ${
+                                                        heading.level === 3 ? "pl-3" : ""
+                                                    }`}
+                                                >
+                                                    {heading.text}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+                        )}
+                    </aside>
                 </div>
 
-                <section className="border-t border-gray-200 pt-10">
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <ArticleNavCard post={previousPost} label="Previous story" />
-                        <ArticleNavCard post={nextPost} label="Next story" align="right" />
-                    </div>
-                </section>
+                {(previousPost || nextPost) && (
+                    <section className="grid gap-4 border-t border-gray-200 pt-10 md:grid-cols-2">
+                        <ArticleNavCard post={previousPost} label="Previous Story" direction="previous" />
+                        <ArticleNavCard post={nextPost} label="Next Story" />
+                    </section>
+                )}
+
+                <BlogDetailComments blogSlug={blog.slug} />
 
                 {relatedPosts.length > 0 && (
-                    <section className="border-t border-gray-200 pt-10">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-orange">More stories</p>
-                        <div className="mt-5 grid gap-5 md:grid-cols-3">
-                            {relatedPosts.map((post) => (
-                                <Link key={post.id} href={`/blog/${post.slug}`} className="group rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-orange/50 hover:shadow-lg">
-                                    <p className="text-sm font-semibold leading-6 text-gray-950 group-hover:text-brand-orange">{post.title}</p>
-                                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">{post.excerpt}</p>
-                                    <p className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-gray-500">
-                                        {post.readTime} min read <ArrowRight className="h-3.5 w-3.5" />
-                                    </p>
-                                </Link>
-                            ))}
+                    <section className="border-t border-gray-200 pt-12">
+                        <div className="mb-8">
+                            <p className="flex items-center gap-2 text-sm font-bold uppercase text-brand-green">
+                                <span className="h-2 w-2 rounded-full bg-brand-orange" />
+                                Related Articles
+                            </p>
+                            <h2 className="mt-4 text-4xl font-black uppercase text-brand-green md:text-5xl">
+                                You Might Also Like
+                            </h2>
                         </div>
+                        <BlogListGrid blogs={relatedPosts.slice(0, 3)} />
                     </section>
                 )}
             </div>
