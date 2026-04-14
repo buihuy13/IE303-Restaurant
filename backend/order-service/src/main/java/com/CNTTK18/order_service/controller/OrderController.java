@@ -62,7 +62,8 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get order details by ID")
-    public ResponseEntity<OrderResponse> getOrderById(@AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
+    public ResponseEntity<OrderResponse> getOrderById(
+            @AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
         return ResponseEntity.ok(orderService.getOrderById(id, userRole.getId(), userRole.getRole()));
     }
 
@@ -77,7 +78,8 @@ public class OrderController {
 
     @PutMapping("/{id}/cancel")
     @Operation(summary = "Cancel order (Customers - only if PENDING)")
-    public ResponseEntity<OrderResponse> cancelOrder(@AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
         return ResponseEntity.ok(orderService.cancelOrder(userRole.getId(), id));
     }
 

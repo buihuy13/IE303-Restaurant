@@ -1,7 +1,5 @@
 package com.CNTTK18.order_service.controller;
 
-import java.util.UUID;
-
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
