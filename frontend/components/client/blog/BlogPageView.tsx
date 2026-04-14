@@ -8,7 +8,7 @@ import { BlogListHeader } from "@/components/client/blog/BlogListHeader";
 import { BlogListGrid } from "@/components/client/blog/BlogListGrid";
 import { BlogListEmpty } from "@/components/client/blog/BlogListEmpty";
 import { BlogListLoading } from "@/components/client/blog/BlogListLoading";
-import type { BlogDataSource, BlogViewFilters } from "@/types/blogView.type";
+import type { BlogViewFilters } from "@/types/blogView.type";
 
 type BlogListGridProps = ComponentProps<typeof BlogListGrid>;
 type BlogItem = BlogListGridProps["blogs"][number];
@@ -19,14 +19,12 @@ export interface BlogPageViewProps {
     error: string | null;
     blogs: BlogItem[];
     totalPages: number;
-    totalElements: number;
     page: number;
     search: string;
     category: string;
     sort: NonNullable<BlogViewFilters["sort"]>;
     categories: string[];
     tags: string[];
-    dataSource: BlogDataSource;
     heroBlogs: BlogItem[];
     activeHeroIndex: number;
     trendingBlogs: BlogItem[];
@@ -46,14 +44,12 @@ export function BlogPageView({
     error,
     blogs,
     totalPages,
-    totalElements,
     page,
     search,
     category,
     sort,
     categories,
     tags,
-    dataSource,
     heroBlogs,
     activeHeroIndex,
     trendingBlogs,
@@ -86,11 +82,7 @@ export function BlogPageView({
     return (
         <div className="min-h-screen bg-white">
             <div className="custom-container py-12">
-                <BlogListHeader
-                    canManageBlogs={canManageBlogs}
-                    totalElements={totalElements}
-                    dataSource={dataSource}
-                />
+                <BlogListHeader canManageBlogs={canManageBlogs} />
 
                 {loading ? (
                     <BlogListLoading />

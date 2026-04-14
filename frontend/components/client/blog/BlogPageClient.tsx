@@ -25,7 +25,7 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
         }),
         [filters.category, filters.page, filters.search, filters.sort],
     );
-    const { blogs, sourceBlogs, loading, error, totalPages, totalElements, dataSource } = useBlogListData(
+    const { blogs, sourceBlogs, loading, error, totalPages, dataSource } = useBlogListData(
         requestFilters,
         initialData ?? null,
     );
@@ -46,14 +46,12 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
             error={error}
             blogs={blogs}
             totalPages={totalPages}
-            totalElements={totalElements}
             page={filters.page}
             search={filters.searchInput}
             category={filters.category}
             sort={filters.sort}
             categories={categories}
             tags={tags}
-            dataSource={dataSource}
             heroBlogs={heroCarousel.heroBlogs}
             activeHeroIndex={heroCarousel.activeIndex}
             trendingBlogs={sourceBlogs.slice(0, 4)}
