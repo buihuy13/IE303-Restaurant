@@ -89,6 +89,16 @@ public class KeycloakUserServiceImpl implements KeycloakUserService {
         UserResource userResource = keycloak.realm(realm).users().get(userId);
         userResource.resetPassword(credential);
         // set role
+        // Remove USER
+        RoleRepresentation userRole =
+                keycloak.realm(realm).roles().get(Role.USER.name()).toRepresentation();
+
+        // Remove default-roles composite
+        RoleRepresentation defaultCompositeRole =
+                keycloak.realm(realm).roles().get("default-roles-" + realm).toRepresentation();
+
+        userResource.roles().realmLevel().remove(List.of(userRole, defaultCompositeRole));
+
         String role = registeredUser.getRole().name();
         RoleRepresentation realmRole = keycloak.realm(realm).roles().get(role).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(realmRole));
