@@ -161,3 +161,100 @@ export interface MerchantTimeBasedAnalytics {
     peakHour: { hour: number; totalOrders: number; totalRevenue: number };
     busiestDay: { dayName: string; totalOrders: number; totalRevenue: number };
 }
+
+// ===================== DASHBOARD SERVICE V2 =====================
+
+export type DashboardPeriod = "day" | "week" | "month";
+
+export interface DashboardOverviewResponse {
+    revenueToday: number;
+    revenueThisMonth: number;
+    ordersToday: number;
+    pendingOrders: number;
+    completedOrders: number;
+    cancelledOrders: number;
+}
+
+export interface DashboardRevenueByDate {
+    date: string;
+    revenue: number;
+    orderCount: number;
+}
+
+export interface DashboardRevenueResponse {
+    totalRevenue: number;
+    totalOrders: number;
+    breakdown: DashboardRevenueByDate[];
+}
+
+export interface DashboardRevenueCompareResponse {
+    current: DashboardRevenueResponse;
+    previous: DashboardRevenueResponse;
+    revenueGrowthPercent: number;
+    orderGrowthPercent: number;
+}
+
+export interface DashboardOrderStatusResponse {
+    total: number;
+    pending: number;
+    confirmed: number;
+    preparing: number;
+    delivering: number;
+    completed: number;
+    cancelled: number;
+}
+
+export interface DashboardHourlyOrderResponse {
+    hour: number;
+    orderCount: number;
+}
+
+export interface DashboardTopProductItem {
+    productId: string;
+    productName: string;
+    sizeName?: string | null;
+    totalQuantitySold: number;
+    totalRevenue: number;
+}
+
+export interface DashboardTopProductsResponse {
+    items: DashboardTopProductItem[];
+}
+
+export interface DashboardRevenueByRestaurantItem {
+    restaurantId: string;
+    restaurantName: string;
+    revenue: number;
+    orderCount: number;
+}
+
+export interface DashboardRevenueByRestaurantResponse {
+    items: DashboardRevenueByRestaurantItem[];
+}
+
+export interface UserAdminStatsOverviewResponse {
+    totalUsers: number;
+    newUsersToday: number;
+    newUsersThisWeek: number;
+    newUsersThisMonth: number;
+}
+
+export interface RestaurantAdminStatsResponse {
+    totalRestaurants: number;
+    totalProducts: number;
+    totalCategories: number;
+    averageRating: number;
+}
+
+export interface DashboardOrderSummary {
+    id: string;
+    orderCode?: number | null;
+    userId?: string;
+    restaurantId?: string;
+    restaurantName?: string;
+    totalPrice: number;
+    status: string;
+    paymentStatus?: string;
+    createdAt: string;
+    itemCount?: number;
+}

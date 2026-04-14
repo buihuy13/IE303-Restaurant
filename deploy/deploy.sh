@@ -28,6 +28,7 @@ services=(
     "service-discovery"
     "frontend"
     "recommendation-service"
+    "dashboard-service"
 )
 
 nodejs_services=("dashboard-service")

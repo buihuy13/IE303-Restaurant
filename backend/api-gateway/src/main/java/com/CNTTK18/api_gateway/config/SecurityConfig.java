@@ -54,6 +54,11 @@ public class SecurityConfig {
                 .permitAll()
                 .pathMatchers(PUBLIC_PATHS)
                 .permitAll()
+                // dashboard-service
+                .pathMatchers("/api/dashboard/**")
+                .hasRole("ADMIN")
+                .pathMatchers("/api/merchant/dashboard/**")
+                .hasAnyRole("MERCHANT", "ADMIN")
                 // user-service
                 .pathMatchers(HttpMethod.POST, "/api/users/address")
                 .hasRole("USER")

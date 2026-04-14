@@ -1,5 +1,4 @@
-import { Edit, Eye, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Edit, Loader2 } from "lucide-react";
 import type { Order, OrderStatus } from "@/types/order.type";
 
 interface OrdersTableProps {
@@ -59,7 +58,9 @@ export function OrdersTable({
                                 ) : (
                                     <select
                                         value={statusDraftById[order.orderId] ?? order.status}
-                                        onChange={(e) => onStatusDraftChange(order.orderId, e.target.value as OrderStatus)}
+                                        onChange={(e) =>
+                                            onStatusDraftChange(order.orderId, e.target.value as OrderStatus)
+                                        }
                                         disabled={updatingIds.has(order.orderId)}
                                         className="h-10 rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-60"
                                         aria-label="Update order status"
@@ -87,13 +88,6 @@ export function OrdersTable({
                                             <Edit className="h-5 w-5" />
                                         )}
                                     </button>
-                                    <Link
-                                        href={`/admin/order/${order.orderId}`}
-                                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                                        title="View Details"
-                                    >
-                                        <Eye className="h-5 w-5" />
-                                    </Link>
                                 </div>
                             </td>
                         </tr>
@@ -103,4 +97,3 @@ export function OrdersTable({
         </div>
     );
 }
-

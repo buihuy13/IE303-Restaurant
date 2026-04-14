@@ -98,6 +98,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
     const processedEventKeysRef = useRef<Set<string>>(new Set());
     const { addNotification } = useNotificationStore();
     const isConnectingRef = useRef(false);
+    const endpointIndexRef = useRef(0);
 
     const log = (...args: unknown[]) => {
         console.log("[sse-notification]", ...args);
@@ -135,7 +136,12 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
         closeCurrentEventSource();
 
         try {
-            const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(currentUserId ?? "")}`;
+            const encodedUserId = encodeURIComponent(currentUserId ?? "");
+            const sseEndpoints = [
+                `${NOTIFICATION_URL}/api/sse/subcribe/${encodedUserId}`,
+                `${NOTIFICATION_URL}/api/sse/subscribe/${encodedUserId}`,
+            ];
+            const sseUrl = sseEndpoints[endpointIndexRef.current % sseEndpoints.length];
             log("connecting", { sseUrl });
 
             const eventSource = new EventSource(sseUrl);
@@ -152,9 +158,22 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                 }
             };
 
-            eventSource.onerror = (error) => {
-                console.error("❌ SSE error:", error);
-                log("error", error);
+            eventSource.onerror = () => {
+                const activeState = eventSource.readyState;
+                const nextEndpointIndex = endpointIndexRef.current + 1;
+                endpointIndexRef.current = nextEndpointIndex;
+                const online = typeof navigator === "undefined" ? true : navigator.onLine;
+                const details = {
+                    url: sseUrl,
+                    readyState: activeState,
+                    online,
+                    nextRetryUrl: sseEndpoints[nextEndpointIndex % sseEndpoints.length],
+                };
+
+                // EventSource exposes minimal error details (usually empty Event object),
+                // so log extra transport context instead of a generic "{}".
+                console.warn("SSE connection closed, scheduling reconnect.", details);
+                log("error", details);
                 setIsConnected(false);
                 isConnectingRef.current = false;
 
