@@ -195,7 +195,10 @@ public class CartServiceImpl implements CartService {
      * item.
      */
     private void addOrIncrementCartItem(
-            CartRestaurantGroup group, AddToCartRequest request, ProductSizeClientResponse sizeInfo, ProductClientResponse productInfo) {
+            CartRestaurantGroup group,
+            AddToCartRequest request,
+            ProductSizeClientResponse sizeInfo,
+            ProductClientResponse productInfo) {
         Optional<CartItem> existingItem = group.getItems().stream()
                 .filter(i -> i.getProductSizeId().equals(request.getProductSizeId()))
                 .findFirst();
@@ -217,5 +220,6 @@ public class CartServiceImpl implements CartService {
         group.getItems().add(newItem);
     }
 
-    private record AddToCartFetchResult(ResClientResponse resInfo, ProductSizeClientResponse sizeInfo, ProductClientResponse productInfo) {}
+    private record AddToCartFetchResult(
+            ResClientResponse resInfo, ProductSizeClientResponse sizeInfo, ProductClientResponse productInfo) {}
 }
