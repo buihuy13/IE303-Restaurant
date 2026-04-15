@@ -10,5 +10,4 @@ public class ProductSizeClientResponse {
     private UUID id;
     private String sizeName;
     private BigDecimal price;
-    private ProductClientResponse product;
 }
