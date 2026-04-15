@@ -149,11 +149,26 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Restaurant is currently disabled");
         }
 
+        if (resInfo.getOpeningTime() == null || resInfo.getClosingTime() == null) {
+            return;
+        }
+
         LocalTime now = LocalTime.now(VIETNAM_ZONE);
-        if (resInfo.getOpeningTime() != null
-                && resInfo.getClosingTime() != null
-                && (now.isBefore(resInfo.getOpeningTime()) || now.isAfter(resInfo.getClosingTime()))) {
-            throw new BadRequestException("Restaurant is currently closed");
+        LocalTime open = resInfo.getOpeningTime();
+        LocalTime close = resInfo.getClosingTime();
+
+        boolean isOpen;
+        if (open.isBefore(close)) {
+            // Case: 08:00 - 22:00 (Same day)
+            isOpen = !now.isBefore(open) && !now.isAfter(close);
+        } else {
+            // Case: 18:00 - 02:00 (Overnight)
+            // Open if now is after 18:00 OR before 02:00
+            isOpen = !now.isBefore(open) || !now.isAfter(close);
+        }
+
+        if (!isOpen) {
+            throw new BadRequestException("Restaurant is currently closed (Hours: " + open + " - " + close + ")");
         }
     }
 
