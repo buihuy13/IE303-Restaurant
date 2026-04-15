@@ -93,7 +93,7 @@ spring:
                 - id: sse-connection
                   uri: lb://notification-service
                   predicates:
-                      - Path=/api/sse/subcribe/**
+                      - Path=/api/sse/subscribe/**
                       - Method=GET
                 # recommendation-service
                 - id: recommendation-service

@@ -16,7 +16,7 @@ public class SSEController {
         this.sseService = sseService;
     }
 
-    @GetMapping(value = "/api/sse/subcribe/{userId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/api/sse/subscribe/{userId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subcribeEmitter(@PathVariable String userId) {
         return sseService.createEmitter(userId);
     }
