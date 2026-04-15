@@ -308,7 +308,7 @@ export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, 
                     </section>
                 )}
 
-                <BlogDetailComments blogSlug={blog.slug} />
+                <BlogDetailComments blogId={blog.id} blogSlug={blog.slug} />
 
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-12">

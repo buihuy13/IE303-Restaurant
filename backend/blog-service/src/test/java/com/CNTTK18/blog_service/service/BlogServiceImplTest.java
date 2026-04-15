@@ -35,13 +35,17 @@ import org.springframework.web.multipart.MultipartFile;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.blog_service.config.properties.BlogImageProperties;
 import com.CNTTK18.blog_service.dto.UserRole;
+import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
+import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
 import com.CNTTK18.blog_service.exception.ForbiddenException;
 import com.CNTTK18.blog_service.mapper.BlogMapper;
+import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogPost;
+import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
 import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogCommentRepository;
@@ -353,6 +357,48 @@ class BlogServiceImplTest {
 
         assertEquals(BlogStatus.ARCHIVED, publishedBlog.getStatus());
         assertNull(publishedBlog.getPublishedAt());
+        verify(blogRepository).save(publishedBlog);
+    }
+
+    @Test
+    void createComment_shouldRequireAuthenticatedUser() {
+        CreateBlogCommentRequest request = new CreateBlogCommentRequest("Useful note", false);
+
+        assertThrows(ForbiddenException.class, () -> blogService.createComment(BLOG_ID, request, null));
+    }
+
+    @Test
+    void createComment_shouldUseAuthenticatedUserIdentity() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .commentsCount(0L)
+                .build();
+        UserRole authUser = UserRole.builder()
+                .userId(AUTHOR_ID)
+                .role("USER")
+                .username("huutri")
+                .email("huutri@example.com")
+                .build();
+        CreateBlogCommentRequest request = new CreateBlogCommentRequest("Useful note", true);
+
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogCommentRepository.save(any(BlogComment.class))).thenAnswer(invocation -> {
+            BlogComment comment = invocation.getArgument(0);
+            comment.setId(UUID.randomUUID());
+            comment.setCreatedAt(Instant.now());
+            return comment;
+        });
+
+        BlogCommentResponse response = blogService.createComment(BLOG_ID, request, authUser);
+
+        assertEquals(AUTHOR_ID, response.getAuthorId());
+        assertEquals("huutri", response.getName());
+        assertEquals("Useful note", response.getMessage());
+        assertEquals(BlogCommentStatus.PUBLISHED, response.getStatus());
+        assertNull(response.getEmail());
+        assertEquals(1L, publishedBlog.getCommentsCount());
         verify(blogRepository).save(publishedBlog);
     }
 

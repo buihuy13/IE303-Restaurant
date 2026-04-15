@@ -2,30 +2,33 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { MessageCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { BlogListPagination } from "@/components/client/blog/BlogListGrid";
+import { blogApi } from "@/lib/api/blogApi";
+import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
+import { useAuthStore } from "@/stores/useAuthStore";
+import type { BlogComment } from "@/types/blog.type";
 
 interface BlogDetailComment {
     id: string;
     name: string;
-    email: string;
+    email?: string | null;
     message: string;
     createdAt: string;
     avatarUrl?: string;
 }
 
 interface BlogDetailCommentsProps {
+    blogId: string;
     blogSlug: string;
 }
 
 interface CommentFormState {
-    name: string;
-    email: string;
     message: string;
     notify: boolean;
 }
 
-type CommentFormErrors = Partial<Record<"name" | "email" | "message", string>>;
+type CommentFormErrors = Partial<Record<"message", string>>;
 
 const COMMENTS_PER_PAGE = 2;
 
@@ -73,8 +76,7 @@ const seedComments = [
     {
         name: "Nora Leaf",
         email: "nora@example.com",
-        message:
-            "The tone is warm and practical. I saved this for my next menu planning session.",
+        message: "The tone is warm and practical. I saved this for my next menu planning session.",
         createdAt: "1 month ago",
         avatarUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=128&q=80",
     },
@@ -99,17 +101,40 @@ function getSeedComments(slug: string): BlogDetailComment[] {
     }));
 }
 
-function isValidEmail(email: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function formatCommentDate(value?: string | null) {
+    if (!value) return "Just now";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
 }
 
-export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
+function mapApiCommentToView(comment: BlogComment): BlogDetailComment {
+    return {
+        id: comment.id,
+        name: comment.name,
+        email: comment.email,
+        message: comment.message,
+        createdAt: formatCommentDate(comment.createdAt),
+    };
+}
+
+export function BlogDetailComments({ blogId, blogSlug }: BlogDetailCommentsProps) {
+    const isMockMode = BLOG_DATA_SOURCE === "mock";
+    const pathname = usePathname();
+    const { isAuthenticated, user, loginWithKeycloak } = useAuthStore();
     const seededComments = useMemo(() => getSeedComments(blogSlug), [blogSlug]);
-    const [comments, setComments] = useState<BlogDetailComment[]>(seededComments);
+    const [comments, setComments] = useState<BlogDetailComment[]>(isMockMode ? seededComments : []);
     const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
+    const [totalElements, setTotalElements] = useState(isMockMode ? seededComments.length : 0);
+    const [loading, setLoading] = useState(!isMockMode);
+    const [submitting, setSubmitting] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [form, setForm] = useState<CommentFormState>({
-        name: "",
-        email: "",
         message: "",
         notify: false,
     });
@@ -117,18 +142,66 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
     const [success, setSuccess] = useState<string | null>(null);
 
     useEffect(() => {
-        setComments(seededComments);
         setPage(1);
         setErrors({});
         setSuccess(null);
-    }, [seededComments]);
+        setLoadError(null);
+    }, [blogId, blogSlug]);
 
-    const totalPages = Math.max(1, Math.ceil(comments.length / COMMENTS_PER_PAGE));
-    const visibleComments = comments.slice((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE);
+    useEffect(() => {
+        if (!isMockMode) return;
+        setComments(seededComments);
+        setTotalElements(seededComments.length);
+        setTotalPages(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
+    }, [isMockMode, seededComments]);
+
+    useEffect(() => {
+        if (isMockMode) return;
+
+        let ignore = false;
+        const loadComments = async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const response = await blogApi.getBlogComments(blogId, {
+                    page,
+                    size: COMMENTS_PER_PAGE,
+                    sort: "createdAt,desc",
+                });
+                if (ignore) return;
+                setComments((response.content ?? []).map(mapApiCommentToView));
+                setTotalPages(Math.max(1, response.totalPages || 1));
+                setTotalElements(response.totalElements ?? 0);
+            } catch (error) {
+                if (ignore) return;
+                console.error("Failed to load blog comments:", error);
+                setComments([]);
+                setTotalPages(1);
+                setTotalElements(0);
+                setLoadError("Unable to load comments right now.");
+            } finally {
+                if (!ignore) setLoading(false);
+            }
+        };
+
+        loadComments();
+        return () => {
+            ignore = true;
+        };
+    }, [blogId, isMockMode, page]);
+
+    const visibleComments = isMockMode
+        ? comments.slice((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE)
+        : comments;
+    const displayName = user?.username || user?.email || "your account";
+
+    const handleSignIn = async () => {
+        await loginWithKeycloak({ redirectPath: pathname });
+    };
 
     const updateForm = (key: keyof CommentFormState, value: string | boolean) => {
         setForm((current) => ({ ...current, [key]: value }));
-        if (key === "name" || key === "email" || key === "message") {
+        if (key === "message") {
             setErrors((current) => {
                 const nextErrors = { ...current };
                 delete nextErrors[key];
@@ -136,14 +209,12 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
             });
         }
         setSuccess(null);
+        setLoadError(null);
     };
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const nextErrors: CommentFormErrors = {};
-        if (!form.name.trim()) nextErrors.name = "Please enter your name.";
-        if (!form.email.trim()) nextErrors.email = "Please enter your email.";
-        else if (!isValidEmail(form.email.trim())) nextErrors.email = "Please enter a valid email address.";
         if (!form.message.trim()) nextErrors.message = "Please enter your message.";
 
         if (Object.keys(nextErrors).length > 0) {
@@ -152,20 +223,65 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
             return;
         }
 
-        setComments((current) => [
+        if (!isAuthenticated) {
+            setLoadError("Please sign in before posting a comment.");
+            return;
+        }
+
+        if (!isMockMode) {
+            setSubmitting(true);
+            try {
+                const createdComment = await blogApi.createBlogComment(blogId, {
+                    message: form.message.trim(),
+                    notify: form.notify,
+                });
+                const nextTotalElements = totalElements + 1;
+                setForm({ message: "", notify: false });
+                setErrors({});
+                setSuccess("Your comment was posted.");
+                setLoadError(null);
+                setTotalElements(nextTotalElements);
+                setTotalPages(Math.max(1, Math.ceil(nextTotalElements / COMMENTS_PER_PAGE)));
+                if (page === 1) {
+                    setComments((current) => [mapApiCommentToView(createdComment), ...current].slice(0, COMMENTS_PER_PAGE));
+                } else {
+                    setPage(1);
+                }
+            } catch (error: unknown) {
+                console.error("Failed to create blog comment:", error);
+                const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+                const msg = response?.data?.message;
+                setSuccess(null);
+                if (response?.status === 401) {
+                    setLoadError("Your sign-in session expired. Please sign in again before posting a comment.");
+                } else if (response?.status === 403) {
+                    setLoadError("Your account is not allowed to post comments.");
+                } else {
+                    setLoadError(msg ?? "Unable to post your comment. Please try again.");
+                }
+            } finally {
+                setSubmitting(false);
+            }
+            return;
+        }
+
+        const nextComments = [
             {
                 id: `${blogSlug}-local-${Date.now()}`,
-                name: form.name.trim(),
-                email: form.email.trim(),
+                name: user?.username ?? "Preview User",
+                email: user?.email ?? null,
                 message: form.message.trim(),
                 createdAt: "Just now",
             },
-            ...current,
-        ]);
-        setForm({ name: "", email: "", message: "", notify: false });
+            ...comments,
+        ];
+        setComments(nextComments);
+        setForm({ message: "", notify: false });
         setPage(1);
         setErrors({});
         setSuccess("Your comment was added to this preview.");
+        setTotalElements(nextComments.length);
+        setTotalPages(Math.max(1, Math.ceil(nextComments.length / COMMENTS_PER_PAGE)));
     };
 
     return (
@@ -176,7 +292,7 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
                         <span className="h-2 w-2 rounded-full bg-brand-orange" />
                         Comments
                     </p>
-                    <p className="mt-3 text-2xl font-black uppercase text-brand-green">{comments.length} Comments</p>
+                    <p className="mt-3 text-2xl font-black uppercase text-brand-green">{totalElements} Comments</p>
                 </div>
                 <BlogListPagination
                     currentPage={page}
@@ -187,89 +303,82 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
             </div>
 
             <div className="space-y-6">
-                {visibleComments.map((comment) => (
-                    <article key={comment.id} className="border-b border-gray-200 pb-6">
-                        <div className="flex gap-4">
-                            {comment.avatarUrl ? (
-                                <Image
-                                    src={comment.avatarUrl}
-                                    alt={comment.name}
-                                    width={40}
-                                    height={40}
-                                    className="h-10 w-10 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-900">
-                                    {getInitials(comment.name)}
+                {loading ? (
+                    <div className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600">Loading comments...</div>
+                ) : loadError && comments.length === 0 ? (
+                    <div className="rounded-lg border border-red-100 bg-red-50 p-6 text-sm font-semibold text-red-700">
+                        {loadError}
+                    </div>
+                ) : visibleComments.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-gray-600">
+                        No comments yet. Be the first to share a thought.
+                    </div>
+                ) : (
+                    visibleComments.map((comment) => (
+                        <article key={comment.id} className="border-b border-gray-200 pb-6">
+                            <div className="flex gap-4">
+                                {comment.avatarUrl ? (
+                                    <Image
+                                        src={comment.avatarUrl}
+                                        alt={comment.name}
+                                        width={40}
+                                        height={40}
+                                        className="h-10 w-10 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-900">
+                                        {getInitials(comment.name)}
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <h3 className="font-bold text-gray-950">{comment.name}</h3>
+                                        <p className="text-sm text-gray-500">{comment.createdAt}</p>
+                                    </div>
+                                    <p className="mt-3 leading-7 text-gray-700">{comment.message}</p>
                                 </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                    <h3 className="font-bold text-gray-950">{comment.name}</h3>
-                                    <p className="text-sm text-gray-500">{comment.createdAt}</p>
-                                </div>
-                                <p className="mt-3 leading-7 text-gray-700">{comment.message}</p>
-                                <button
-                                    type="button"
-                                    className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-500 transition hover:text-brand-orange"
-                                >
-                                    <MessageCircle className="h-4 w-4" />
-                                    Reply
-                                </button>
                             </div>
-                        </div>
-                    </article>
-                ))}
+                        </article>
+                    ))
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="mt-8 rounded-lg bg-green-50 p-6 md:p-8">
                 <div className="mb-6">
                     <h3 className="text-2xl font-black text-brand-green">Share Your Thoughts</h3>
                     <p className="mt-3 max-w-2xl leading-7 text-gray-600">
-                        Have a tip that works for you? Add it here while community comments are being prepared.
+                        Have a tip that works for you? Sign in and share it with the FoodEats community below.
                     </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block text-sm font-semibold text-gray-800">
-                        Name
-                        <input
-                            value={form.name}
-                            onChange={(event) => updateForm("name", event.target.value)}
-                            placeholder="Your full name"
-                            aria-invalid={!!errors.name}
-                            className={`mt-2 h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none transition focus:ring-2 ${
-                                errors.name
-                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-green-900/30 focus:border-brand-orange focus:ring-brand-orange/20"
-                            }`}
-                        />
-                        {errors.name && <span className="mt-2 block text-sm font-semibold text-red-600">{errors.name}</span>}
-                    </label>
-                    <label className="block text-sm font-semibold text-gray-800">
-                        Email
-                        <input
-                            value={form.email}
-                            onChange={(event) => updateForm("email", event.target.value)}
-                            placeholder="Your email address"
-                            aria-invalid={!!errors.email}
-                            className={`mt-2 h-11 w-full rounded-lg border bg-white px-4 text-sm outline-none transition focus:ring-2 ${
-                                errors.email
-                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-green-900/30 focus:border-brand-orange focus:ring-brand-orange/20"
-                            }`}
-                        />
-                        {errors.email && <span className="mt-2 block text-sm font-semibold text-red-600">{errors.email}</span>}
-                    </label>
-                </div>
+                {!isAuthenticated ? (
+                    <div className="rounded-lg border border-green-900/10 bg-white p-5">
+                        <p className="font-bold text-gray-950">Sign in to join the discussion.</p>
+                        <p className="mt-2 text-sm leading-6 text-gray-600">
+                            Comments are tied to a real FoodEats account so readers know who shared each thought.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleSignIn}
+                            className="mt-4 inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-brand-orange px-6 text-sm font-bold text-white transition hover:bg-brand-orange/90"
+                        >
+                            Sign in to comment
+                        </button>
+                    </div>
+                ) : (
+                    <div className="rounded-lg border border-green-900/10 bg-white px-4 py-3 text-sm text-gray-600">
+                        Commenting as <span className="font-bold text-green-950">{displayName}</span>
+                    </div>
+                )}
 
                 <label className="mt-5 block text-sm font-semibold text-gray-800">
                     Message
                     <textarea
                         value={form.message}
                         onChange={(event) => updateForm("message", event.target.value)}
-                        placeholder="Type your message here..."
+                        placeholder={isAuthenticated ? "Type your message here..." : "Sign in to write a comment"}
                         rows={5}
+                        disabled={!isAuthenticated}
                         aria-invalid={!!errors.message}
                         className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition focus:ring-2 ${
                             errors.message
@@ -286,19 +395,22 @@ export function BlogDetailComments({ blogSlug }: BlogDetailCommentsProps) {
                             type="checkbox"
                             checked={form.notify}
                             onChange={(event) => updateForm("notify", event.target.checked)}
-                            className="h-4 w-4 rounded border-green-900/30 text-brand-orange focus:ring-brand-orange"
+                            disabled={!isAuthenticated}
+                            className="h-4 w-4 cursor-pointer rounded border-green-900/30 text-brand-orange focus:ring-brand-orange disabled:cursor-not-allowed"
                         />
                         Notify me of follow-up comments via email.
                     </label>
                     <button
                         type="submit"
-                        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-brand-orange px-8 text-sm font-bold uppercase text-white transition hover:bg-brand-orange/90"
+                        disabled={submitting || !isAuthenticated}
+                        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-brand-orange px-8 text-sm font-bold uppercase text-white transition hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Send Message
+                        {submitting ? "Sending..." : "Send Message"}
                     </button>
                 </div>
 
                 {success && <p className="mt-4 text-sm font-semibold text-green-900">{success}</p>}
+                {loadError && comments.length > 0 && <p className="mt-4 text-sm font-semibold text-red-700">{loadError}</p>}
             </form>
         </section>
     );

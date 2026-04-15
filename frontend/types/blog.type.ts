@@ -69,6 +69,37 @@ export interface BlogPageResponse {
     empty?: boolean;
 }
 
+export interface BlogComment {
+    id: string;
+    blogId: string;
+    authorId?: string | null;
+    name: string;
+    email?: string | null;
+    message: string;
+    notify?: boolean;
+    status: "PUBLISHED" | "PENDING" | "HIDDEN";
+    createdAt?: string | null;
+}
+
+export interface BlogCommentPageResponse {
+    content: BlogComment[];
+    pageable?: unknown;
+    totalElements: number;
+    totalPages: number;
+    last?: boolean;
+    size: number;
+    number: number;
+    sort?: unknown;
+    numberOfElements?: number;
+    first?: boolean;
+    empty?: boolean;
+}
+
+export interface BlogCommentCreateRequest {
+    message: string;
+    notify?: boolean;
+}
+
 export interface BlogPageParams {
     page?: number;
     size?: number;

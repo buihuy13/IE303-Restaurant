@@ -300,12 +300,13 @@ public class BlogServiceImpl implements BlogService {
     @Override
     @Transactional
     public BlogCommentResponse createComment(UUID blogId, CreateBlogCommentRequest request, UserRole authUser) {
+        UUID actorId = extractAuthorId(authUser);
         BlogPost blogPost = ensurePublishedBlog(blogId);
         BlogComment comment = BlogComment.builder()
                 .blogPost(blogPost)
-                .authorId(authUser == null ? null : authUser.getUserId())
-                .guestName(normalizeRequiredText(request.getName(), "Name must not be blank"))
-                .guestEmail(normalizeRequiredText(request.getEmail(), "Email must not be blank").toLowerCase(Locale.ROOT))
+                .authorId(actorId)
+                .guestName(resolveCommentDisplayName(authUser))
+                .guestEmail(resolveCommentEmail(authUser))
                 .content(normalizeRequiredText(request.getMessage(), "Message must not be blank"))
                 .notify(Boolean.TRUE.equals(request.getNotify()))
                 .status(BlogCommentStatus.PUBLISHED)
@@ -549,7 +550,7 @@ public class BlogServiceImpl implements BlogService {
                 .blogId(comment.getBlogPost().getId())
                 .authorId(comment.getAuthorId())
                 .name(comment.getGuestName())
-                .email(comment.getGuestEmail())
+                .email(null)
                 .message(comment.getContent())
                 .notify(comment.getNotify())
                 .status(comment.getStatus())
@@ -804,6 +805,26 @@ public class BlogServiceImpl implements BlogService {
         }
 
         return normalizedCoverImageUrl;
+    }
+
+    private String resolveCommentDisplayName(UserRole authUser) {
+        String username = normalizeString(authUser.getUsername());
+        if (username != null) {
+            return truncate(username, 120);
+        }
+        String email = normalizeString(authUser.getEmail());
+        if (email != null) {
+            return truncate(email.split("@")[0], 120);
+        }
+        return "Member " + authUser.getUserId().toString().substring(0, 8);
+    }
+
+    private String resolveCommentEmail(UserRole authUser) {
+        String email = normalizeString(authUser.getEmail());
+        if (email != null) {
+            return truncate(email.toLowerCase(Locale.ROOT), 255);
+        }
+        return authUser.getUserId() + "@authenticated.local";
     }
 
     private String normalizeString(String value) {

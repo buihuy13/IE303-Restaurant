@@ -1,5 +1,8 @@
 import type {
     Blog,
+    BlogComment,
+    BlogCommentCreateRequest,
+    BlogCommentPageResponse,
     BlogCreateRequest,
     BlogEditorialTemplate,
     BlogEditorialTemplateRenderRequest,
@@ -108,6 +111,21 @@ export const blogApi = {
 
     deleteBlog: async (blogId: string): Promise<BlogMessageResponse> => {
         const response = await api.delete<BlogMessageResponse>(`/blogs/${blogId}`);
+        return response.data;
+    },
+
+    getBlogComments: async (
+        blogId: string,
+        params?: Pick<BlogPageParams, "page" | "size" | "sort">,
+    ): Promise<BlogCommentPageResponse> => {
+        const response = await api.get<BlogCommentPageResponse>(withQuery(`/blogs/${blogId}/comments`, params));
+        return response.data;
+    },
+
+    createBlogComment: async (blogId: string, payload: BlogCommentCreateRequest): Promise<BlogComment> => {
+        const response = await api.post<BlogComment>(`/blogs/${blogId}/comments`, payload, {
+            headers: { "Content-Type": "application/json" },
+        });
         return response.data;
     },
 
