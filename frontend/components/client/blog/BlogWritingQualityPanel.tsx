@@ -2,15 +2,30 @@
 
 import { CheckCircle2, Circle, FileText, Image as ImageIcon, ListChecks, Timer } from "lucide-react";
 import { getBlogWritingStats } from "@/lib/utils/blogWriting";
+import type { BlogEditorialTemplate } from "@/types/blog.type";
 
 interface BlogWritingQualityPanelProps {
     content: string;
     coverImageUrl?: string | null;
+    templates: BlogEditorialTemplate[];
+    selectedTemplateKey: string;
+    templateLoading: boolean;
+    onTemplateChange: (key: string) => void;
     onInsertTemplate: () => void;
 }
 
-export function BlogWritingQualityPanel({ content, coverImageUrl, onInsertTemplate }: BlogWritingQualityPanelProps) {
+export function BlogWritingQualityPanel({
+    content,
+    coverImageUrl,
+    templates,
+    selectedTemplateKey,
+    templateLoading,
+    onTemplateChange,
+    onInsertTemplate,
+}: BlogWritingQualityPanelProps) {
     const stats = getBlogWritingStats(content, coverImageUrl);
+    const selectedTemplate = templates.find((template) => template.key === selectedTemplateKey) ?? templates[0];
+    const resolvedSelectedTemplateKey = selectedTemplate?.key ?? "";
 
     return (
         <section className="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -24,14 +39,60 @@ export function BlogWritingQualityPanel({ content, coverImageUrl, onInsertTempla
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={onInsertTemplate}
-                    className="inline-flex items-center justify-center rounded-lg border border-brand-orange px-4 py-2 text-sm font-semibold text-brand-orange transition-colors hover:bg-brand-orange hover:text-white"
-                >
-                    Use editorial template
-                </button>
+                <div className="w-full space-y-2 lg:w-72">
+                    <label htmlFor="editorial-template" className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                        Template
+                    </label>
+                    <select
+                        id="editorial-template"
+                        value={resolvedSelectedTemplateKey}
+                        onChange={(event) => onTemplateChange(event.target.value)}
+                        disabled={templates.length === 0 || templateLoading}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {templates.length === 0 ? (
+                            <option value="">No templates available</option>
+                        ) : (
+                            templates.map((template) => (
+                                <option key={template.key} value={template.key}>
+                                    {template.name}
+                                </option>
+                            ))
+                        )}
+                    </select>
+                    <button
+                        type="button"
+                        onClick={onInsertTemplate}
+                        disabled={templates.length === 0 || templateLoading}
+                        className="inline-flex w-full items-center justify-center rounded-lg border border-brand-orange px-4 py-2 text-sm font-semibold text-brand-orange transition-colors hover:bg-brand-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {templateLoading ? "Rendering..." : "Use selected template"}
+                    </button>
+                </div>
             </div>
+
+            {selectedTemplate && (
+                <div className="mt-5 rounded-md border border-orange-100 bg-white p-4">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-gray-950">{selectedTemplate.name}</p>
+                            <p className="mt-1 text-sm leading-6 text-gray-600">{selectedTemplate.description}</p>
+                        </div>
+                        <span className="mt-1 shrink-0 rounded-md bg-orange-50 px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-brand-orange">
+                            v{selectedTemplate.version}
+                        </span>
+                    </div>
+                    {selectedTemplate.qualityRules.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedTemplate.qualityRules.map((rule) => (
+                                <span key={rule} className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                    {rule}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">

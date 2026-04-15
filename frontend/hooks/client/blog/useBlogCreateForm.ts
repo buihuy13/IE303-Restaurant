@@ -1,10 +1,20 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { blogApi } from "@/lib/api/blogApi";
-import type { BlogStatus } from "@/types/blog.type";
+import type { BlogEditorialTemplate, BlogStatus } from "@/types/blog.type";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const parseTagsInput = (value: string) =>
+    Array.from(
+        new Set(
+            value
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean),
+        ),
+    ).slice(0, 8);
 
 export function useBlogCreateForm() {
     const router = useRouter();
@@ -12,10 +22,33 @@ export function useBlogCreateForm() {
 
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [excerpt, setExcerpt] = useState("");
+    const [category, setCategory] = useState("");
+    const [tagsInput, setTagsInput] = useState("");
+    const [featured, setFeatured] = useState(false);
+    const [editorialTemplates, setEditorialTemplates] = useState<BlogEditorialTemplate[]>([]);
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState("");
+    const [templateKey, setTemplateKey] = useState<string | null>(null);
+    const [templateVersion, setTemplateVersion] = useState<string | null>(null);
+    const [templateLoading, setTemplateLoading] = useState(false);
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
     const [status, setStatus] = useState<Exclude<BlogStatus, "ARCHIVED">>("DRAFT");
     const [loading, setLoading] = useState(false);
+
+    const fetchEditorialTemplates = useCallback(async () => {
+        try {
+            const templates = await blogApi.getEditorialTemplates();
+            setEditorialTemplates(templates);
+            setSelectedTemplateKey((current) => current || templates[0]?.key || "");
+        } catch (error) {
+            console.error("Failed to load editorial templates:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchEditorialTemplates();
+    }, [fetchEditorialTemplates]);
 
     const validateImage = (file: File) => {
         if (file.size > MAX_IMAGE_SIZE) {
@@ -78,6 +111,39 @@ export function useBlogCreateForm() {
         return response.imageUrls[0] ?? null;
     }, [coverImage]);
 
+    const handleInsertTemplate = useCallback(async () => {
+        const selectedKey = selectedTemplateKey || editorialTemplates[0]?.key;
+        if (!selectedKey) {
+            toast.error("No editorial template is available");
+            return;
+        }
+        if (content.trim() && !window.confirm("Replace the current draft with the selected editorial template?")) {
+            return;
+        }
+
+        setTemplateLoading(true);
+        try {
+            const normalizedTitle = title.trim() || "Untitled Food Story";
+            const normalizedCategory = category.trim() || null;
+            const response = await blogApi.renderEditorialTemplate(selectedKey, {
+                title: normalizedTitle,
+                topic: normalizedTitle,
+                language: "en",
+                category: normalizedCategory,
+            });
+            setContent(response.content);
+            setTemplateKey(response.templateKey);
+            setTemplateVersion(response.templateVersion);
+            toast.success("Editorial template inserted");
+        } catch (error: unknown) {
+            console.error("Failed to render editorial template:", error);
+            const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(msg ?? "Unable to render editorial template");
+        } finally {
+            setTemplateLoading(false);
+        }
+    }, [category, content, editorialTemplates, selectedTemplateKey, title]);
+
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
             e.preventDefault();
@@ -97,6 +163,12 @@ export function useBlogCreateForm() {
                     content: content.trim(),
                     coverImageUrl,
                     status,
+                    excerpt: excerpt.trim() || null,
+                    category: category.trim() || null,
+                    tags: parseTagsInput(tagsInput),
+                    featured,
+                    templateKey,
+                    templateVersion,
                 });
                 toast.success("Blog created successfully");
                 router.push(status === "PUBLISHED" ? "/blog/my-blogs?status=PUBLISHED" : "/blog/my-blogs");
@@ -108,13 +180,26 @@ export function useBlogCreateForm() {
                 setLoading(false);
             }
         },
-        [title, content, status, uploadCoverImage, router],
+        [title, content, status, excerpt, category, tagsInput, featured, templateKey, templateVersion, uploadCoverImage, router],
     );
 
     return {
         editorImageInputRef,
         title,
         setTitle,
+        excerpt,
+        setExcerpt,
+        category,
+        setCategory,
+        tagsInput,
+        setTagsInput,
+        featured,
+        setFeatured,
+        editorialTemplates,
+        selectedTemplateKey,
+        setSelectedTemplateKey,
+        templateLoading,
+        handleInsertTemplate,
         content,
         setContent,
         coverImagePreview,

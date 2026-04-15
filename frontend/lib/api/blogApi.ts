@@ -1,6 +1,9 @@
 import type {
     Blog,
     BlogCreateRequest,
+    BlogEditorialTemplate,
+    BlogEditorialTemplateRenderRequest,
+    BlogEditorialTemplateRenderResponse,
     BlogImageUploadResponse,
     BlogMessageResponse,
     BlogPageParams,
@@ -18,6 +21,10 @@ const buildPageParams = (params?: BlogPageParams) => {
     queryParams.set("size", (params?.size ?? 12).toString());
 
     if (params?.authorId) queryParams.set("authorId", params.authorId);
+    if (params?.search) queryParams.set("search", params.search);
+    if (params?.category) queryParams.set("category", params.category);
+    if (params?.tag) queryParams.set("tag", params.tag);
+    if (typeof params?.featured === "boolean") queryParams.set("featured", String(params.featured));
 
     const sort = params?.sort ?? "publishedAt,desc";
     const sortParams = Array.isArray(sort) ? sort : [sort];
@@ -53,6 +60,35 @@ export const blogApi = {
 
     getBlogBySlug: async (slug: string): Promise<Blog> => {
         const response = await api.get<Blog>(`/blogs/slug/${slug}`);
+        return response.data;
+    },
+
+    getCategories: async (): Promise<string[]> => {
+        const response = await api.get<string[]>("/blogs/categories");
+        return response.data;
+    },
+
+    getTags: async (): Promise<string[]> => {
+        const response = await api.get<string[]>("/blogs/tags");
+        return response.data;
+    },
+
+    getEditorialTemplates: async (): Promise<BlogEditorialTemplate[]> => {
+        const response = await api.get<BlogEditorialTemplate[]>("/blogs/editorial-templates");
+        return response.data;
+    },
+
+    renderEditorialTemplate: async (
+        key: string,
+        payload: BlogEditorialTemplateRenderRequest,
+    ): Promise<BlogEditorialTemplateRenderResponse> => {
+        const response = await api.post<BlogEditorialTemplateRenderResponse>(
+            `/blogs/editorial-templates/${key}/render`,
+            payload,
+            {
+                headers: { "Content-Type": "application/json" },
+            },
+        );
         return response.data;
     },
 

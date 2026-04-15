@@ -20,6 +20,24 @@ create index if not exists idx_blog_posts_status on blog_posts(status);
 create index if not exists idx_blog_posts_created_at on blog_posts(created_at desc);
 create index if not exists idx_blog_posts_published_at on blog_posts(published_at desc);
 
+alter table blog_posts add column if not exists excerpt text;
+alter table blog_posts add column if not exists category varchar(120);
+alter table blog_posts add column if not exists read_time integer not null default 1;
+alter table blog_posts add column if not exists featured boolean not null default false;
+alter table blog_posts add column if not exists views_count bigint not null default 0;
+alter table blog_posts add column if not exists likes_count bigint not null default 0;
+alter table blog_posts add column if not exists comments_count bigint not null default 0;
+alter table blog_posts add column if not exists template_key varchar(80);
+alter table blog_posts add column if not exists template_version varchar(40);
+
+create table if not exists blog_post_tags (
+    blog_post_id UUID not null references blog_posts(id) on delete cascade,
+    tag varchar(80) not null,
+    primary key (blog_post_id, tag)
+);
+
+create index if not exists idx_blog_post_tags_tag on blog_post_tags(tag);
+
 create table if not exists blog_images (
     id UUID DEFAULT gen_random_uuid() primary key,
     author_id UUID not null,
@@ -32,6 +50,33 @@ create table if not exists blog_images (
 
 create index if not exists idx_blog_images_author_id on blog_images(author_id);
 create index if not exists idx_blog_images_blog_post_id on blog_images(blog_post_id);
+
+create table if not exists blog_comments (
+    id UUID DEFAULT gen_random_uuid() primary key,
+    blog_post_id UUID not null references blog_posts(id) on delete cascade,
+    author_id UUID,
+    guest_name varchar(120) not null,
+    guest_email varchar(255) not null,
+    content text not null,
+    notify boolean not null default false,
+    status varchar(20) not null default 'PUBLISHED',
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    constraint chk_blog_comments_status check (status in ('PUBLISHED', 'PENDING', 'HIDDEN'))
+);
+
+create index if not exists idx_blog_comments_blog_post_id on blog_comments(blog_post_id);
+create index if not exists idx_blog_comments_status_created_at on blog_comments(status, created_at desc);
+
+create table if not exists blog_likes (
+    id UUID DEFAULT gen_random_uuid() primary key,
+    blog_post_id UUID not null references blog_posts(id) on delete cascade,
+    user_id UUID not null,
+    created_at timestamp default current_timestamp,
+    constraint uk_blog_likes_blog_user unique (blog_post_id, user_id)
+);
+
+create index if not exists idx_blog_likes_blog_post_id on blog_likes(blog_post_id);
 
 insert into blog_posts (
     author_id,
@@ -444,3 +489,148 @@ on conflict (slug) do update set
     status = excluded.status,
     published_at = excluded.published_at,
     updated_at = excluded.updated_at;
+
+update blog_posts as b
+set
+    excerpt = seed.excerpt,
+    category = seed.category,
+    read_time = seed.read_time,
+    featured = seed.featured,
+    views_count = seed.views_count,
+    likes_count = seed.likes_count,
+    comments_count = seed.comments_count,
+    template_key = seed.template_key,
+    template_version = seed.template_version,
+    updated_at = current_timestamp
+from (
+    values
+        (
+            'saigon-breakfast-route-slow-mornings',
+            'A slow route through Saigon breakfast counters, broth, coffee, and the quiet rhythm of a city waking up.',
+            'City Guides',
+            5,
+            true,
+            1842,
+            126,
+            0,
+            'food_editorial',
+            '1'
+        ),
+        (
+            'how-to-read-menu-before-rush',
+            'A practical guide to reading restaurant menus by rhythm, confidence, prep signals, and better guest questions.',
+            'Restaurant Guide',
+            4,
+            false,
+            1398,
+            89,
+            0,
+            'restaurant_guide',
+            '1'
+        ),
+        (
+            'quiet-work-behind-better-delivery-plate',
+            'How restaurants can design delivery food around steam, texture, timing, and the last five minutes of travel.',
+            'Delivery',
+            5,
+            false,
+            1224,
+            74,
+            0,
+            'menu_strategy',
+            '1'
+        ),
+        (
+            'market-notes-cleaner-lunch-menu',
+            'A focused lunch menu strategy for faster decisions, calmer service, and fresher market-led plates.',
+            'Menu Strategy',
+            4,
+            true,
+            2254,
+            143,
+            0,
+            'menu_strategy',
+            '1'
+        ),
+        (
+            'small-guide-better-table-photos',
+            'Simple food photography notes for natural light, honest details, and table images that feel inviting.',
+            'Photography',
+            4,
+            true,
+            2037,
+            118,
+            0,
+            'food_editorial',
+            '1'
+        ),
+        (
+            'when-restaurant-should-simplify-specials',
+            'A clear framework for deciding when restaurant specials add focus, and when they slow the kitchen down.',
+            'Operations',
+            5,
+            false,
+            981,
+            52,
+            0,
+            'menu_strategy',
+            '1'
+        ),
+        (
+            'why-the-first-sip-matters',
+            'Why a first drink can set the tone for service, soften the wait, and shape the meal before food arrives.',
+            'Service Notes',
+            4,
+            false,
+            1127,
+            67,
+            0,
+            'food_editorial',
+            '1'
+        ),
+        (
+            'weekend-prep-keeps-service-calm',
+            'A weekend prep checklist for protecting bottlenecks, labels, walkthroughs, and attention during busy service.',
+            'Operations',
+            5,
+            false,
+            1466,
+            91,
+            0,
+            'menu_strategy',
+            '1'
+        )
+) as seed(slug, excerpt, category, read_time, featured, views_count, likes_count, comments_count, template_key, template_version)
+where b.slug = seed.slug;
+
+insert into blog_post_tags (blog_post_id, tag)
+select b.id, seed.tag
+from blog_posts b
+join (
+    values
+        ('saigon-breakfast-route-slow-mornings', 'breakfast'),
+        ('saigon-breakfast-route-slow-mornings', 'saigon'),
+        ('saigon-breakfast-route-slow-mornings', 'coffee'),
+        ('how-to-read-menu-before-rush', 'menu'),
+        ('how-to-read-menu-before-rush', 'ordering'),
+        ('how-to-read-menu-before-rush', 'restaurant'),
+        ('quiet-work-behind-better-delivery-plate', 'delivery'),
+        ('quiet-work-behind-better-delivery-plate', 'packaging'),
+        ('quiet-work-behind-better-delivery-plate', 'quality'),
+        ('market-notes-cleaner-lunch-menu', 'lunch'),
+        ('market-notes-cleaner-lunch-menu', 'menu'),
+        ('market-notes-cleaner-lunch-menu', 'market'),
+        ('small-guide-better-table-photos', 'photography'),
+        ('small-guide-better-table-photos', 'content'),
+        ('small-guide-better-table-photos', 'table'),
+        ('when-restaurant-should-simplify-specials', 'specials'),
+        ('when-restaurant-should-simplify-specials', 'operations'),
+        ('when-restaurant-should-simplify-specials', 'service'),
+        ('why-the-first-sip-matters', 'drinks'),
+        ('why-the-first-sip-matters', 'service'),
+        ('why-the-first-sip-matters', 'hospitality'),
+        ('weekend-prep-keeps-service-calm', 'prep'),
+        ('weekend-prep-keeps-service-calm', 'operations'),
+        ('weekend-prep-keeps-service-calm', 'kitchen')
+) as seed(slug, tag) on b.slug = seed.slug
+on conflict (blog_post_id, tag) do nothing;

@@ -108,6 +108,8 @@ public class SecurityConfig {
                 .authenticated()
                 .pathMatchers(HttpMethod.GET, "/api/blogs/**")
                 .permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/blogs/editorial-templates/**")
+                .hasAnyRole("ADMIN", "MERCHANT")
                 .pathMatchers(HttpMethod.POST, "/api/blogs/images/upload")
                 .hasAnyRole("ADMIN", "MERCHANT")
                 .pathMatchers(HttpMethod.POST, "/api/blogs")

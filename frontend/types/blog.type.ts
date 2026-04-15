@@ -7,6 +7,20 @@ export interface Blog {
     slug: string;
     content: string;
     coverImageUrl?: string | null;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    viewsCount?: number;
+    likesCount?: number;
+    commentsCount?: number;
+    likedByCurrentUser?: boolean;
+    authorName?: string | null;
+    authorAvatarUrl?: string | null;
+    authorRole?: string | null;
+    templateKey?: string | null;
+    templateVersion?: string | null;
     status: BlogStatus;
     publishedAt?: string | null;
     createdAt?: string | null;
@@ -18,6 +32,13 @@ export interface BlogCreateRequest {
     content: string;
     coverImageUrl?: string | null;
     status?: Exclude<BlogStatus, "ARCHIVED">;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    templateKey?: string | null;
+    templateVersion?: string | null;
 }
 
 export interface BlogUpdateRequest {
@@ -25,6 +46,13 @@ export interface BlogUpdateRequest {
     content: string;
     coverImageUrl?: string | null;
     status: BlogStatus;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    templateKey?: string | null;
+    templateVersion?: string | null;
 }
 
 export interface BlogPageResponse {
@@ -45,6 +73,10 @@ export interface BlogPageParams {
     page?: number;
     size?: number;
     authorId?: string;
+    search?: string;
+    category?: string;
+    tag?: string;
+    featured?: boolean;
     sort?: string | string[];
 }
 
@@ -54,4 +86,28 @@ export interface BlogMessageResponse {
 
 export interface BlogImageUploadResponse {
     imageUrls: string[];
+}
+
+export interface BlogEditorialTemplate {
+    key: string;
+    name: string;
+    description: string;
+    language: string;
+    version: number;
+    sections: string[];
+    defaultContent: string;
+    qualityRules: string[];
+}
+
+export interface BlogEditorialTemplateRenderRequest {
+    title: string;
+    topic: string;
+    language?: string;
+    category?: string | null;
+}
+
+export interface BlogEditorialTemplateRenderResponse {
+    content: string;
+    templateKey: string;
+    templateVersion: string;
 }

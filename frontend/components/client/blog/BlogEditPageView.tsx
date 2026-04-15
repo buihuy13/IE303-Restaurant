@@ -7,15 +7,27 @@ import type { MDEditorProps } from "@uiw/react-md-editor";
 import { ArrowLeft, Image as ImageIcon, Loader2, X } from "lucide-react";
 import "@uiw/react-md-editor/markdown-editor.css";
 import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
-import { buildBlogEditorialTemplate } from "@/lib/utils/blogWriting";
 import { BlogEditorPreview } from "@/components/client/blog/BlogEditorPreview";
 import { BlogWritingQualityPanel } from "@/components/client/blog/BlogWritingQualityPanel";
-import type { BlogStatus } from "@/types/blog.type";
+import type { BlogEditorialTemplate, BlogStatus } from "@/types/blog.type";
 
 type BlogEditForm = {
     fetching: boolean;
     title: string;
     setTitle: (value: string) => void;
+    excerpt: string;
+    setExcerpt: (value: string) => void;
+    category: string;
+    setCategory: (value: string) => void;
+    tagsInput: string;
+    setTagsInput: (value: string) => void;
+    featured: boolean;
+    setFeatured: (value: boolean) => void;
+    editorialTemplates: BlogEditorialTemplate[];
+    selectedTemplateKey: string;
+    setSelectedTemplateKey: (value: string) => void;
+    templateLoading: boolean;
+    handleInsertTemplate: () => void;
     coverImagePreview: string | null;
     existingCoverImageUrl: string | null;
     handleRemoveCoverImage: () => void;
@@ -54,16 +66,6 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
 
     const coverPreview = form.coverImagePreview || form.existingCoverImageUrl;
 
-    const handleInsertTemplate = () => {
-        if (
-            form.content.trim() &&
-            !window.confirm("Replace the current draft with the editorial template?")
-        ) {
-            return;
-        }
-        form.setContent(buildBlogEditorialTemplate(form.title));
-    };
-
     return (
         <div className="min-h-screen bg-white py-8">
             <div className="custom-container max-w-7xl">
@@ -98,6 +100,62 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                             />
                             <p className="mt-1 text-xs text-gray-500">{form.title.length}/255 characters</p>
                         </div>
+
+                        <div>
+                            <label htmlFor="edit-excerpt" className="mb-2 block text-sm font-semibold text-gray-700">
+                                Excerpt
+                            </label>
+                            <textarea
+                                id="edit-excerpt"
+                                value={form.excerpt}
+                                onChange={(e) => form.setExcerpt(e.target.value)}
+                                placeholder="Short summary for list cards and detail intro. Leave blank to auto-generate."
+                                className="min-h-24 w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                maxLength={240}
+                            />
+                            <p className="mt-1 text-xs text-gray-500">{form.excerpt.length}/240 characters</p>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label htmlFor="edit-category" className="mb-2 block text-sm font-semibold text-gray-700">
+                                    Category
+                                </label>
+                                <input
+                                    id="edit-category"
+                                    type="text"
+                                    value={form.category}
+                                    onChange={(e) => form.setCategory(e.target.value)}
+                                    placeholder="Menu Strategy"
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                    maxLength={120}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="edit-tags" className="mb-2 block text-sm font-semibold text-gray-700">
+                                    Tags
+                                </label>
+                                <input
+                                    id="edit-tags"
+                                    type="text"
+                                    value={form.tagsInput}
+                                    onChange={(e) => form.setTagsInput(e.target.value)}
+                                    placeholder="lunch, menu, operations"
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Separate tags with commas. Max 8 tags.</p>
+                            </div>
+                        </div>
+
+                        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-orange-100 bg-orange-50/50 px-4 py-3 text-sm font-semibold text-gray-800">
+                            <input
+                                type="checkbox"
+                                checked={form.featured}
+                                onChange={(e) => form.setFeatured(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-brand-orange focus:ring-brand-orange"
+                            />
+                            Mark as featured story
+                        </label>
 
                         <div>
                             <label className="mb-2 block text-sm font-semibold text-gray-700">Cover Image</label>
@@ -157,7 +215,11 @@ export function BlogEditPageView({ form }: BlogEditPageViewProps) {
                                 <BlogWritingQualityPanel
                                     content={form.content}
                                     coverImageUrl={coverPreview}
-                                    onInsertTemplate={handleInsertTemplate}
+                                    templates={form.editorialTemplates}
+                                    selectedTemplateKey={form.selectedTemplateKey}
+                                    templateLoading={form.templateLoading}
+                                    onTemplateChange={form.setSelectedTemplateKey}
+                                    onInsertTemplate={form.handleInsertTemplate}
                                 />
                             </div>
                             <input
