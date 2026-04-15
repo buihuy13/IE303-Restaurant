@@ -44,6 +44,8 @@ import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogPost;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
 import com.CNTTK18.blog_service.repository.BlogImageRepository;
+import com.CNTTK18.blog_service.repository.BlogCommentRepository;
+import com.CNTTK18.blog_service.repository.BlogLikeRepository;
 import com.CNTTK18.blog_service.repository.BlogRepository;
 import com.CNTTK18.blog_service.service.Impl.BlogServiceImpl;
 
@@ -54,6 +56,12 @@ class BlogServiceImplTest {
 
     @Mock
     private BlogRepository blogRepository;
+
+    @Mock
+    private BlogCommentRepository blogCommentRepository;
+
+    @Mock
+    private BlogLikeRepository blogLikeRepository;
 
     @Mock
     private BlogImageRepository blogImageRepository;
@@ -90,17 +98,24 @@ class BlogServiceImplTest {
         });
         lenient().when(blogMapper.toBlogResponse(any(BlogPost.class))).thenAnswer(invocation -> {
             BlogPost source = invocation.getArgument(0);
-            return new BlogResponse(
-                    source.getId(),
-                    source.getAuthorId(),
-                    source.getTitle(),
-                    source.getSlug(),
-                    source.getContent(),
-                    source.getCoverImageUrl(),
-                    source.getStatus(),
-                    null,
-                    null,
-                    null);
+            return BlogResponse.builder()
+                    .id(source.getId())
+                    .authorId(source.getAuthorId())
+                    .title(source.getTitle())
+                    .slug(source.getSlug())
+                    .content(source.getContent())
+                    .coverImageUrl(source.getCoverImageUrl())
+                    .excerpt(source.getExcerpt())
+                    .category(source.getCategory())
+                    .readTime(source.getReadTime())
+                    .featured(source.getFeatured())
+                    .viewsCount(source.getViewsCount())
+                    .likesCount(source.getLikesCount())
+                    .commentsCount(source.getCommentsCount())
+                    .templateKey(source.getTemplateKey())
+                    .templateVersion(source.getTemplateVersion())
+                    .status(source.getStatus())
+                    .build();
         });
     }
 
@@ -279,7 +294,7 @@ class BlogServiceImplTest {
                 .build();
         when(blogRepository.findBySlug("draft-slug")).thenReturn(Optional.of(draftBlog));
 
-        assertThrows(ResourceNotFoundException.class, () -> blogService.getBlogBySlug("draft-slug"));
+        assertThrows(ResourceNotFoundException.class, () -> blogService.getBlogBySlug("draft-slug", null));
     }
 
     @Test
@@ -296,7 +311,7 @@ class BlogServiceImplTest {
         when(blogRepository.findAllByStatus(BlogStatus.PUBLISHED, pageable))
                 .thenReturn(new PageImpl<>(List.of(publishedBlog), pageable, 1));
 
-        Page<BlogResponse> response = blogService.getPublishedBlogs(null, pageable);
+        Page<BlogResponse> response = blogService.getPublishedBlogs(null, null, null, null, null, null, pageable);
 
         assertEquals(1, response.getTotalElements());
         assertEquals(BLOG_ID, response.getContent().get(0).getId());
@@ -317,7 +332,7 @@ class BlogServiceImplTest {
         when(blogRepository.findAllByAuthorIdAndStatus(AUTHOR_ID, BlogStatus.PUBLISHED, pageable))
                 .thenReturn(new PageImpl<>(List.of(publishedBlog), pageable, 1));
 
-        Page<BlogResponse> response = blogService.getPublishedBlogs(AUTHOR_ID, pageable);
+        Page<BlogResponse> response = blogService.getPublishedBlogs(AUTHOR_ID, null, null, null, null, null, pageable);
 
         assertEquals(1, response.getTotalElements());
         assertEquals(AUTHOR_ID, response.getContent().get(0).getAuthorId());

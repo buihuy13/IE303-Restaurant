@@ -24,9 +24,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.blog_service.dto.UserRole;
+import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
+import com.CNTTK18.blog_service.dto.request.EditorialTemplateRenderRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
+import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
+import com.CNTTK18.blog_service.dto.response.BlogMetricsResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
+import com.CNTTK18.blog_service.dto.response.EditorialTemplateRenderResponse;
+import com.CNTTK18.blog_service.dto.response.EditorialTemplateResponse;
 import com.CNTTK18.blog_service.dto.response.ImageUploadResponse;
 import com.CNTTK18.blog_service.dto.response.MessageResponse;
 import com.CNTTK18.blog_service.service.BlogService;
@@ -243,8 +249,48 @@ public class BlogController {
     })
     @GetMapping("")
     public ResponseEntity<Page<BlogResponse>> getPublishedBlogs(
-            @RequestParam(required = false) UUID authorId, Pageable pageable) {
-        return ResponseEntity.ok(blogService.getPublishedBlogs(authorId, pageable));
+            @RequestParam(required = false) UUID authorId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) Boolean featured,
+            Pageable pageable,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getPublishedBlogs(authorId, search, category, tag, featured, authUser, pageable));
+    }
+
+    @GetMapping("/editorial-templates")
+    public ResponseEntity<List<EditorialTemplateResponse>> getEditorialTemplates() {
+        return ResponseEntity.ok(blogService.getEditorialTemplates());
+    }
+
+    @GetMapping("/editorial-templates/{key}")
+    public ResponseEntity<EditorialTemplateResponse> getEditorialTemplate(@PathVariable String key) {
+        return ResponseEntity.ok(blogService.getEditorialTemplate(key));
+    }
+
+    @PostMapping("/editorial-templates/{key}/render")
+    public ResponseEntity<EditorialTemplateRenderResponse> renderEditorialTemplate(
+            @PathVariable String key, @RequestBody @Valid EditorialTemplateRenderRequest request) {
+        return ResponseEntity.ok(blogService.renderEditorialTemplate(key, request));
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        return ResponseEntity.ok(blogService.getCategories());
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<List<String>> getTags() {
+        return ResponseEntity.ok(blogService.getTags());
+    }
+
+    @GetMapping("/related/{id}")
+    public ResponseEntity<Page<BlogResponse>> getRelatedBlogs(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "3") int size,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getRelatedBlogs(id, size, authUser));
     }
 
     @Operation(summary = "Get draft blogs by author (default current user)")
@@ -310,8 +356,39 @@ public class BlogController {
                         @Content(mediaType = "application/json", examples = @ExampleObject(value = ERROR_404_EXAMPLE)))
     })
     @GetMapping("/slug/{slug}")
-    public ResponseEntity<BlogResponse> getBlogBySlug(@PathVariable String slug) {
-        return ResponseEntity.ok(blogService.getBlogBySlug(slug));
+    public ResponseEntity<BlogResponse> getBlogBySlug(
+            @PathVariable String slug, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getBlogBySlug(slug, authUser));
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<Page<BlogCommentResponse>> getComments(@PathVariable UUID id, Pageable pageable) {
+        return ResponseEntity.ok(blogService.getComments(id, pageable));
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<BlogCommentResponse> createComment(
+            @PathVariable UUID id,
+            @RequestBody @Valid CreateBlogCommentRequest request,
+            @AuthenticationPrincipal UserRole authUser) {
+        return new ResponseEntity<>(blogService.createComment(id, request, authUser), HttpStatusCode.valueOf(201));
+    }
+
+    @PostMapping("/{id}/views")
+    public ResponseEntity<BlogMetricsResponse> incrementViews(@PathVariable UUID id) {
+        return ResponseEntity.ok(blogService.incrementViews(id));
+    }
+
+    @PostMapping("/{id}/likes")
+    public ResponseEntity<BlogMetricsResponse> likeBlog(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.likeBlog(id, authUser));
+    }
+
+    @DeleteMapping("/{id}/likes")
+    public ResponseEntity<BlogMetricsResponse> unlikeBlog(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.unlikeBlog(id, authUser));
     }
 
     @Operation(summary = "Get blog by ID")
