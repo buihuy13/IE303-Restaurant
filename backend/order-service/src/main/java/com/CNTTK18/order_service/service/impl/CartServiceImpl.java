@@ -60,7 +60,11 @@ public class CartServiceImpl implements CartService {
 
         AddToCartFetchResult fetchResult = fetchRestaurantAndProductInfo(request);
         validateRestaurantAvailability(fetchResult.resInfo());
-        validateProductOwnership(fetchResult.productInfo(), request.getRestaurantId(), request.getProductId());
+        validateProductOwnership(
+                fetchResult.productInfo(),
+                fetchResult.productResInfo(),
+                request.getRestaurantId(),
+                request.getProductId());
 
         CartRestaurantGroup group = getOrCreateRestaurantGroup(cart, request.getRestaurantId(), fetchResult.resInfo());
         addOrIncrementCartItem(group, request, fetchResult.sizeInfo(), fetchResult.productInfo());
@@ -133,6 +137,7 @@ public class CartServiceImpl implements CartService {
         var fetchResult = Mono.zip(
                         restaurantClient.getRestaurant(request.getRestaurantId()),
                         restaurantClient.getProductSize(request.getProductSizeId()),
+                        restaurantClient.getRestaurantByProductId(request.getProductId()),
                         restaurantClient.getProduct(request.getProductId()))
                 .block();
 
@@ -140,7 +145,9 @@ public class CartServiceImpl implements CartService {
             throw new NotFoundException("Could not reach restaurant service");
         }
 
-        return new AddToCartFetchResult(fetchResult.getT1(), fetchResult.getT2(), fetchResult.getT3());
+        return new AddToCartFetchResult(
+                fetchResult.getT1(), fetchResult.getT2(),
+                fetchResult.getT3(), fetchResult.getT4());
     }
 
     /** Ensures restaurant is enabled and currently within opening hours. */
@@ -172,8 +179,14 @@ public class CartServiceImpl implements CartService {
         }
     }
 
-    /** Ensures selected product exists, belongs to requested restaurant and matches productId. */
-    private void validateProductOwnership(ProductClientResponse productInfo, UUID restaurantId, UUID productId) {
+    /**
+     * Ensures selected product exists, belongs to requested restaurant and matches productId.
+     * Uses restaurant-by-product lookup to validate ownership since ProductClientResponse
+     * does not carry restaurantId.
+     */
+    private void validateProductOwnership(
+            ProductClientResponse productInfo, ResClientResponse productResInfo, UUID restaurantId, UUID productId) {
+
         if (productInfo == null) {
             throw new NotFoundException("Product information not found in remote service");
         }
@@ -182,7 +195,7 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Product ID mismatch");
         }
 
-        if (!productInfo.getRestaurantId().equals(restaurantId)) {
+        if (productResInfo == null || !productResInfo.getId().equals(restaurantId)) {
             throw new BadRequestException("Product does not belong to the specified restaurant");
         }
     }
@@ -226,15 +239,18 @@ public class CartServiceImpl implements CartService {
         CartItem newItem = CartItem.builder()
                 .productId(productInfo.getId())
                 .productSizeId(request.getProductSizeId())
-                .productName(productInfo.getName())
+                .productName(productInfo.getProductName())
                 .sizeName(sizeInfo.getSizeName())
                 .price(sizeInfo.getPrice())
                 .quantity(request.getQuantity())
-                .imageUrl(productInfo.getImageUrl())
+                .imageUrl(productInfo.getImageURL())
                 .build();
         group.getItems().add(newItem);
     }
 
     private record AddToCartFetchResult(
-            ResClientResponse resInfo, ProductSizeClientResponse sizeInfo, ProductClientResponse productInfo) {}
+            ResClientResponse resInfo,
+            ProductSizeClientResponse sizeInfo,
+            ResClientResponse productResInfo,
+            ProductClientResponse productInfo) {}
 }

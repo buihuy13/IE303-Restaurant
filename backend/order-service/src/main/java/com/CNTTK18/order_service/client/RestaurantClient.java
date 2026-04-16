@@ -44,6 +44,19 @@ public class RestaurantClient {
                 .bodyToMono(ResClientResponse.class);
     }
 
+    /**
+     * Lấy restaurant chứa product này.
+     * Dùng để validate product ownership trong AddToCart mà không cần restaurantId từ product response.
+     */
+    public Mono<ResClientResponse> getRestaurantByProductId(UUID productId) {
+        return webClientBuilder
+                .build()
+                .get()
+                .uri("http://restaurant-service/api/products/res/{id}", productId)
+                .retrieve()
+                .bodyToMono(ResClientResponse.class);
+    }
+
     public Mono<ResClientResponse> getRestaurantByMerchantId(UUID merchantId) {
         return webClientBuilder
                 .build()
