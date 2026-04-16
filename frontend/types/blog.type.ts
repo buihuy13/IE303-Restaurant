@@ -100,6 +100,14 @@ export interface BlogCommentCreateRequest {
     notify?: boolean;
 }
 
+export interface BlogMetricsResponse {
+    blogId: string;
+    viewsCount: number;
+    likesCount: number;
+    commentsCount: number;
+    likedByCurrentUser: boolean;
+}
+
 export interface BlogPageParams {
     page?: number;
     size?: number;

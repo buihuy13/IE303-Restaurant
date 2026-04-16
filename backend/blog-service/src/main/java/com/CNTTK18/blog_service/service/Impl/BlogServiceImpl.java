@@ -312,7 +312,7 @@ public class BlogServiceImpl implements BlogService {
                 .status(BlogCommentStatus.PUBLISHED)
                 .build();
         BlogComment savedComment = blogCommentRepository.save(comment);
-        blogPost.setCommentsCount(nullToZero(blogPost.getCommentsCount()) + 1);
+        blogPost.setCommentsCount(resolvePublishedCommentCount(blogPost));
         blogRepository.save(blogPost);
         return toCommentResponse(savedComment);
     }
@@ -530,7 +530,7 @@ public class BlogServiceImpl implements BlogService {
         response.setTags(blogPost.getTags() == null ? List.of() : new ArrayList<>(blogPost.getTags()));
         response.setViewsCount(nullToZero(blogPost.getViewsCount()));
         response.setLikesCount(nullToZero(blogPost.getLikesCount()));
-        response.setCommentsCount(nullToZero(blogPost.getCommentsCount()));
+        response.setCommentsCount(resolvePublishedCommentCount(blogPost));
         boolean likedByCurrentUser = authUser != null
                 && authUser.getUserId() != null
                 && blogLikeRepository.existsByBlogPostIdAndUserId(blogPost.getId(), authUser.getUserId());
@@ -563,9 +563,16 @@ public class BlogServiceImpl implements BlogService {
                 .blogId(blogPost.getId())
                 .viewsCount(nullToZero(blogPost.getViewsCount()))
                 .likesCount(nullToZero(blogPost.getLikesCount()))
-                .commentsCount(nullToZero(blogPost.getCommentsCount()))
+                .commentsCount(resolvePublishedCommentCount(blogPost))
                 .likedByCurrentUser(likedByCurrentUser)
                 .build();
+    }
+
+    private long resolvePublishedCommentCount(BlogPost blogPost) {
+        if (blogPost.getId() == null) {
+            return nullToZero(blogPost.getCommentsCount());
+        }
+        return blogCommentRepository.countByBlogPostIdAndStatus(blogPost.getId(), BlogCommentStatus.PUBLISHED);
     }
 
     private long nullToZero(Long value) {

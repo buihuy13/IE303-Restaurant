@@ -21,6 +21,7 @@ interface BlogDetailComment {
 interface BlogDetailCommentsProps {
     blogId: string;
     blogSlug: string;
+    onCommentCreated?: () => void;
 }
 
 interface CommentFormState {
@@ -122,7 +123,7 @@ function mapApiCommentToView(comment: BlogComment): BlogDetailComment {
     };
 }
 
-export function BlogDetailComments({ blogId, blogSlug }: BlogDetailCommentsProps) {
+export function BlogDetailComments({ blogId, blogSlug, onCommentCreated }: BlogDetailCommentsProps) {
     const isMockMode = BLOG_DATA_SOURCE === "mock";
     const pathname = usePathname();
     const { isAuthenticated, user, loginWithKeycloak } = useAuthStore();
@@ -242,6 +243,7 @@ export function BlogDetailComments({ blogId, blogSlug }: BlogDetailCommentsProps
                 setLoadError(null);
                 setTotalElements(nextTotalElements);
                 setTotalPages(Math.max(1, Math.ceil(nextTotalElements / COMMENTS_PER_PAGE)));
+                onCommentCreated?.();
                 if (page === 1) {
                     setComments((current) => [mapApiCommentToView(createdComment), ...current].slice(0, COMMENTS_PER_PAGE));
                 } else {

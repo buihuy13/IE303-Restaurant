@@ -17,6 +17,10 @@ export interface BlogDetailPageViewProps {
     readingProgress: number;
     copied: boolean;
     onShare: () => void;
+    likedByCurrentUser: boolean;
+    liking: boolean;
+    onToggleLike: () => void;
+    onCommentCreated: () => void;
 }
 
 export function BlogDetailPageView({
@@ -28,6 +32,10 @@ export function BlogDetailPageView({
     readingProgress,
     copied,
     onShare,
+    likedByCurrentUser,
+    liking,
+    onToggleLike,
+    onCommentCreated,
 }: BlogDetailPageViewProps) {
     if (loading) return <BlogDetailLoading />;
     if (!blog) return <BlogDetailNotFound />;
@@ -48,6 +56,10 @@ export function BlogDetailPageView({
                     nextPost={nextPost}
                     copied={copied}
                     onShare={onShare}
+                    likedByCurrentUser={likedByCurrentUser}
+                    liking={liking}
+                    onToggleLike={onToggleLike}
+                    onCommentCreated={onCommentCreated}
                 />
             </div>
         </div>

@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +45,7 @@ import com.CNTTK18.blog_service.exception.ForbiddenException;
 import com.CNTTK18.blog_service.mapper.BlogMapper;
 import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
+import com.CNTTK18.blog_service.model.BlogLike;
 import com.CNTTK18.blog_service.model.BlogPost;
 import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
@@ -361,6 +363,26 @@ class BlogServiceImplTest {
     }
 
     @Test
+    void getBlogById_shouldReturnActualPublishedCommentCount() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .title("Published title")
+                .slug("published-title")
+                .content("Published content")
+                .status(BlogStatus.PUBLISHED)
+                .commentsCount(7L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogCommentRepository.countByBlogPostIdAndStatus(BLOG_ID, BlogCommentStatus.PUBLISHED))
+                .thenReturn(4L);
+
+        BlogResponse response = blogService.getBlogById(BLOG_ID, null);
+
+        assertEquals(4L, response.getCommentsCount());
+    }
+
+    @Test
     void createComment_shouldRequireAuthenticatedUser() {
         CreateBlogCommentRequest request = new CreateBlogCommentRequest("Useful note", false);
 
@@ -390,6 +412,8 @@ class BlogServiceImplTest {
             comment.setCreatedAt(Instant.now());
             return comment;
         });
+        when(blogCommentRepository.countByBlogPostIdAndStatus(BLOG_ID, BlogCommentStatus.PUBLISHED))
+                .thenReturn(1L);
 
         BlogCommentResponse response = blogService.createComment(BLOG_ID, request, authUser);
 
@@ -399,6 +423,73 @@ class BlogServiceImplTest {
         assertEquals(BlogCommentStatus.PUBLISHED, response.getStatus());
         assertNull(response.getEmail());
         assertEquals(1L, publishedBlog.getCommentsCount());
+        verify(blogRepository).save(publishedBlog);
+    }
+
+    @Test
+    void likeBlog_shouldRequireAuthenticatedUser() {
+        assertThrows(ForbiddenException.class, () -> blogService.likeBlog(BLOG_ID, null));
+    }
+
+    @Test
+    void likeBlog_shouldIncrementOnlyOnceForSameUser() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .likesCount(2L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogLikeRepository.existsByBlogPostIdAndUserId(BLOG_ID, AUTHOR_ID)).thenReturn(false);
+
+        var response = blogService.likeBlog(BLOG_ID, customerUser(AUTHOR_ID));
+
+        assertEquals(3L, response.getLikesCount());
+        assertEquals(true, response.getLikedByCurrentUser());
+        verify(blogLikeRepository).save(any(BlogLike.class));
+        verify(blogRepository).save(publishedBlog);
+    }
+
+    @Test
+    void likeBlog_shouldNotIncrementWhenAlreadyLiked() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .likesCount(2L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogLikeRepository.existsByBlogPostIdAndUserId(BLOG_ID, AUTHOR_ID)).thenReturn(true);
+
+        var response = blogService.likeBlog(BLOG_ID, customerUser(AUTHOR_ID));
+
+        assertEquals(2L, response.getLikesCount());
+        assertEquals(true, response.getLikedByCurrentUser());
+        verify(blogLikeRepository, never()).save(any(BlogLike.class));
+        verify(blogRepository, never()).save(publishedBlog);
+    }
+
+    @Test
+    void unlikeBlog_shouldRemoveLikeAndDecrementCount() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .likesCount(2L)
+                .build();
+        BlogLike existingLike = BlogLike.builder()
+                .id(UUID.randomUUID())
+                .blogPost(publishedBlog)
+                .userId(AUTHOR_ID)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogLikeRepository.findByBlogPostIdAndUserId(BLOG_ID, AUTHOR_ID)).thenReturn(Optional.of(existingLike));
+
+        var response = blogService.unlikeBlog(BLOG_ID, customerUser(AUTHOR_ID));
+
+        assertEquals(1L, response.getLikesCount());
+        assertEquals(false, response.getLikedByCurrentUser());
+        verify(blogLikeRepository).delete(existingLike);
         verify(blogRepository).save(publishedBlog);
     }
 

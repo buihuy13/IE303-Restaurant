@@ -8,6 +8,7 @@ import type {
     BlogEditorialTemplateRenderRequest,
     BlogEditorialTemplateRenderResponse,
     BlogImageUploadResponse,
+    BlogMetricsResponse,
     BlogMessageResponse,
     BlogPageParams,
     BlogPageResponse,
@@ -126,6 +127,16 @@ export const blogApi = {
         const response = await api.post<BlogComment>(`/blogs/${blogId}/comments`, payload, {
             headers: { "Content-Type": "application/json" },
         });
+        return response.data;
+    },
+
+    likeBlog: async (blogId: string): Promise<BlogMetricsResponse> => {
+        const response = await api.post<BlogMetricsResponse>(`/blogs/${blogId}/likes`);
+        return response.data;
+    },
+
+    unlikeBlog: async (blogId: string): Promise<BlogMetricsResponse> => {
+        const response = await api.delete<BlogMetricsResponse>(`/blogs/${blogId}/likes`);
         return response.data;
     },
 

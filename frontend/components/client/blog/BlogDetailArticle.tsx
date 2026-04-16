@@ -24,6 +24,10 @@ interface BlogDetailArticleProps {
     nextPost: BlogViewModel | null;
     copied: boolean;
     onShare: () => void;
+    likedByCurrentUser: boolean;
+    liking: boolean;
+    onToggleLike: () => void;
+    onCommentCreated: () => void;
 }
 
 const MARKDOWN_IMAGE_PATTERN = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
@@ -98,7 +102,56 @@ function DetailInfoRow({ label, value }: { label: string; value: ReactNode }) {
     );
 }
 
-export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, copied, onShare }: BlogDetailArticleProps) {
+const metricShellClassName =
+    "flex min-h-[88px] w-full flex-col items-center justify-start rounded-lg px-2 py-1 text-center";
+
+function MetricShell({ children }: { children: ReactNode }) {
+    return (
+        <div className={metricShellClassName}>
+            {children}
+        </div>
+    );
+}
+
+function MetricButton({
+    children,
+    ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            className={`${metricShellClassName} group cursor-pointer transition hover:bg-white/50 disabled:cursor-not-allowed disabled:opacity-70`}
+            {...props}
+        >
+            {children}
+        </button>
+    );
+}
+
+function MetricIcon({ children }: { children: ReactNode }) {
+    return <span className="flex h-5 items-center justify-center">{children}</span>;
+}
+
+function MetricValue({ children }: { children: ReactNode }) {
+    return <span className="mt-2 block h-6 text-base font-bold leading-6 text-green-950">{children}</span>;
+}
+
+function MetricLabel({ children }: { children: ReactNode }) {
+    return <span className="mt-1 block leading-5">{children}</span>;
+}
+
+export function BlogDetailArticle({
+    blog,
+    relatedPosts,
+    previousPost,
+    nextPost,
+    copied,
+    onShare,
+    likedByCurrentUser,
+    liking,
+    onToggleLike,
+    onCommentCreated,
+}: BlogDetailArticleProps) {
     const markdownImages = extractMarkdownImages(blog.content);
     const heroImageUrl = blog.coverImageUrl || markdownImages[0]?.url || null;
     const mediaImages = markdownImages
@@ -201,25 +254,42 @@ export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, 
                             {hasMetrics && (
                                 <div className="mt-4 grid grid-cols-3 gap-2 border-t border-green-900/20 pt-4 text-center text-xs text-gray-600">
                                     {typeof blog.views === "number" && (
-                                        <div>
-                                            <Eye className="mx-auto mb-1 h-4 w-4 text-green-900" />
-                                            <p className="font-bold text-green-950">{blog.views.toLocaleString()}</p>
-                                            <p>Views</p>
-                                        </div>
+                                        <MetricShell>
+                                            <MetricIcon>
+                                                <Eye className="h-4 w-4 text-green-900" />
+                                            </MetricIcon>
+                                            <MetricValue>{blog.views.toLocaleString()}</MetricValue>
+                                            <MetricLabel>Views</MetricLabel>
+                                        </MetricShell>
                                     )}
                                     {typeof blog.likes === "number" && (
-                                        <div>
-                                            <Heart className="mx-auto mb-1 h-4 w-4 text-green-900" />
-                                            <p className="font-bold text-green-950">{blog.likes.toLocaleString()}</p>
-                                            <p>Likes</p>
-                                        </div>
+                                        <MetricButton
+                                            onClick={onToggleLike}
+                                            disabled={liking}
+                                            aria-pressed={likedByCurrentUser}
+                                            aria-label={likedByCurrentUser ? "Unlike this story" : "Like this story"}
+                                        >
+                                            <MetricIcon>
+                                                <Heart
+                                                    className={`h-4 w-4 transition ${
+                                                        likedByCurrentUser
+                                                            ? "fill-brand-orange text-brand-orange"
+                                                            : "text-green-900 group-hover:text-brand-orange"
+                                                    }`}
+                                                />
+                                            </MetricIcon>
+                                            <MetricValue>{blog.likes.toLocaleString()}</MetricValue>
+                                            <MetricLabel>{likedByCurrentUser ? "Liked" : "Likes"}</MetricLabel>
+                                        </MetricButton>
                                     )}
                                     {typeof blog.commentsCount === "number" && (
-                                        <div>
-                                            <MessageCircle className="mx-auto mb-1 h-4 w-4 text-green-900" />
-                                            <p className="font-bold text-green-950">{blog.commentsCount.toLocaleString()}</p>
-                                            <p>Talks</p>
-                                        </div>
+                                        <MetricShell>
+                                            <MetricIcon>
+                                                <MessageCircle className="h-4 w-4 text-green-900" />
+                                            </MetricIcon>
+                                            <MetricValue>{blog.commentsCount.toLocaleString()}</MetricValue>
+                                            <MetricLabel>Talks</MetricLabel>
+                                        </MetricShell>
                                     )}
                                 </div>
                             )}
@@ -308,7 +378,7 @@ export function BlogDetailArticle({ blog, relatedPosts, previousPost, nextPost, 
                     </section>
                 )}
 
-                <BlogDetailComments blogId={blog.id} blogSlug={blog.slug} />
+                <BlogDetailComments blogId={blog.id} blogSlug={blog.slug} onCommentCreated={onCommentCreated} />
 
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-12">
