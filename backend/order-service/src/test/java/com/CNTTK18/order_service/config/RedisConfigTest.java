@@ -8,11 +8,12 @@ import static org.mockito.Mockito.mock;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.CNTTK18.order_service.dto.order.response.OrderResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+
+import com.CNTTK18.order_service.dto.order.response.OrderResponse;
 
 class RedisConfigTest {
 
