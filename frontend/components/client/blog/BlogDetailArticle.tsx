@@ -174,7 +174,7 @@ export function BlogDetailArticle({
                         {heroImageUrl ? (
                             <Image src={heroImageUrl} alt={blog.title} fill className="object-cover" priority />
                         ) : (
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(41,176,103,0.45),transparent_34%),linear-gradient(135deg,#14532d,#1f4d16)]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(238,77,45,0.35),transparent_34%),linear-gradient(135deg,#7c2d12,#ee4d2d)]" />
                         )}
                         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/25 to-transparent" />
                         <div className="absolute left-4 right-4 top-4 flex flex-wrap items-center justify-between gap-3 sm:left-6 sm:right-6 sm:top-6">
