@@ -352,11 +352,11 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
         <section className="border-t border-gray-200 pt-12">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="flex items-center gap-2 text-sm font-bold uppercase text-brand-green">
+                    <p className="flex items-center gap-2 text-sm font-bold uppercase text-brand-orange">
                         <span className="h-2 w-2 rounded-full bg-brand-orange" />
                         Comments
                     </p>
-                    <p className="mt-3 text-2xl font-black uppercase text-brand-green">{totalElements} Comments</p>
+                    <p className="mt-3 text-2xl font-black uppercase text-brand-orange">{totalElements} Comments</p>
                 </div>
                 <BlogListPagination
                     currentPage={page}
@@ -391,7 +391,7 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                                             className="h-10 w-10 rounded-full object-cover"
                                         />
                                     ) : (
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-900">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-brand-orange">
                                             {getInitials(comment.name)}
                                         </div>
                                     )}
@@ -409,23 +409,23 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                 )}
                 {showListLoading && hasLoadedApiComments && (
                     <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-                        <div className="rounded-lg border border-green-100 bg-white/90 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm backdrop-blur">
+                        <div className="rounded-lg border border-orange-100 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-orange shadow-sm backdrop-blur">
                             Loading comments...
                         </div>
                     </div>
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 rounded-lg bg-green-50 p-6 md:p-8">
+            <form onSubmit={handleSubmit} className="mt-8 rounded-lg bg-orange-50 p-6 md:p-8">
                 <div className="mb-6">
-                    <h3 className="text-2xl font-black text-brand-green">Share Your Thoughts</h3>
+                    <h3 className="text-2xl font-black text-brand-orange">Share Your Thoughts</h3>
                     <p className="mt-3 max-w-2xl leading-7 text-gray-600">
                         Have a tip that works for you? Sign in and share it with the FoodEats community below.
                     </p>
                 </div>
 
                 {!isAuthenticated ? (
-                    <div className="rounded-lg border border-green-900/10 bg-white p-5">
+                    <div className="rounded-lg border border-brand-orange/10 bg-white p-5">
                         <p className="font-bold text-gray-950">Sign in to join the discussion.</p>
                         <p className="mt-2 text-sm leading-6 text-gray-600">
                             Comments are tied to a real FoodEats account so readers know who shared each thought.
@@ -439,8 +439,8 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                         </button>
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-green-900/10 bg-white px-4 py-3 text-sm text-gray-600">
-                        Commenting as <span className="font-bold text-green-950">{displayName}</span>
+                    <div className="rounded-lg border border-brand-orange/10 bg-white px-4 py-3 text-sm text-gray-600">
+                        Commenting as <span className="font-bold text-brand-orange">{displayName}</span>
                     </div>
                 )}
 
@@ -456,7 +456,7 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                         className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition focus:ring-2 ${
                             errors.message
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                : "border-green-900/30 focus:border-brand-orange focus:ring-brand-orange/20"
+                                : "border-brand-orange/30 focus:border-brand-orange focus:ring-brand-orange/20"
                         }`}
                     />
                     {errors.message && <span className="mt-2 block text-sm font-semibold text-red-600">{errors.message}</span>}
@@ -469,7 +469,7 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                             checked={form.notify}
                             onChange={(event) => updateForm("notify", event.target.checked)}
                             disabled={!isAuthenticated}
-                            className="h-4 w-4 cursor-pointer rounded border-green-900/30 text-brand-orange focus:ring-brand-orange disabled:cursor-not-allowed"
+                            className="h-4 w-4 cursor-pointer rounded border-brand-orange/30 text-brand-orange focus:ring-brand-orange disabled:cursor-not-allowed"
                         />
                         Notify me of follow-up comments via email.
                     </label>
@@ -495,7 +495,7 @@ function BlogCommentListSkeleton() {
             {Array.from({ length: COMMENTS_PER_PAGE }).map((_, index) => (
                 <article key={index} className="border-b border-gray-200 pb-6">
                     <div className="flex gap-4">
-                        <div className="h-10 w-10 animate-pulse rounded-full bg-green-100" />
+                        <div className="h-10 w-10 animate-pulse rounded-full bg-orange-100" />
                         <div className="min-w-0 flex-1">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />

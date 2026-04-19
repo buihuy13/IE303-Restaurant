@@ -44,20 +44,20 @@ export function BlogCommentModerationPanel({
     onUpdateStatus,
 }: BlogCommentModerationPanelProps) {
     return (
-        <section className="mt-10 rounded-lg border border-green-100 bg-green-50/70 p-6">
+        <section className="mt-10 rounded-lg border border-orange-100 bg-orange-50/70 p-6">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <div className="mb-2 inline-flex items-center gap-2 text-sm font-bold uppercase text-green-800">
+                    <div className="mb-2 inline-flex items-center gap-2 text-sm font-bold uppercase text-brand-orange">
                         <MessageCircle className="h-4 w-4" />
                         Comment moderation
                     </div>
-                    <h2 className="text-2xl font-black text-green-950">Review reader comments</h2>
+                    <h2 className="text-2xl font-black text-gray-950">Review reader comments</h2>
                     <p className="mt-1 text-sm text-gray-600">Hide or restore comments on articles you can manage.</p>
                 </div>
                 <select
                     value={status}
                     onChange={(event) => onStatusFilterChange(event.target.value as BlogCommentStatus | "")}
-                    className="h-11 rounded-lg border border-green-200 bg-white px-4 text-sm font-semibold text-gray-800 outline-none transition focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
+                    className="h-11 rounded-lg border border-orange-200 bg-white px-4 text-sm font-semibold text-gray-800 outline-none transition focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
                 >
                     {statusOptions.map((option) => (
                         <option key={option.value || "all"} value={option.value}>
@@ -70,7 +70,7 @@ export function BlogCommentModerationPanel({
             {loading ? (
                 <div className="rounded-lg bg-white p-6 text-sm font-semibold text-gray-600">Loading comments...</div>
             ) : comments.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-green-200 bg-white p-6 text-sm font-semibold text-gray-600">
+                <div className="rounded-lg border border-dashed border-orange-200 bg-white p-6 text-sm font-semibold text-gray-600">
                     No comments found for this filter.
                 </div>
             ) : (
@@ -79,12 +79,12 @@ export function BlogCommentModerationPanel({
                         const isHidden = comment.status === "HIDDEN";
                         const nextStatus: BlogCommentStatus = isHidden ? "PUBLISHED" : "HIDDEN";
                         return (
-                            <article key={comment.id} className="rounded-lg border border-green-100 bg-white p-5">
+                            <article key={comment.id} className="rounded-lg border border-orange-100 bg-white p-5">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                     <div>
                                         <div className="mb-2 flex flex-wrap items-center gap-2">
-                                            <p className="font-bold text-green-950">{comment.name}</p>
-                                            <span className="rounded-md bg-green-100 px-2 py-1 text-xs font-bold text-green-800">
+                                            <p className="font-bold text-gray-950">{comment.name}</p>
+                                            <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-bold text-brand-orange">
                                                 {comment.status}
                                             </span>
                                             <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
@@ -97,7 +97,7 @@ export function BlogCommentModerationPanel({
                                         disabled={updatingId === comment.id}
                                         className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                                             isHidden
-                                                ? "border border-green-700 bg-white text-green-800 hover:bg-green-50"
+                                                ? "border border-brand-orange bg-white text-brand-orange hover:bg-orange-50"
                                                 : "bg-brand-orange text-white hover:bg-brand-orange/90"
                                         }`}
                                     >

@@ -68,7 +68,7 @@ export function BlogListGrid({ blogs }: BlogListGridProps) {
                 <Link
                     key={blog.id}
                     href={`/blog/${blog.slug}`}
-                    className="group block rounded-lg p-4 outline-none transition duration-300 hover:bg-green-100 focus-visible:bg-green-50 focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-4"
+                    className="group block rounded-lg border border-transparent p-4 outline-none transition duration-300 hover:border-brand-orange/20 hover:bg-orange-50/80 focus-visible:bg-orange-50 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-4"
                 >
                     <div className="relative aspect-[1.42] w-full overflow-hidden rounded-lg bg-gray-100">
                         {blog.coverImageUrl ? (
@@ -93,7 +93,7 @@ export function BlogListGrid({ blogs }: BlogListGridProps) {
                         <h3 className="line-clamp-2 text-2xl font-bold leading-snug text-gray-900 transition-colors">
                             {blog.title}
                         </h3>
-                        <div className="mt-6 inline-flex border-b border-brand-orange pb-1 text-sm font-bold text-brand-orange transition-colors group-hover:border-brand-orange/70 group-hover:text-brand-orange/80">
+                        <div className="mt-6 inline-flex rounded-full border border-brand-orange px-4 py-2 text-sm font-bold text-brand-orange transition-colors group-hover:bg-brand-orange group-hover:text-white">
                             Read More
                         </div>
                     </div>

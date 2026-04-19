@@ -75,14 +75,14 @@ function ArticleNavCard({ post, label, direction = "next" }: { post: BlogViewMod
     return (
         <Link
             href={`/blog/${post.slug}`}
-            className="group flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-5 transition hover:border-brand-orange hover:bg-green-50"
+            className="group flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-5 transition hover:border-brand-orange hover:bg-orange-50"
         >
             {direction === "previous" && (
                 <ArrowLeft className="h-5 w-5 shrink-0 text-brand-orange transition group-hover:-translate-x-1" />
             )}
             <div className={direction === "previous" ? "text-right" : ""}>
-                <p className="text-xs font-bold uppercase text-brand-green">{label}</p>
-                <p className="mt-2 line-clamp-2 font-bold leading-6 text-gray-950 transition group-hover:text-green-900">
+                <p className="text-xs font-bold uppercase text-brand-orange">{label}</p>
+                <p className="mt-2 line-clamp-2 font-bold leading-6 text-gray-950 transition group-hover:text-brand-orange">
                     {post.title}
                 </p>
             </div>
@@ -133,7 +133,7 @@ function MetricIcon({ children }: { children: ReactNode }) {
 }
 
 function MetricValue({ children }: { children: ReactNode }) {
-    return <span className="mt-2 block h-6 text-base font-bold leading-6 text-green-950">{children}</span>;
+    return <span className="mt-2 block h-6 text-base font-bold leading-6 text-gray-950">{children}</span>;
 }
 
 function MetricLabel({ children }: { children: ReactNode }) {
@@ -169,7 +169,7 @@ export function BlogDetailArticle({
     return (
         <article className="mx-auto max-w-7xl">
             <div className="space-y-14">
-                <header className="overflow-hidden rounded-lg bg-green-50">
+                <header className="overflow-hidden rounded-lg bg-orange-50">
                     <div className="relative aspect-[16/7] min-h-[300px]">
                         {heroImageUrl ? (
                             <Image src={heroImageUrl} alt={blog.title} fill className="object-cover" priority />
@@ -198,7 +198,7 @@ export function BlogDetailArticle({
                 </header>
 
                 <section className="mx-auto max-w-5xl text-center">
-                    <h2 className="text-3xl font-black leading-tight text-brand-green md:text-5xl">{blog.title}</h2>
+                    <h2 className="text-3xl font-black leading-tight text-brand-orange md:text-5xl">{blog.title}</h2>
                     <p className="mx-auto mt-5 max-w-4xl text-lg leading-8 text-gray-700">{blog.excerpt}</p>
                 </section>
 
@@ -242,21 +242,21 @@ export function BlogDetailArticle({
                     </div>
 
                     <aside className="space-y-5 lg:sticky lg:top-24">
-                        <section className="rounded-lg bg-[#dcf5d3] p-6">
-                            <h2 className="border-b border-green-900/20 pb-4 text-sm font-black uppercase text-green-950">
+                        <section className="rounded-lg bg-orange-50 p-6">
+                            <h2 className="border-b border-brand-orange/20 pb-4 text-sm font-black uppercase text-gray-950">
                                 Details
                             </h2>
-                            <div className="divide-y divide-green-900/10">
+                            <div className="divide-y divide-brand-orange/10">
                                 <DetailInfoRow label="Date" value={formatDate(blog.publishedAt ?? blog.createdAt)} />
                                 <DetailInfoRow label="Category" value={categoryLabel} />
                                 <DetailInfoRow label="Reading" value={`${blog.readTime} minutes`} />
                             </div>
                             {hasMetrics && (
-                                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-green-900/20 pt-4 text-center text-xs text-gray-600">
+                                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-brand-orange/20 pt-4 text-center text-xs text-gray-600">
                                     {typeof blog.views === "number" && (
                                         <MetricShell>
                                             <MetricIcon>
-                                                <Eye className="h-4 w-4 text-green-900" />
+                                                <Eye className="h-4 w-4 text-brand-orange" />
                                             </MetricIcon>
                                             <MetricValue>{blog.views.toLocaleString()}</MetricValue>
                                             <MetricLabel>Views</MetricLabel>
@@ -274,7 +274,7 @@ export function BlogDetailArticle({
                                                     className={`h-4 w-4 transition ${
                                                         likedByCurrentUser
                                                             ? "fill-brand-orange text-brand-orange"
-                                                            : "text-green-900 group-hover:text-brand-orange"
+                                                            : "text-gray-900 group-hover:text-brand-orange"
                                                     }`}
                                                 />
                                             </MetricIcon>
@@ -285,7 +285,7 @@ export function BlogDetailArticle({
                                     {typeof blog.commentsCount === "number" && (
                                         <MetricShell>
                                             <MetricIcon>
-                                                <MessageCircle className="h-4 w-4 text-green-900" />
+                                                <MessageCircle className="h-4 w-4 text-brand-orange" />
                                             </MetricIcon>
                                             <MetricValue>{blog.commentsCount.toLocaleString()}</MetricValue>
                                             <MetricLabel>Talks</MetricLabel>
@@ -295,8 +295,8 @@ export function BlogDetailArticle({
                             )}
                         </section>
 
-                        <section className="rounded-lg bg-[#dcf5d3] p-6">
-                            <h2 className="border-b border-green-900/20 pb-4 text-sm font-black uppercase text-green-950">
+                        <section className="rounded-lg bg-orange-50 p-6">
+                            <h2 className="border-b border-brand-orange/20 pb-4 text-sm font-black uppercase text-gray-950">
                                 Author
                             </h2>
                             <div className="mt-6 flex items-center gap-4">
@@ -309,12 +309,12 @@ export function BlogDetailArticle({
                                         className="h-12 w-12 rounded-full object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-black text-green-900">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sm font-black text-brand-orange">
                                         {getInitials(blog.author.name)}
                                     </div>
                                 )}
                                 <div>
-                                    <p className="font-bold text-green-950">{blog.author.name}</p>
+                                    <p className="font-bold text-gray-950">{blog.author.name}</p>
                                     <p className="text-sm text-gray-600">{blog.author.role}</p>
                                 </div>
                             </div>
@@ -324,7 +324,7 @@ export function BlogDetailArticle({
                             <button
                                 type="button"
                                 onClick={onShare}
-                                className="mt-5 inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-brand-orange px-5 text-sm font-bold text-white transition hover:bg-brand-orange/90"
+                                className="mt-5 inline-flex h-10 cursor-pointer items-center justify-center rounded-lg border border-brand-orange bg-white px-5 text-sm font-bold text-brand-orange transition hover:bg-brand-orange hover:text-white"
                             >
                                 {copied ? "Copied" : "Share Article"}
                             </button>
@@ -339,7 +339,7 @@ export function BlogDetailArticle({
                                         </h2>
                                         <div className="mt-4 flex flex-wrap gap-2 text-sm text-gray-600">
                                             {blog.tags.map((tag) => (
-                                                <span key={tag} className="rounded-lg bg-[#dcf5d3] px-3 py-1.5 font-medium">
+                                                <span key={tag} className="rounded-lg bg-orange-50 px-3 py-1.5 font-medium text-brand-orange">
                                                     {tag}
                                                 </span>
                                             ))}
@@ -388,11 +388,11 @@ export function BlogDetailArticle({
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-12">
                         <div className="mb-8">
-                            <p className="flex items-center gap-2 text-sm font-bold uppercase text-brand-green">
+                            <p className="flex items-center gap-2 text-sm font-bold uppercase text-brand-orange">
                                 <span className="h-2 w-2 rounded-full bg-brand-orange" />
                                 Related Articles
                             </p>
-                            <h2 className="mt-4 text-4xl font-black uppercase text-brand-green md:text-5xl">
+                            <h2 className="mt-4 text-4xl font-black uppercase text-brand-orange md:text-5xl">
                                 You Might Also Like
                             </h2>
                         </div>

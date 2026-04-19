@@ -116,9 +116,9 @@ export function BlogPageView({
                                 <div>
                                     <div className="mb-5 flex items-center gap-3">
                                         <span className="h-2 w-2 rounded-full bg-brand-orange" />
-                                        <p className="text-sm font-bold uppercase text-green-900">Story</p>
+                                        <p className="text-sm font-bold uppercase text-brand-orange">Story</p>
                                     </div>
-                                    <h2 className="max-w-3xl text-4xl font-black uppercase text-brand-green sm:text-5xl lg:text-6xl">
+                                    <h2 className="max-w-3xl text-4xl font-black uppercase text-brand-orange sm:text-5xl lg:text-6xl">
                                         Latest Articles
                                     </h2>
                                 </div>
@@ -177,7 +177,7 @@ export function BlogPageView({
                             </div>
 
                             {isUpdating && (
-                                <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-green-100 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800">
+                                <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 px-4 py-2 text-sm font-semibold text-brand-orange">
                                     <span className="h-2 w-2 animate-pulse rounded-full bg-brand-orange" />
                                     {updatingMessage}
                                 </div>
@@ -224,7 +224,7 @@ function BlogArticleGridSkeleton() {
         <div className="grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading articles">
             {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} className="rounded-lg p-4">
-                    <div className="aspect-[1.42] w-full animate-pulse rounded-lg bg-green-100" />
+                    <div className="aspect-[1.42] w-full animate-pulse rounded-lg bg-orange-100" />
                     <div className="pt-5">
                         <div className="mb-4 flex items-center gap-3">
                             <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
