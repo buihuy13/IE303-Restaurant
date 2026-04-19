@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { BlogListPagination } from "@/components/client/blog/BlogListGrid";
@@ -134,7 +134,8 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
     const [refreshCommentsKey, setRefreshCommentsKey] = useState(0);
     const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
     const [totalElements, setTotalElements] = useState(isMockMode ? seededComments.length : 0);
-    const [loading, setLoading] = useState(!isMockMode);
+    const [showListLoading, setShowListLoading] = useState(!isMockMode);
+    const [hasLoadedApiComments, setHasLoadedApiComments] = useState(isMockMode);
     const [submitting, setSubmitting] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [form, setForm] = useState<CommentFormState>({
@@ -143,24 +144,58 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
     });
     const [errors, setErrors] = useState<CommentFormErrors>({});
     const [success, setSuccess] = useState<string | null>(null);
+    const requestIdRef = useRef(0);
+    const loadingDelayRef = useRef<number | null>(null);
+    const hasLoadedApiCommentsRef = useRef(isMockMode);
+
+    useEffect(() => {
+        hasLoadedApiCommentsRef.current = hasLoadedApiComments;
+    }, [hasLoadedApiComments]);
+
+    useEffect(() => {
+        return () => {
+            if (loadingDelayRef.current) {
+                window.clearTimeout(loadingDelayRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         setPage(1);
         setErrors({});
         setSuccess(null);
         setLoadError(null);
-    }, [blogId, blogSlug]);
+        hasLoadedApiCommentsRef.current = isMockMode;
+        setHasLoadedApiComments(isMockMode);
+        setShowListLoading(!isMockMode);
+    }, [blogId, blogSlug, isMockMode]);
 
     useEffect(() => {
         if (!isMockMode) return;
         setComments(seededComments);
         setTotalElements(seededComments.length);
         setTotalPages(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
+        setHasLoadedApiComments(true);
+        setShowListLoading(false);
     }, [isMockMode, seededComments]);
 
     const loadComments = useCallback(
         async (options?: { signal?: AbortSignal }) => {
-            setLoading(true);
+            const requestId = requestIdRef.current + 1;
+            requestIdRef.current = requestId;
+            const hadLoadedComments = hasLoadedApiCommentsRef.current;
+            if (loadingDelayRef.current) {
+                window.clearTimeout(loadingDelayRef.current);
+            }
+            if (!hadLoadedComments) {
+                setShowListLoading(true);
+            } else {
+                loadingDelayRef.current = window.setTimeout(() => {
+                    if (requestIdRef.current === requestId) {
+                        setShowListLoading(true);
+                    }
+                }, 150);
+            }
             setLoadError(null);
             try {
                 const response = await blogApi.getBlogComments(blogId, {
@@ -168,19 +203,29 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                     size: COMMENTS_PER_PAGE,
                     sort: "createdAt,desc",
                 });
-                if (options?.signal?.aborted) return;
+                if (options?.signal?.aborted || requestIdRef.current !== requestId) return;
                 setComments((response.content ?? []).map(mapApiCommentToView));
                 setTotalPages(Math.max(1, response.totalPages || 1));
                 setTotalElements(response.totalElements ?? 0);
+                setHasLoadedApiComments(true);
             } catch (error) {
-                if (options?.signal?.aborted) return;
+                if (options?.signal?.aborted || requestIdRef.current !== requestId) return;
                 console.error("Failed to load blog comments:", error);
-                setComments([]);
-                setTotalPages(1);
-                setTotalElements(0);
+                if (!hadLoadedComments) {
+                    setComments([]);
+                    setTotalPages(1);
+                    setTotalElements(0);
+                }
                 setLoadError("Unable to load comments right now.");
+                setHasLoadedApiComments(true);
             } finally {
-                if (!options?.signal?.aborted) setLoading(false);
+                if (!options?.signal?.aborted && requestIdRef.current === requestId) {
+                    if (loadingDelayRef.current) {
+                        window.clearTimeout(loadingDelayRef.current);
+                        loadingDelayRef.current = null;
+                    }
+                    setShowListLoading(false);
+                }
             }
         },
         [blogId, page],
@@ -321,9 +366,9 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                 />
             </div>
 
-            <div className="space-y-6">
-                {loading ? (
-                    <div className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600">Loading comments...</div>
+            <div className="relative min-h-[210px]">
+                {showListLoading && !hasLoadedApiComments ? (
+                    <BlogCommentListSkeleton />
                 ) : loadError && comments.length === 0 ? (
                     <div className="rounded-lg border border-red-100 bg-red-50 p-6 text-sm font-semibold text-red-700">
                         {loadError}
@@ -333,32 +378,41 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                         No comments yet. Be the first to share a thought.
                     </div>
                 ) : (
-                    visibleComments.map((comment) => (
-                        <article key={comment.id} className="border-b border-gray-200 pb-6">
-                            <div className="flex gap-4">
-                                {comment.avatarUrl ? (
-                                    <Image
-                                        src={comment.avatarUrl}
-                                        alt={comment.name}
-                                        width={40}
-                                        height={40}
-                                        className="h-10 w-10 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-900">
-                                        {getInitials(comment.name)}
+                    <div className={showListLoading ? "space-y-6 opacity-60 transition-opacity" : "space-y-6 transition-opacity"}>
+                        {visibleComments.map((comment) => (
+                            <article key={comment.id} className="border-b border-gray-200 pb-6">
+                                <div className="flex gap-4">
+                                    {comment.avatarUrl ? (
+                                        <Image
+                                            src={comment.avatarUrl}
+                                            alt={comment.name}
+                                            width={40}
+                                            height={40}
+                                            className="h-10 w-10 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-900">
+                                            {getInitials(comment.name)}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                            <h3 className="font-bold text-gray-950">{comment.name}</h3>
+                                            <p className="text-sm text-gray-500">{comment.createdAt}</p>
+                                        </div>
+                                        <p className="mt-3 leading-7 text-gray-700">{comment.message}</p>
                                     </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        <h3 className="font-bold text-gray-950">{comment.name}</h3>
-                                        <p className="text-sm text-gray-500">{comment.createdAt}</p>
-                                    </div>
-                                    <p className="mt-3 leading-7 text-gray-700">{comment.message}</p>
                                 </div>
-                            </div>
-                        </article>
-                    ))
+                            </article>
+                        ))}
+                    </div>
+                )}
+                {showListLoading && hasLoadedApiComments && (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+                        <div className="rounded-lg border border-green-100 bg-white/90 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm backdrop-blur">
+                            Loading comments...
+                        </div>
+                    </div>
                 )}
             </div>
 
@@ -432,5 +486,29 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
                 {loadError && comments.length > 0 && <p className="mt-4 text-sm font-semibold text-red-700">{loadError}</p>}
             </form>
         </section>
+    );
+}
+
+function BlogCommentListSkeleton() {
+    return (
+        <div className="space-y-6" aria-label="Loading comments">
+            {Array.from({ length: COMMENTS_PER_PAGE }).map((_, index) => (
+                <article key={index} className="border-b border-gray-200 pb-6">
+                    <div className="flex gap-4">
+                        <div className="h-10 w-10 animate-pulse rounded-full bg-green-100" />
+                        <div className="min-w-0 flex-1">
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+                                <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+                                <div className="h-4 w-10/12 animate-pulse rounded bg-gray-100" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            ))}
+        </div>
     );
 }

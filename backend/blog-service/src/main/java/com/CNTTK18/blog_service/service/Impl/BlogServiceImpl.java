@@ -330,6 +330,49 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
+    public Page<BlogCommentResponse> getModerationComments(
+            UUID blogId, BlogCommentStatus status, UserRole authUser, Pageable pageable) {
+        extractAuthorId(authUser);
+        Specification<BlogComment> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (blogId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("blogPost").get("id"), blogId));
+            }
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            }
+            if (!isAdmin(authUser)) {
+                predicates.add(criteriaBuilder.equal(root.get("blogPost").get("authorId"), authUser.getUserId()));
+            }
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
+        return blogCommentRepository.findAll(specification, pageable).map(this::toCommentResponse);
+    }
+
+    @Override
+    @Transactional
+    public BlogCommentResponse updateCommentStatus(UUID commentId, BlogCommentStatus status, UserRole authUser) {
+        if (status == null) {
+            throw new IllegalArgumentException("Status is required");
+        }
+        BlogComment comment = blogCommentRepository
+                .findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Blog comment not found"));
+        BlogPost blogPost = comment.getBlogPost();
+        checkAuthority(blogPost.getAuthorId(), authUser);
+
+        if (!status.equals(comment.getStatus())) {
+            comment.setStatus(status);
+            BlogComment savedComment = blogCommentRepository.save(comment);
+            blogPost.setCommentsCount(resolvePublishedCommentCount(blogPost));
+            blogRepository.save(blogPost);
+            broadcastMetrics(blogPost);
+            return toCommentResponse(savedComment);
+        }
+        return toCommentResponse(comment);
+    }
+
+    @Override
     @Transactional
     public BlogMetricsResponse incrementViews(UUID blogId, UserRole authUser, String ipAddress, String userAgent) {
         BlogPost blogPost = ensurePublishedBlog(blogId);
@@ -540,10 +583,7 @@ public class BlogServiceImpl implements BlogService {
             String normalizedSearch = normalizeString(search);
             if (normalizedSearch != null) {
                 String pattern = "%" + normalizedSearch.toLowerCase(Locale.ROOT) + "%";
-                predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("excerpt")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("content")), pattern)));
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern));
             }
             String normalizedCategory = normalizeString(category);
             if (normalizedCategory != null) {
@@ -584,8 +624,9 @@ public class BlogServiceImpl implements BlogService {
         if (normalizeString(response.getAuthorName()) == null) {
             response.setAuthorName("FoodEats Editor");
         }
+        response.setAuthorAvatarUrl(null);
         if (normalizeString(response.getAuthorRole()) == null) {
-            response.setAuthorRole("Editorial Team");
+            response.setAuthorRole("FoodEats Editor");
         }
         return response;
     }

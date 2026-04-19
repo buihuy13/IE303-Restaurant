@@ -50,10 +50,14 @@ export function useBlogRelatedPosts(blog: BlogViewModel | null) {
         }
 
         try {
-            const response = await blogApi.getBlogs({ page: 1, size: 1000, sort: "publishedAt,desc" });
-            const publicPosts = mapPublicBlogApiListToViewModel(response.content ?? []);
+            const [relatedResponse, latestResponse] = await Promise.all([
+                blogApi.getRelatedBlogs(blog.id, 3),
+                blogApi.getBlogs({ page: 1, size: 1000, sort: "publishedAt,desc" }),
+            ]);
+            const related = mapPublicBlogApiListToViewModel(relatedResponse.content ?? []);
+            const publicPosts = mapPublicBlogApiListToViewModel(latestResponse.content ?? []);
             const adjacentPosts = getAdjacentPosts(publicPosts, blog.slug);
-            setRelatedPosts(publicPosts.filter((post) => post.slug !== blog.slug).slice(0, 3));
+            setRelatedPosts(related);
             setPreviousPost(adjacentPosts.previousPost);
             setNextPost(adjacentPosts.nextPost);
         } catch {

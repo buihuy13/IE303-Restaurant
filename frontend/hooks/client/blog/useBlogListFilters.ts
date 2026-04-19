@@ -13,7 +13,7 @@ export function useBlogListFilters() {
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
             setSearch(searchInput);
-        }, 250);
+        }, 400);
 
         return () => window.clearTimeout(timeoutId);
     }, [searchInput]);

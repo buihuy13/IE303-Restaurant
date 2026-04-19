@@ -8,7 +8,9 @@ import Pagination from "@/components/client/Pagination";
 import { MyBlogsHeader } from "@/components/client/blog/MyBlogsHeader";
 import { MyBlogsFilters } from "@/components/client/blog/MyBlogsFilters";
 import { MyBlogsCard } from "@/components/client/blog/MyBlogsCard";
+import { BlogCommentModerationPanel } from "@/components/client/blog/BlogCommentModerationPanel";
 import type { MyBlogsStats } from "@/hooks/client/blog/useMyBlogsData";
+import type { useBlogCommentModeration } from "@/hooks/client/blog/useBlogCommentModeration";
 
 export interface MyBlogsPageViewProps {
     loading: boolean;
@@ -19,6 +21,7 @@ export interface MyBlogsPageViewProps {
     page: number;
     status: BlogStatus | "";
     deletingId: string | null;
+    commentModeration: ReturnType<typeof useBlogCommentModeration>;
     onStatusChange: (status: BlogStatus | "") => void;
     onPageChange: (page: number) => void;
     onDelete: (blogId: string, title: string) => Promise<void>;
@@ -33,6 +36,7 @@ export function MyBlogsPageView({
     page,
     status,
     deletingId,
+    commentModeration,
     onStatusChange,
     onPageChange,
     onDelete,
@@ -105,6 +109,20 @@ export function MyBlogsPageView({
                             />
                         )}
                     </>
+                )}
+
+                {dataSource === "api" && (
+                    <BlogCommentModerationPanel
+                        comments={commentModeration.comments}
+                        loading={commentModeration.loading}
+                        page={commentModeration.page}
+                        totalPages={commentModeration.totalPages}
+                        status={commentModeration.status}
+                        updatingId={commentModeration.updatingId}
+                        onStatusFilterChange={commentModeration.handleStatusChange}
+                        onPageChange={commentModeration.setPage}
+                        onUpdateStatus={commentModeration.updateStatus}
+                    />
                 )}
             </div>
         </div>

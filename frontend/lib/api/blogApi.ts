@@ -3,6 +3,7 @@ import type {
     BlogComment,
     BlogCommentCreateRequest,
     BlogCommentPageResponse,
+    BlogCommentStatus,
     BlogCreateRequest,
     BlogEditorialTemplate,
     BlogEditorialTemplateRenderRequest,
@@ -67,6 +68,11 @@ export const blogApi = {
         return response.data;
     },
 
+    getRelatedBlogs: async (blogId: string, size = 3): Promise<BlogPageResponse> => {
+        const response = await api.get<BlogPageResponse>(`/blogs/related/${blogId}?size=${size}`);
+        return response.data;
+    },
+
     getCategories: async (): Promise<string[]> => {
         const response = await api.get<string[]>("/blogs/categories");
         return response.data;
@@ -123,10 +129,42 @@ export const blogApi = {
         return response.data;
     },
 
+    getModerationComments: async (params?: {
+        page?: number;
+        size?: number;
+        sort?: string | string[];
+        blogId?: string;
+        status?: BlogCommentStatus | "";
+    }): Promise<BlogCommentPageResponse> => {
+        const queryParams = new URLSearchParams();
+        queryParams.set("page", toBackendPage(params?.page).toString());
+        queryParams.set("size", (params?.size ?? 6).toString());
+        if (params?.blogId) queryParams.set("blogId", params.blogId);
+        if (params?.status) queryParams.set("status", params.status);
+        const sort = params?.sort ?? "createdAt,desc";
+        const sortParams = Array.isArray(sort) ? sort : [sort];
+        sortParams.forEach((value) => {
+            if (value) queryParams.append("sort", value);
+        });
+        const response = await api.get<BlogCommentPageResponse>(`/blogs/comments?${queryParams.toString()}`);
+        return response.data;
+    },
+
     createBlogComment: async (blogId: string, payload: BlogCommentCreateRequest): Promise<BlogComment> => {
         const response = await api.post<BlogComment>(`/blogs/${blogId}/comments`, payload, {
             headers: { "Content-Type": "application/json" },
         });
+        return response.data;
+    },
+
+    updateBlogCommentStatus: async (commentId: string, status: BlogCommentStatus): Promise<BlogComment> => {
+        const response = await api.patch<BlogComment>(
+            `/blogs/comments/${commentId}/status`,
+            { status },
+            {
+                headers: { "Content-Type": "application/json" },
+            },
+        );
         return response.data;
     },
 

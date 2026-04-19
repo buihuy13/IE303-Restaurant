@@ -15,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.EditorialTemplateRenderRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
+import com.CNTTK18.blog_service.dto.request.UpdateBlogCommentStatusRequest;
 import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
 import com.CNTTK18.blog_service.dto.response.BlogMetricsResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
@@ -37,6 +39,7 @@ import com.CNTTK18.blog_service.dto.response.EditorialTemplateRenderResponse;
 import com.CNTTK18.blog_service.dto.response.EditorialTemplateResponse;
 import com.CNTTK18.blog_service.dto.response.ImageUploadResponse;
 import com.CNTTK18.blog_service.dto.response.MessageResponse;
+import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.service.BlogService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -293,6 +296,23 @@ public class BlogController {
             @RequestParam(defaultValue = "3") int size,
             @AuthenticationPrincipal UserRole authUser) {
         return ResponseEntity.ok(blogService.getRelatedBlogs(id, size, authUser));
+    }
+
+    @GetMapping("/comments")
+    public ResponseEntity<Page<BlogCommentResponse>> getModerationComments(
+            @RequestParam(required = false) UUID blogId,
+            @RequestParam(required = false) BlogCommentStatus status,
+            Pageable pageable,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getModerationComments(blogId, status, authUser, pageable));
+    }
+
+    @PatchMapping("/comments/{commentId}/status")
+    public ResponseEntity<BlogCommentResponse> updateCommentStatus(
+            @PathVariable UUID commentId,
+            @RequestBody @Valid UpdateBlogCommentStatusRequest request,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.updateCommentStatus(commentId, request.getStatus(), authUser));
     }
 
     @Operation(summary = "Get draft blogs by author (default current user)")

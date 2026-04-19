@@ -18,6 +18,7 @@ import com.CNTTK18.blog_service.dto.response.BlogMetricsResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
 import com.CNTTK18.blog_service.dto.response.EditorialTemplateRenderResponse;
 import com.CNTTK18.blog_service.dto.response.EditorialTemplateResponse;
+import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 
 public interface BlogService {
     List<String> uploadContentImages(List<MultipartFile> files, UserRole authUser);
@@ -54,6 +55,11 @@ public interface BlogService {
     Page<BlogCommentResponse> getComments(UUID blogId, Pageable pageable);
 
     BlogCommentResponse createComment(UUID blogId, CreateBlogCommentRequest request, UserRole authUser);
+
+    Page<BlogCommentResponse> getModerationComments(
+            UUID blogId, BlogCommentStatus status, UserRole authUser, Pageable pageable);
+
+    BlogCommentResponse updateCommentStatus(UUID commentId, BlogCommentStatus status, UserRole authUser);
 
     BlogMetricsResponse incrementViews(UUID blogId, UserRole authUser, String ipAddress, String userAgent);
 

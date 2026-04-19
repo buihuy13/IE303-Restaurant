@@ -106,6 +106,10 @@ public class SecurityConfig {
                 // blog-service
                 .pathMatchers(HttpMethod.GET, "/api/blogs/drafts", "/api/blogs/archived")
                 .authenticated()
+                .pathMatchers(HttpMethod.GET, "/api/blogs/comments")
+                .hasAnyRole("ADMIN", "MERCHANT")
+                .pathMatchers(HttpMethod.PATCH, "/api/blogs/comments/*/status")
+                .hasAnyRole("ADMIN", "MERCHANT")
                 .pathMatchers(HttpMethod.GET, "/api/blogs/**")
                 .permitAll()
                 .pathMatchers(HttpMethod.POST, "/api/blogs/editorial-templates/**")

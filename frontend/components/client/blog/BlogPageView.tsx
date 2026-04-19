@@ -14,7 +14,10 @@ type BlogItem = BlogListGridProps["blogs"][number];
 
 export interface BlogPageViewProps {
     canManageBlogs: boolean;
-    loading: boolean;
+    initialLoading: boolean;
+    isUpdating: boolean;
+    showLoadingSkeleton: boolean;
+    activeSearch: string;
     error: string | null;
     blogs: BlogItem[];
     totalPages: number;
@@ -37,7 +40,10 @@ export interface BlogPageViewProps {
 
 export function BlogPageView({
     canManageBlogs,
-    loading,
+    initialLoading,
+    isUpdating,
+    showLoadingSkeleton,
+    activeSearch,
     error,
     blogs,
     totalPages,
@@ -59,6 +65,7 @@ export function BlogPageView({
 }: BlogPageViewProps) {
     const gridBlogs = blogs;
     const hasActiveFilters = !!search.trim() || !!category || sort !== "latest";
+    const showBlockingError = !!error && gridBlogs.length === 0 && heroBlogs.length === 0;
     const quickCategories = [
         "",
         ...Array.from(new Set([...categories.slice(0, 5), category].filter(Boolean))),
@@ -77,15 +84,18 @@ export function BlogPageView({
         onCategoryChange("");
         onSortChange("latest");
     };
+    const updatingMessage = activeSearch.trim()
+        ? `Searching titles for "${activeSearch.trim()}"...`
+        : "Updating stories...";
 
     return (
         <div className="min-h-screen bg-white">
             <div className="custom-container py-12">
                 <BlogListHeader canManageBlogs={canManageBlogs} />
 
-                {loading ? (
+                {initialLoading ? (
                     <BlogListLoading />
-                ) : error ? (
+                ) : showBlockingError ? (
                     <BlogListEmpty
                         title="Unable to load blog posts"
                         description="Please check the blog service and try again."
@@ -122,7 +132,7 @@ export function BlogPageView({
                                     type="search"
                                     value={search}
                                     onChange={(event) => onSearchChange(event.target.value)}
-                                    placeholder="Search stories, guides, menus..."
+                                    placeholder="Search article titles..."
                                     className="h-12 rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none transition focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20"
                                 />
                                 <BlogFilterSelect
@@ -166,24 +176,67 @@ export function BlogPageView({
                                 />
                             </div>
 
-                            {gridBlogs.length > 0 ? (
-                                <BlogListGrid blogs={gridBlogs} />
-                            ) : (
-                                <BlogListEmpty
-                                    title={hasActiveFilters ? "No stories match your filters" : "No posts found"}
-                                    description={
-                                        hasActiveFilters
-                                            ? "Try another keyword, category, or sort option."
-                                            : "Published posts will appear here."
-                                    }
-                                    actionLabel={hasActiveFilters ? "Clear filters" : undefined}
-                                    onAction={hasActiveFilters ? handleClearFilters : undefined}
-                                />
+                            {isUpdating && (
+                                <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-green-100 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800">
+                                    <span className="h-2 w-2 animate-pulse rounded-full bg-brand-orange" />
+                                    {updatingMessage}
+                                </div>
                             )}
+
+                            <div className="min-h-[720px]">
+                                {showLoadingSkeleton && !initialLoading ? (
+                                    <BlogArticleGridSkeleton />
+                                ) : gridBlogs.length > 0 ? (
+                                    <div className={isUpdating ? "opacity-80 transition-opacity" : "transition-opacity"}>
+                                        <BlogListGrid blogs={gridBlogs} />
+                                    </div>
+                                ) : !isUpdating ? (
+                                    <BlogListEmpty
+                                        title={
+                                            activeSearch.trim()
+                                                ? "No titles match your search"
+                                                : hasActiveFilters
+                                                  ? "No stories match your filters"
+                                                  : "No posts found"
+                                        }
+                                        description={
+                                            hasActiveFilters
+                                                ? "Try another keyword, category, or sort option."
+                                                : "Published posts will appear here."
+                                        }
+                                        actionLabel={hasActiveFilters ? "Clear filters" : undefined}
+                                        onAction={hasActiveFilters ? handleClearFilters : undefined}
+                                    />
+                                ) : (
+                                    <div className="min-h-[360px]" />
+                                )}
+                            </div>
                         </section>
                     </>
                 )}
             </div>
+        </div>
+    );
+}
+
+function BlogArticleGridSkeleton() {
+    return (
+        <div className="grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading articles">
+            {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="rounded-lg p-4">
+                    <div className="aspect-[1.42] w-full animate-pulse rounded-lg bg-green-100" />
+                    <div className="pt-5">
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                            <div className="h-1 w-1 rounded-full bg-gray-300" />
+                            <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+                        </div>
+                        <div className="mb-3 h-7 w-11/12 animate-pulse rounded bg-gray-200" />
+                        <div className="h-7 w-8/12 animate-pulse rounded bg-gray-200" />
+                        <div className="mt-6 h-5 w-20 animate-pulse rounded bg-brand-orange/20" />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }

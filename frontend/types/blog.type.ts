@@ -1,4 +1,5 @@
 export type BlogStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type BlogCommentStatus = "PUBLISHED" | "PENDING" | "HIDDEN";
 
 export interface Blog {
     id: string;
@@ -77,7 +78,7 @@ export interface BlogComment {
     email?: string | null;
     message: string;
     notify?: boolean;
-    status: "PUBLISHED" | "PENDING" | "HIDDEN";
+    status: BlogCommentStatus;
     createdAt?: string | null;
 }
 

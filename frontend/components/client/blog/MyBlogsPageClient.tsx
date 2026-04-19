@@ -7,6 +7,7 @@ import { MyBlogsPageView } from "@/components/client/blog/MyBlogsPageView";
 import { useMyBlogsData } from "@/hooks/client/blog/useMyBlogsData";
 import { useMyBlogsFilters } from "@/hooks/client/blog/useMyBlogsFilters";
 import { useMyBlogsActions } from "@/hooks/client/blog/useMyBlogsActions";
+import { useBlogCommentModeration } from "@/hooks/client/blog/useBlogCommentModeration";
 
 export default function MyBlogsPageClient() {
     const router = useRouter();
@@ -19,6 +20,7 @@ export default function MyBlogsPageClient() {
         filters.status,
     );
     const { handleDelete } = useMyBlogsActions(fetchMyBlogs);
+    const commentModeration = useBlogCommentModeration(canManageBlogs && isAuthenticated);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -52,6 +54,7 @@ export default function MyBlogsPageClient() {
             page={filters.page}
             status={filters.status}
             deletingId={deletingId}
+            commentModeration={commentModeration}
             onStatusChange={filters.handleStatusChange}
             onPageChange={filters.handlePageChange}
             onDelete={onDelete}
