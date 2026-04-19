@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,7 +33,10 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
 @Tag(name = "Order", description = "Order management APIs")
+@Validated
 public class OrderController {
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final OrderService orderService;
 
     @PostMapping("/checkout")
@@ -44,8 +50,8 @@ public class OrderController {
     @Operation(summary = "Get current user's (employee/customer) orders")
     public ResponseEntity<List<OrderResponse>> getMyOrders(
             @AuthenticationPrincipal UserRole userRole,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(MAX_PAGE_SIZE) int size) {
         return ResponseEntity.ok(orderService.getEmployeeOrders(userRole.getId(), page, size));
     }
 
@@ -54,8 +60,8 @@ public class OrderController {
     public ResponseEntity<List<OrderResponse>> getRestaurantOrders(
             @AuthenticationPrincipal UserRole userRole,
             @PathVariable UUID restaurantId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(MAX_PAGE_SIZE) int size) {
         return ResponseEntity.ok(
                 orderService.getRestaurantOrders(restaurantId, userRole.getId(), userRole.getRole(), page, size));
     }

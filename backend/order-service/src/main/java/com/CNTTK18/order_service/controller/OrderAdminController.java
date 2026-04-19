@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -42,14 +45,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Tag(name = "Order Admin", description = "Admin order management APIs")
 @Slf4j
+@Validated
 public class OrderAdminController {
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final OrderAdminService orderAdminService;
 
     @GetMapping
     @Operation(summary = "Get all orders for admin with filters")
     public ResponseEntity<Page<OrderSummaryDTO>> getAllOrders(
-            @Parameter(description = "Page index") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Page index") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") @Min(1) @Max(MAX_PAGE_SIZE)
+                    int size,
             @Parameter(description = "Order status") @RequestParam(required = false) OrderStatus status,
             @Parameter(description = "Restaurant ID") @RequestParam(required = false) UUID restaurantId,
             @Parameter(description = "User ID") @RequestParam(required = false) UUID userId,
