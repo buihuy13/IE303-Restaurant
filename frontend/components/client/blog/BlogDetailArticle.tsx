@@ -27,7 +27,7 @@ interface BlogDetailArticleProps {
     likedByCurrentUser: boolean;
     liking: boolean;
     onToggleLike: () => void;
-    onCommentCreated: () => void;
+    onCommentCreated: (nextCommentsCount: number) => void;
 }
 
 const MARKDOWN_IMAGE_PATTERN = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
@@ -378,7 +378,12 @@ export function BlogDetailArticle({
                     </section>
                 )}
 
-                <BlogDetailComments blogId={blog.id} blogSlug={blog.slug} onCommentCreated={onCommentCreated} />
+                <BlogDetailComments
+                    blogId={blog.id}
+                    blogSlug={blog.slug}
+                    liveCommentsCount={blog.commentsCount}
+                    onCommentCreated={onCommentCreated}
+                />
 
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-12">

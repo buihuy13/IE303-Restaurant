@@ -52,6 +52,12 @@ const isPublicBlogRequestWithoutAuth = (config: InternalAxiosRequestConfig) => {
     return isPublicBlogRead || isPublicBlogComment;
 };
 
+const isPublicBlogViewRequest = (config: InternalAxiosRequestConfig) => {
+    const method = (config.method ?? "get").toLowerCase();
+    const url = config.url ?? "";
+    return method === "post" && /\/blogs\/[^/?]+\/views(?:\?.*)?$/.test(url);
+};
+
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
 let isRefreshing = false; // Flag to prevent multiple refresh attempts
 
@@ -75,7 +81,8 @@ api.interceptors.request.use(
             typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
         const accessToken = accessTokenFromStore || accessTokenFromStorage;
         if (accessToken && config.headers) {
-            if (isPublicBlogRequestWithoutAuth(config)) {
+            const isAuthenticated = useAuthStore.getState().isAuthenticated;
+            if (isPublicBlogRequestWithoutAuth(config) || (isPublicBlogViewRequest(config) && !isAuthenticated)) {
                 return config;
             }
             // Only add if the request isn't for refreshing the token itself

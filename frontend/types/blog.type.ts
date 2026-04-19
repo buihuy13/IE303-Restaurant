@@ -106,6 +106,7 @@ export interface BlogMetricsResponse {
     likesCount: number;
     commentsCount: number;
     likedByCurrentUser: boolean;
+    viewCounted?: boolean;
 }
 
 export interface BlogPageParams {

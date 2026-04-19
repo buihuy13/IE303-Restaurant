@@ -3,6 +3,7 @@ package com.CNTTK18.blog_service.controller;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
@@ -375,8 +377,17 @@ public class BlogController {
     }
 
     @PostMapping("/{id}/views")
-    public ResponseEntity<BlogMetricsResponse> incrementViews(@PathVariable UUID id) {
-        return ResponseEntity.ok(blogService.incrementViews(id));
+    public ResponseEntity<BlogMetricsResponse> incrementViews(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserRole authUser,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(
+                blogService.incrementViews(id, authUser, resolveClientIp(request), request.getHeader("User-Agent")));
+    }
+
+    @GetMapping(value = "/{id}/metrics/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamMetrics(@PathVariable UUID id) {
+        return blogService.streamMetrics(id);
     }
 
     @PostMapping("/{id}/likes")
@@ -487,5 +498,17 @@ public class BlogController {
             @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         blogService.deleteBlog(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Blog archived successfully"));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

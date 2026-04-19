@@ -19,4 +19,5 @@ public class BlogMetricsResponse {
     private Long likesCount;
     private Long commentsCount;
     private Boolean likedByCurrentUser;
+    private Boolean viewCounted;
 }

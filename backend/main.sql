@@ -70,6 +70,20 @@ create table blog_images (
 create index idx_blog_images_author_id on blog_images(author_id);
 create index idx_blog_images_blog_post_id on blog_images(blog_post_id);
 
+create table blog_view_events (
+    id UUID DEFAULT gen_random_uuid() primary key,
+    blog_post_id UUID not null references blog_posts(id) on delete cascade,
+    user_id UUID,
+    visitor_key varchar(96) not null,
+    ip_hash varchar(64),
+    user_agent_hash varchar(64),
+    viewed_at timestamp not null default current_timestamp,
+    created_at timestamp default current_timestamp
+);
+
+create index idx_blog_view_events_blog_post_id on blog_view_events(blog_post_id);
+create index idx_blog_view_events_visitor_viewed_at on blog_view_events(visitor_key, viewed_at desc);
+
 \c chat_service;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 

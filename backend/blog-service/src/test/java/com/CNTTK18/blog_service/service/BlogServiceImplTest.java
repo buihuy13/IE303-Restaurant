@@ -47,12 +47,15 @@ import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogLike;
 import com.CNTTK18.blog_service.model.BlogPost;
+import com.CNTTK18.blog_service.model.BlogViewEvent;
 import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
 import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogCommentRepository;
 import com.CNTTK18.blog_service.repository.BlogLikeRepository;
 import com.CNTTK18.blog_service.repository.BlogRepository;
+import com.CNTTK18.blog_service.repository.BlogViewEventRepository;
+import com.CNTTK18.blog_service.service.BlogMetricsSseService;
 import com.CNTTK18.blog_service.service.Impl.BlogServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,6 +73,9 @@ class BlogServiceImplTest {
     private BlogLikeRepository blogLikeRepository;
 
     @Mock
+    private BlogViewEventRepository blogViewEventRepository;
+
+    @Mock
     private BlogImageRepository blogImageRepository;
 
     @Mock
@@ -80,6 +86,9 @@ class BlogServiceImplTest {
 
     @Mock
     private BlogMapper blogMapper;
+
+    @Mock
+    private BlogMetricsSseService blogMetricsSseService;
 
     @InjectMocks
     private BlogServiceImpl blogService;
@@ -424,6 +433,78 @@ class BlogServiceImplTest {
         assertNull(response.getEmail());
         assertEquals(1L, publishedBlog.getCommentsCount());
         verify(blogRepository).save(publishedBlog);
+    }
+
+    @Test
+    void incrementViews_shouldIncrementPublishedBlogViews() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .viewsCount(2L)
+                .likesCount(5L)
+                .commentsCount(4L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogViewEventRepository.existsByBlogPost_IdAndVisitorKeyAndViewedAtAfter(
+                        eq(BLOG_ID), eq("user:" + AUTHOR_ID), any(Instant.class)))
+                .thenReturn(false);
+        when(blogCommentRepository.countByBlogPostIdAndStatus(BLOG_ID, BlogCommentStatus.PUBLISHED))
+                .thenReturn(4L);
+
+        var response = blogService.incrementViews(BLOG_ID, customerUser(AUTHOR_ID), "127.0.0.1", "JUnit");
+
+        assertEquals(3L, publishedBlog.getViewsCount());
+        assertEquals(3L, response.getViewsCount());
+        assertEquals(5L, response.getLikesCount());
+        assertEquals(4L, response.getCommentsCount());
+        assertEquals(false, response.getLikedByCurrentUser());
+        assertEquals(true, response.getViewCounted());
+        verify(blogViewEventRepository).save(any(BlogViewEvent.class));
+        verify(blogRepository).save(publishedBlog);
+        verify(blogMetricsSseService, never()).broadcastMetrics(any());
+    }
+
+    @Test
+    void incrementViews_shouldNotIncrementDuplicateGuestWithinWindow() {
+        BlogPost publishedBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.PUBLISHED)
+                .viewsCount(2L)
+                .likesCount(5L)
+                .commentsCount(4L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(publishedBlog));
+        when(blogViewEventRepository.existsByBlogPost_IdAndVisitorKeyAndViewedAtAfter(
+                        eq(BLOG_ID), anyString(), any(Instant.class)))
+                .thenReturn(true);
+        when(blogCommentRepository.countByBlogPostIdAndStatus(BLOG_ID, BlogCommentStatus.PUBLISHED))
+                .thenReturn(4L);
+
+        var response = blogService.incrementViews(BLOG_ID, null, "127.0.0.1", "JUnit");
+
+        assertEquals(2L, publishedBlog.getViewsCount());
+        assertEquals(2L, response.getViewsCount());
+        assertEquals(false, response.getViewCounted());
+        verify(blogViewEventRepository, never()).save(any(BlogViewEvent.class));
+        verify(blogRepository, never()).save(publishedBlog);
+        verify(blogMetricsSseService, never()).broadcastMetrics(any());
+    }
+
+    @Test
+    void incrementViews_shouldHideNonPublishedBlog() {
+        BlogPost draftBlog = BlogPost.builder()
+                .id(BLOG_ID)
+                .authorId(AUTHOR_ID)
+                .status(BlogStatus.DRAFT)
+                .viewsCount(2L)
+                .build();
+        when(blogRepository.findById(BLOG_ID)).thenReturn(Optional.of(draftBlog));
+
+        assertThrows(ResourceNotFoundException.class, () -> blogService.incrementViews(BLOG_ID, null, null, null));
+
+        verify(blogRepository, never()).save(draftBlog);
     }
 
     @Test

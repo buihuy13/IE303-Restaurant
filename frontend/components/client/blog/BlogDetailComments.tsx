@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { BlogListPagination } from "@/components/client/blog/BlogListGrid";
@@ -21,7 +21,8 @@ interface BlogDetailComment {
 interface BlogDetailCommentsProps {
     blogId: string;
     blogSlug: string;
-    onCommentCreated?: () => void;
+    liveCommentsCount?: number;
+    onCommentCreated?: (nextCommentsCount: number) => void;
 }
 
 interface CommentFormState {
@@ -123,13 +124,14 @@ function mapApiCommentToView(comment: BlogComment): BlogDetailComment {
     };
 }
 
-export function BlogDetailComments({ blogId, blogSlug, onCommentCreated }: BlogDetailCommentsProps) {
+export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onCommentCreated }: BlogDetailCommentsProps) {
     const isMockMode = BLOG_DATA_SOURCE === "mock";
     const pathname = usePathname();
     const { isAuthenticated, user, loginWithKeycloak } = useAuthStore();
     const seededComments = useMemo(() => getSeedComments(blogSlug), [blogSlug]);
     const [comments, setComments] = useState<BlogDetailComment[]>(isMockMode ? seededComments : []);
     const [page, setPage] = useState(1);
+    const [refreshCommentsKey, setRefreshCommentsKey] = useState(0);
     const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
     const [totalElements, setTotalElements] = useState(isMockMode ? seededComments.length : 0);
     const [loading, setLoading] = useState(!isMockMode);
@@ -156,11 +158,8 @@ export function BlogDetailComments({ blogId, blogSlug, onCommentCreated }: BlogD
         setTotalPages(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
     }, [isMockMode, seededComments]);
 
-    useEffect(() => {
-        if (isMockMode) return;
-
-        let ignore = false;
-        const loadComments = async () => {
+    const loadComments = useCallback(
+        async (options?: { signal?: AbortSignal }) => {
             setLoading(true);
             setLoadError(null);
             try {
@@ -169,27 +168,44 @@ export function BlogDetailComments({ blogId, blogSlug, onCommentCreated }: BlogD
                     size: COMMENTS_PER_PAGE,
                     sort: "createdAt,desc",
                 });
-                if (ignore) return;
+                if (options?.signal?.aborted) return;
                 setComments((response.content ?? []).map(mapApiCommentToView));
                 setTotalPages(Math.max(1, response.totalPages || 1));
                 setTotalElements(response.totalElements ?? 0);
             } catch (error) {
-                if (ignore) return;
+                if (options?.signal?.aborted) return;
                 console.error("Failed to load blog comments:", error);
                 setComments([]);
                 setTotalPages(1);
                 setTotalElements(0);
                 setLoadError("Unable to load comments right now.");
             } finally {
-                if (!ignore) setLoading(false);
+                if (!options?.signal?.aborted) setLoading(false);
             }
-        };
+        },
+        [blogId, page],
+    );
 
-        loadComments();
+    useEffect(() => {
+        if (isMockMode) return;
+
+        const controller = new AbortController();
+        loadComments({ signal: controller.signal });
         return () => {
-            ignore = true;
+            controller.abort();
         };
-    }, [blogId, isMockMode, page]);
+    }, [isMockMode, loadComments, refreshCommentsKey]);
+
+    useEffect(() => {
+        if (isMockMode || typeof liveCommentsCount !== "number") return;
+        if (liveCommentsCount <= totalElements) return;
+
+        if (page !== 1) {
+            setPage(1);
+            return;
+        }
+        setRefreshCommentsKey((current) => current + 1);
+    }, [isMockMode, liveCommentsCount, page, totalElements]);
 
     const visibleComments = isMockMode
         ? comments.slice((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE)
@@ -243,9 +259,10 @@ export function BlogDetailComments({ blogId, blogSlug, onCommentCreated }: BlogD
                 setLoadError(null);
                 setTotalElements(nextTotalElements);
                 setTotalPages(Math.max(1, Math.ceil(nextTotalElements / COMMENTS_PER_PAGE)));
-                onCommentCreated?.();
+                onCommentCreated?.(nextTotalElements);
                 if (page === 1) {
                     setComments((current) => [mapApiCommentToView(createdComment), ...current].slice(0, COMMENTS_PER_PAGE));
+                    setRefreshCommentsKey((current) => current + 1);
                 } else {
                     setPage(1);
                 }

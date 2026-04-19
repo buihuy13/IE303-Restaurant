@@ -140,6 +140,11 @@ export const blogApi = {
         return response.data;
     },
 
+    incrementBlogView: async (blogId: string): Promise<BlogMetricsResponse> => {
+        const response = await api.post<BlogMetricsResponse>(`/blogs/${blogId}/views`);
+        return response.data;
+    },
+
     uploadImages: async (imageFiles: File | File[]): Promise<BlogImageUploadResponse> => {
         const files = Array.isArray(imageFiles) ? imageFiles : [imageFiles];
         const formData = new FormData();

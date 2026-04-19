@@ -20,7 +20,7 @@ export interface BlogDetailPageViewProps {
     likedByCurrentUser: boolean;
     liking: boolean;
     onToggleLike: () => void;
-    onCommentCreated: () => void;
+    onCommentCreated: (nextCommentsCount: number) => void;
 }
 
 export function BlogDetailPageView({

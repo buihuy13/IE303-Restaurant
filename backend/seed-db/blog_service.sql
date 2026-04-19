@@ -78,6 +78,21 @@ create table if not exists blog_likes (
 
 create index if not exists idx_blog_likes_blog_post_id on blog_likes(blog_post_id);
 
+create table if not exists blog_view_events (
+    id UUID DEFAULT gen_random_uuid() primary key,
+    blog_post_id UUID not null references blog_posts(id) on delete cascade,
+    user_id UUID,
+    visitor_key varchar(96) not null,
+    ip_hash varchar(64),
+    user_agent_hash varchar(64),
+    viewed_at timestamp not null default current_timestamp,
+    created_at timestamp default current_timestamp
+);
+
+create index if not exists idx_blog_view_events_blog_post_id on blog_view_events(blog_post_id);
+create index if not exists idx_blog_view_events_visitor_viewed_at
+    on blog_view_events(visitor_key, viewed_at desc);
+
 insert into blog_posts (
     author_id,
     title,

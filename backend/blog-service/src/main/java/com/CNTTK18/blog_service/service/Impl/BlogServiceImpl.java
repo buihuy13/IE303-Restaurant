@@ -1,10 +1,14 @@
 package com.CNTTK18.blog_service.service.Impl;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +31,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
@@ -47,12 +52,15 @@ import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogLike;
 import com.CNTTK18.blog_service.model.BlogPost;
+import com.CNTTK18.blog_service.model.BlogViewEvent;
 import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
 import com.CNTTK18.blog_service.repository.BlogCommentRepository;
 import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogLikeRepository;
 import com.CNTTK18.blog_service.repository.BlogRepository;
+import com.CNTTK18.blog_service.repository.BlogViewEventRepository;
+import com.CNTTK18.blog_service.service.BlogMetricsSseService;
 import com.CNTTK18.blog_service.service.BlogService;
 import com.CNTTK18.blog_service.service.ImageHandleService;
 
@@ -64,6 +72,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BlogServiceImpl implements BlogService {
     private static final int MAX_SLUG_RETRY = 10;
+    private static final Duration VIEW_DEDUPE_WINDOW = Duration.ofHours(24);
     private static final String KEY_PUBLIC_ID = "public_id";
     private static final String KEY_URL = "url";
     private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s\"'<>]+");
@@ -71,10 +80,12 @@ public class BlogServiceImpl implements BlogService {
     private final BlogRepository blogRepository;
     private final BlogCommentRepository blogCommentRepository;
     private final BlogLikeRepository blogLikeRepository;
+    private final BlogViewEventRepository blogViewEventRepository;
     private final BlogImageRepository blogImageRepository;
     private final ImageHandleService imageHandleService;
     private final BlogImageProperties blogImageProperties;
     private final BlogMapper blogMapper;
+    private final BlogMetricsSseService blogMetricsSseService;
 
     @Override
     @Transactional
@@ -314,16 +325,39 @@ public class BlogServiceImpl implements BlogService {
         BlogComment savedComment = blogCommentRepository.save(comment);
         blogPost.setCommentsCount(resolvePublishedCommentCount(blogPost));
         blogRepository.save(blogPost);
+        broadcastMetrics(blogPost);
         return toCommentResponse(savedComment);
     }
 
     @Override
     @Transactional
-    public BlogMetricsResponse incrementViews(UUID blogId) {
+    public BlogMetricsResponse incrementViews(UUID blogId, UserRole authUser, String ipAddress, String userAgent) {
         BlogPost blogPost = ensurePublishedBlog(blogId);
+        String visitorKey = resolveViewVisitorKey(authUser, ipAddress, userAgent);
+        Instant cutoff = Instant.now().minus(VIEW_DEDUPE_WINDOW);
+        boolean alreadyViewed =
+                blogViewEventRepository.existsByBlogPost_IdAndVisitorKeyAndViewedAtAfter(blogId, visitorKey, cutoff);
+        if (alreadyViewed) {
+            return toMetricsResponse(blogPost, false, false);
+        }
+
+        blogViewEventRepository.save(BlogViewEvent.builder()
+                .blogPost(blogPost)
+                .userId(authUser == null ? null : authUser.getUserId())
+                .visitorKey(visitorKey)
+                .ipHash(hashNullable(ipAddress))
+                .userAgentHash(hashNullable(userAgent))
+                .viewedAt(Instant.now())
+                .build());
         blogPost.setViewsCount(nullToZero(blogPost.getViewsCount()) + 1);
         BlogPost savedBlog = blogRepository.save(blogPost);
-        return toMetricsResponse(savedBlog, false);
+        return toMetricsResponse(savedBlog, false, true);
+    }
+
+    @Override
+    public SseEmitter streamMetrics(UUID blogId) {
+        BlogPost blogPost = ensurePublishedBlog(blogId);
+        return blogMetricsSseService.createEmitter(blogId, toMetricsResponse(blogPost, false, false));
     }
 
     @Override
@@ -331,12 +365,18 @@ public class BlogServiceImpl implements BlogService {
     public BlogMetricsResponse likeBlog(UUID blogId, UserRole authUser) {
         UUID userId = extractAuthorId(authUser);
         BlogPost blogPost = ensurePublishedBlog(blogId);
+        boolean changed = false;
         if (!blogLikeRepository.existsByBlogPostIdAndUserId(blogId, userId)) {
             blogLikeRepository.save(BlogLike.builder().blogPost(blogPost).userId(userId).build());
             blogPost.setLikesCount(nullToZero(blogPost.getLikesCount()) + 1);
             blogRepository.save(blogPost);
+            changed = true;
         }
-        return toMetricsResponse(blogPost, true);
+        BlogMetricsResponse response = toMetricsResponse(blogPost, true, false);
+        if (changed) {
+            broadcastMetrics(blogPost);
+        }
+        return response;
     }
 
     @Override
@@ -344,12 +384,18 @@ public class BlogServiceImpl implements BlogService {
     public BlogMetricsResponse unlikeBlog(UUID blogId, UserRole authUser) {
         UUID userId = extractAuthorId(authUser);
         BlogPost blogPost = ensurePublishedBlog(blogId);
+        final boolean[] changed = {false};
         blogLikeRepository.findByBlogPostIdAndUserId(blogId, userId).ifPresent(blogLike -> {
             blogLikeRepository.delete(blogLike);
             blogPost.setLikesCount(Math.max(0, nullToZero(blogPost.getLikesCount()) - 1));
             blogRepository.save(blogPost);
+            changed[0] = true;
         });
-        return toMetricsResponse(blogPost, false);
+        BlogMetricsResponse response = toMetricsResponse(blogPost, false, false);
+        if (changed[0]) {
+            broadcastMetrics(blogPost);
+        }
+        return response;
     }
 
     @Override
@@ -558,14 +604,19 @@ public class BlogServiceImpl implements BlogService {
                 .build();
     }
 
-    private BlogMetricsResponse toMetricsResponse(BlogPost blogPost, boolean likedByCurrentUser) {
+    private BlogMetricsResponse toMetricsResponse(BlogPost blogPost, boolean likedByCurrentUser, boolean viewCounted) {
         return BlogMetricsResponse.builder()
                 .blogId(blogPost.getId())
                 .viewsCount(nullToZero(blogPost.getViewsCount()))
                 .likesCount(nullToZero(blogPost.getLikesCount()))
                 .commentsCount(resolvePublishedCommentCount(blogPost))
                 .likedByCurrentUser(likedByCurrentUser)
+                .viewCounted(viewCounted)
                 .build();
+    }
+
+    private void broadcastMetrics(BlogPost blogPost) {
+        blogMetricsSseService.broadcastMetrics(toMetricsResponse(blogPost, false, false));
     }
 
     private long resolvePublishedCommentCount(BlogPost blogPost) {
@@ -577,6 +628,30 @@ public class BlogServiceImpl implements BlogService {
 
     private long nullToZero(Long value) {
         return value == null ? 0 : value;
+    }
+
+    private String resolveViewVisitorKey(UserRole authUser, String ipAddress, String userAgent) {
+        if (authUser != null && authUser.getUserId() != null) {
+            return "user:" + authUser.getUserId();
+        }
+        return "fallback:" + hash((normalizeString(ipAddress) == null ? "unknown-ip" : normalizeString(ipAddress))
+                + "|"
+                + (normalizeString(userAgent) == null ? "unknown-agent" : normalizeString(userAgent)));
+    }
+
+    private String hashNullable(String value) {
+        String normalized = normalizeString(value);
+        return normalized == null ? null : hash(normalized);
+    }
+
+    private String hash(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     private String resolveExcerpt(String requestedExcerpt, String content) {

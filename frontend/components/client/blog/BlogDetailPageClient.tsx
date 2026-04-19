@@ -8,6 +8,8 @@ import { useBlogRelatedPosts } from "@/hooks/client/blog/useBlogRelatedPosts";
 import { useBlogReadingProgress } from "@/hooks/client/blog/useBlogReadingProgress";
 import { useBlogDetailShare } from "@/hooks/client/blog/useBlogDetailShare";
 import { useBlogDetailLike } from "@/hooks/client/blog/useBlogDetailLike";
+import { useBlogDetailViewTracking } from "@/hooks/client/blog/useBlogDetailViewTracking";
+import { useBlogMetricsStream } from "@/hooks/client/blog/useBlogMetricsStream";
 
 export default function BlogDetailPageClient() {
     const params = useParams();
@@ -16,14 +18,19 @@ export default function BlogDetailPageClient() {
     const { blog, setBlog, loading } = useBlogDetailData(slug);
     const { copied, handleShare } = useBlogDetailShare(blog);
     const { likedByCurrentUser, liking, toggleLike } = useBlogDetailLike(blog, setBlog);
+    useBlogDetailViewTracking(blog, setBlog);
+    useBlogMetricsStream(blog?.id, setBlog);
     const { relatedPosts, previousPost, nextPost } = useBlogRelatedPosts(blog);
     const readingProgress = useBlogReadingProgress(blog?.slug);
-    const handleCommentCreated = useCallback(() => {
+    const handleCommentCreated = useCallback((nextCommentsCount: number) => {
         setBlog((current) =>
             current
                 ? {
                       ...current,
-                      commentsCount: (current.commentsCount ?? 0) + 1,
+                      commentsCount:
+                          typeof current.commentsCount === "number"
+                              ? Math.max(current.commentsCount, nextCommentsCount)
+                              : nextCommentsCount,
                   }
                 : current,
         );
