@@ -14,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,8 +30,8 @@ import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.EditorialTemplateRenderRequest;
-import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogCommentStatusRequest;
+import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
 import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
 import com.CNTTK18.blog_service.dto.response.BlogMetricsResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
@@ -261,7 +261,8 @@ public class BlogController {
             @RequestParam(required = false) Boolean featured,
             Pageable pageable,
             @AuthenticationPrincipal UserRole authUser) {
-        return ResponseEntity.ok(blogService.getPublishedBlogs(authorId, search, category, tag, featured, authUser, pageable));
+        return ResponseEntity.ok(
+                blogService.getPublishedBlogs(authorId, search, category, tag, featured, authUser, pageable));
     }
 
     @GetMapping("/editorial-templates")
@@ -398,9 +399,7 @@ public class BlogController {
 
     @PostMapping("/{id}/views")
     public ResponseEntity<BlogMetricsResponse> incrementViews(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserRole authUser,
-            HttpServletRequest request) {
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser, HttpServletRequest request) {
         return ResponseEntity.ok(
                 blogService.incrementViews(id, authUser, resolveClientIp(request), request.getHeader("User-Agent")));
     }

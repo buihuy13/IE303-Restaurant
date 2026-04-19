@@ -26,7 +26,8 @@ public interface BlogRepository extends JpaRepository<BlogPost, UUID>, JpaSpecif
 
     Page<BlogPost> findAllByAuthorIdAndStatus(UUID authorId, BlogStatus status, Pageable pageable);
 
-    @Query("select distinct b.category from BlogPost b where b.status = :status and b.category is not null and b.category <> '' order by b.category")
+    @Query(
+            "select distinct b.category from BlogPost b where b.status = :status and b.category is not null and b.category <> '' order by b.category")
     List<String> findDistinctCategoriesByStatus(BlogStatus status);
 
     @Query("select distinct t from BlogPost b join b.tags t where b.status = :status order by t")

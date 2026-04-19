@@ -50,12 +50,11 @@ import com.CNTTK18.blog_service.model.BlogPost;
 import com.CNTTK18.blog_service.model.BlogViewEvent;
 import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.model.data.BlogStatus;
-import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogCommentRepository;
+import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogLikeRepository;
 import com.CNTTK18.blog_service.repository.BlogRepository;
 import com.CNTTK18.blog_service.repository.BlogViewEventRepository;
-import com.CNTTK18.blog_service.service.BlogMetricsSseService;
 import com.CNTTK18.blog_service.service.Impl.BlogServiceImpl;
 
 @ExtendWith(MockitoExtension.class)

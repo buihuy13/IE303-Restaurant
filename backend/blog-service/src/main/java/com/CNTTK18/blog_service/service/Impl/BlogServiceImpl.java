@@ -7,9 +7,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HexFormat;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -192,8 +191,7 @@ public class BlogServiceImpl implements BlogService {
                     .findAllByAuthorIdAndStatus(authorId, BlogStatus.PUBLISHED, pageable)
                     .map(blogPost -> toResponse(blogPost, authUser));
         }
-        Specification<BlogPost> specification =
-                publishedBlogSpecification(authorId, search, category, tag, featured);
+        Specification<BlogPost> specification = publishedBlogSpecification(authorId, search, category, tag, featured);
         return blogRepository.findAll(specification, pageable).map(blogPost -> toResponse(blogPost, authUser));
     }
 
@@ -264,7 +262,8 @@ public class BlogServiceImpl implements BlogService {
             throw new ResourceNotFoundException("Blog post not found");
         }
 
-        Pageable pageable = PageRequest.of(0, Math.max(1, Math.min(size, 12)), Sort.by(Sort.Direction.DESC, "publishedAt"));
+        Pageable pageable =
+                PageRequest.of(0, Math.max(1, Math.min(size, 12)), Sort.by(Sort.Direction.DESC, "publishedAt"));
         Specification<BlogPost> specification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("status"), BlogStatus.PUBLISHED));
@@ -273,12 +272,16 @@ public class BlogServiceImpl implements BlogService {
             List<Predicate> relatedPredicates = new ArrayList<>();
             String category = normalizeString(currentBlog.getCategory());
             if (category != null) {
-                relatedPredicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("category")), category.toLowerCase(Locale.ROOT)));
+                relatedPredicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("category")), category.toLowerCase(Locale.ROOT)));
             }
             if (currentBlog.getTags() != null && !currentBlog.getTags().isEmpty()) {
                 Join<BlogPost, String> tagJoin = root.join("tags", JoinType.LEFT);
-                relatedPredicates.add(criteriaBuilder.lower(tagJoin).in(
-                        currentBlog.getTags().stream().map(tag -> tag.toLowerCase(Locale.ROOT)).toList()));
+                relatedPredicates.add(criteriaBuilder
+                        .lower(tagJoin)
+                        .in(currentBlog.getTags().stream()
+                                .map(tag -> tag.toLowerCase(Locale.ROOT))
+                                .toList()));
                 query.distinct(true);
             }
             if (!relatedPredicates.isEmpty()) {
@@ -410,7 +413,8 @@ public class BlogServiceImpl implements BlogService {
         BlogPost blogPost = ensurePublishedBlog(blogId);
         boolean changed = false;
         if (!blogLikeRepository.existsByBlogPostIdAndUserId(blogId, userId)) {
-            blogLikeRepository.save(BlogLike.builder().blogPost(blogPost).userId(userId).build());
+            blogLikeRepository.save(
+                    BlogLike.builder().blogPost(blogPost).userId(userId).build());
             blogPost.setLikesCount(nullToZero(blogPost.getLikesCount()) + 1);
             blogRepository.save(blogPost);
             changed = true;
@@ -462,11 +466,12 @@ public class BlogServiceImpl implements BlogService {
         String language = normalizeString(request.getLanguage());
         String category = normalizeString(request.getCategory());
 
-        String content = switch (key) {
-            case "restaurant_guide" -> renderRestaurantGuide(title, topic, category);
-            case "menu_strategy" -> renderMenuStrategy(title, topic, category);
-            default -> renderFoodEditorial(title, topic, category, language);
-        };
+        String content =
+                switch (key) {
+                    case "restaurant_guide" -> renderRestaurantGuide(title, topic, category);
+                    case "menu_strategy" -> renderMenuStrategy(title, topic, category);
+                    default -> renderFoodEditorial(title, topic, category, language);
+                };
 
         return EditorialTemplateRenderResponse.builder()
                 .content(content)
@@ -593,7 +598,8 @@ public class BlogServiceImpl implements BlogService {
             String normalizedTag = normalizeString(tag);
             if (normalizedTag != null) {
                 Join<BlogPost, String> tagJoin = root.join("tags", JoinType.INNER);
-                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(tagJoin), normalizedTag.toLowerCase(Locale.ROOT)));
+                predicates.add(
+                        criteriaBuilder.equal(criteriaBuilder.lower(tagJoin), normalizedTag.toLowerCase(Locale.ROOT)));
                 query.distinct(true);
             }
             if (featured != null) {
@@ -675,9 +681,10 @@ public class BlogServiceImpl implements BlogService {
         if (authUser != null && authUser.getUserId() != null) {
             return "user:" + authUser.getUserId();
         }
-        return "fallback:" + hash((normalizeString(ipAddress) == null ? "unknown-ip" : normalizeString(ipAddress))
-                + "|"
-                + (normalizeString(userAgent) == null ? "unknown-agent" : normalizeString(userAgent)));
+        return "fallback:"
+                + hash((normalizeString(ipAddress) == null ? "unknown-ip" : normalizeString(ipAddress))
+                        + "|"
+                        + (normalizeString(userAgent) == null ? "unknown-agent" : normalizeString(userAgent)));
     }
 
     private String hashNullable(String value) {
@@ -740,8 +747,7 @@ public class BlogServiceImpl implements BlogService {
         if (value == null) {
             return "";
         }
-        return value
-                .replaceAll("!\\[[^]]*]\\([^)]*\\)", " ")
+        return value.replaceAll("!\\[[^]]*]\\([^)]*\\)", " ")
                 .replaceAll("\\[[^]]*]\\([^)]*\\)", " ")
                 .replaceAll("[#>*_`~\\-]+", " ")
                 .replaceAll("\\s+", " ")
@@ -763,9 +769,13 @@ public class BlogServiceImpl implements BlogService {
                         .description("A magazine-style article with context, practical tips, and a clear takeaway.")
                         .language("en")
                         .version(1)
-                        .sections(List.of("Opening", "Why it matters", "Practical guide", "Takeaways", "Closing thought"))
+                        .sections(
+                                List.of("Opening", "Why it matters", "Practical guide", "Takeaways", "Closing thought"))
                         .defaultContent(renderFoodEditorial("Your food story title", "your topic", null, "en"))
-                        .qualityRules(List.of("Use at least four headings", "Include one actionable list", "End with a practical takeaway"))
+                        .qualityRules(List.of(
+                                "Use at least four headings",
+                                "Include one actionable list",
+                                "End with a practical takeaway"))
                         .build(),
                 EditorialTemplateResponse.builder()
                         .key("restaurant_guide")
@@ -773,19 +783,26 @@ public class BlogServiceImpl implements BlogService {
                         .description("A structured guide for diners, menu builders, and local restaurant discovery.")
                         .language("en")
                         .version(1)
-                        .sections(List.of("Overview", "What to look for", "How to choose", "Common mistakes", "Final note"))
-                        .defaultContent(renderRestaurantGuide("Your restaurant guide title", "your restaurant topic", null))
-                        .qualityRules(List.of("Explain who the guide is for", "Include decision criteria", "Avoid vague recommendations"))
+                        .sections(List.of(
+                                "Overview", "What to look for", "How to choose", "Common mistakes", "Final note"))
+                        .defaultContent(
+                                renderRestaurantGuide("Your restaurant guide title", "your restaurant topic", null))
+                        .qualityRules(List.of(
+                                "Explain who the guide is for",
+                                "Include decision criteria",
+                                "Avoid vague recommendations"))
                         .build(),
                 EditorialTemplateResponse.builder()
                         .key("menu_strategy")
                         .name("Menu Strategy")
-                        .description("A strategy template for merchants writing about menus, service flow, and operations.")
+                        .description(
+                                "A strategy template for merchants writing about menus, service flow, and operations.")
                         .language("en")
                         .version(1)
                         .sections(List.of("Problem", "Menu decision", "Service impact", "Checklist", "Next move"))
                         .defaultContent(renderMenuStrategy("Your menu strategy title", "your menu topic", null))
-                        .qualityRules(List.of("Tie advice to operations", "Keep tips measurable", "Include a short checklist"))
+                        .qualityRules(List.of(
+                                "Tie advice to operations", "Keep tips measurable", "Include a short checklist"))
                         .build());
     }
 
@@ -813,7 +830,8 @@ public class BlogServiceImpl implements BlogService {
                 ## Takeaway
 
                 A strong %s article should leave readers with a move they can use immediately and a reason to come back for the next story.
-                """.formatted(title, topic, topic, label);
+                """
+                .formatted(title, topic, topic, label);
     }
 
     private String renderRestaurantGuide(String title, String topic, String category) {
@@ -840,7 +858,8 @@ public class BlogServiceImpl implements BlogService {
                 ## Final Note
 
                 The best %s recommendations are specific. Give readers enough detail to decide with confidence.
-                """.formatted(title, topic, label);
+                """
+                .formatted(title, topic, label);
     }
 
     private String renderMenuStrategy(String title, String topic, String category) {
@@ -869,7 +888,8 @@ public class BlogServiceImpl implements BlogService {
                 ## Next Move
 
                 Treat %s as a weekly review habit. Small adjustments make the menu easier to sell, cook, and enjoy.
-                """.formatted(title, topic, label);
+                """
+                .formatted(title, topic, label);
     }
 
     private BlogPost getBlogPostById(UUID id) {

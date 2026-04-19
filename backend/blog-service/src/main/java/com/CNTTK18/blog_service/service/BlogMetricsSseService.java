@@ -20,7 +20,9 @@ public class BlogMetricsSseService {
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
         String emitterId = UUID.randomUUID().toString();
 
-        emittersByBlogId.computeIfAbsent(blogId, ignored -> new ConcurrentHashMap<>()).put(emitterId, emitter);
+        emittersByBlogId
+                .computeIfAbsent(blogId, ignored -> new ConcurrentHashMap<>())
+                .put(emitterId, emitter);
 
         emitter.onCompletion(() -> removeEmitter(blogId, emitterId));
         emitter.onTimeout(() -> removeEmitter(blogId, emitterId));
