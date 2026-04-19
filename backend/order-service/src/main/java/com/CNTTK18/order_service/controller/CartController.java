@@ -1,11 +1,9 @@
 package com.CNTTK18.order_service.controller;
 
-import java.util.UUID;
-
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,37 +31,28 @@ public class CartController {
 
     @GetMapping
     @Operation(summary = "Get current user's cart")
-    public ResponseEntity<CartResponse> getCart(Authentication authentication) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(cartService.getCart(userId));
+    public ResponseEntity<CartResponse> getCart(@AuthenticationPrincipal UserRole userRole) {
+        return ResponseEntity.ok(cartService.getCart(userRole.getId()));
     }
 
     @PostMapping
     @Operation(summary = "Add item to cart")
     public ResponseEntity<CartResponse> addToCart(
-            Authentication authentication, @Valid @RequestBody AddToCartRequest request) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(cartService.addToCart(userId, request));
+            @AuthenticationPrincipal UserRole userRole, @Valid @RequestBody AddToCartRequest request) {
+        return ResponseEntity.ok(cartService.addToCart(userRole.getId(), request));
     }
 
     @PutMapping
     @Operation(summary = "Update cart item quantity")
     public ResponseEntity<CartResponse> updateCartItem(
-            Authentication authentication, @Valid @RequestBody UpdateCartItemRequest request) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(cartService.updateCartItem(userId, request));
+            @AuthenticationPrincipal UserRole userRole, @Valid @RequestBody UpdateCartItemRequest request) {
+        return ResponseEntity.ok(cartService.updateCartItem(userRole.getId(), request));
     }
 
     @DeleteMapping
     @Operation(summary = "Clear cart")
-    public ResponseEntity<Void> clearCart(Authentication authentication) {
-        UUID userId = getUserId(authentication);
-        cartService.clearCart(userId);
+    public ResponseEntity<Void> clearCart(@AuthenticationPrincipal UserRole userRole) {
+        cartService.clearCart(userRole.getId());
         return ResponseEntity.noContent().build();
-    }
-
-    private UUID getUserId(Authentication authentication) {
-        UserRole userRole = (UserRole) authentication.getPrincipal();
-        return userRole.getId();
     }
 }

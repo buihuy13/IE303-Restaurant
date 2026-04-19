@@ -12,4 +12,5 @@ public class ResClientResponse {
     private boolean enabled;
     private LocalTime openingTime;
     private LocalTime closingTime;
+    private UUID merchantId;
 }

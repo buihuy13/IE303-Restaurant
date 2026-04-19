@@ -11,6 +11,7 @@ import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
+import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
 
 public interface UserService {
     Page<UserResponse> getAllUsers(Pageable pageable);
@@ -20,6 +21,8 @@ public interface UserService {
     UserResponse updateUser(UUID id, UserRequest user, UserRole authUser);
 
     UserResponse getUserByAccessToken(UserRole authUser);
+
+    Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword);
 
     void createUser(UUID id, Register registeredUser);
 

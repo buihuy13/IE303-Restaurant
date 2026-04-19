@@ -40,7 +40,7 @@ export function useAdminOrderActions(
         const prevStatus = current.status;
         setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, status: nextStatus } : o)));
         try {
-            await orderApi.updateOrderStatus(orderId, nextStatus);
+            await orderApi.updateAdminOrderStatus(orderId, nextStatus);
             toast.success("Order status updated.");
             router.refresh();
         } catch (error) {
@@ -61,4 +61,3 @@ export function useAdminOrderActions(
         handleUpdateStatus,
     };
 }
-

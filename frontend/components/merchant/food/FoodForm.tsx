@@ -1,9 +1,15 @@
 "use client";
 
-import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
 import { categoryApi } from "@/lib/api/categoryApi";
+import {
+    getRecommendationErrorMessage,
+    isRecommendationForbiddenError,
+    isRecommendationUnauthorizedError,
+    recommendationApi,
+} from "@/lib/api/recommendationApi";
 import { sizeApi } from "@/lib/api/sizeApi";
-import { Loader2, Plus } from "lucide-react";
+import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
+import { Loader2, Plus, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -43,6 +49,8 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const [imagePreview, setImagePreview] = useState<string>("");
     const [saving, setSaving] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState<SelectedSize[]>([]);
+    const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
+    const [descriptionGenerating, setDescriptionGenerating] = useState(false);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -260,6 +268,40 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
         });
     };
 
+    const handleGenerateDescription = async () => {
+        const foodName = formData.productName.trim();
+        if (!foodName) {
+            toast.error("Please enter the food name first");
+            return;
+        }
+
+        setDescriptionGenerating(true);
+        try {
+            const result = await recommendationApi.generateFoodDescriptions(foodName);
+            const mapped = (Array.isArray(result) ? result : [])
+                .map((item) => item?.response?.trim())
+                .filter((item): item is string => Boolean(item));
+            setDescriptionSuggestions(mapped);
+            if (mapped.length === 0) {
+                toast("No description suggestions were returned");
+            }
+        } catch (error) {
+            const backendMessage = getRecommendationErrorMessage(error);
+            if (isRecommendationUnauthorizedError(error)) {
+                toast.error(backendMessage ?? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dùng AI.");
+                return;
+            }
+            if (isRecommendationForbiddenError(error)) {
+                toast.error(backendMessage ?? "Bạn chưa được backend cấp quyền dùng AI mô tả món (403 Forbidden).");
+                return;
+            }
+            console.error("Failed to generate food descriptions:", error);
+            toast.error(backendMessage ?? "Unable to generate descriptions right now");
+        } finally {
+            setDescriptionGenerating(false);
+        }
+    };
+
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             {restaurant && (
@@ -311,6 +353,24 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                 <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
                     Description <span className="text-red-500">*</span>
                 </label>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Generate quick AI descriptions if you do not want to write manually.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={handleGenerateDescription}
+                        disabled={descriptionGenerating}
+                        className="inline-flex items-center gap-1 rounded-md border border-brand-orange/30 bg-brand-orange/10 px-3 py-1.5 text-xs font-semibold text-brand-orange hover:bg-brand-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {descriptionGenerating ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                            <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                        {descriptionGenerating ? "Generating..." : "Generate with AI"}
+                    </button>
+                </div>
                 <textarea
                     required
                     value={formData.description}
@@ -319,6 +379,40 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                     placeholder="Describe the food item"
                 />
+                {descriptionSuggestions.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                        {descriptionSuggestions.map((suggestion, idx) => (
+                            <div
+                                key={`${idx}-${suggestion.slice(0, 24)}`}
+                                className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2"
+                            >
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                    <p className="text-xs font-semibold text-gray-600">Suggestion #{idx + 1}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData((prev) => ({ ...prev, description: suggestion }));
+                                            toast.success("Đã áp dụng gợi ý vào mô tả.");
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Chọn gợi ý này
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFormData((prev) => ({ ...prev, description: suggestion }));
+                                        toast.success("Đã áp dụng gợi ý vào mô tả.");
+                                    }}
+                                    className="w-full text-left text-sm text-gray-800 hover:text-gray-900"
+                                >
+                                    {suggestion}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div>

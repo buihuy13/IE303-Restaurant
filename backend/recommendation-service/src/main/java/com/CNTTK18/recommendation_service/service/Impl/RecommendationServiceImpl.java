@@ -65,7 +65,13 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .bodyToMono(ReviewListResponse.class)
                 .block();
 
-        String reviewsText = reviewList.getResponse().stream()
+        List<String> reviewResponses = reviewList.getResponse();
+        if (reviewResponses == null || reviewResponses.size() <= 3) {
+            return new ReviewSummarizeResponse(
+                    "Không đủ đánh giá để tóm tắt. Vui lòng cung cấp ít nhất 4 đánh giá.", null);
+        }
+
+        String reviewsText = reviewResponses.stream()
                 .map(r -> String.format("Review: %s", r))
                 .collect(Collectors.joining("\n"));
 

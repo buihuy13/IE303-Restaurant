@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,48 +36,51 @@ public class OrderController {
     @PostMapping("/checkout")
     @Operation(summary = "Checkout selected restaurants' items from cart")
     public ResponseEntity<List<OrderResponse>> checkout(
-            Authentication authentication, @Valid @RequestBody CheckoutRequest request) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(orderService.checkout(userId, request));
+            @AuthenticationPrincipal UserRole userRole, @Valid @RequestBody CheckoutRequest request) {
+        return ResponseEntity.ok(orderService.checkout(userRole.getId(), request));
     }
 
     @GetMapping
     @Operation(summary = "Get current user's (employee/customer) orders")
     public ResponseEntity<List<OrderResponse>> getMyOrders(
-            Authentication authentication,
+            @AuthenticationPrincipal UserRole userRole,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(orderService.getEmployeeOrders(userId, page, size));
+        return ResponseEntity.ok(orderService.getEmployeeOrders(userRole.getId(), page, size));
     }
 
     @GetMapping("/restaurant/{restaurantId}")
     @Operation(summary = "Get orders for a restaurant (for merchants)")
     public ResponseEntity<List<OrderResponse>> getRestaurantOrders(
+            @AuthenticationPrincipal UserRole userRole,
             @PathVariable UUID restaurantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(orderService.getRestaurantOrders(restaurantId, page, size));
+        return ResponseEntity.ok(
+                orderService.getRestaurantOrders(restaurantId, userRole.getId(), userRole.getRole(), page, size));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get order details by ID")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+    public ResponseEntity<OrderResponse> getOrderById(
+            @AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.getOrderById(id, userRole.getId(), userRole.getRole()));
     }
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Update order status (Merchants)")
     public ResponseEntity<OrderResponse> updateStatus(
-            @PathVariable UUID id, @Valid @RequestBody UpdateOrderStatusRequest request) {
-        return ResponseEntity.ok(orderService.updateStatus(id, request));
+            @AuthenticationPrincipal UserRole userRole,
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
+        return ResponseEntity.ok(orderService.updateStatus(id, userRole.getId(), userRole.getRole(), request));
     }
 
     @PutMapping("/{id}/cancel")
     @Operation(summary = "Cancel order (Customers - only if PENDING)")
-    public ResponseEntity<OrderResponse> cancelOrder(Authentication authentication, @PathVariable UUID id) {
-        UUID userId = getUserId(authentication);
-        return ResponseEntity.ok(orderService.cancelOrder(userId, id));
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.cancelOrder(userRole.getId(), id));
     }
 
     @PutMapping("/{id}/payment")
@@ -89,10 +92,5 @@ public class OrderController {
             @RequestParam String paymentLinkId) {
         orderService.updatePaymentStatus(id, success, orderCode, paymentLinkId);
         return ResponseEntity.noContent().build();
-    }
-
-    private UUID getUserId(Authentication authentication) {
-        UserRole userRole = (UserRole) authentication.getPrincipal();
-        return userRole.getId();
     }
 }

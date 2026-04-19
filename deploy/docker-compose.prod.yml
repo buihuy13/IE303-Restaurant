@@ -1,28 +1,28 @@
 services:
     rabbitmq:
-        image: 'rabbitmq:3-management'
+        image: "rabbitmq:3-management"
         env_file:
             - ./.env
         healthcheck:
-            test: ['CMD', 'rabbitmqctl', 'status']
+            test: ["CMD", "rabbitmqctl", "status"]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 10s
     redis:
-        image: 'redis:7-alpine'
+        image: "redis:7-alpine"
         container_name: redis
         env_file:
             - ./.env
         command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
         healthcheck:
-            test: ['CMD', 'redis-cli', 'ping']
+            test: ["CMD", "redis-cli", "ping"]
             interval: 10s
             timeout: 3
             retries: 5
             start_period: 10s
     postgres:
-        image: postgis/postgis:16-3.4   # PostgreSQL + PostGIS
+        image: postgis/postgis:16-3.4 # PostgreSQL + PostGIS
         restart: unless-stopped
         environment:
             POSTGRES_USER: postgres
@@ -45,7 +45,7 @@ services:
     zipkin:
         image: openzipkin/zipkin
         expose:
-            - '9411'
+            - "9411"
     keycloak:
         image: quay.io/keycloak/keycloak:24.0.0
         #override entrypoint để chạy script init.sh
@@ -73,10 +73,10 @@ services:
                 condition: service_healthy
     prometheus:
         image: prom/prometheus:latest
-        container_name: 'prometheus'
-        restart: 'unless-stopped'
+        container_name: "prometheus"
+        restart: "unless-stopped"
         expose:
-            - '9090'
+            - "9090"
         volumes:
             - ./monitoring:/etc/prometheus
             - prometheus-data:/prometheus
@@ -95,16 +95,16 @@ services:
         env_file:
             - ./.env
         container_name: grafana
-        restart: 'unless-stopped'
+        restart: "unless-stopped"
         expose:
-            - '3000'
+            - "3000"
         volumes:
             - grafana-data:/var/lib/grafana #Lưu dashboard lại khi restart container
             - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
         depends_on:
             - prometheus
         healthcheck:
-            test: [ "CMD", "nc", "-z", "localhost", "3000" ]
+            test: ["CMD", "nc", "-z", "localhost", "3000"]
     caddy:
         image: caddy:2-alpine
         container_name: caddy
@@ -130,7 +130,7 @@ services:
         environment:
             - PORT=${SERVICE_DISCOVERY_PORT}
         healthcheck:
-            test: ['CMD-SHELL', 'curl -f http://localhost:8761/actuator/health | grep UP || exit 1']
+            test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health | grep UP || exit 1"]
             interval: 10s
             timeout: 10s
             retries: 10
@@ -138,7 +138,7 @@ services:
     api-gateway:
         image: ghcr.io/buihuy13/api-gateway:${VERSION}
         expose:
-            - '8080'
+            - "8080"
         env_file:
             - ./.env
         environment:
@@ -186,6 +186,15 @@ services:
             - ./.env
         environment:
             - PORT=${RECOMMENDATION_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    dashboard-service:
+        image: ghcr.io/buihuy13/dashboard-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${DASHBOARD_PORT}
         depends_on:
             service-discovery:
                 condition: service_started
