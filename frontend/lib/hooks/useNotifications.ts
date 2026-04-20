@@ -55,6 +55,7 @@ export function useNotifications() {
                     break;
 
                 case OrderStatus.READY:
+                case OrderStatus.DELIVERING:
                     addNotification({
                         type: "ORDER_CONFIRMED",
                         title: "Order Ready for Delivery",
@@ -135,7 +136,11 @@ export function useNotifications() {
                             break;
 
                         case OrderStatus.READY:
-                            if (previousStatus === OrderStatus.PREPARING || previousStatus === OrderStatus.CONFIRMED) {
+                        case OrderStatus.DELIVERING:
+                            if (
+                                previousStatus === OrderStatus.PREPARING ||
+                                previousStatus === OrderStatus.CONFIRMED
+                            ) {
                                 addNotification({
                                     type: "ORDER_CONFIRMED",
                                     title: "Order Ready for Delivery",
@@ -147,7 +152,11 @@ export function useNotifications() {
                             break;
 
                         case OrderStatus.COMPLETED:
-                            if (previousStatus === OrderStatus.READY || previousStatus === OrderStatus.PREPARING) {
+                            if (
+                                previousStatus === OrderStatus.READY ||
+                                previousStatus === OrderStatus.DELIVERING ||
+                                previousStatus === OrderStatus.PREPARING
+                            ) {
                                 addNotification({
                                     type: "ORDER_COMPLETED",
                                     title: "Order Delivered Successfully",

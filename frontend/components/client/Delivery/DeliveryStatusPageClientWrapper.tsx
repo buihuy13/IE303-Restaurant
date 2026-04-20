@@ -353,6 +353,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             normalizedStatus === OrderStatus.CONFIRMED ||
             normalizedStatus === OrderStatus.PREPARING ||
             normalizedStatus === OrderStatus.READY ||
+            normalizedStatus === OrderStatus.DELIVERING ||
             normalizedStatus === OrderStatus.COMPLETED;
         // Delivery Status: Success only if order is completed
         // This matches timeline step 3 (Completed)

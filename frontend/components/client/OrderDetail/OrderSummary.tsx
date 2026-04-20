@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 export const OrderSummary = ({ order }: { order: Order }) => {
     const router = useRouter();
     const { addItem } = useCartStore();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const isProcessingRef = useRef(false);
 
@@ -45,7 +45,9 @@ export const OrderSummary = ({ order }: { order: Order }) => {
             toast.error("Please sign in to buy again.");
             setIsAdding(false);
             isProcessingRef.current = false;
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+            });
             return;
         }
 
@@ -100,7 +102,7 @@ export const OrderSummary = ({ order }: { order: Order }) => {
             setIsAdding(false);
             isProcessingRef.current = false;
         }
-    }, [isAdding, order, addItem, user, isAuthenticated, router]);
+    }, [isAdding, order, addItem, user, isAuthenticated, router, loginWithKeycloak]);
 
     return (
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm w-full lg:sticky lg:top-24">

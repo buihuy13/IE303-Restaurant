@@ -7,6 +7,8 @@ import Image from "next/image";
 export type OrderListItem = {
     id: string;
     productId: string;
+    sizeId?: string;
+    sizeName?: string;
     productName: string;
     restaurantId?: string;
     restaurantName: string;

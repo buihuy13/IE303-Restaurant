@@ -18,6 +18,7 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
         OrderStatus.CONFIRMED,
         OrderStatus.PREPARING,
         OrderStatus.READY,
+        OrderStatus.DELIVERING,
         OrderStatus.COMPLETED,
     ];
 

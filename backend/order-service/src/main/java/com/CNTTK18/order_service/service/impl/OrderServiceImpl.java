@@ -18,6 +18,7 @@ import com.CNTTK18.order_service.dto.order.request.CheckoutRequest;
 import com.CNTTK18.order_service.dto.order.request.UpdateOrderStatusRequest;
 import com.CNTTK18.order_service.dto.order.response.OrderResponse;
 import com.CNTTK18.order_service.exception.BadRequestException;
+import com.CNTTK18.order_service.exception.ForbiddenException;
 import com.CNTTK18.order_service.exception.NotFoundException;
 import com.CNTTK18.order_service.mapper.OrderMapper;
 import com.CNTTK18.order_service.model.Cart;
@@ -151,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (!order.getUserId().equals(userId)) {
-            throw new BadRequestException("You are not authorized to cancel this order");
+            throw new ForbiddenException("You are not authorized to cancel this order");
         }
 
         if (order.getStatus() != OrderStatus.PENDING) {
@@ -171,12 +172,17 @@ public class OrderServiceImpl implements OrderService {
     public void updatePaymentStatus(UUID orderId, boolean success, Long orderCode, String paymentLinkId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
+        if (order.getOrderCode() != null && !order.getOrderCode().equals(orderCode)) {
+            throw new BadRequestException("Order code does not match");
+        }
+
         order.setPaymentStatus(success ? PaymentStatus.PAID : PaymentStatus.FAILED);
         order.setOrderCode(orderCode);
         order.setPaymentLinkId(paymentLinkId);
 
         orderRepository.save(order);
         clearUserOrderCache(order.getUserId());
+        clearRestaurantOrderCache(order.getRestaurantId());
     }
 
     private void clearUserOrderCache(UUID userId) {
@@ -192,7 +198,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Fetches restaurant info and validates that currentUserId is its merchant owner.
+     * Fetches restaurant info and validates that currentUserId is its merchant
+     * owner.
      * Throws ForbiddenException if not authorized.
      */
     private void validateRestaurantOwnership(UUID restaurantId, UUID currentUserId) {

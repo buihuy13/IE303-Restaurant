@@ -458,6 +458,7 @@ export default function MerchantOrdersPageClient() {
             case OrderStatus.PREPARING:
                 return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
             case OrderStatus.READY:
+            case OrderStatus.DELIVERING:
                 return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
             case OrderStatus.COMPLETED:
                 return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200";
@@ -475,6 +476,7 @@ export default function MerchantOrdersPageClient() {
             [OrderStatus.CONFIRMED]: "Confirmed",
             [OrderStatus.PREPARING]: "Preparing",
             [OrderStatus.READY]: "Ready",
+            [OrderStatus.DELIVERING]: "Delivering",
             [OrderStatus.COMPLETED]: "Completed",
             [OrderStatus.CANCELLED]: "Cancelled",
         };
@@ -489,7 +491,8 @@ export default function MerchantOrdersPageClient() {
             case OrderStatus.CONFIRMED:
                 return OrderStatus.PREPARING;
             case OrderStatus.PREPARING:
-                return OrderStatus.READY;
+                return OrderStatus.DELIVERING;
+            case OrderStatus.DELIVERING:
             case OrderStatus.READY:
                 return OrderStatus.COMPLETED;
             default:

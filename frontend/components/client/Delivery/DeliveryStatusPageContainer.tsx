@@ -1,28 +1,49 @@
+"use client";
+
+import GlobalLoader from "@/components/ui/GlobalLoader";
 import { orderApi } from "@/lib/api/orderApi";
 import { Order } from "@/types/order.type";
-import { notFound } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import DeliveryStatusPageClientWrapper from "./DeliveryStatusPageClientWrapper";
 
-export default async function OrderStatusPage({ params }: { params: { slug: string } }) {
-    let order: Order | null = null;
-    try {
-        // Prefer fetching by orderId to avoid stale slug-based cache on backend.
-        // Slug format: "<restaurant-slug>-<orderId lowercased>"
-        const lastSegment = params.slug.split("-").pop() || "";
-        const maybeOrderId = lastSegment.toUpperCase();
+export default function OrderStatusPage({ params }: { params: { slug: string } }) {
+    const router = useRouter();
+    const [order, setOrder] = useState<Order | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-        if (maybeOrderId.startsWith("ORD")) {
-            order = await orderApi.getOrderById(maybeOrderId, { cacheBust: true });
-        } else {
-            // Fallback to slug endpoint if we can't safely parse orderId
-            order = await orderApi.getOrderBySlug(params.slug, { cacheBust: true });
-        }
-    } catch {
-        order = null;
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchOrder = async () => {
+            try {
+                const data = await orderApi.getOrderBySlug(params.slug, { cacheBust: true });
+                if (!cancelled) {
+                    setOrder(data);
+                }
+            } catch {
+                if (!cancelled) {
+                    router.replace("/delivery/not-found");
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        void fetchOrder();
+        return () => {
+            cancelled = true;
+        };
+    }, [params.slug, router]);
+
+    if (isLoading) {
+        return <GlobalLoader label="Loading order tracking" sublabel="Please wait a moment" />;
     }
 
     if (!order) {
-        notFound();
+        return null;
     }
 
     return <DeliveryStatusPageClientWrapper initialOrder={order} />;

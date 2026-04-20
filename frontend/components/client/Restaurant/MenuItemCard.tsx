@@ -9,16 +9,14 @@ import { type Product } from "@/types";
 import { PlusCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 export const MenuItemCard = memo(
     ({ item, restaurantId, restaurantName }: { item: Product; restaurantId?: string; restaurantName?: string }) => {
-        const router = useRouter();
         const addItem = useCartStore((state) => state.addItem);
         const setUserId = useCartStore((state) => state.setUserId);
-        const { user } = useAuthStore();
+        const { user, loginWithKeycloak } = useAuthStore();
 
         const [isAdding, setIsAdding] = useState(false);
         const [isMounted, setIsMounted] = useState(false);
@@ -64,7 +62,10 @@ export const MenuItemCard = memo(
 
                 if (!user) {
                     toast.error("Please login to add items to cart");
-                    router.push("/login");
+                    void loginWithKeycloak({
+                        redirectPath:
+                            typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+                    });
                     return;
                 }
 
@@ -110,7 +111,7 @@ export const MenuItemCard = memo(
                     }, 300);
                 }
             },
-            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName, sizes],
+            [isAdding, isMounted, user, item, cardImageUrl, addItem, restaurantId, restaurantName, sizes, loginWithKeycloak],
         );
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";

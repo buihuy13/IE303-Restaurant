@@ -22,8 +22,10 @@ public class SecurityConfig {
         return http.csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
+                        .requestMatchers("/actuator/**", "/v3/api-docs/**")
+                        .permitAll()
                         .anyRequest()
-                        .permitAll()) // Internal logic focuses on the user-id header, actual gateway handles JWT
+                        .authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(internalFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

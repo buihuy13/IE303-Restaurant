@@ -3,7 +3,9 @@ export enum OrderStatus {
     PENDING = "pending",
     CONFIRMED = "confirmed",
     PREPARING = "preparing",
+    /** Legacy / pickup-style step; live API uses DELIVERING for out-for-delivery. */
     READY = "ready",
+    DELIVERING = "delivering",
     COMPLETED = "completed",
     CANCELLED = "cancelled",
 }
@@ -26,6 +28,8 @@ export interface OrderRestaurantRef {
 
 export interface OrderItem {
     productId: string;
+    sizeId?: string;
+    sizeName?: string;
     productName: string;
     quantity: number;
     price: number;
@@ -36,6 +40,8 @@ export interface OrderItem {
 
 export interface Order {
     orderId: string;
+    /** Human-friendly code from order-service (`OrderResponse.orderCode`). */
+    orderCode?: number;
     slug: string;
     userId: string;
     restaurant: OrderRestaurantRef;

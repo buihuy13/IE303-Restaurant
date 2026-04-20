@@ -9,7 +9,7 @@ import { BlogCreatePageView } from "@/components/client/blog/BlogCreatePageView"
 
 export default function BlogCreatePageClient() {
     const router = useRouter();
-    const { user, isAuthenticated, authRole } = useAuthStore();
+    const { user, isAuthenticated, authRole, loginWithKeycloak } = useAuthStore();
     const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const form = useBlogCreateForm();
 
@@ -17,13 +17,15 @@ export default function BlogCreatePageClient() {
 
     useEffect(() => {
         if (!isAuthenticated || !user) {
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog/create",
+            });
             return;
         }
         if (!canManageBlogs) {
             router.push("/blog");
         }
-    }, [isAuthenticated, user, canManageBlogs, router]);
+    }, [isAuthenticated, user, canManageBlogs, loginWithKeycloak, router]);
 
     if (!isAuthenticated || !user || !canManageBlogs) return null;
 

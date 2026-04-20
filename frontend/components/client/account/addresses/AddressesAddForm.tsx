@@ -11,7 +11,7 @@ export function AddressesAddForm(props: {
     isLocating: boolean;
     onSubmit: (e: React.FormEvent) => void;
     onCancel: () => void;
-    onAddressChange: (address: string, latitude: number, longitude: number) => void;
+    onAddressChange: (address: string, latitude?: number, longitude?: number) => void;
     onUseCurrentLocation: () => void;
 }) {
     const { newAddress, submitting, isLocating, onSubmit, onCancel, onAddressChange, onUseCurrentLocation } = props;

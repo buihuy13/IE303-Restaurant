@@ -11,7 +11,7 @@ export default function BlogEditPageClient() {
     const router = useRouter();
     const params = useParams();
     const blogId = params?.id as string | undefined;
-    const { user, isAuthenticated, authRole } = useAuthStore();
+    const { user, isAuthenticated, authRole, loginWithKeycloak } = useAuthStore();
     const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const form = useBlogEditForm(blogId, user?.id, authRole === "ADMIN");
 
@@ -19,13 +19,15 @@ export default function BlogEditPageClient() {
 
     useEffect(() => {
         if (!isAuthenticated || !user) {
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog",
+            });
             return;
         }
         if (!canManageBlogs) {
             router.push("/blog");
         }
-    }, [isAuthenticated, user, canManageBlogs, router]);
+    }, [isAuthenticated, user, canManageBlogs, loginWithKeycloak, router]);
 
     if (!isAuthenticated || !user || !canManageBlogs) return null;
 
