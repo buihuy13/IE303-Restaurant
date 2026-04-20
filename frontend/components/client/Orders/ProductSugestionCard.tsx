@@ -5,7 +5,6 @@ import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Star } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -20,9 +19,8 @@ type SuggestedProduct = {
 };
 
 export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }) => {
-    const router = useRouter();
     const { addItem } = useCartStore();
-    const { user } = useAuthStore();
+    const { user, loginWithKeycloak } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -45,7 +43,9 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
 
         if (!user) {
             toast.error("Please login to add items to cart");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+            });
             return;
         }
 
@@ -70,7 +70,7 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
                 setIsAdding(false);
             }, 300);
         }
-    }, [isAdding, isMounted, addItem, user, product, router]);
+    }, [isAdding, isMounted, addItem, user, product, loginWithKeycloak]);
 
     return (
         <div className="border rounded-lg p-4 text-center">

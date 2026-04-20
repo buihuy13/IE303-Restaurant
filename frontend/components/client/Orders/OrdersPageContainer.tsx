@@ -66,7 +66,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
     const [sortBy, setSortBy] = useState("recent");
     const router = useRouter();
     const { addItem } = useCartStore();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const [reorderingOrderId, setReorderingOrderId] = useState<string | null>(null);
 
     const handleSortChange = (value: string) => {
@@ -88,7 +88,9 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
 
             if (!user && !isAuthenticated && !hasToken) {
                 toast.error("Please sign in to reorder.");
-                router.push("/login");
+                void loginWithKeycloak({
+                    redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/orders",
+                });
                 return;
             }
 
@@ -152,6 +154,8 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 image: imageUrl, // Pass the processed image URL
                                 restaurantId: item.restaurantId || firstItem.restaurantId,
                                 restaurantName: item.restaurantName,
+                                sizeId: item.sizeId,
+                                sizeName: item.sizeName,
                                 customizations: item.customizations,
                             },
                             item.quantity,
@@ -176,7 +180,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                 setReorderingOrderId(null);
             }
         },
-        [reorderingOrderId, user, isAuthenticated, addItem, router],
+        [reorderingOrderId, user, isAuthenticated, addItem, router, loginWithKeycloak],
     );
 
     return (
@@ -275,6 +279,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         case OrderStatus.CONFIRMED:
                                         case OrderStatus.PREPARING:
                                         case OrderStatus.READY:
+                                        case OrderStatus.DELIVERING:
                                             return {
                                                 text:
                                                     status === OrderStatus.PENDING

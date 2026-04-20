@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { MyBlogsPageView } from "@/components/client/blog/MyBlogsPageView";
 import { useMyBlogsData } from "@/hooks/client/blog/useMyBlogsData";
@@ -9,8 +8,7 @@ import { useMyBlogsFilters } from "@/hooks/client/blog/useMyBlogsFilters";
 import { useMyBlogsActions } from "@/hooks/client/blog/useMyBlogsActions";
 
 export default function MyBlogsPageClient() {
-    const router = useRouter();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const filters = useMyBlogsFilters();
     const { blogs, loading, totalPages, fetchMyBlogs } = useMyBlogsData(
         user?.id,
@@ -24,9 +22,11 @@ export default function MyBlogsPageClient() {
 
     useEffect(() => {
         if (!isAuthenticated || !user) {
-            router.replace("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog/my-blogs",
+            });
         }
-    }, [isAuthenticated, user, router]);
+    }, [isAuthenticated, user, loginWithKeycloak]);
 
     if (!isAuthenticated || !user) return null;
 

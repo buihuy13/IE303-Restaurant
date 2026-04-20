@@ -197,8 +197,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             });
 
             get().setTokens(tokenData.accessToken, tokenData.refreshToken, tokenData.idToken);
-            await get().fetchProfile();
             set({ loading: false });
+
+            // Do not block redirect on profile fetch. Fetch profile in background
+            // so login-success can navigate immediately after token exchange.
+            void get().fetchProfile().catch((error) => {
+                if (process.env.NODE_ENV === "development") {
+                    console.debug("Background profile fetch failed after Keycloak login:", error);
+                }
+            });
 
             return { success: true, redirectPath: tokenData.redirectPath };
         } catch (err) {
@@ -374,15 +381,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         clientId: KEYCLOAK_CLIENT_ID,
                         refreshToken,
                     });
-                    const resolvedRole = extractRoleFromAccessToken(refreshed.accessToken);
-                    set({
-                        accessToken: refreshed.accessToken,
-                        refreshToken: refreshed.refreshToken,
-                        idToken: refreshed.idToken || idToken,
-                        authRole: resolvedRole,
-                        isAuthenticated: true,
-                        loading: true,
-                    });
+                    // Must use setTokens so localStorage stays in sync (raw set() only updated Zustand).
+                    get().setTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.idToken ?? idToken);
+                    set({ loading: true });
                     await get().fetchProfile();
                     return;
                 } catch {

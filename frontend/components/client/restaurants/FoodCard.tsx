@@ -5,11 +5,12 @@ import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Button } from "@/components/ui/Button";
+import { productApi } from "@/lib/api/productApi";
 import { Product } from "@/types";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -25,11 +26,10 @@ type FoodCardProps = {
 };
 
 export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurantOverride }: FoodCardProps) => {
-    const router = useRouter();
     const pathname = usePathname();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
-    const { user } = useAuthStore();
+    const { user, loginWithKeycloak } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -81,6 +81,53 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
     const restaurant = useMemo(() => {
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
+
+    const resolveRestaurantForCart = useCallback(async (): Promise<{ id: string; name: string } | null> => {
+        const directId = typeof restaurant?.id === "string" ? restaurant.id.trim() : "";
+        const directName = typeof restaurant?.resName === "string" ? restaurant.resName.trim() : "";
+        if (directId) {
+            return { id: directId, name: directName || "Unknown Restaurant" };
+        }
+
+        try {
+            const response = await productApi.getRestaurantByProductId(product.id);
+            const payload = response.data as {
+                id?: unknown;
+                resId?: unknown;
+                restaurantId?: unknown;
+                resName?: unknown;
+                name?: unknown;
+            } | null;
+
+            if (!payload || typeof payload !== "object") {
+                return null;
+            }
+
+            const fallbackIdRaw = payload.id ?? payload.resId ?? payload.restaurantId;
+            const fallbackId =
+                typeof fallbackIdRaw === "string"
+                    ? fallbackIdRaw.trim()
+                    : fallbackIdRaw != null &&
+                        (typeof fallbackIdRaw === "number" || typeof fallbackIdRaw === "bigint")
+                      ? String(fallbackIdRaw)
+                      : "";
+
+            if (!fallbackId) {
+                return null;
+            }
+
+            const fallbackName =
+                typeof payload.resName === "string"
+                    ? payload.resName.trim()
+                    : typeof payload.name === "string"
+                      ? payload.name.trim()
+                      : "";
+
+            return { id: fallbackId, name: fallbackName || "Unknown Restaurant" };
+        } catch {
+            return null;
+        }
+    }, [restaurant?.id, restaurant?.resName, product.id]);
 
     // Determine link based on current location
     // If already on restaurant page, link to food detail page
@@ -134,17 +181,14 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
             if (!user) {
                 toast.error("Please sign in to add items to cart");
-                router.push("/login");
+                void loginWithKeycloak({
+                    redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+                });
                 return;
             }
 
             if (!product.productSizes || product.productSizes.length === 0) {
                 toast.error("This product has no available sizes");
-                return;
-            }
-
-            if (!restaurant?.id) {
-                toast.error("Restaurant information not found");
                 return;
             }
 
@@ -155,14 +199,20 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
             setIsAdding(true);
             try {
+                const restaurantForCart = await resolveRestaurantForCart();
+                if (!restaurantForCart) {
+                    toast.error("Restaurant information not found");
+                    return;
+                }
+
                 await addItem(
                     {
                         id: product.id,
                         name: product.productName,
                         price: defaultSize.price,
                         image: cardImageUrl,
-                        restaurantId: restaurant.id,
-                        restaurantName: restaurant.resName || "Unknown Restaurant",
+                        restaurantId: restaurantForCart.id,
+                        restaurantName: restaurantForCart.name,
                         categoryId: product.categoryId,
                         categoryName: product.categoryName,
                         sizeId: defaultSize.id,
@@ -180,7 +230,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router],
+        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
     );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED

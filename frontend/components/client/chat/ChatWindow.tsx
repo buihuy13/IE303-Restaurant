@@ -10,6 +10,19 @@ import { Input } from "@/components/ui/Input";
 const normalizeId = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 const isSameId = (left: string | null | undefined, right: string | null | undefined) =>
     normalizeId(left) === normalizeId(right);
+const normalizeMessageParticipantIds = (message: Message, currentUserId: string, partnerId: string): Message => {
+    const sender = normalizeId(message.senderId);
+    const receiver = normalizeId(message.receiverId);
+    const current = normalizeId(currentUserId);
+    const partner = normalizeId(partnerId);
+    if (sender === current && receiver === current) {
+        return { ...message, senderId: currentUserId, receiverId: partnerId };
+    }
+    if (sender === partner && receiver === partner) {
+        return { ...message, senderId: partnerId, receiverId: currentUserId };
+    }
+    return message;
+};
 const toTimestampMs = (value: unknown) => {
     if (value == null) return 0;
     if (value instanceof Date) {
@@ -21,11 +34,86 @@ const toTimestampMs = (value: unknown) => {
     }
     const raw = typeof value === "string" ? value.trim() : String(value).trim();
     if (!raw) return 0;
+    if (/^\d+$/.test(raw)) {
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric)) {
+            return raw.length <= 10 ? numeric * 1000 : numeric;
+        }
+    }
     const normalized = raw.replace(" ", "T").replace(/\.(\d{3})\d+/, ".$1");
     const needsTimezone = !/[zZ]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized);
     const withTimezone = needsTimezone ? `${normalized}Z` : normalized;
     const parsed = new Date(withTimezone).getTime();
-    return Number.isNaN(parsed) ? 0 : parsed;
+    if (!Number.isNaN(parsed)) {
+        return parsed;
+    }
+
+    if (typeof value === "object") {
+        const candidate = value as {
+            epochMilli?: number;
+            epochSecond?: number;
+            nano?: number;
+            seconds?: number;
+            nanos?: number;
+            year?: number;
+            monthValue?: number;
+            month?: number;
+            dayOfMonth?: number;
+            day?: number;
+            hour?: number;
+            minute?: number;
+            second?: number;
+        };
+        if (typeof candidate.epochMilli === "number" && Number.isFinite(candidate.epochMilli)) {
+            return candidate.epochMilli;
+        }
+        const secondPart =
+            typeof candidate.epochSecond === "number"
+                ? candidate.epochSecond
+                : typeof candidate.seconds === "number"
+                  ? candidate.seconds
+                  : null;
+        if (secondPart != null && Number.isFinite(secondPart)) {
+            const nanoPart =
+                typeof candidate.nano === "number"
+                    ? candidate.nano
+                    : typeof candidate.nanos === "number"
+                      ? candidate.nanos
+                      : 0;
+            return secondPart * 1000 + Math.floor(nanoPart / 1_000_000);
+        }
+
+        const year = typeof candidate.year === "number" ? candidate.year : null;
+        const monthRaw =
+            typeof candidate.monthValue === "number"
+                ? candidate.monthValue
+                : typeof candidate.month === "number"
+                  ? candidate.month
+                  : null;
+        const day =
+            typeof candidate.dayOfMonth === "number"
+                ? candidate.dayOfMonth
+                : typeof candidate.day === "number"
+                  ? candidate.day
+                  : null;
+        if (year != null && monthRaw != null && day != null) {
+            const hour = typeof candidate.hour === "number" ? candidate.hour : 0;
+            const minute = typeof candidate.minute === "number" ? candidate.minute : 0;
+            const second = typeof candidate.second === "number" ? candidate.second : 0;
+            const nano =
+                typeof candidate.nano === "number"
+                    ? candidate.nano
+                    : typeof candidate.nanos === "number"
+                      ? candidate.nanos
+                      : 0;
+            const utcMs = Date.UTC(year, monthRaw - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
+            if (Number.isFinite(utcMs)) {
+                return utcMs;
+            }
+        }
+    }
+
+    return 0;
 };
 
 interface ChatWindowProps {
@@ -170,7 +258,8 @@ export default function ChatWindow({
 
     // Filter messages to only show messages between currentUserId and partnerId
     // This prevents showing messages from other conversations
-    const filteredMessages = messages.filter((message) => {
+    const normalizedMessages = messages.map((message) => normalizeMessageParticipantIds(message, currentUserId, partnerId));
+    const filteredMessages = normalizedMessages.filter((message) => {
         const isFromCurrentUser = isSameId(message.senderId, currentUserId);
         const isToCurrentUser = isSameId(message.receiverId, currentUserId);
         const isFromPartner = isSameId(message.senderId, partnerId);
@@ -187,8 +276,8 @@ export default function ChatWindow({
         const existingIndex = acc.findIndex((m) => {
             const sameId = m.id === message.id;
             const sameContent = m.content === message.content;
-            const sameSender = m.senderId === message.senderId;
-            const sameReceiver = m.receiverId === message.receiverId;
+            const sameSender = isSameId(m.senderId, message.senderId);
+            const sameReceiver = isSameId(m.receiverId, message.receiverId);
             const timeDiff = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(message.timestamp));
             const sameTime = timeDiff < 1000; // Within 1 second
             

@@ -2,6 +2,7 @@ import api from "../axios";
 
 export interface ProductSizeResponse {
     id: string;
+    sizeId: string;
     sizeName: string;
     price: number;
 }

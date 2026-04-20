@@ -21,7 +21,7 @@ export default function ChatWithRestaurantButton({
     variant = "default",
     className = "",
 }: ChatWithRestaurantButtonProps) {
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -34,7 +34,9 @@ export default function ChatWithRestaurantButton({
     const handleChatClick = async () => {
         if (!isAuthenticated || !user?.id) {
             toast.error("Please login to chat with restaurant");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+            });
             return;
         }
 

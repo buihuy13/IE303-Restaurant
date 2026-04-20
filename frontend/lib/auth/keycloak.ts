@@ -35,9 +35,11 @@ export type KeycloakExchangeResult = {
     redirectPath: string | null;
 };
 
-// sessionStorage key + safe default redirect after login.
+// Storage keys + safe default redirect after login.
 const AUTH_TXN_STORAGE_KEY = "keycloak_auth_transaction";
+const AUTH_TXN_LEGACY_SESSION_KEY = "keycloak_auth_transaction";
 const REDIRECT_PATH_FALLBACK = "/";
+const AUTH_TXN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 // Remove trailing slashes so we don't accidentally generate URLs with `//`.
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
@@ -64,23 +66,29 @@ const sha256 = async (value: string) => {
     return new Uint8Array(digest);
 };
 
-// Persist the current auth transaction in sessionStorage before redirecting
-// to Keycloak. Cleared automatically after a successful / failed exchange.
+// Persist the current auth transaction before redirecting to Keycloak.
+// Use localStorage so callback still works when email verification opens in another tab.
 const saveAuthTransaction = (txn: AuthTransaction) => {
     if (typeof window === "undefined") return;
-    sessionStorage.setItem(AUTH_TXN_STORAGE_KEY, JSON.stringify(txn));
+    const payload = JSON.stringify(txn);
+    localStorage.setItem(AUTH_TXN_STORAGE_KEY, payload);
+    // Keep backward compatibility for existing same-tab flows.
+    sessionStorage.setItem(AUTH_TXN_LEGACY_SESSION_KEY, payload);
 };
 
-// Read and validate an auth transaction from sessionStorage.
+// Read and validate an auth transaction from storage.
 // Returns null if parsing fails or the shape is invalid.
 const readAuthTransaction = (): AuthTransaction | null => {
     if (typeof window === "undefined") return null;
-    const raw = sessionStorage.getItem(AUTH_TXN_STORAGE_KEY);
+    const raw = localStorage.getItem(AUTH_TXN_STORAGE_KEY) || sessionStorage.getItem(AUTH_TXN_LEGACY_SESSION_KEY);
     if (!raw) return null;
 
     try {
         const parsed = JSON.parse(raw) as AuthTransaction;
         if (!parsed?.state || !parsed?.codeVerifier) return null;
+        if (typeof parsed.createdAt !== "number" || Date.now() - parsed.createdAt > AUTH_TXN_TTL_MS) {
+            return null;
+        }
         return parsed;
     } catch {
         return null;
@@ -90,7 +98,8 @@ const readAuthTransaction = (): AuthTransaction | null => {
 // Remove any stored auth transaction (used on success or fatal error).
 const clearAuthTransaction = () => {
     if (typeof window === "undefined") return;
-    sessionStorage.removeItem(AUTH_TXN_STORAGE_KEY);
+    localStorage.removeItem(AUTH_TXN_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_TXN_LEGACY_SESSION_KEY);
 };
 
 // Guard to fail fast if Keycloak env variables are missing / misconfigured.

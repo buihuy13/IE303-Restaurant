@@ -1,6 +1,5 @@
-import { useAuthStore } from "@/stores/useAuthStore";
+import api from "@/lib/axios";
 import axios from "axios";
-import { API_URL } from "../config/publicRuntime";
 
 export type ReviewType = "RESTAURANT" | "PRODUCT";
 
@@ -26,56 +25,39 @@ export interface RecommendationRequestOptions {
     signal?: AbortSignal;
 }
 
-const recommendationClient = axios.create({
-    baseURL: API_URL,
-    timeout: 120000,
-    withCredentials: true,
-    maxRedirects: 0,
-    validateStatus: (status) => status < 400,
-});
-
-const normalizeToken = (value: string | null): string | null => {
-    if (!value) return null;
-    const token = value.trim();
-    if (!token || token === "null" || token === "undefined") return null;
-    return token;
-};
-
-recommendationClient.interceptors.request.use((config) => {
-    const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
-    const accessTokenFromStorage =
-        typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
-    const accessToken = accessTokenFromStore || accessTokenFromStorage;
-    if (accessToken) {
-        config.headers = config.headers ?? {};
-        config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-});
+/** Long-running AI calls; same axios instance as the rest of the app (401 → Keycloak refresh). */
+const RECOMMENDATION_TIMEOUT_MS = 120000;
 
 export const recommendationApi = {
     suggestFoodByCraving: async (context: string, options?: RecommendationRequestOptions) => {
-        const response = await recommendationClient.post<RecommendationMessageResponse>(
+        const response = await api.post<RecommendationMessageResponse>(
             "/recommendations/food",
             {
                 context,
             } satisfies UserContextPayload,
             {
                 signal: options?.signal,
+                timeout: RECOMMENDATION_TIMEOUT_MS,
             },
         );
         return response.data;
     },
 
     generateFoodDescriptions: async (foodName: string) => {
-        const response = await recommendationClient.post<RecommendationMessageResponse[]>("/recommendations/descriptions", {
-            context: foodName,
-        } satisfies UserContextPayload);
+        const response = await api.post<RecommendationMessageResponse[]>(
+            "/recommendations/descriptions",
+            {
+                context: foodName,
+            } satisfies UserContextPayload,
+            { timeout: RECOMMENDATION_TIMEOUT_MS },
+        );
         return response.data;
     },
 
     summarizeReviews: async (payload: ReviewSummarizePayload) => {
-        const response = await recommendationClient.post<ReviewSummarizeResponse>("/recommendations/reviews", payload);
+        const response = await api.post<ReviewSummarizeResponse>("/recommendations/reviews", payload, {
+            timeout: RECOMMENDATION_TIMEOUT_MS,
+        });
         return response.data;
     },
 };

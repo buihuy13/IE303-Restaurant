@@ -10,7 +10,7 @@ interface OrderTrackingTimelineProps {
 const steps = [
     { key: OrderStatus.PENDING, label: "Placed" },
     { key: OrderStatus.CONFIRMED, label: "Preparing" },
-    { key: OrderStatus.READY, label: "Delivering" },
+    { key: OrderStatus.DELIVERING, label: "Delivering" },
     { key: OrderStatus.COMPLETED, label: "Completed" },
 ];
 
@@ -26,6 +26,7 @@ export default function OrderTrackingTimeline({ status }: OrderTrackingTimelineP
             case OrderStatus.PREPARING:
                 return 1;
             case OrderStatus.READY:
+            case OrderStatus.DELIVERING:
                 return 2;
             case OrderStatus.COMPLETED:
                 return 3;

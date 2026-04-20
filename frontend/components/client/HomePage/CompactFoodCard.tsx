@@ -29,7 +29,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     const searchParams = useSearchParams();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
-    const { user } = useAuthStore();
+    const { user, loginWithKeycloak } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const [justAdded, setJustAdded] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -133,6 +133,53 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return "";
     }, [restaurant, product]);
 
+    const resolveRestaurantForCart = useCallback(async (): Promise<{ id: string; name: string } | null> => {
+        const directId = restaurantId.trim();
+        const directName = typeof restaurant?.resName === "string" ? restaurant.resName.trim() : "";
+        if (directId) {
+            return { id: directId, name: directName || "Unknown Restaurant" };
+        }
+
+        try {
+            const response = await productApi.getRestaurantByProductId(product.id);
+            const payload = response.data as {
+                id?: unknown;
+                resId?: unknown;
+                restaurantId?: unknown;
+                resName?: unknown;
+                name?: unknown;
+            } | null;
+
+            if (!payload || typeof payload !== "object") {
+                return null;
+            }
+
+            const fallbackIdRaw = payload.id ?? payload.resId ?? payload.restaurantId;
+            const fallbackId =
+                typeof fallbackIdRaw === "string"
+                    ? fallbackIdRaw.trim()
+                    : fallbackIdRaw != null &&
+                        (typeof fallbackIdRaw === "number" || typeof fallbackIdRaw === "bigint")
+                      ? String(fallbackIdRaw)
+                      : "";
+
+            if (!fallbackId) {
+                return null;
+            }
+
+            const fallbackName =
+                typeof payload.resName === "string"
+                    ? payload.resName.trim()
+                    : typeof payload.name === "string"
+                      ? payload.name.trim()
+                      : "";
+
+            return { id: fallbackId, name: fallbackName || "Unknown Restaurant" };
+        } catch {
+            return null;
+        }
+    }, [restaurantId, restaurant?.resName, product.id]);
+
     const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
     const isFoodSearchPage = pathname?.startsWith("/search") && searchParams?.get("type") === "foods";
     const restaurantTarget = restaurantSlug || restaurantId;
@@ -227,17 +274,14 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
 
             if (!user) {
                 toast.error("Please sign in to add items to cart");
-                router.push("/login");
+                void loginWithKeycloak({
+                    redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+                });
                 return;
             }
 
             if (!product.productSizes || product.productSizes.length === 0) {
                 toast.error("This product has no available sizes");
-                return;
-            }
-
-            if (!restaurant?.id) {
-                toast.error("Restaurant information not found");
                 return;
             }
 
@@ -248,14 +292,20 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
 
             setIsAdding(true);
             try {
+                const restaurantForCart = await resolveRestaurantForCart();
+                if (!restaurantForCart) {
+                    toast.error("Restaurant information not found");
+                    return;
+                }
+
                 await addItem(
                     {
                         id: product.id,
                         name: product.productName,
                         price: defaultSize.price,
                         image: cardImageUrl,
-                        restaurantId: restaurant.id,
-                        restaurantName: restaurant.resName || "Unknown Restaurant",
+                        restaurantId: restaurantForCart.id,
+                        restaurantName: restaurantForCart.name,
                         categoryId: product.categoryId,
                         categoryName: product.categoryName,
                         sizeId: defaultSize.id,
@@ -276,7 +326,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router],
+        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router, resolveRestaurantForCart, loginWithKeycloak],
     );
 
     return (

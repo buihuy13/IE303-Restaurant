@@ -1,8 +1,8 @@
 "use client";
 
 import AddressAutocomplete from "@/components/AddressAutocomplete";
-import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Button } from "@/components/ui/Button";
+import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Input } from "@/components/ui/Input";
 import { authApi } from "@/lib/api/authApi";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
@@ -13,7 +13,6 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
-import { OrderStatus } from "@/types/order.type";
 import { ArrowLeft, Edit2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,7 +37,7 @@ export default function PaymentPageClient() {
 
     const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } =
         useCartStore();
-    const { user, loading: authLoading, isAuthenticated } = useAuthStore();
+    const { user, loading: authLoading, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const { coords, error: locationError } = useGeolocation();
     const [cartFetched, setCartFetched] = useState(false);
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -62,6 +61,29 @@ export default function PaymentPageClient() {
         street: "",
         note: "",
     });
+
+    const scrollToFirstVisibleField = useCallback((selectors: string[]) => {
+        if (typeof window === "undefined") return;
+
+        for (const selector of selectors) {
+            const elements = Array.from(document.querySelectorAll<HTMLElement>(selector));
+            const target = elements.find((el) => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return style.display !== "none" && style.visibility !== "hidden" && rect.height > 0 && rect.width > 0;
+            });
+
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "center" });
+                window.setTimeout(() => {
+                    if (typeof target.focus === "function") {
+                        target.focus();
+                    }
+                }, 120);
+                return;
+            }
+        }
+    }, []);
 
     useEffect(() => {
         setCheckoutSelection(loadCheckoutSelection());
@@ -88,6 +110,8 @@ export default function PaymentPageClient() {
     const shipping = SHIPPING_FEE; // Always delivery, no pickup
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
+    const isSubmitDisabled = isSubmitting || isProcessingCardPayment;
+    const submitLabel = isSubmitting ? "Placing order..." : "Place Order";
 
     const completeAfterPayOS = useCallback(
         async (orderIds: string[]) => {
@@ -97,15 +121,6 @@ export default function PaymentPageClient() {
             toast.success("Payment successful! Your order has been placed.", {
                 duration: 3000,
             });
-
-            if (orderIds.length > 0) {
-                try {
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-                    await orderApi.updateOrderStatus(orderIds[0], OrderStatus.COMPLETED);
-                } catch (error) {
-                    console.error("Failed to update order status to completed:", error);
-                }
-            }
 
             if (orderIds.length > 0) {
                 try {
@@ -242,7 +257,9 @@ export default function PaymentPageClient() {
 
         if (!user && !isAuthenticated && !hasToken) {
             toast.error("Please login to checkout");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/payment",
+            });
             return;
         }
 
@@ -299,6 +316,7 @@ export default function PaymentPageClient() {
         fetchCart,
         setUserId,
         router,
+        loginWithKeycloak,
     ]);
 
     // Check if cart is empty (but skip if payment just succeeded to avoid redirect conflict)
@@ -355,13 +373,24 @@ export default function PaymentPageClient() {
     };
 
     // Handle address autocomplete selection
-    const handleAddressAutocompleteChange = (address: string, latitude: number, longitude: number) => {
+    const handleAddressAutocompleteChange = (address: string, latitude?: number, longitude?: number) => {
         setFormData((prev) => ({
             ...prev,
             street: address,
         }));
-        setNewAddressLat(latitude);
-        setNewAddressLon(longitude);
+        if (
+            typeof latitude === "number" &&
+            typeof longitude === "number" &&
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude)
+        ) {
+            setNewAddressLat(latitude);
+            setNewAddressLon(longitude);
+        } else {
+            // Typed manually without picking a suggestion — rely on saved-address coords or device geolocation.
+            setNewAddressLat(null);
+            setNewAddressLon(null);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -378,7 +407,9 @@ export default function PaymentPageClient() {
 
         if (!user?.id) {
             toast.error("Please login to place order");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/payment",
+            });
             return;
         }
 
@@ -395,11 +426,21 @@ export default function PaymentPageClient() {
 
         // Validate form
         if (!formData.name || !formData.phone) {
+            if (!formData.name) {
+                scrollToFirstVisibleField(["#desktop-name", "#mobile-name"]);
+            } else {
+                scrollToFirstVisibleField(["#desktop-phone", "#mobile-phone"]);
+            }
             toast.error("Please fill in your name and phone number");
             return;
         }
 
-        if (!formData.street) {
+        if (!formData.street.trim()) {
+            scrollToFirstVisibleField([
+                "#desktop-address-autocomplete",
+                "#mobile-address-autocomplete",
+                'input[placeholder^="Enter address"]',
+            ]);
             toast.error("Please enter delivery address");
             return;
         }
@@ -416,6 +457,11 @@ export default function PaymentPageClient() {
             : selectedSavedAddress?.longitude ?? coords?.longitude;
 
         if (typeof resolvedLatitude !== "number" || typeof resolvedLongitude !== "number") {
+            scrollToFirstVisibleField([
+                "#desktop-address-autocomplete",
+                "#mobile-address-autocomplete",
+                'input[placeholder^="Enter address"]',
+            ]);
             toast.error(
                 "Unable to determine delivery coordinates. Please select an address from the suggestions or enable location services and try again.",
             );
@@ -475,7 +521,7 @@ export default function PaymentPageClient() {
                 restaurantId: finalRestaurantId,
                 restaurantName: group.restaurantName || "Unknown Restaurant",
                 deliveryAddress: {
-                    street: formData.street,
+                    street: formData.street.trim(),
                     city: "Ho Chi Minh City", // Default city
                     state: "Ho Chi Minh", // Default state
                     zipCode: "700000", // Default zip code
@@ -505,7 +551,6 @@ export default function PaymentPageClient() {
             };
 
             const order = await orderApi.createOrder(payload);
-
             // Wait for PayOS redirect — don't clear cart until payment success callback
             setIsProcessingCardPayment(true);
             await handlePayOSRedirect(order);
@@ -529,9 +574,16 @@ export default function PaymentPageClient() {
     };
 
     /** Creates PayOS link (`POST /api/payments/create`) and redirects the browser. */
-    const handlePayOSRedirect = async (order: { orderId: string }) => {
+    const handlePayOSRedirect = async (order: { orderId: string; slug?: string }) => {
         if (!user?.id) {
             toast.error("Please login to complete payment");
+            setIsProcessingCardPayment(false);
+            return;
+        }
+
+        const resolvedOrderId = order.orderId?.trim() || order.slug?.trim() || "";
+        if (!resolvedOrderId) {
+            toast.error("Could not resolve order id for payment. Please try placing the order again.");
             setIsProcessingCardPayment(false);
             return;
         }
@@ -542,16 +594,16 @@ export default function PaymentPageClient() {
             const calculatedTotal = subtotal + shipping + tax;
             const origin = typeof window !== "undefined" ? window.location.origin : "";
             const rid = restaurantId || "";
-            const returnUrl = `${origin}/payment?payos_return=success&orderId=${encodeURIComponent(order.orderId)}&restaurantId=${encodeURIComponent(rid)}`;
+            const returnUrl = `${origin}/payment?payos_return=success&orderId=${encodeURIComponent(resolvedOrderId)}&restaurantId=${encodeURIComponent(rid)}`;
             const cancelUrl = `${origin}/payment?payos_return=cancel&restaurantId=${encodeURIComponent(rid)}`;
 
             sessionStorage.setItem(
                 "payos_pending_checkout",
-                JSON.stringify({ orderIds: [order.orderId], restaurantId: rid || null }),
+                JSON.stringify({ orderIds: [resolvedOrderId], restaurantId: rid || null }),
             );
 
             const res = await paymentApi.createPayment({
-                orderId: order.orderId,
+                orderId: resolvedOrderId,
                 userId: user.id,
                 amount: calculatedTotal,
                 paymentMethod: "card",
@@ -742,6 +794,7 @@ export default function PaymentPageClient() {
                                                     Street Address
                                                 </label>
                                                 <AddressAutocomplete
+                                                    id="desktop-address-autocomplete"
                                                     value={formData.street}
                                                     onChange={handleAddressAutocompleteChange}
                                                     placeholder="Enter address (e.g., 123 Main Street, Ho Chi Minh City)..."
@@ -834,6 +887,16 @@ export default function PaymentPageClient() {
                             <span className="text-lg font-semibold text-gray-900">Total</span>
                             <span className="text-2xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
                         </div>
+
+                        <Button
+                            type="submit"
+                            onClick={handleSubmit}
+                            disabled={isSubmitDisabled}
+                            variant="brand"
+                            className="mt-6 h-12 w-full rounded-full shadow-sm hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {submitLabel}
+                        </Button>
                     </div>
 
                     {/* Block B: Payment Method */}
@@ -854,22 +917,12 @@ export default function PaymentPageClient() {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <div className="text-gray-500 text-sm py-4 text-center">
-                                    Please click &quot;Place Order&quot; — you will be sent to PayOS to pay.
+                                <div className="rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4 text-sm text-gray-700">
+                                    <p className="font-semibold text-gray-900 mb-1">PayOS card payment</p>
+                                    <p className="text-gray-600">
+                                        Place your order from the summary panel. You will be redirected to PayOS immediately.
+                                    </p>
                                 </div>
-
-                                {/* Place Order Button - Only show if not processing card payment */}
-                                {!isProcessingCardPayment && (
-                                <Button
-                                        type="submit"
-                                        onClick={handleSubmit}
-                                        disabled={isSubmitting}
-                                        variant="brand"
-                                    className="mt-4 h-12 w-full rounded-full shadow-sm hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        {isSubmitting ? "Placing order..." : "Place Order"}
-                                    </Button>
-                                )}
                             </div>
                         )}
                     </div>
@@ -949,6 +1002,7 @@ export default function PaymentPageClient() {
                                     Street Address
                                 </label>
                                 <AddressAutocomplete
+                                    id="mobile-address-autocomplete"
                                     value={formData.street}
                                     onChange={handleAddressAutocompleteChange}
                                     placeholder="Enter address (e.g., 123 Main Street, Ho Chi Minh City)..."
@@ -1068,26 +1122,36 @@ export default function PaymentPageClient() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="text-gray-500 text-sm py-4 text-center">
-                                Click &quot;Place Order&quot; to open PayOS payment.
+                            <div className="rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4 text-sm text-gray-700">
+                                <p className="font-semibold text-gray-900 mb-1">PayOS card payment</p>
+                                <p className="text-gray-600 text-xs">
+                                    Tap the sticky Place Order button below to continue to secure payment.
+                                </p>
                             </div>
-
-                            {/* Place Order Button - Only show if not processing card payment */}
-                            {!isProcessingCardPayment && (
-                                <Button
-                                    type="submit"
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    variant="brand"
-                                    className="w-full h-12 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? "Placing order..." : "Place Order"}
-                                </Button>
-                            )}
                         </div>
                     )}
                 </div>
             </div>
+
+            {!isPaymentSuccess && (
+                <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+                    <div className="mx-auto flex w-full max-w-screen-sm items-center gap-3">
+                        <div className="min-w-0">
+                            <p className="text-xs text-gray-500">Total</p>
+                            <p className="truncate text-base font-bold text-brand-orange">{formatPriceUSD(total)} $</p>
+                        </div>
+                        <Button
+                            type="submit"
+                            onClick={handleSubmit}
+                            disabled={isSubmitDisabled}
+                            variant="brand"
+                            className="h-11 flex-1 rounded-full disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {submitLabel}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

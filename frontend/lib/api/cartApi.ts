@@ -1,6 +1,10 @@
 import api from "../axios";
 import { withOrderServiceBase } from "./serviceBaseConfig";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: string): boolean => UUID_REGEX.test(value.trim());
+
 export interface CartItem {
     productId: string;
     productName: string;
@@ -42,9 +46,10 @@ export interface Cart {
 }
 
 export interface CartResponse {
-    status: "success" | "error";
-    message: string;
-    data: Cart | null;
+    userId?: string;
+    restaurants?: RestaurantCart[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface AddItemToCartRequest {
@@ -56,13 +61,40 @@ export interface AddItemToCartRequest {
 }
 
 export const cartApi = {
-    getCart: async (userId: string) => {
-        const response = await api.get<CartResponse>(`/cart/${userId}`, withOrderServiceBase());
+    getCart: async (_userId: string) => {
+        const response = await api.get<CartResponse>("/cart", withOrderServiceBase());
         return response.data;
     },
 
-    addItemToCart: async (userId: string, data: AddItemToCartRequest) => {
-        const response = await api.post<CartResponse>(`/cart/${userId}`, data, withOrderServiceBase());
+    addItemToCart: async (_userId: string, data: AddItemToCartRequest) => {
+        const restaurantId = data.restaurant.restaurantId.trim();
+        const baseProductId = data.item.productId.split("--")[0].trim();
+        const sizeId = data.item.sizeId?.trim();
+
+        if (!isUuid(restaurantId)) {
+            throw new Error("Invalid restaurant identifier. Please refresh and try again.");
+        }
+
+        if (!isUuid(baseProductId)) {
+            throw new Error("Invalid product identifier. Please re-open the item and try again.");
+        }
+
+        if (!sizeId) {
+            throw new Error("Please select a size before adding to cart.");
+        }
+
+        if (!isUuid(sizeId)) {
+            throw new Error("Invalid size identifier. Please select the size again.");
+        }
+
+        const payload = {
+            restaurantId,
+            productId: baseProductId,
+            productSizeId: sizeId,
+            quantity: data.item.quantity,
+        };
+
+        const response = await api.post<CartResponse>("/cart", payload, withOrderServiceBase());
         return response.data;
     },
 
@@ -74,12 +106,24 @@ export const cartApi = {
         sizeId?: string,
         customizations?: string,
     ) => {
-        const response = await api.patch<CartResponse>(
-            `/cart/${userId}/restaurant/${restaurantId}/item/${productId}`,
+        void userId;
+        void restaurantId;
+        void productId;
+        void customizations;
+
+        if (!sizeId?.trim()) {
+            throw new Error("Missing product size identifier for cart update.");
+        }
+
+        if (!isUuid(sizeId)) {
+            throw new Error("Invalid size identifier. Please reload the cart and try again.");
+        }
+
+        const response = await api.put<CartResponse>(
+            "/cart",
             {
+                productSizeId: sizeId,
                 quantity,
-                ...(sizeId && { sizeId }),
-                ...(customizations && { customizations }),
             },
             withOrderServiceBase(),
         );
@@ -93,25 +137,29 @@ export const cartApi = {
         sizeId?: string,
         customizations?: string,
     ) => {
-        const params = new URLSearchParams();
-        if (sizeId) params.append("sizeId", sizeId);
-        if (customizations) params.append("customizations", customizations);
-        const queryString = params.toString();
-        const url = `/cart/${userId}/restaurant/${restaurantId}/item/${productId}${queryString ? `?${queryString}` : ""}`;
-        const response = await api.delete<CartResponse>(url, withOrderServiceBase());
-        return response.data;
+        return cartApi.updateItemQuantity(userId, restaurantId, productId, 0, sizeId, customizations);
     },
 
     clearRestaurant: async (userId: string, restaurantId: string) => {
-        const response = await api.delete<CartResponse>(
-            `/cart/${userId}/restaurant/${restaurantId}`,
-            withOrderServiceBase(),
-        );
-        return response.data;
+        void userId;
+
+        const cart = await cartApi.getCart("");
+        const restaurants = Array.isArray(cart.restaurants) ? cart.restaurants : [];
+        const group = restaurants.find((restaurant) => restaurant.restaurantId === restaurantId);
+        const groupItems = Array.isArray(group?.items) ? group!.items : [];
+
+        let latest: CartResponse = cart;
+        for (const item of groupItems) {
+            if (!item.sizeId) {
+                continue;
+            }
+            latest = await cartApi.updateItemQuantity("", restaurantId, item.productId, 0, item.sizeId);
+        }
+        return latest;
     },
 
-    clearCart: async (userId: string) => {
-        const response = await api.delete<CartResponse>(`/cart/${userId}`, withOrderServiceBase());
+    clearCart: async (_userId: string) => {
+        const response = await api.delete("/cart", withOrderServiceBase());
         return response.data;
     },
 };

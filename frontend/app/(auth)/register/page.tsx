@@ -5,7 +5,6 @@ import { Logo } from "@/constants";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
@@ -22,8 +21,6 @@ export default function SignUpPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register, loginWithKeycloak, loading, error } = useAuthStore();
 
-    const router = useRouter();
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -35,7 +32,10 @@ export default function SignUpPage() {
         const success = await register({ username, email, phone, password, confirmPassword, role: "USER" });
         if (success) {
             toast.success("Registration successful. Please sign in with Keycloak.");
-            router.push("/login");
+            void loginWithKeycloak({ redirectPath: "/" }).catch((err) => {
+                const message = err instanceof Error ? err.message : "Unable to start Keycloak login.";
+                toast.error(message);
+            });
         } else {
             toast.error(error || "Registration failed. Please try again.");
         }

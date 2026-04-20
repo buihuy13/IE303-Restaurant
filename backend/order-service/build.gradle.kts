@@ -22,9 +22,11 @@ dependencies {
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 	implementation("org.mapstruct:mapstruct:1.6.3")
-	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+	// Lombok must run before MapStruct so getters/setters exist when the mapper is generated.
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
+	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 	implementation("io.github.cdimascio:dotenv-java:3.2.0")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")

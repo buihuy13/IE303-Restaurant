@@ -35,8 +35,14 @@ export function useAccountAddressForm(params: { userId: string | null; onAdded: 
         setNewAddress({ location: "", longitude: 0, latitude: 0 });
     }, []);
 
-    const handleAddressChange = useCallback((address: string, latitude: number, longitude: number) => {
-        setNewAddress({ location: address, latitude, longitude });
+    const handleAddressChange = useCallback((address: string, latitude?: number, longitude?: number) => {
+        setNewAddress({
+            location: address,
+            latitude:
+                typeof latitude === "number" && Number.isFinite(latitude) ? latitude : 0,
+            longitude:
+                typeof longitude === "number" && Number.isFinite(longitude) ? longitude : 0,
+        });
     }, []);
 
     const submitAdd = useCallback(
