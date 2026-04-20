@@ -8,7 +8,6 @@ import { useBlogHeroCarousel } from "@/hooks/client/blog/useBlogHeroCarousel";
 import { BlogPageView } from "@/components/client/blog/BlogPageView";
 import { blogApi } from "@/lib/api/blogApi";
 import { mapPublicBlogApiListToViewModel } from "@/lib/adapters/blogViewAdapter";
-import { mockBlogCategories } from "@/mocks/blog.mock";
 import type { BlogViewModel } from "@/types/blogView.type";
 
 interface BlogPageClientProps {
@@ -30,23 +29,18 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
     );
     const {
         blogs,
-        sourceBlogs,
         initialLoading,
         isUpdating,
         showLoadingSkeleton,
         activeSearch,
         error,
         totalPages,
-        dataSource,
     } = useBlogListData(requestFilters, initialData ?? null);
     const [featuredBlogs, setFeaturedBlogs] = useState<BlogViewModel[]>([]);
     const [apiCategories, setApiCategories] = useState<string[]>([]);
-    const heroSourceBlogs = dataSource === "mock" ? sourceBlogs : featuredBlogs;
-    const heroCarousel = useBlogHeroCarousel(heroSourceBlogs);
+    const heroCarousel = useBlogHeroCarousel(featuredBlogs);
 
     useEffect(() => {
-        if (dataSource === "mock") return;
-
         let ignore = false;
         const loadDiscoveryMeta = async () => {
             try {
@@ -69,12 +63,9 @@ export default function BlogPageClient({ initialData }: BlogPageClientProps) {
         return () => {
             ignore = true;
         };
-    }, [dataSource]);
+    }, []);
 
-    const categories = useMemo(() => {
-        if (dataSource === "mock") return mockBlogCategories;
-        return apiCategories;
-    }, [apiCategories, dataSource]);
+    const categories = useMemo(() => apiCategories, [apiCategories]);
     return (
         <BlogPageView
             canManageBlogs={canManageBlogs}

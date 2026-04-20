@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import type { BlogViewModel } from "@/types/blogView.type";
 
 const VIEW_STORAGE_PREFIX = "foodeats.blog.viewed";
@@ -17,7 +16,7 @@ export function useBlogDetailViewTracking(
     const blogId = blog?.id;
 
     useEffect(() => {
-        if (!blogId || BLOG_DATA_SOURCE === "mock" || typeof window === "undefined") return;
+        if (!blogId || typeof window === "undefined") return;
 
         const storageKey = getViewStorageKey(blogId);
         const todayKey = getTodayKey();

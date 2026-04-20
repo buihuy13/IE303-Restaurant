@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import type { BlogComment, BlogCommentStatus } from "@/types/blog.type";
 
 const PAGE_SIZE = 5;
@@ -15,7 +14,7 @@ export function useBlogCommentModeration(enabled: boolean) {
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const fetchComments = useCallback(async () => {
-        if (!enabled || BLOG_DATA_SOURCE === "mock") return;
+        if (!enabled) return;
         setLoading(true);
         try {
             const response = await blogApi.getModerationComments({

@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
-import type { BlogDataSource } from "@/types/blogView.type";
 
-interface MyBlogsHeaderProps {
-    dataSource: BlogDataSource;
-}
-
-export function MyBlogsHeader({ dataSource }: MyBlogsHeaderProps) {
+export function MyBlogsHeader() {
     return (
         <div className="mb-8 border-b border-gray-200 pb-6">
             <div className="mb-4">
@@ -24,9 +19,6 @@ export function MyBlogsHeader({ dataSource }: MyBlogsHeaderProps) {
                     <h1 className="mb-2 text-4xl font-bold tracking-tight text-gray-950">My Articles</h1>
                     <p className="max-w-2xl text-gray-600">
                         Draft, publish, and archive FoodEats stories with the same fields supported by the backend today.
-                    </p>
-                    <p className="mt-2 text-xs font-medium text-gray-500">
-                        Source: {dataSource === "mock" ? "mock prototype data" : "live blog service"}
                     </p>
                 </div>
                 <Link

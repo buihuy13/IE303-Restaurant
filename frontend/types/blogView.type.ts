@@ -1,7 +1,5 @@
 import type { Blog, BlogStatus } from "@/types/blog.type";
 
-export type BlogDataSource = "api" | "mock";
-
 export interface BlogAuthorView {
     id: string;
     name: string;
@@ -19,7 +17,6 @@ export interface BlogViewModel extends Blog {
     likes?: number;
     commentsCount?: number;
     featured?: boolean;
-    dataSource: BlogDataSource;
 }
 
 export interface BlogViewPageResponse {

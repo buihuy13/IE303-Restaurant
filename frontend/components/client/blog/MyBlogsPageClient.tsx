@@ -14,7 +14,7 @@ export default function MyBlogsPageClient() {
     const { user, isAuthenticated, authRole } = useAuthStore();
     const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const filters = useMyBlogsFilters();
-    const { blogs, loading, totalPages, stats, dataSource, fetchMyBlogs } = useMyBlogsData(
+    const { blogs, loading, totalPages, stats, fetchMyBlogs } = useMyBlogsData(
         user?.id,
         filters.page,
         filters.status,
@@ -50,7 +50,6 @@ export default function MyBlogsPageClient() {
             blogs={blogs}
             totalPages={totalPages}
             stats={stats}
-            dataSource={dataSource}
             page={filters.page}
             status={filters.status}
             deletingId={deletingId}

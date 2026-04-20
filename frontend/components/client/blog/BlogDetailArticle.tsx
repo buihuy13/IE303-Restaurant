@@ -378,12 +378,11 @@ export function BlogDetailArticle({
                     </section>
                 )}
 
-                <BlogDetailComments
-                    blogId={blog.id}
-                    blogSlug={blog.slug}
-                    liveCommentsCount={blog.commentsCount}
-                    onCommentCreated={onCommentCreated}
-                />
+            <BlogDetailComments
+                blogId={blog.id}
+                liveCommentsCount={blog.commentsCount}
+                onCommentCreated={onCommentCreated}
+            />
 
                 {relatedPosts.length > 0 && (
                     <section className="border-t border-gray-200 pt-12">

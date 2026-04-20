@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
 import { mapPublicBlogApiToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { BlogViewModel } from "@/types/blogView.type";
 
@@ -18,7 +17,7 @@ export function useBlogDetailLike(
     const blogId = blog?.id;
 
     useEffect(() => {
-        if (!blogId || !isAuthenticated || BLOG_DATA_SOURCE === "mock") return;
+        if (!blogId || !isAuthenticated) return;
 
         let ignore = false;
         const refreshLikeState = async () => {

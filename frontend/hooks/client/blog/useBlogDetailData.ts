@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { mapPublicBlogApiToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
-import { getMockBlogBySlug } from "@/mocks/blog.mock";
 import type { BlogViewModel } from "@/types/blogView.type";
 
 export function useBlogDetailData(slug: string | undefined) {
@@ -14,10 +12,6 @@ export function useBlogDetailData(slug: string | undefined) {
         if (!slug) return;
         setLoading(true);
         try {
-            if (BLOG_DATA_SOURCE === "mock") {
-                setBlog(getMockBlogBySlug(slug));
-                return;
-            }
             const response = await blogApi.getBlogBySlug(slug);
             setBlog(mapPublicBlogApiToViewModel(response));
         } catch (error) {
@@ -35,5 +29,5 @@ export function useBlogDetailData(slug: string | undefined) {
         }
     }, [slug, fetchBlog]);
 
-    return { blog, setBlog, loading, fetchBlog, dataSource: BLOG_DATA_SOURCE };
+    return { blog, setBlog, loading, fetchBlog };
 }

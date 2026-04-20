@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { mapPublicBlogApiListToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
-import { mockBlogPosts } from "@/mocks/blog.mock";
 import type { BlogViewModel } from "@/types/blogView.type";
 
 const getBlogTime = (blog: BlogViewModel) =>
@@ -29,23 +27,6 @@ export function useBlogRelatedPosts(blog: BlogViewModel | null) {
             setRelatedPosts([]);
             setPreviousPost(null);
             setNextPost(null);
-            return;
-        }
-
-        if (BLOG_DATA_SOURCE === "mock") {
-            const publicPosts = sortByNewest(mockBlogPosts.filter((post) => post.status === "PUBLISHED"));
-            const related = publicPosts
-                .filter((post) => post.slug !== blog.slug)
-                .sort((a, b) => {
-                    const categoryScore = Number(b.category === blog.category) - Number(a.category === blog.category);
-                    if (categoryScore !== 0) return categoryScore;
-                    return (b.views ?? 0) - (a.views ?? 0);
-                })
-                .slice(0, 3);
-            const adjacentPosts = getAdjacentPosts(publicPosts, blog.slug);
-            setRelatedPosts(related);
-            setPreviousPost(adjacentPosts.previousPost);
-            setNextPost(adjacentPosts.nextPost);
             return;
         }
 

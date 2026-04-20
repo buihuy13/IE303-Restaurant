@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { mapBlogApiListToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
-import { getMockBlogPage } from "@/mocks/blog.mock";
 import type { BlogStatus } from "@/types/blog.type";
 import type { BlogViewModel } from "@/types/blogView.type";
 
@@ -36,17 +34,6 @@ export function useMyBlogsData(userId: string | undefined, page: number, status:
         if (!userId) return;
         setLoading(true);
         try {
-            if (BLOG_DATA_SOURCE === "mock") {
-                const draft = getMockBlogPage({ page: 1, size: 1, status: "DRAFT" }).totalElements;
-                const published = getMockBlogPage({ page: 1, size: 1, status: "PUBLISHED" }).totalElements;
-                const archived = getMockBlogPage({ page: 1, size: 1, status: "ARCHIVED" }).totalElements;
-                const response = getMockBlogPage({ page, size: PAGE_SIZE, status });
-                setStats({ all: draft + published + archived, draft, published, archived });
-                setBlogs(response.content);
-                setTotalPages(response.totalPages || 1);
-                return;
-            }
-
             const [draftCountRes, publishedCountRes, archivedCountRes] = await Promise.all([
                 blogApi.getDraftBlogs({ page: 1, size: 1, authorId: userId, sort: "updatedAt,desc" }),
                 blogApi.getBlogs({ page: 1, size: 1, authorId: userId, sort: "publishedAt,desc" }),
@@ -123,5 +110,5 @@ export function useMyBlogsData(userId: string | undefined, page: number, status:
         if (userId) fetchMyBlogs();
     }, [userId, fetchMyBlogs]);
 
-    return { blogs, loading, totalPages, stats, fetchMyBlogs, dataSource: BLOG_DATA_SOURCE };
+    return { blogs, loading, totalPages, stats, fetchMyBlogs };
 }

@@ -119,9 +119,6 @@ export const KEYCLOAK_REALM = pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_REALM], 
 
 export const KEYCLOAK_CLIENT_ID = pickEnv([process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID], [], "restaurant-frontend");
 
-export const BLOG_DATA_SOURCE: "mock" | "api" =
-    pickEnv([process.env.NEXT_PUBLIC_BLOG_DATA_SOURCE], [], "api") === "mock" ? "mock" : "api";
-
 /**
  * Convert an http(s) base URL to ws(s).
  */

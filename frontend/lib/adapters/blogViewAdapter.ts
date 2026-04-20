@@ -35,7 +35,6 @@ export function mapBlogApiToViewModel(blog: Blog): BlogViewModel {
         likes: apiBlog.likesCount,
         commentsCount: apiBlog.commentsCount,
         featured: apiBlog.featured ?? false,
-        dataSource: "api",
     };
 }
 

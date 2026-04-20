@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { API_URL, BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
+import { API_URL } from "@/lib/config/publicRuntime";
 import type { BlogMetricsResponse } from "@/types/blog.type";
 import type { BlogViewModel } from "@/types/blogView.type";
 
@@ -19,7 +19,7 @@ export function useBlogMetricsStream(
     setBlog: Dispatch<SetStateAction<BlogViewModel | null>>,
 ) {
     useEffect(() => {
-        if (!blogId || BLOG_DATA_SOURCE === "mock" || typeof window === "undefined") return;
+        if (!blogId || typeof window === "undefined") return;
 
         const eventSource = new EventSource(`${API_URL}/blogs/${blogId}/metrics/stream`);
 

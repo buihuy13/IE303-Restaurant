@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { BlogListPagination } from "@/components/client/blog/BlogListGrid";
 import { blogApi } from "@/lib/api/blogApi";
-import { BLOG_DATA_SOURCE } from "@/lib/config/publicRuntime";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { BlogComment } from "@/types/blog.type";
 
@@ -20,7 +19,6 @@ interface BlogDetailComment {
 
 interface BlogDetailCommentsProps {
     blogId: string;
-    blogSlug: string;
     liveCommentsCount?: number;
     onCommentCreated?: (nextCommentsCount: number) => void;
 }
@@ -34,56 +32,6 @@ type CommentFormErrors = Partial<Record<"message", string>>;
 
 const COMMENTS_PER_PAGE = 2;
 
-const seedComments = [
-    {
-        name: "Rico Trimmer",
-        email: "rico@example.com",
-        message:
-            "These tips are so helpful. I have always struggled with meal prep, but after trying the advice here, the week felt calmer and more organized.",
-        createdAt: "4 days ago",
-        avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80",
-    },
-    {
-        name: "Lina Kale",
-        email: "lina@example.com",
-        message:
-            "I love the one-base approach. It saved me so much time while still letting me enjoy different flavors every day.",
-        createdAt: "10 days ago",
-        avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=128&q=80",
-    },
-    {
-        name: "Marco Bean",
-        email: "marco@example.com",
-        message:
-            "The details around planning before shopping are exactly what our small team needed. Clear, practical, and easy to repeat.",
-        createdAt: "2 weeks ago",
-        avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=128&q=80",
-    },
-    {
-        name: "Ava Nguyen",
-        email: "ava@example.com",
-        message:
-            "The article made the process feel less intimidating. I tried one idea this weekend and it already changed how I plan lunches.",
-        createdAt: "3 weeks ago",
-        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80",
-    },
-    {
-        name: "Sam Curry",
-        email: "sam@example.com",
-        message:
-            "Really useful structure. I would love to see more examples for busy weeknights and small kitchens.",
-        createdAt: "1 month ago",
-        avatarUrl: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&w=128&q=80",
-    },
-    {
-        name: "Nora Leaf",
-        email: "nora@example.com",
-        message: "The tone is warm and practical. I saved this for my next menu planning session.",
-        createdAt: "1 month ago",
-        avatarUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=128&q=80",
-    },
-];
-
 const getInitials = (name: string) =>
     name
         .split(" ")
@@ -91,17 +39,6 @@ const getInitials = (name: string) =>
         .join("")
         .slice(0, 2)
         .toUpperCase();
-
-const getSeedOffset = (slug: string) =>
-    slug.split("").reduce((total, char) => total + char.charCodeAt(0), 0) % seedComments.length;
-
-function getSeedComments(slug: string): BlogDetailComment[] {
-    const offset = getSeedOffset(slug);
-    return [...seedComments.slice(offset), ...seedComments.slice(0, offset)].map((comment, index) => ({
-        ...comment,
-        id: `${slug}-comment-${index}`,
-    }));
-}
 
 function formatCommentDate(value?: string | null) {
     if (!value) return "Just now";
@@ -124,18 +61,16 @@ function mapApiCommentToView(comment: BlogComment): BlogDetailComment {
     };
 }
 
-export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onCommentCreated }: BlogDetailCommentsProps) {
-    const isMockMode = BLOG_DATA_SOURCE === "mock";
+export function BlogDetailComments({ blogId, liveCommentsCount, onCommentCreated }: BlogDetailCommentsProps) {
     const pathname = usePathname();
     const { isAuthenticated, user, loginWithKeycloak } = useAuthStore();
-    const seededComments = useMemo(() => getSeedComments(blogSlug), [blogSlug]);
-    const [comments, setComments] = useState<BlogDetailComment[]>(isMockMode ? seededComments : []);
+    const [comments, setComments] = useState<BlogDetailComment[]>([]);
     const [page, setPage] = useState(1);
     const [refreshCommentsKey, setRefreshCommentsKey] = useState(0);
-    const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
-    const [totalElements, setTotalElements] = useState(isMockMode ? seededComments.length : 0);
-    const [showListLoading, setShowListLoading] = useState(!isMockMode);
-    const [hasLoadedApiComments, setHasLoadedApiComments] = useState(isMockMode);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
+    const [showListLoading, setShowListLoading] = useState(true);
+    const [hasLoadedApiComments, setHasLoadedApiComments] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [form, setForm] = useState<CommentFormState>({
@@ -146,7 +81,7 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
     const [success, setSuccess] = useState<string | null>(null);
     const requestIdRef = useRef(0);
     const loadingDelayRef = useRef<number | null>(null);
-    const hasLoadedApiCommentsRef = useRef(isMockMode);
+    const hasLoadedApiCommentsRef = useRef(false);
 
     useEffect(() => {
         hasLoadedApiCommentsRef.current = hasLoadedApiComments;
@@ -165,19 +100,10 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
         setErrors({});
         setSuccess(null);
         setLoadError(null);
-        hasLoadedApiCommentsRef.current = isMockMode;
-        setHasLoadedApiComments(isMockMode);
-        setShowListLoading(!isMockMode);
-    }, [blogId, blogSlug, isMockMode]);
-
-    useEffect(() => {
-        if (!isMockMode) return;
-        setComments(seededComments);
-        setTotalElements(seededComments.length);
-        setTotalPages(Math.max(1, Math.ceil(seededComments.length / COMMENTS_PER_PAGE)));
-        setHasLoadedApiComments(true);
-        setShowListLoading(false);
-    }, [isMockMode, seededComments]);
+        hasLoadedApiCommentsRef.current = false;
+        setHasLoadedApiComments(false);
+        setShowListLoading(true);
+    }, [blogId]);
 
     const loadComments = useCallback(
         async (options?: { signal?: AbortSignal }) => {
@@ -232,17 +158,15 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
     );
 
     useEffect(() => {
-        if (isMockMode) return;
-
         const controller = new AbortController();
         loadComments({ signal: controller.signal });
         return () => {
             controller.abort();
         };
-    }, [isMockMode, loadComments, refreshCommentsKey]);
+    }, [loadComments, refreshCommentsKey]);
 
     useEffect(() => {
-        if (isMockMode || typeof liveCommentsCount !== "number") return;
+        if (typeof liveCommentsCount !== "number") return;
         if (liveCommentsCount <= totalElements) return;
 
         if (page !== 1) {
@@ -250,11 +174,9 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
             return;
         }
         setRefreshCommentsKey((current) => current + 1);
-    }, [isMockMode, liveCommentsCount, page, totalElements]);
+    }, [liveCommentsCount, page, totalElements]);
 
-    const visibleComments = isMockMode
-        ? comments.slice((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE)
-        : comments;
+    const visibleComments = comments;
     const displayName = user?.username || user?.email || "your account";
 
     const handleSignIn = async () => {
@@ -290,62 +212,41 @@ export function BlogDetailComments({ blogId, blogSlug, liveCommentsCount, onComm
             return;
         }
 
-        if (!isMockMode) {
-            setSubmitting(true);
-            try {
-                const createdComment = await blogApi.createBlogComment(blogId, {
-                    message: form.message.trim(),
-                    notify: form.notify,
-                });
-                const nextTotalElements = totalElements + 1;
-                setForm({ message: "", notify: false });
-                setErrors({});
-                setSuccess("Your comment was posted.");
-                setLoadError(null);
-                setTotalElements(nextTotalElements);
-                setTotalPages(Math.max(1, Math.ceil(nextTotalElements / COMMENTS_PER_PAGE)));
-                onCommentCreated?.(nextTotalElements);
-                if (page === 1) {
-                    setComments((current) => [mapApiCommentToView(createdComment), ...current].slice(0, COMMENTS_PER_PAGE));
-                    setRefreshCommentsKey((current) => current + 1);
-                } else {
-                    setPage(1);
-                }
-            } catch (error: unknown) {
-                console.error("Failed to create blog comment:", error);
-                const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
-                const msg = response?.data?.message;
-                setSuccess(null);
-                if (response?.status === 401) {
-                    setLoadError("Your sign-in session expired. Please sign in again before posting a comment.");
-                } else if (response?.status === 403) {
-                    setLoadError("Your account is not allowed to post comments.");
-                } else {
-                    setLoadError(msg ?? "Unable to post your comment. Please try again.");
-                }
-            } finally {
-                setSubmitting(false);
-            }
-            return;
-        }
-
-        const nextComments = [
-            {
-                id: `${blogSlug}-local-${Date.now()}`,
-                name: user?.username ?? "Preview User",
-                email: user?.email ?? null,
+        setSubmitting(true);
+        try {
+            const createdComment = await blogApi.createBlogComment(blogId, {
                 message: form.message.trim(),
-                createdAt: "Just now",
-            },
-            ...comments,
-        ];
-        setComments(nextComments);
-        setForm({ message: "", notify: false });
-        setPage(1);
-        setErrors({});
-        setSuccess("Your comment was added to this preview.");
-        setTotalElements(nextComments.length);
-        setTotalPages(Math.max(1, Math.ceil(nextComments.length / COMMENTS_PER_PAGE)));
+                notify: form.notify,
+            });
+            const nextTotalElements = totalElements + 1;
+            setForm({ message: "", notify: false });
+            setErrors({});
+            setSuccess("Your comment was posted.");
+            setLoadError(null);
+            setTotalElements(nextTotalElements);
+            setTotalPages(Math.max(1, Math.ceil(nextTotalElements / COMMENTS_PER_PAGE)));
+            onCommentCreated?.(nextTotalElements);
+            if (page === 1) {
+                setComments((current) => [mapApiCommentToView(createdComment), ...current].slice(0, COMMENTS_PER_PAGE));
+                setRefreshCommentsKey((current) => current + 1);
+            } else {
+                setPage(1);
+            }
+        } catch (error: unknown) {
+            console.error("Failed to create blog comment:", error);
+            const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+            const msg = response?.data?.message;
+            setSuccess(null);
+            if (response?.status === 401) {
+                setLoadError("Your sign-in session expired. Please sign in again before posting a comment.");
+            } else if (response?.status === 403) {
+                setLoadError("Your account is not allowed to post comments.");
+            } else {
+                setLoadError(msg ?? "Unable to post your comment. Please try again.");
+            }
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (

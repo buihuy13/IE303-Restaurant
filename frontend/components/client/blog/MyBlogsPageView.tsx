@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Archive, FileText, PenLine, Plus, Send } from "lucide-react";
 import type { BlogStatus } from "@/types/blog.type";
-import type { BlogDataSource, BlogViewModel } from "@/types/blogView.type";
+import type { BlogViewModel } from "@/types/blogView.type";
 import Pagination from "@/components/client/Pagination";
 import { MyBlogsHeader } from "@/components/client/blog/MyBlogsHeader";
 import { MyBlogsFilters } from "@/components/client/blog/MyBlogsFilters";
@@ -17,7 +17,6 @@ export interface MyBlogsPageViewProps {
     blogs: BlogViewModel[];
     totalPages: number;
     stats: MyBlogsStats;
-    dataSource: BlogDataSource;
     page: number;
     status: BlogStatus | "";
     deletingId: string | null;
@@ -32,7 +31,6 @@ export function MyBlogsPageView({
     blogs,
     totalPages,
     stats,
-    dataSource,
     page,
     status,
     deletingId,
@@ -51,7 +49,7 @@ export function MyBlogsPageView({
     return (
         <div className="min-h-screen bg-white py-10">
             <div className="custom-container">
-                <MyBlogsHeader dataSource={dataSource} />
+                <MyBlogsHeader />
                 <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {statItems.map((item) => {
                         const Icon = item.icon;
@@ -111,19 +109,17 @@ export function MyBlogsPageView({
                     </>
                 )}
 
-                {dataSource === "api" && (
-                    <BlogCommentModerationPanel
-                        comments={commentModeration.comments}
-                        loading={commentModeration.loading}
-                        page={commentModeration.page}
-                        totalPages={commentModeration.totalPages}
-                        status={commentModeration.status}
-                        updatingId={commentModeration.updatingId}
-                        onStatusFilterChange={commentModeration.handleStatusChange}
-                        onPageChange={commentModeration.setPage}
-                        onUpdateStatus={commentModeration.updateStatus}
-                    />
-                )}
+                <BlogCommentModerationPanel
+                    comments={commentModeration.comments}
+                    loading={commentModeration.loading}
+                    page={commentModeration.page}
+                    totalPages={commentModeration.totalPages}
+                    status={commentModeration.status}
+                    updatingId={commentModeration.updatingId}
+                    onStatusFilterChange={commentModeration.handleStatusChange}
+                    onPageChange={commentModeration.setPage}
+                    onUpdateStatus={commentModeration.updateStatus}
+                />
             </div>
         </div>
     );
