@@ -23,6 +23,11 @@ const getRuntimeApiUrl = () => {
     return API_URL;
 };
 
+/** Use on each order/cart request so the URL always matches current env (avoids stale baseURL from module init). */
+export function getApiBaseUrl(): string {
+    return getRuntimeApiUrl();
+}
+
 // Create Axios instance
 const api = axios.create({
     baseURL: getRuntimeApiUrl(),
@@ -43,30 +48,96 @@ const normalizeToken = (value: string | null): string | null => {
     return v;
 };
 
-let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
-let isRefreshing = false; // Flag to prevent multiple refresh attempts
-
-const processQueue = (error: AxiosError | null, token: string | null = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-    failedQueue = [];
+const getAccessTokenFromSources = (): string | null => {
+    const fromStore = normalizeToken(useAuthStore.getState().accessToken);
+    const fromStorage =
+        typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
+    return fromStore || fromStorage;
 };
 
-// Request Interceptor: Add Authorization header
+const getRefreshTokenFromSources = (): string | null => {
+    const fromStore = normalizeToken(useAuthStore.getState().refreshToken);
+    const fromStorage =
+        typeof window !== "undefined" ? normalizeToken(localStorage.getItem("refreshToken")) : null;
+    return fromStore || fromStorage;
+};
+
+/** JWT `exp` in ms, or null if not decodable. */
+const getJwtExpMs = (token: string): number | null => {
+    try {
+        const [, payload] = token.split(".");
+        if (!payload) return null;
+        const json = JSON.parse(
+            typeof atob === "function"
+                ? atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                : Buffer.from(payload, "base64").toString("utf8"),
+        ) as { exp?: number };
+        return typeof json.exp === "number" ? json.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+};
+
+/** Single in-flight Keycloak refresh so concurrent 401s / proactive refresh share one token exchange. */
+let inflightRefresh: Promise<string> | null = null;
+
+const refreshTokensOnce = async (): Promise<string> => {
+    const refreshToken = getRefreshTokenFromSources();
+    if (!refreshToken) {
+        throw new Error("No refresh token");
+    }
+
+    if (inflightRefresh) {
+        return inflightRefresh;
+    }
+
+    inflightRefresh = (async () => {
+        try {
+            const refreshed = await authApi.refreshAccessToken(refreshToken);
+            useAuthStore.getState().setTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.idToken);
+            return refreshed.accessToken;
+        } catch (e) {
+            useAuthStore.getState().logout();
+            throw e;
+        } finally {
+            inflightRefresh = null;
+        }
+    })();
+
+    return inflightRefresh;
+};
+
+/** Refresh access token before expiry so requests don't rely only on a 401 from the gateway. */
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
+
+const shouldProactivelyRefresh = (accessToken: string): boolean => {
+    const expMs = getJwtExpMs(accessToken);
+    if (expMs == null) return false;
+    return expMs <= Date.now() + ACCESS_TOKEN_REFRESH_SKEW_MS;
+};
+
+// Request Interceptor: Add Authorization header (+ proactive refresh when JWT is expired or near expiry)
 api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        // Get token from Zustand store
-        const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
-        const accessTokenFromStorage =
-            typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
-        const accessToken = accessTokenFromStore || accessTokenFromStorage;
+    async (config: InternalAxiosRequestConfig) => {
+        const refreshToken = getRefreshTokenFromSources();
+        let accessToken = getAccessTokenFromSources();
+
+        if (
+            typeof window !== "undefined" &&
+            refreshToken &&
+            accessToken &&
+            shouldProactivelyRefresh(accessToken) &&
+            !config.url?.includes("/users/refreshtoken")
+        ) {
+            try {
+                await refreshTokensOnce();
+                accessToken = getAccessTokenFromSources();
+            } catch {
+                // refreshTokensOnce already logged out on failure
+            }
+        }
+
         if (accessToken && config.headers) {
-            // Only add if the request isn't for refreshing the token itself
             if (!config.url?.includes("/users/refreshtoken")) {
                 config.headers["Authorization"] = `Bearer ${accessToken}`;
             }
@@ -82,24 +153,27 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
         const status = error.response?.status;
+        const data = error.response?.data;
+        const wwwAuthRaw = error.response?.headers?.["www-authenticate"];
+        const wwwAuth = typeof wwwAuthRaw === "string" ? wwwAuthRaw : "";
+        const oauthError =
+            data && typeof data === "object" && "error" in data
+                ? String((data as { error?: unknown }).error ?? "")
+                : "";
+        const looksLikeInvalidToken =
+            oauthError === "invalid_token" ||
+            wwwAuth.toLowerCase().includes("invalid_token");
 
-        // Handle 401 Unauthorized - token expired
-        // Skip token refresh for refresh token endpoint itself to avoid infinite loop
-        if (status === 401 && !originalRequest._retry) {
-            // Guest mode: if we didn't send a token, don't attempt refresh.
-            // This prevents noisy 400s from /users/refreshtoken when the user is not logged in.
-            const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
-            const accessTokenFromStorage =
-                typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
-            const hasAccessToken = !!(accessTokenFromStore || accessTokenFromStorage);
-            if (!hasAccessToken) {
-                return Promise.reject(error);
-            }
+        const shouldTryRefresh =
+            originalRequest &&
+            !originalRequest._retry &&
+            getRefreshTokenFromSources() &&
+            (status === 401 || (status === 403 && looksLikeInvalidToken));
 
-            // If this is the refresh token endpoint itself, just logout
+        if (shouldTryRefresh) {
             if (originalRequest.url?.includes("/users/refreshtoken")) {
                 useAuthStore.getState().logout();
                 return Promise.reject(error);
@@ -107,60 +181,14 @@ api.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            const refreshToken =
-                typeof window !== "undefined" ? normalizeToken(localStorage.getItem("refreshToken")) : null;
-            if (!refreshToken) {
-                useAuthStore.getState().logout();
-                return Promise.reject(error);
-            }
-
-            // If already refreshing, queue this request
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then(() => {
-                        const accessToken = useAuthStore.getState().accessToken;
-                        if (originalRequest.headers) {
-                            originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
-                        }
-                        // Ensure baseURL is correct (prevent redirects to Docker hostnames)
-                        originalRequest.baseURL = getRuntimeApiUrl();
-                        return api(originalRequest);
-                    })
-                    .catch((err) => {
-                        return Promise.reject(err);
-                    });
-            }
-
-            isRefreshing = true;
-
             try {
-                // Try to refresh the token against Keycloak
-                const refreshed = await authApi.refreshAccessToken(refreshToken);
-
-                // Update the store with new access token
-                useAuthStore.getState().setTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.idToken);
-
-                // Process queued requests
-                processQueue(null, refreshed.accessToken);
-
-                // Refresh finished successfully
-                isRefreshing = false;
-
-                // Retry original request with new token
-                // Ensure we use the correct baseURL and don't follow redirects to wrong URLs
+                const newAccess = await refreshTokensOnce();
                 if (originalRequest.headers) {
-                    originalRequest.headers["Authorization"] = `Bearer ${refreshed.accessToken}`;
+                    originalRequest.headers["Authorization"] = `Bearer ${newAccess}`;
                 }
-                // Ensure baseURL is correct (prevent redirects to Docker hostnames)
                 originalRequest.baseURL = getRuntimeApiUrl();
                 return api(originalRequest);
             } catch (refreshError) {
-                // If refresh fails (401 or other error), logout and reject
-                isRefreshing = false;
-                processQueue(refreshError as AxiosError, null);
-                useAuthStore.getState().logout();
                 return Promise.reject(refreshError);
             }
         }
@@ -177,7 +205,6 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        const data = error.response?.data;
         const errorCode = data && typeof data === "object" && "errorCode" in data ? data.errorCode : null;
 
         // Skip logging for INACTIVATED_ACCOUNT (403) - it's handled by login page
@@ -204,6 +231,23 @@ api.interceptors.response.use(
             status === 404 &&
             error.config?.url?.includes("/dashboard/merchant/") &&
             error.config?.url?.includes("/restaurant")
+        ) {
+            return Promise.reject(error);
+        }
+
+        // Skip noisy logging while chat-service is warming up/unavailable.
+        // The socket layer retries one-time token requests automatically.
+        if (status === 503 && error.config?.url?.includes("/chat/one-time-token/")) {
+            return Promise.reject(error);
+        }
+
+        // Cart-store already handles cart endpoint errors and shows user-friendly toasts.
+        // Skip duplicate interceptor logs for expected cart 4xx/5xx responses in development.
+        if (
+            typeof error.config?.url === "string" &&
+            error.config.url.includes("/cart") &&
+            typeof status === "number" &&
+            status >= 400
         ) {
             return Promise.reject(error);
         }

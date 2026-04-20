@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 import { NOTIFICATION_SSE_ORIGIN } from "../config/publicRuntime";
 
 const NOTIFICATION_URL = NOTIFICATION_SSE_ORIGIN;
+const SSE_PROBE_TIMEOUT_MS = 3000;
+const MAX_RETRY_ATTEMPTS = 8;
 
 interface UseSSEOptions {
     userId: string | null;
@@ -68,7 +70,12 @@ const resolveOrderNotificationType = (eventName: string, payload: NotificationEv
         };
     }
 
-    if (matched.includes("confirm") || matched.includes("prepar") || matched.includes("ready")) {
+    if (
+        matched.includes("confirm") ||
+        matched.includes("prepar") ||
+        matched.includes("ready") ||
+        matched.includes("deliver")
+    ) {
         return {
             type: "ORDER_CONFIRMED" as const,
             title: payload.title || "Order status updated",
@@ -98,7 +105,8 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
     const processedEventKeysRef = useRef<Set<string>>(new Set());
     const { addNotification } = useNotificationStore();
     const isConnectingRef = useRef(false);
-    const endpointIndexRef = useRef(0);
+    const retryAttemptRef = useRef(0);
+    const unavailableToastShownRef = useRef(false);
 
     const log = (...args: unknown[]) => {
         console.log("[sse-notification]", ...args);
@@ -113,7 +121,62 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
         eventSourceRef.current = null;
     };
 
-    const connect = () => {
+    const getSseEndpoints = (encodedUserId: string) => [
+        // Backend exposes the correct subscribe route only.
+        `${NOTIFICATION_URL}/api/sse/subscribe/${encodedUserId}`,
+    ];
+
+    const probeSseUrl = async (
+        url: string,
+    ): Promise<{ ok: boolean; status?: number; reason?: "http" | "network" | "timeout" }> => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), SSE_PROBE_TIMEOUT_MS);
+
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: { Accept: "text/event-stream" },
+                credentials: "include",
+                cache: "no-store",
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+            // We only probe headers/status, do not keep this stream open.
+            void response.body?.cancel();
+            return response.ok ? { ok: true } : { ok: false, status: response.status, reason: "http" };
+        } catch (error) {
+            clearTimeout(timer);
+            if ((error as { name?: string })?.name === "AbortError") {
+                return { ok: false, reason: "timeout" };
+            }
+            return { ok: false, reason: "network" };
+        }
+    };
+
+    const resolveReachableSseUrl = async (
+        encodedUserId: string,
+    ): Promise<{ url: string | null; statuses: number[]; reasons: string[] }> => {
+        const endpoints = getSseEndpoints(encodedUserId);
+        const statuses: number[] = [];
+        const reasons: string[] = [];
+
+        for (const endpoint of endpoints) {
+            const result = await probeSseUrl(endpoint);
+            if (result.ok) {
+                return { url: endpoint, statuses, reasons };
+            }
+            if (typeof result.status === "number") {
+                statuses.push(result.status);
+            }
+            if (result.reason) {
+                reasons.push(result.reason);
+            }
+        }
+
+        return { url: null, statuses, reasons };
+    };
+
+    const connect = async () => {
         const currentUserId = userId;
         if (!currentUserId || !isAuthenticated) {
             log("skip connect: missing user/auth", { currentUserId, isAuthenticated });
@@ -137,11 +200,41 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
 
         try {
             const encodedUserId = encodeURIComponent(currentUserId ?? "");
-            const sseEndpoints = [
-                `${NOTIFICATION_URL}/api/sse/subcribe/${encodedUserId}`,
-                `${NOTIFICATION_URL}/api/sse/subscribe/${encodedUserId}`,
-            ];
-            const sseUrl = sseEndpoints[endpointIndexRef.current % sseEndpoints.length];
+            const { url: sseUrl, statuses, reasons } = await resolveReachableSseUrl(encodedUserId);
+            if (!sseUrl) {
+                setIsConnected(false);
+                isConnectingRef.current = false;
+
+                const statusText = statuses.length > 0 ? `HTTP ${Array.from(new Set(statuses)).join("/")}` : null;
+                const reasonText = reasons.length > 0 ? reasons.join(", ") : "unreachable";
+                console.warn("SSE endpoint probe failed.", {
+                    endpointsTried: getSseEndpoints(encodedUserId),
+                    statusText,
+                    reasonText,
+                });
+
+                // Inform user once per disconnected period instead of spamming.
+                if (!unavailableToastShownRef.current) {
+                    unavailableToastShownRef.current = true;
+                    toast.error(
+                        statusText
+                            ? `Notification service unavailable (${statusText}).`
+                            : "Notification service unavailable right now.",
+                        { duration: 5000 },
+                    );
+                }
+
+                const nextAttempt = retryAttemptRef.current + 1;
+                retryAttemptRef.current = nextAttempt;
+                if (nextAttempt <= MAX_RETRY_ATTEMPTS && isAuthenticated && userId) {
+                    const retryDelay = Math.min(2000 * nextAttempt, 15000);
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        void connect();
+                    }, retryDelay);
+                }
+                return;
+            }
+
             log("connecting", { sseUrl });
 
             const eventSource = new EventSource(sseUrl);
@@ -149,6 +242,8 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
             eventSource.onopen = () => {
                 setIsConnected(true);
                 isConnectingRef.current = false;
+                retryAttemptRef.current = 0;
+                unavailableToastShownRef.current = false;
                 log("connected");
 
                 // Clear any pending reconnect
@@ -160,14 +255,16 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
 
             eventSource.onerror = () => {
                 const activeState = eventSource.readyState;
-                const nextEndpointIndex = endpointIndexRef.current + 1;
-                endpointIndexRef.current = nextEndpointIndex;
                 const online = typeof navigator === "undefined" ? true : navigator.onLine;
+                const nextAttempt = retryAttemptRef.current + 1;
+                retryAttemptRef.current = nextAttempt;
+                const retryDelay = Math.min(2000 * nextAttempt, 15000);
                 const details = {
                     url: sseUrl,
                     readyState: activeState,
                     online,
-                    nextRetryUrl: sseEndpoints[nextEndpointIndex % sseEndpoints.length],
+                    nextAttempt,
+                    retryDelayMs: retryDelay,
                 };
 
                 // EventSource exposes minimal error details (usually empty Event object),
@@ -180,11 +277,11 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                 // Close connection
                 closeCurrentEventSource();
 
-                // Reconnect after 5 seconds if still authenticated
-                if (isAuthenticated && userId) {
+                // Reconnect with capped backoff while authenticated.
+                if (nextAttempt <= MAX_RETRY_ATTEMPTS && isAuthenticated && userId) {
                     reconnectTimeoutRef.current = setTimeout(() => {
-                        connect();
-                    }, 5000);
+                        void connect();
+                    }, retryDelay);
                 }
             };
 
@@ -259,6 +356,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
             log("failed to create EventSource", error);
             setIsConnected(false);
             isConnectingRef.current = false;
+            retryAttemptRef.current += 1;
         }
     };
 
@@ -266,6 +364,8 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
         log("disconnect");
         setIsConnected(false);
         isConnectingRef.current = false;
+        retryAttemptRef.current = 0;
+        unavailableToastShownRef.current = false;
 
         if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
@@ -278,7 +378,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
     // Connect when user is authenticated, disconnect when logged out
     useEffect(() => {
         if (isAuthenticated && userId) {
-            connect();
+            void connect();
         } else {
             disconnect();
         }

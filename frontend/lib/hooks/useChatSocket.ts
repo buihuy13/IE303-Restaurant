@@ -2,6 +2,7 @@
 
 import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
+import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { chatApi } from "../api/chatApi";
 import { WS_BASE_URL, toWebSocketOrigin } from "../config/publicRuntime";
@@ -27,6 +28,9 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
     const clientRef = useRef<Client | null>(null);
     const subscriptionsRef = useRef<Map<string, Subscription>>(new Map());
     const isConnectingRef = useRef<boolean>(false);
+    const shouldReconnectRef = useRef<boolean>(false);
+    const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const reconnectAttemptRef = useRef<number>(0);
     const messageHandlersRef = useRef<Map<string, (message: MessageDTO) => void>>(new Map());
 
     // Connect WebSocket when user is authenticated
@@ -44,6 +48,23 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         isConnectingRef.current = true;
 
         try {
+            const clearReconnectTimer = () => {
+                if (reconnectTimerRef.current) {
+                    clearTimeout(reconnectTimerRef.current);
+                    reconnectTimerRef.current = null;
+                }
+            };
+            const scheduleReconnect = () => {
+                if (!shouldReconnectRef.current || reconnectTimerRef.current) {
+                    return;
+                }
+                const delayMs = Math.min(1000 * 2 ** reconnectAttemptRef.current, 30000);
+                reconnectAttemptRef.current += 1;
+                reconnectTimerRef.current = setTimeout(() => {
+                    reconnectTimerRef.current = null;
+                    void connect();
+                }, delayMs);
+            };
             const wsOrigin = toWebSocketOrigin(WS_BASE_URL);
             // Chat-service handshake requires a one-time token query param.
             const tokenResponse = await chatApi.getOneTimeToken(userId ?? "");
@@ -68,6 +89,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                 onConnect: () => {
                     setIsConnected(true);
                     isConnectingRef.current = false;
+                    reconnectAttemptRef.current = 0;
+                    clearReconnectTimer();
 
                     // Re-subscribe to all rooms that were subscribed before
                     const roomsToResubscribe = Array.from(subscriptionsRef.current.keys());
@@ -101,11 +124,13 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                     console.error("❌ STOMP error:", frame);
                     setIsConnected(false);
                     isConnectingRef.current = false;
+                    scheduleReconnect();
                 },
                 onWebSocketClose: (event) => {
                     void event;
                     setIsConnected(false);
                     isConnectingRef.current = false;
+                    scheduleReconnect();
                 },
                 onDisconnect: () => {
                     setIsConnected(false);
@@ -117,9 +142,21 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
             client.activate();
             return true;
         } catch (error) {
-            console.error("[chat-socket] failed to connect", error);
+            if (axios.isAxiosError(error) && error.response?.status === 503) {
+                console.warn("[chat-socket] chat service unavailable, retrying connection");
+            } else {
+                console.warn("[chat-socket] failed to connect", error);
+            }
             setIsConnected(false);
             isConnectingRef.current = false;
+            if (shouldReconnectRef.current && !reconnectTimerRef.current) {
+                const delayMs = Math.min(1000 * 2 ** reconnectAttemptRef.current, 30000);
+                reconnectAttemptRef.current += 1;
+                reconnectTimerRef.current = setTimeout(() => {
+                    reconnectTimerRef.current = null;
+                    void connect();
+                }, delayMs);
+            }
             return false;
         }
     }, [userId, isAuthenticated]);
@@ -128,6 +165,12 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
     const disconnect = useCallback(() => {
         setIsConnected(false); // Set to false immediately
         isConnectingRef.current = false;
+        shouldReconnectRef.current = false;
+        reconnectAttemptRef.current = 0;
+        if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+        }
 
         if (clientRef.current) {
             // Unsubscribe from all rooms first
@@ -250,7 +293,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
     // Connect when user is authenticated, disconnect when logged out
     useEffect(() => {
         if (isAuthenticated && userId) {
-            connect();
+            shouldReconnectRef.current = true;
+            void connect();
         } else {
             // Immediately set to false if not authenticated
             setIsConnected(false);

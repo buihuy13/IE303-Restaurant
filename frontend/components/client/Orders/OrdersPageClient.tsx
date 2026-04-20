@@ -5,17 +5,17 @@ import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function OrdersPageClient() {
-    const router = useRouter();
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const authLoading = useAuthStore((state) => state.loading);
     const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
     const fetchProfile = useAuthStore((state) => state.fetchProfile);
+    const loginWithKeycloak = useAuthStore((state) => state.loginWithKeycloak);
 
     const [orders, setOrders] = useState<OrdersPageOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -51,6 +51,9 @@ export default function OrdersPageClient() {
                 paymentStatus?: string;
                 items?: Array<{
                     productId?: string | number;
+                    sizeId?: string;
+                    productSizeId?: string;
+                    sizeName?: string;
                     productName?: string;
                     price?: number;
                     quantity?: number;
@@ -86,6 +89,8 @@ export default function OrdersPageClient() {
                       return {
                           id: fallbackId,
                           productId: (item.productId ?? fallbackId).toString(),
+                          sizeId: item.sizeId || item.productSizeId,
+                          sizeName: item.sizeName,
                           productName: item.productName || "Unknown item",
                           restaurantId,
                           restaurantName,
@@ -156,7 +161,9 @@ export default function OrdersPageClient() {
                 if (!isLoggingOut) {
                     toast.error("Please login to view your orders");
                 }
-                router.push("/login");
+                void loginWithKeycloak({
+                    redirectPath: pathname || "/orders",
+                });
             }
             return;
         }
@@ -172,7 +179,7 @@ export default function OrdersPageClient() {
                 return () => clearTimeout(retryTimer);
             }
         }
-    }, [authLoading, isAuthenticated, userId, isLoggingOut, fetchOrders, router, fetchProfile]);
+    }, [authLoading, isAuthenticated, userId, isLoggingOut, fetchOrders, fetchProfile, loginWithKeycloak, pathname]);
 
     useEffect(() => {
         if (!isLoading && !hasMarkedAsReadRef.current) {
@@ -219,6 +226,7 @@ export default function OrdersPageClient() {
                 confirmed: "Order confirmed! Restaurant is preparing your order.",
                 preparing: "Restaurant is preparing your order.",
                 ready: "Your order is ready! Delivery is on the way.",
+                delivering: "Your order is out for delivery.",
                 completed: "Order completed! Thank you for your order.",
                 cancelled: "Order has been cancelled.",
             };
@@ -279,11 +287,13 @@ export default function OrdersPageClient() {
     const handleRetry = useCallback(() => {
         if (!userId) {
             toast.error("Please login to view your orders");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: pathname || "/orders",
+            });
             return;
         }
         fetchOrders();
-    }, [fetchOrders, router, userId]);
+    }, [fetchOrders, userId, loginWithKeycloak, pathname]);
 
     const handleSortChange = useCallback(
         (sortValue: string) => {
@@ -307,15 +317,16 @@ export default function OrdersPageClient() {
                         return a.totalAmount - b.totalAmount;
                     case "status":
                         const statusOrder: Record<string, number> = {
-                            PENDING: 1,
-                            CONFIRMED: 2,
-                            PREPARING: 3,
-                            READY: 4,
-                            COMPLETED: 5,
-                            CANCELLED: 6,
+                            pending: 1,
+                            confirmed: 2,
+                            preparing: 3,
+                            ready: 4,
+                            delivering: 5,
+                            completed: 6,
+                            cancelled: 7,
                         };
-                        const aStatus = a.status || "";
-                        const bStatus = b.status || "";
+                        const aStatus = (a.status || "").toLowerCase();
+                        const bStatus = (b.status || "").toLowerCase();
                         return (statusOrder[aStatus] || 99) - (statusOrder[bStatus] || 99);
                     default:
                         return 0;

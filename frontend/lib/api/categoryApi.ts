@@ -1,5 +1,5 @@
-import api from "../axios";
 import type { Category, CategoryData } from "@/types";
+import api from "../axios";
 
 // Backend returns CateResponse { cateId, cateName }
 type CateResponse = {

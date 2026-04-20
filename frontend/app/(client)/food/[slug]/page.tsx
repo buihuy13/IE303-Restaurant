@@ -3,6 +3,7 @@
 import FoodDetail from "@/components/client/Food/FoodDetail";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product, Restaurant } from "@/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -37,6 +38,7 @@ type LoadState =
 
 export default function FoodDetailPage() {
     const router = useRouter();
+    const loginWithKeycloak = useAuthStore((state) => state.loginWithKeycloak);
     const params = useParams<{ slug: string }>();
     const slug = useMemo(() => (typeof params?.slug === "string" ? params.slug : ""), [params]);
 
@@ -149,7 +151,19 @@ export default function FoodDetailPage() {
                         <div className="mt-2 text-sm text-gray-600">{state.message}</div>
                         <div className="mt-5 flex flex-wrap gap-2">
                             {state.code === 401 && (
-                                <Button type="button" variant="brand" className="rounded-full" onClick={() => router.push("/login")}>
+                                <Button
+                                    type="button"
+                                    variant="brand"
+                                    className="rounded-full"
+                                    onClick={() =>
+                                        void loginWithKeycloak({
+                                            redirectPath:
+                                                typeof window !== "undefined"
+                                                    ? `${window.location.pathname}${window.location.search}`
+                                                    : `/food/${slug}`,
+                                        })
+                                    }
+                                >
                                     Login
                                 </Button>
                             )}

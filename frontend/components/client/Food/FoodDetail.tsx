@@ -1,14 +1,14 @@
 "use client";
 
 // 1. Import ProductSize
+import { productApi } from "@/lib/api/productApi";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product, ProductSize, Restaurant } from "@/types";
-import { Check, ChevronRight, Home, Minus, Plus } from "lucide-react";
+import { Check, ChevronRight, Home, Minus, Plus, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -18,9 +18,8 @@ type FoodDetailClientProps = {
 };
 
 export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientProps) {
-    const router = useRouter();
     const { addItem } = useCartStore();
-    const { user } = useAuthStore();
+    const { user, loginWithKeycloak } = useAuthStore();
     const [quantity, setQuantity] = useState(1);
     const [specialInstructions, setSpecialInstructions] = useState("");
     const [isAdding, setIsAdding] = useState(false);
@@ -55,7 +54,9 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
 
         if (!user) {
             toast.error("Please login to add items to cart");
-            router.push("/login");
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+            });
             return;
         }
 
@@ -66,14 +67,61 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
 
         setIsAdding(true);
         try {
+            const directRestaurantId = typeof restaurant?.id === "string" ? restaurant.id.trim() : "";
+            const directRestaurantName = typeof restaurant?.resName === "string" ? restaurant.resName.trim() : "";
+
+            let resolvedRestaurantId = directRestaurantId;
+            let resolvedRestaurantName = directRestaurantName || "Unknown Restaurant";
+
+            if (!resolvedRestaurantId) {
+                try {
+                    const response = await productApi.getRestaurantByProductId(foodItem.id);
+                    const payload = response.data as {
+                        id?: unknown;
+                        resId?: unknown;
+                        restaurantId?: unknown;
+                        resName?: unknown;
+                        name?: unknown;
+                    } | null;
+
+                    if (payload && typeof payload === "object") {
+                        const fallbackIdRaw = payload.id ?? payload.resId ?? payload.restaurantId;
+                        resolvedRestaurantId =
+                            typeof fallbackIdRaw === "string"
+                                ? fallbackIdRaw.trim()
+                                : fallbackIdRaw != null &&
+                                    (typeof fallbackIdRaw === "number" || typeof fallbackIdRaw === "bigint")
+                                  ? String(fallbackIdRaw)
+                                  : "";
+
+                        const fallbackName =
+                            typeof payload.resName === "string"
+                                ? payload.resName.trim()
+                                : typeof payload.name === "string"
+                                  ? payload.name.trim()
+                                  : "";
+                        if (fallbackName) {
+                            resolvedRestaurantName = fallbackName;
+                        }
+                    }
+                } catch {
+                    // ignore and use final guard below
+                }
+            }
+
+            if (!resolvedRestaurantId) {
+                toast.error("Restaurant information not found");
+                return;
+            }
+            console.log(quantity, "quantity");
             await addItem(
                 {
                     id: foodItem.id,
                     name: foodItem.productName,
                     price: selectedSize.price,
                     image: getImageUrl(foodItem.imageURL),
-                    restaurantId: restaurant.id,
-                    restaurantName: restaurant.resName,
+                    restaurantId: resolvedRestaurantId,
+                    restaurantName: resolvedRestaurantName,
                     categoryId: foodItem.categoryId,
                     categoryName: foodItem.categoryName,
                     sizeId: selectedSize.id,
@@ -94,7 +142,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                 setIsAdding(false);
             }, 300);
         }
-    }, [isAdding, isMounted, addItem, user, selectedSize, foodItem, restaurant, quantity, specialInstructions, router]);
+    }, [isAdding, isMounted, addItem, user, selectedSize, foodItem, restaurant, quantity, specialInstructions, loginWithKeycloak]);
 
     const currentPrice = selectedSize?.price ?? 0;
     const totalPrice = (currentPrice * quantity).toFixed(2);
@@ -106,6 +154,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
             maximumFractionDigits: 2,
         });
     };
+    const restaurantHref = restaurant?.slug ? `/restaurants/${restaurant.slug}` : "/search?type=restaurants";
 
     return (
         <div>
@@ -127,14 +176,23 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                 </Link>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <Link
-                    href={`/restaurants/${restaurant.slug}`}
-                    className="text-gray-600 hover:text-[#EE4D2D] transition-colors font-medium"
+                    href={restaurantHref}
+                    className="inline-flex items-center gap-1 rounded-full border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-3 py-1 text-[#EE4D2D] transition-colors hover:bg-[#EE4D2D] hover:text-white font-semibold"
                 >
+                    <Store className="h-3.5 w-3.5" />
                     {restaurant.resName}
                 </Link>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-800 font-semibold truncate max-w-[300px]">{foodItem.productName}</span>
             </nav>
+
+            <Link
+                href={restaurantHref}
+                className="mb-6 inline-flex items-center gap-2 rounded-xl border border-[#EE4D2D]/25 bg-[#EE4D2D]/5 px-4 py-2 text-sm font-semibold text-[#EE4D2D] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#EE4D2D]/10 hover:shadow"
+            >
+                <Store className="h-4 w-4" />
+                Xem nha hang: {restaurant.resName}
+            </Link>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 p-4 lg:p-0">
                 {/* Image Section - ShopeeFood Style */}

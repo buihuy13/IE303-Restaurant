@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlogCreateForm } from "@/hooks/client/blog/useBlogCreateForm";
 import { useEditorToolbarImageOverride } from "@/hooks/client/blog/useEditorToolbarImageOverride";
 import { BlogCreatePageView } from "@/components/client/blog/BlogCreatePageView";
 
 export default function BlogCreatePageClient() {
-    const router = useRouter();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const form = useBlogCreateForm(
         user?.id,
         user?.username ?? undefined,
@@ -19,8 +17,12 @@ export default function BlogCreatePageClient() {
     useEditorToolbarImageOverride(form.editorImageInputRef, form.content);
 
     useEffect(() => {
-        if (!isAuthenticated || !user) router.push("/login");
-    }, [isAuthenticated, user, router]);
+        if (!isAuthenticated || !user) {
+            void loginWithKeycloak({
+                redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog/create",
+            });
+        }
+    }, [isAuthenticated, user, loginWithKeycloak]);
 
     if (!isAuthenticated || !user) return null;
 

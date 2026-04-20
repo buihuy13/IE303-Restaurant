@@ -13,6 +13,7 @@ import ChatWindow from "./ChatWindow";
 const normalizeId = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 const isSameId = (left: string | null | undefined, right: string | null | undefined) =>
     normalizeId(left) === normalizeId(right);
+const normalizeText = (value: string | null | undefined) => (value ?? "").trim();
 const toTimestampMs = (value: unknown) => {
     if (value == null) return 0;
     if (value instanceof Date) {
@@ -24,6 +25,13 @@ const toTimestampMs = (value: unknown) => {
     }
     const raw = typeof value === "string" ? value.trim() : String(value).trim();
     if (!raw) return 0;
+    // Accept unix epoch as string (seconds or milliseconds).
+    if (/^\d+$/.test(raw)) {
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric)) {
+            return raw.length <= 10 ? numeric * 1000 : numeric;
+        }
+    }
     const normalized = raw
         .replace(" ", "T")
         // Keep at most millisecond precision so Date parsing is stable in browsers.
@@ -31,7 +39,101 @@ const toTimestampMs = (value: unknown) => {
     const needsTimezone = !/[zZ]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized);
     const withTimezone = needsTimezone ? `${normalized}Z` : normalized;
     const parsed = new Date(withTimezone).getTime();
-    return Number.isNaN(parsed) ? 0 : parsed;
+    if (!Number.isNaN(parsed)) {
+        return parsed;
+    }
+
+    // Handle object-like timestamps from some websocket serializers.
+    if (typeof value === "object") {
+        const candidate = value as {
+            epochMilli?: number;
+            epochSecond?: number;
+            nano?: number;
+            seconds?: number;
+            nanos?: number;
+            year?: number;
+            monthValue?: number;
+            month?: number;
+            dayOfMonth?: number;
+            day?: number;
+            hour?: number;
+            minute?: number;
+            second?: number;
+        };
+        if (typeof candidate.epochMilli === "number" && Number.isFinite(candidate.epochMilli)) {
+            return candidate.epochMilli;
+        }
+        const secondPart =
+            typeof candidate.epochSecond === "number"
+                ? candidate.epochSecond
+                : typeof candidate.seconds === "number"
+                  ? candidate.seconds
+                  : null;
+        if (secondPart != null && Number.isFinite(secondPart)) {
+            const nanoPart =
+                typeof candidate.nano === "number"
+                    ? candidate.nano
+                    : typeof candidate.nanos === "number"
+                      ? candidate.nanos
+                      : 0;
+            return secondPart * 1000 + Math.floor(nanoPart / 1_000_000);
+        }
+
+        // Handle LocalDateTime-like object payloads (year/month/day/hour/minute/second/nano).
+        const year = typeof candidate.year === "number" ? candidate.year : null;
+        const monthRaw =
+            typeof candidate.monthValue === "number"
+                ? candidate.monthValue
+                : typeof candidate.month === "number"
+                  ? candidate.month
+                  : null;
+        const day =
+            typeof candidate.dayOfMonth === "number"
+                ? candidate.dayOfMonth
+                : typeof candidate.day === "number"
+                  ? candidate.day
+                  : null;
+        if (year != null && monthRaw != null && day != null) {
+            const hour = typeof candidate.hour === "number" ? candidate.hour : 0;
+            const minute = typeof candidate.minute === "number" ? candidate.minute : 0;
+            const second = typeof candidate.second === "number" ? candidate.second : 0;
+            const nano =
+                typeof candidate.nano === "number"
+                    ? candidate.nano
+                    : typeof candidate.nanos === "number"
+                      ? candidate.nanos
+                      : 0;
+            const utcMs = Date.UTC(year, monthRaw - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
+            if (Number.isFinite(utcMs)) {
+                return utcMs;
+            }
+        }
+    }
+
+    return 0;
+};
+const messageFingerprint = (message: {
+    id?: string;
+    roomId: string;
+    senderId: string;
+    receiverId: string;
+    content: string;
+    timestamp?: unknown;
+}) => {
+    const trimmedId = message.id?.trim();
+    if (trimmedId && !trimmedId.startsWith("temp-")) {
+        return `id:${trimmedId}`;
+    }
+    const secondBucket = Math.floor(toTimestampMs(message.timestamp) / 1000);
+    const stableSecond = Number.isFinite(secondBucket) && secondBucket > 0 ? secondBucket : "no-ts";
+    return [
+        "sig",
+        normalizeId(message.roomId),
+        normalizeId(message.senderId),
+        normalizeId(message.receiverId),
+        stableSecond,
+        normalizeText(message.content),
+    ].join("|");
 };
 
 interface ChatClientProps {
@@ -200,11 +302,14 @@ export default function ChatClient({
                 return;
             }
 
-            const messageKey = `${normalizedMessage.roomId}-${normalizedMessage.content}-${normalizedMessage.senderId}-${normalizedMessage.receiverId}-${
-                normalizedMessage.timestamp
-                    ? Math.floor(toTimestampMs(normalizedMessage.timestamp) / 1000)
-                    : Math.floor(Date.now() / 1000)
-            }`;
+            // Prevent duplicate rendering on sender side:
+            // own message can arrive from websocket and then again from backend sync/history.
+            // For current user, trust backend sync as source of truth.
+            if (isFromCurrentUser) {
+                return;
+            }
+
+            const messageKey = messageFingerprint(normalizedMessage);
 
             if (processedMessagesRef.current.has(messageKey)) {
                 return;
@@ -232,6 +337,9 @@ export default function ChatClient({
                 const messageTime = toTimestampMs(messageTimestamp);
 
                 const existingMessage = filteredPrev.find((m) => {
+                    if (messageFingerprint(m) === messageFingerprint({ ...normalizedMessage, timestamp: messageTimestamp })) {
+                        return true;
+                    }
                     const mTime = toTimestampMs(m.timestamp);
                     const timeDiff = Math.abs(mTime - messageTime);
                     return (
@@ -266,7 +374,7 @@ export default function ChatClient({
                 }
 
                 const newMessage: Message = {
-                    id: `temp-${Date.now()}`,
+                    id: `live-${messageKey}`,
                     roomId: normalizedMessage.roomId,
                     senderId: normalizedMessage.senderId,
                     receiverId: normalizedMessage.receiverId,
@@ -311,11 +419,7 @@ export default function ChatClient({
                 return;
             }
 
-            const messageKey = `${normalizedMessage.content}-${normalizedMessage.senderId}-${normalizedMessage.receiverId}-${
-                normalizedMessage.timestamp
-                    ? Math.floor(toTimestampMs(normalizedMessage.timestamp) / 1000)
-                    : Math.floor(Date.now() / 1000)
-            }`;
+            const messageKey = messageFingerprint(normalizedMessage);
 
             if (!processedMessagesPerRoomRef.current.has(normalizedMessage.roomId)) {
                 processedMessagesPerRoomRef.current.set(normalizedMessage.roomId, new Set());
@@ -415,8 +519,8 @@ export default function ChatClient({
                     const existingIndex = acc.findIndex((m) => {
                         const sameId = m.id === msg.id;
                         const sameContent = m.content === msg.content;
-                        const sameSender = m.senderId === msg.senderId;
-                        const sameReceiver = m.receiverId === msg.receiverId;
+                        const sameSender = isSameId(m.senderId, msg.senderId);
+                        const sameReceiver = isSameId(m.receiverId, msg.receiverId);
                         const timeDiff = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(msg.timestamp));
                         const sameTime = timeDiff < 1000;
                         return sameId || (sameContent && sameSender && sameReceiver && sameTime);
@@ -434,9 +538,7 @@ export default function ChatClient({
                 );
 
                 sortedMessages.forEach((msg) => {
-                    const messageKey = `${msg.roomId}-${msg.content}-${msg.senderId}-${msg.receiverId}-${Math.floor(
-                        toTimestampMs(msg.timestamp) / 1000,
-                    )}`;
+                    const messageKey = messageFingerprint(msg);
                     processedMessagesRef.current.add(messageKey);
                 });
 
@@ -478,6 +580,84 @@ export default function ChatClient({
         loadMessages();
         // Intentionally scoped to selected room + current user to avoid unnecessary reload loops.
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRoomId, currentUserId, normalizeMessageForCurrentRoom]);
+
+    // Fallback near-realtime sync for the currently opened room.
+    // This prevents "must refresh to see new message" when websocket delivery is delayed/missed.
+    useEffect(() => {
+        if (!selectedRoomId) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const syncLatestMessages = async () => {
+            if (cancelled || typeof document === "undefined" || document.visibilityState !== "visible") {
+                return;
+            }
+
+            try {
+                const response = await chatApi.getMessagesByRoomId(selectedRoomId, 0);
+                if (cancelled) return;
+
+                const loadedMessages = response.data?.content || [];
+                const mappedMessages: Message[] = loadedMessages.map((msg) => ({
+                    id: msg.id,
+                    roomId: msg.roomId || msg.room?.id || selectedRoomId,
+                    senderId: msg.senderId,
+                    receiverId: msg.receiverId,
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    read: msg.read,
+                }));
+
+                const currentPartner = partnerIdRef.current;
+                const normalizedIncoming = currentPartner
+                    ? mappedMessages
+                          .map((msg) => normalizeMessageForCurrentRoom(msg, currentPartner))
+                          .filter((msg) => {
+                              const isFromCurrentUser = isSameId(msg.senderId, currentUserId);
+                              const isToCurrentUser = isSameId(msg.receiverId, currentUserId);
+                              const isFromPartner = isSameId(msg.senderId, currentPartner);
+                              const isToPartner = isSameId(msg.receiverId, currentPartner);
+                              return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+                          })
+                    : mappedMessages;
+
+                // Use backend as the source of truth in fallback sync to prevent accumulated duplicates.
+                const uniqueMessages = normalizedIncoming.reduce((acc, msg) => {
+                    const exists = acc.some((m) => {
+                        if (messageFingerprint(m) === messageFingerprint(msg)) {
+                            return true;
+                        }
+                        const sameId = m.id === msg.id;
+                        const sameContent = m.content === msg.content;
+                        const sameSender = isSameId(m.senderId, msg.senderId);
+                        const sameReceiver = isSameId(m.receiverId, msg.receiverId);
+                        const sameTime = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(msg.timestamp)) < 1000;
+                        return sameId || (sameContent && sameSender && sameReceiver && sameTime);
+                    });
+                    if (!exists) {
+                        acc.push(msg);
+                    }
+                    return acc;
+                }, [] as Message[]);
+
+                const sortedMessages = uniqueMessages.sort((a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp));
+                setMessages(sortedMessages);
+            } catch {
+                // Silent fallback sync failure; websocket still handles primary realtime updates.
+            }
+        };
+
+        const intervalId = setInterval(() => {
+            void syncLatestMessages();
+        }, 2000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(intervalId);
+        };
     }, [selectedRoomId, currentUserId, normalizeMessageForCurrentRoom]);
 
     const lastUpdatedPartnerRef = useRef<string | null>(null);
@@ -568,31 +748,8 @@ export default function ChatClient({
                 return;
             }
 
-            const optimisticMessage: Message = {
-                id: `temp-${Date.now()}-${currentUserId}`,
-                roomId: actualRoomId,
-                senderId: currentUserId,
-                receiverId,
-                content,
-                timestamp: new Date().toISOString(),
-                read: false,
-            };
-            setMessages((prev) => {
-                const exists = prev.some(
-                    (m) =>
-                        m.content === optimisticMessage.content &&
-                            isSameId(m.senderId, optimisticMessage.senderId) &&
-                            isSameId(m.receiverId, optimisticMessage.receiverId) &&
-                        m.id.startsWith("temp-") &&
-                        Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(optimisticMessage.timestamp)) <
-                            1000,
-                );
-                if (exists) {
-                    return prev;
-                }
-                const updated = [...prev, optimisticMessage];
-                return updated.sort((a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp));
-            });
+            // Do not append optimistic message here.
+            // Rely on websocket + fallback sync to avoid duplicate visual copies.
 
             useChatStore.getState().updateRoomLastMessage(actualRoomId, content, new Date().toISOString());
 

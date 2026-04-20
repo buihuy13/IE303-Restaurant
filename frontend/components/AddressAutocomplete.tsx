@@ -11,14 +11,16 @@ interface AddressSuggestion {
 }
 
 interface AddressAutocompleteProps {
+    id?: string;
     value: string;
-    onChange: (address: string, latitude: number, longitude: number) => void;
+    onChange: (address: string, latitude?: number, longitude?: number) => void;
     placeholder?: string;
     disabled?: boolean;
     className?: string;
 }
 
 export default function AddressAutocomplete({
+    id,
     value,
     onChange,
     placeholder = "Enter address (e.g., 123 Main Street, Ho Chi Minh City)...",
@@ -80,6 +82,8 @@ export default function AddressAutocomplete({
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
         setInputValue(newValue);
+        // Keep parent form state in sync (validation uses this, not only local input state).
+        onChange(newValue);
 
         // Clear previous timer
         if (debounceTimerRef.current) {
@@ -153,6 +157,7 @@ export default function AddressAutocomplete({
         <div className={`relative ${className}`}>
             <div className="relative">
                 <input
+                    id={id}
                     ref={inputRef}
                     type="text"
                     value={inputValue}

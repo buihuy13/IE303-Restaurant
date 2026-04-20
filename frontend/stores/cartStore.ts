@@ -40,7 +40,7 @@ interface CartState {
     userId: string | null;
     isLoading: boolean;
     isAddingItem: boolean;
-    pendingAdds: Record<string, number>; // itemKey -> timestamp (ms)
+    pendingAdds: Record<string, number>; // semanticItemKey -> timestamp (ms)
 
     // Actions
     setUserId: (userId: string | null) => void;
@@ -52,7 +52,72 @@ interface CartState {
     clearRestaurant: (restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
 }
 
-const getItemKey = (itemId: string, restaurantId: string): string => `${restaurantId}::${itemId}`;
+const normalizeKeyPart = (value: string | undefined): string => (value ?? "").trim().toLowerCase();
+
+const buildSemanticItemKey = (
+    restaurantId: string,
+    baseProductId: string,
+    sizeId?: string,
+    customizations?: string,
+): string =>
+    [
+        normalizeKeyPart(restaurantId),
+        normalizeKeyPart(baseProductId),
+        normalizeKeyPart(sizeId),
+        normalizeKeyPart(customizations),
+    ].join("::");
+
+const getSemanticItemKey = (item: Pick<CartItem, "restaurantId" | "baseProductId" | "sizeId" | "customizations">) =>
+    buildSemanticItemKey(item.restaurantId, item.baseProductId, item.sizeId, item.customizations);
+
+const getCartErrorMessage = (error: unknown): string | null => {
+    const maybeError = error as {
+        response?: { data?: unknown; status?: number };
+        message?: string;
+        code?: string;
+    };
+    const data = maybeError?.response?.data;
+    const status = maybeError?.response?.status;
+
+    if (data && typeof data === "object") {
+        const dataRecord = data as Record<string, unknown>;
+        const directMessage = dataRecord["message"];
+        if (typeof directMessage === "string" && directMessage.trim()) {
+            const normalized = directMessage.trim();
+            if (normalized.includes("Product not found")) {
+                return "Selected product is no longer available. Please choose another item.";
+            }
+            if (
+                normalized.includes("Product size") &&
+                (normalized.includes("not found") || normalized.includes("does not exist"))
+            ) {
+                return "Selected size is no longer available. Please choose a different size.";
+            }
+            return normalized;
+        }
+
+        // Validation errors may come back as { fieldName: "error message" }.
+        for (const value of Object.values(dataRecord)) {
+            if (typeof value === "string" && value.trim()) {
+                return value.trim();
+            }
+        }
+    }
+
+    if (status === 400) {
+        return "Invalid request data. Please refresh the page and try again.";
+    }
+
+    if (status === 404) {
+        return "Requested item was not found. Please refresh the menu and try again.";
+    }
+
+    if (typeof maybeError?.message === "string" && maybeError.message.trim()) {
+        return maybeError.message.trim();
+    }
+
+    return null;
+};
 
 const mergeWithPendingAdds = (
     backendItems: CartItem[],
@@ -62,11 +127,11 @@ const mergeWithPendingAdds = (
     const now = Date.now();
     const ttlMs = 30000;
 
-    const backendKeys = new Set(backendItems.map((it) => getItemKey(it.id, it.restaurantId)));
+    const backendKeys = new Set(backendItems.map((it) => getSemanticItemKey(it)));
     const merged = [...backendItems];
 
     for (const localItem of currentItems) {
-        const key = getItemKey(localItem.id, localItem.restaurantId);
+        const key = getSemanticItemKey(localItem);
         const pendingAt = pendingAdds[key];
         if (!pendingAt) continue;
         if (now - pendingAt > ttlMs) continue;
@@ -163,6 +228,37 @@ const createCartItemId = (baseProductId: string, options: CartItemOptions): stri
     return `${baseProductId}--${base64UrlEncode(json)}`;
 };
 
+/**
+ * Unwraps common API gateway / legacy wrappers until we find an object with `restaurants` as an array.
+ * Handles e.g. `{ data: { data: { restaurants: [] } } }` which would otherwise break a single `data` unwrap.
+ */
+const extractCartRecord = (raw: unknown): Record<string, unknown> | null => {
+    if (!raw || typeof raw !== "object") {
+        return null;
+    }
+    let cur: unknown = raw;
+    for (let depth = 0; depth < 8; depth++) {
+        if (!cur || typeof cur !== "object") {
+            return null;
+        }
+        const rec = cur as Record<string, unknown>;
+        if (Array.isArray(rec["restaurants"])) {
+            return rec;
+        }
+        const next =
+            (rec["data"] && typeof rec["data"] === "object" ? rec["data"] : undefined) ??
+            (rec["payload"] && typeof rec["payload"] === "object" ? rec["payload"] : undefined) ??
+            (rec["result"] && typeof rec["result"] === "object" ? rec["result"] : undefined) ??
+            (rec["content"] && typeof rec["content"] === "object" ? rec["content"] : undefined);
+        if (next) {
+            cur = next;
+            continue;
+        }
+        return null;
+    }
+    return null;
+};
+
 const parseCartItemId = (cartItemId: string): { baseProductId: string; options: CartItemOptions } => {
     const separatorIndex = cartItemId.indexOf("--");
     if (separatorIndex === -1) {
@@ -185,15 +281,12 @@ const parseCartItemId = (cartItemId: string): { baseProductId: string; options: 
 };
 
 const mapCartToItems = (cart: unknown): CartItem[] | null => {
-    if (!cart || typeof cart !== "object") {
-        console.warn("[mapCartToItems] Cart is not an object:", cart);
+    const cartPayload = extractCartRecord(cart);
+    if (!cartPayload) {
+        console.warn("[mapCartToItems] Could not extract cart payload:", cart);
         return null;
     }
 
-    const cartRecord = cart as Record<string, unknown>;
-    const potentialData = cartRecord["data"];
-    const cartPayload =
-        potentialData && typeof potentialData === "object" ? (potentialData as Record<string, unknown>) : cartRecord;
     const restaurants = cartPayload["restaurants"];
     if (!Array.isArray(restaurants)) {
         console.warn("[mapCartToItems] restaurants is not an array:", restaurants, "cartPayload:", cartPayload);
@@ -239,7 +332,13 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                     : rawPid != null && (typeof rawPid === "number" || typeof rawPid === "bigint")
                       ? String(rawPid)
                       : undefined;
-            const productName = typeof itemRecord["productName"] === "string" ? itemRecord["productName"] : undefined;
+            const rawName = itemRecord["productName"];
+            const productName =
+                typeof rawName === "string" && rawName.trim() !== ""
+                    ? rawName.trim()
+                    : typeof rawName === "number" || typeof rawName === "bigint"
+                      ? String(rawName)
+                      : "Item";
             const rawPrice = itemRecord["price"];
             const price =
                 typeof rawPrice === "number"
@@ -255,11 +354,31 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                       ? Number(rawQty)
                       : undefined;
 
-            if (!productId || !productName || price === undefined || !Number.isFinite(price) || quantity === undefined || !Number.isFinite(quantity)) {
+            if (!productId || price === undefined || !Number.isFinite(price) || quantity === undefined || !Number.isFinite(quantity)) {
                 return;
             }
 
-            const { baseProductId, options } = parseCartItemId(productId);
+            const rawProductSizeId = itemRecord["productSizeId"] ?? itemRecord["sizeId"];
+            const productSizeId =
+                typeof rawProductSizeId === "string" && rawProductSizeId.trim() !== ""
+                    ? rawProductSizeId.trim()
+                    : rawProductSizeId != null && (typeof rawProductSizeId === "number" || typeof rawProductSizeId === "bigint")
+                      ? String(rawProductSizeId)
+                      : undefined;
+
+            const rawSizeName = itemRecord["sizeName"];
+            const sizeNameFromRecord =
+                typeof rawSizeName === "string" && rawSizeName.trim() !== "" ? rawSizeName.trim() : undefined;
+
+            const cartItemId =
+                productSizeId && !productId.includes("--")
+                    ? createCartItemId(productId, {
+                          sizeId: productSizeId,
+                          ...(sizeNameFromRecord ? { sizeName: sizeNameFromRecord } : {}),
+                      })
+                    : productId;
+
+            const { baseProductId, options } = parseCartItemId(cartItemId);
 
             // Priority: cartItemImage > imageURL from record > imageURL from options > placeholder
             const rawCartItemImage = itemRecord["cartItemImage"];
@@ -278,12 +397,9 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
             const image = cartItemImageFromRecord || imageFromOptions || imageFromRecord || "/placeholder.png";
 
             // Priority: sizeId/sizeName from record > from options (encoded in productId)
-            const rawSizeId = itemRecord["sizeId"];
+            const rawSizeId = itemRecord["sizeId"] ?? itemRecord["productSizeId"];
             const sizeIdFromRecord =
                 typeof rawSizeId === "string" && rawSizeId.trim() !== "" ? rawSizeId.trim() : undefined;
-            const rawSizeName = itemRecord["sizeName"];
-            const sizeNameFromRecord =
-                typeof rawSizeName === "string" && rawSizeName.trim() !== "" ? rawSizeName.trim() : undefined;
             const sizeId = sizeIdFromRecord || (typeof options.sizeId === "string" ? options.sizeId : undefined);
             const sizeName =
                 sizeNameFromRecord || (typeof options.sizeName === "string" ? options.sizeName : undefined);
@@ -303,7 +419,7 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
             const categoryName = typeof options.categoryName === "string" ? options.categoryName : undefined;
 
             items.push({
-                id: productId,
+                id: cartItemId,
                 baseProductId,
                 name: productName,
                 price,
@@ -338,7 +454,7 @@ export const useCartStore = create<CartState>()(
                 // Clear pending keys that are now present in backend response.
                 const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
                 for (const it of parsedItems) {
-                    delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                    delete nextPendingAdds[getSemanticItemKey(it)];
                 }
 
                 set({ items: merged, pendingAdds: nextPendingAdds });
@@ -379,19 +495,28 @@ export const useCartStore = create<CartState>()(
                         const cart = await cartApi.getCart(userId);
                         const parsedItems = mapCartToItems(cart);
 
-                        if (parsedItems && parsedItems.length > 0) {
+                        if (parsedItems === null) {
+                            // Unparseable shape (e.g. gateway wrapper we don't handle yet). Do not wipe local cart.
+                            console.warn(
+                                "[CartStore] fetchCart: could not parse cart response; keeping existing items.",
+                                cart,
+                            );
+                            return;
+                        }
+
+                        if (parsedItems.length > 0) {
                             // Backend has items, always update store (source of truth)
                             const state = get();
                             const merged = mergeWithPendingAdds(parsedItems, state.items, state.pendingAdds);
 
                             const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
                             for (const it of parsedItems) {
-                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                delete nextPendingAdds[getSemanticItemKey(it)];
                             }
 
                             set({ items: merged, pendingAdds: nextPendingAdds });
                         } else {
-                            // Backend returned empty cart
+                            // Backend returned empty cart (valid empty list)
                             const currentItems = get().items;
 
                             // If forceUpdate is true (e.g., after adding item), always trust backend
@@ -459,6 +584,9 @@ export const useCartStore = create<CartState>()(
                 },
 
                 addItem: async (itemToAdd, quantity) => {
+                    if (get().isAddingItem) {
+                        return;
+                    }
                     let { userId } = get();
 
                     // If userId is not set, try to get it from auth store
@@ -507,15 +635,16 @@ export const useCartStore = create<CartState>()(
                             imageUrlToSend && imageUrlToSend.trim() !== "" ? imageUrlToSend.trim() : "/placeholder.png";
 
                         const cartItemId = createCartItemId(itemToAdd.id, {
-                            categoryId: itemToAdd.categoryId,
-                            categoryName: itemToAdd.categoryName,
                             sizeId: itemToAdd.sizeId,
                             sizeName: itemToAdd.sizeName,
-                            customizations: itemToAdd.customizations,
-                            imageURL: finalImageURL,
                         });
 
-                        const key = getItemKey(cartItemId, itemToAdd.restaurantId);
+                        const key = buildSemanticItemKey(
+                            itemToAdd.restaurantId,
+                            itemToAdd.id,
+                            itemToAdd.sizeId,
+                            itemToAdd.customizations,
+                        );
                         pendingKey = key;
 
                         // Mark as pending to prevent stale backend fetches from wiping it.
@@ -523,9 +652,13 @@ export const useCartStore = create<CartState>()(
 
                         // Optimistic update (fixes "first item invisible" + keeps UI responsive)
                         set((state) => {
-                            const existingItemIndex = state.items.findIndex(
-                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
+                            const targetKey = buildSemanticItemKey(
+                                itemToAdd.restaurantId,
+                                itemToAdd.id,
+                                itemToAdd.sizeId,
+                                itemToAdd.customizations,
                             );
+                            const existingItemIndex = state.items.findIndex((item) => getSemanticItemKey(item) === targetKey);
 
                             if (existingItemIndex >= 0) {
                                 const updatedItems = [...state.items];
@@ -633,15 +766,19 @@ export const useCartStore = create<CartState>()(
 
                             const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
                             for (const it of parsedItems) {
-                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                delete nextPendingAdds[getSemanticItemKey(it)];
                             }
 
                             set({ items: merged, pendingAdds: nextPendingAdds });
 
                             // Verify the added item is in the merged items
-                            const addedItem = merged.find(
-                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
+                            const targetKey = buildSemanticItemKey(
+                                itemToAdd.restaurantId,
+                                itemToAdd.id,
+                                itemToAdd.sizeId,
+                                itemToAdd.customizations,
                             );
+                            const addedItem = merged.find((item) => getSemanticItemKey(item) === targetKey);
                             if (!addedItem) {
                                 console.warn(
                                     `[CartStore] WARNING: Added item (${cartItemId}) not found in merged items!`,
@@ -650,7 +787,6 @@ export const useCartStore = create<CartState>()(
                         } else if (parsedItems !== null && parsedItems.length === 0) {
                             // Backend returned empty cart (shouldn't happen after adding item, but handle it)
                             console.warn("[CartStore] Backend returned empty cart after adding item, fetching cart...");
-                            // Fetch cart to ensure we have the latest data
                             try {
                                 const fetchedCart = await cartApi.getCart(userId);
                                 const fetchedItems = mapCartToItems(fetchedCart);
@@ -660,53 +796,32 @@ export const useCartStore = create<CartState>()(
 
                                     const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
                                     for (const it of fetchedItems) {
-                                        delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                        delete nextPendingAdds[getSemanticItemKey(it)];
                                     }
 
                                     set({ items: merged, pendingAdds: nextPendingAdds });
                                 } else {
-                                    // Still empty, use optimistic update
-                                    throw new Error("Cart is empty after fetch");
+                                    console.warn(
+                                        "[CartStore] GET /cart after empty add response could not be parsed; keeping optimistic cart.",
+                                    );
                                 }
                             } catch (fetchError) {
-                                console.error("[CartStore] Failed to fetch cart after empty response:", fetchError);
-                                // Fallback to optimistic update
-                                const currentItems = get().items;
-                                const existingItemIndex = currentItems.findIndex(
-                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
-                                );
-
-                                let optimisticItems: CartItem[];
-                                if (existingItemIndex >= 0) {
-                                    const existingItem = currentItems[existingItemIndex];
-                                    optimisticItems = [...currentItems];
-                                    optimisticItems[existingItemIndex] = {
-                                        ...existingItem,
-                                        quantity: existingItem.quantity + quantity,
-                                    };
-                                } else {
-                                    const newItem: CartItem = {
-                                        id: cartItemId,
-                                        baseProductId: itemToAdd.id,
-                                        name: itemToAdd.name,
-                                        price: itemToAdd.price,
-                                        image: finalImageURL,
-                                        quantity,
-                                        restaurantId: itemToAdd.restaurantId,
-                                        restaurantName: itemToAdd.restaurantName,
-                                        categoryId: itemToAdd.categoryId,
-                                        categoryName: itemToAdd.categoryName,
-                                        sizeId: itemToAdd.sizeId,
-                                        sizeName: itemToAdd.sizeName,
-                                        customizations: itemToAdd.customizations,
-                                    };
-                                    optimisticItems = [...currentItems, newItem];
-                                }
-                                set({ items: optimisticItems });
+                                console.warn("[CartStore] Failed to fetch cart after empty add response:", fetchError);
                             }
                         } else {
-                            // Parsing failed completely - log and fetch cart
-                            console.error("[CartStore] Failed to parse cart response:", cart);
+                            // Parsing failed completely. Some backend/gateway paths may return an empty object
+                            // as an acknowledgment even when add-to-cart succeeds, so don't treat that as hard error.
+                            const isAckWithoutPayload =
+                                cartData &&
+                                typeof cartData === "object" &&
+                                !Array.isArray(cartData) &&
+                                Object.keys(cartData as Record<string, unknown>).length === 0;
+
+                            if (isAckWithoutPayload) {
+                                console.warn("[CartStore] Add-to-cart response has no payload, fetching cart fallback.");
+                            } else {
+                                console.warn("[CartStore] Failed to parse cart response, fetching cart fallback:", cart);
+                            }
 
                             // Try to fetch cart from backend as fallback
                             try {
@@ -718,56 +833,26 @@ export const useCartStore = create<CartState>()(
 
                                     const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
                                     for (const it of fetchedItems) {
-                                        delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                        delete nextPendingAdds[getSemanticItemKey(it)];
                                     }
 
                                     set({ items: merged, pendingAdds: nextPendingAdds });
                                 } else {
-                                    // Still can't parse, use optimistic update
-                                    throw new Error("Failed to parse fetched cart");
+                                    console.warn(
+                                        "[CartStore] GET /cart fallback could not be parsed; keeping optimistic cart.",
+                                        fetchedCart,
+                                    );
                                 }
                             } catch (fetchError) {
-                                console.error("[CartStore] Failed to fetch cart after parse failure:", fetchError);
-                                // Last resort: optimistic update
-                                const currentItems = get().items;
-                                const existingItemIndex = currentItems.findIndex(
-                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
-                                );
-
-                                let optimisticItems: CartItem[];
-                                if (existingItemIndex >= 0) {
-                                    const existingItem = currentItems[existingItemIndex];
-                                    optimisticItems = [...currentItems];
-                                    optimisticItems[existingItemIndex] = {
-                                        ...existingItem,
-                                        quantity: existingItem.quantity + quantity,
-                                    };
-                                } else {
-                                    const newItem: CartItem = {
-                                        id: cartItemId,
-                                        baseProductId: itemToAdd.id,
-                                        name: itemToAdd.name,
-                                        price: itemToAdd.price,
-                                        image: finalImageURL,
-                                        quantity,
-                                        restaurantId: itemToAdd.restaurantId,
-                                        restaurantName: itemToAdd.restaurantName,
-                                        categoryId: itemToAdd.categoryId,
-                                        categoryName: itemToAdd.categoryName,
-                                        sizeId: itemToAdd.sizeId,
-                                        sizeName: itemToAdd.sizeName,
-                                        customizations: itemToAdd.customizations,
-                                    };
-                                    optimisticItems = [...currentItems, newItem];
-                                }
-                                set({ items: optimisticItems });
+                                console.warn("[CartStore] GET /cart fallback failed after parse failure:", fetchError);
                             }
                         }
 
                         toast.success("Added to cart.");
                     } catch (error) {
-                        console.error("Failed to add item:", error);
-                        toast.error("Failed to add item to cart");
+                        const message = getCartErrorMessage(error);
+                        console.error("Failed to add item:", message ?? error);
+                        toast.error(message || "Failed to add item to cart");
                         // Revert optimistic update on error - restore previous state
                         set((state) => {
                             const nextPendingAdds = { ...state.pendingAdds };

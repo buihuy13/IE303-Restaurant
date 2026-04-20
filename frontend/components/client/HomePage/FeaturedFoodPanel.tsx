@@ -4,27 +4,32 @@ import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocatio
 import { useProductStore } from "@/stores/useProductsStores";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { CompactFoodCard } from "./CompactFoodCard";
 import { CompactFoodCardSkeleton } from "./CompactFoodCardSkeleton";
 
 export default function FeaturedFoodPanel() {
     const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
     const { currentAddress, isLocationSet } = useLocationStore();
+    /** True after the first fetch is scheduled (avoids empty UI when persist restores location before useEffect runs). */
+    const [listFetchInitiated, setListFetchInitiated] = useState(false);
 
-    // Initialize default location if not set
-    useEffect(() => {
-        if (!isLocationSet || !currentAddress) {
-            initializeDefaultLocation();
-        }
-    }, [isLocationSet, currentAddress]);
+    const locationReady = Boolean(isLocationSet && currentAddress);
+
+    // Run before paint so the first painted frame never shows "empty" while location is still unset
+    // (persist may hydrate async; fallback is applied synchronously here when needed).
+    useLayoutEffect(() => {
+        initializeDefaultLocation();
+    }, []);
 
     useEffect(() => {
         // Don't fetch products until we have location coordinates
         if (!currentAddress || !isLocationSet) {
+            setListFetchInitiated(false);
             return;
         }
 
+        setListFetchInitiated(true);
         const params = new URLSearchParams();
         params.set("type", "foods");
         // Set location for distance calculation from current address
@@ -42,6 +47,11 @@ export default function FeaturedFoodPanel() {
         return productsToUse.slice(0, 12);
     }, [productsToUse]);
 
+    // Avoid empty-state flash: while location, first fetch scheduling, or request is pending, show skeleton.
+    const showSkeleton =
+        !locationReady || (locationReady && !listFetchInitiated) || productsLoading;
+    const showEmpty = locationReady && listFetchInitiated && !productsLoading && featuredProducts.length === 0;
+
     return (
         <div className="w-full">
             {/* Header */}
@@ -51,7 +61,7 @@ export default function FeaturedFoodPanel() {
                         Featured Foods
                     </h2>
                     <p className="text-sm text-gray-600">
-                        {productsLoading ? "Loading..." : `${featuredProducts.length} featured items`}
+                        {showSkeleton ? "Loading..." : `${featuredProducts.length} featured items`}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -65,7 +75,7 @@ export default function FeaturedFoodPanel() {
             </div>
 
             {/* Food Grid - Responsive Layout */}
-            {productsLoading ? (
+            {showSkeleton ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {Array.from({ length: 8 }).map((_, index) => (
                         <CompactFoodCardSkeleton key={`skeleton-${index}`} />
@@ -77,7 +87,7 @@ export default function FeaturedFoodPanel() {
                         <CompactFoodCard key={product.id} product={product} />
                     ))}
                 </div>
-            ) : (
+            ) : showEmpty ? (
                 <div className="flex flex-col items-center justify-center py-16 min-h-[420px] rounded-2xl border border-dashed border-gray-200 bg-white/60 backdrop-blur-sm">
                     {/* Large Illustration */}
                     <div className="mb-6">
@@ -123,7 +133,7 @@ export default function FeaturedFoodPanel() {
                         </Button>
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }

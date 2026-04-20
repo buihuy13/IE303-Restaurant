@@ -199,11 +199,13 @@ export default function AccountAddressesPageClient() {
         }
     };
 
-    const handleAddressChange = (address: string, latitude: number, longitude: number) => {
+    const handleAddressChange = (address: string, latitude?: number, longitude?: number) => {
         setNewAddress({
             location: address,
-            latitude,
-            longitude,
+            latitude:
+                typeof latitude === "number" && Number.isFinite(latitude) ? latitude : 0,
+            longitude:
+                typeof longitude === "number" && Number.isFinite(longitude) ? longitude : 0,
         });
     };
 

@@ -1,3 +1,4 @@
+// Group-order API: no matching service/route in this monorepo yet — calls target `/api/group-orders/**` and will 404 until implemented.
 import { CreateGroupOrderRequest, GroupOrder, GroupOrderPaymentRequest, JoinGroupOrderRequest } from "@/types/groupOrder.type";
 import api from "../axios";
 

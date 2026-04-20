@@ -17,7 +17,7 @@ interface AccountAddressesPageViewProps {
     onToggleAdd: () => void;
     onSubmit: (e: React.FormEvent) => void;
     onUseCurrentLocation: () => void;
-    onAddressChange: (address: string, latitude: number, longitude: number) => void;
+    onAddressChange: (address: string, latitude?: number, longitude?: number) => void;
     onCancelAdd: () => void;
     onDeleteAddress: (addressId: string) => void;
 }
