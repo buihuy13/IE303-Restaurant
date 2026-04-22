@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.CNTTK18.Common.Event.OrderNotificationEvent;
 import com.CNTTK18.order_service.client.RestaurantClient;
 import com.CNTTK18.order_service.dto.client.ResClientResponse;
 import com.CNTTK18.order_service.dto.order.request.CheckoutRequest;
@@ -21,6 +22,7 @@ import com.CNTTK18.order_service.exception.BadRequestException;
 import com.CNTTK18.order_service.exception.ForbiddenException;
 import com.CNTTK18.order_service.exception.NotFoundException;
 import com.CNTTK18.order_service.mapper.OrderMapper;
+import com.CNTTK18.order_service.messaging.OrderNotificationPublisher;
 import com.CNTTK18.order_service.model.Cart;
 import com.CNTTK18.order_service.model.CartRestaurantGroup;
 import com.CNTTK18.order_service.model.Order;
@@ -41,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RestaurantClient restaurantClient;
+    private final OrderNotificationPublisher notificationPublisher;
 
     private static final String ORDERS_USER_CACHE_PREFIX = "orders:user:";
     private static final String ORDERS_RES_CACHE_PREFIX = "orders:res:";
@@ -60,6 +63,16 @@ public class OrderServiceImpl implements OrderService {
                 saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(), checkoutBuildResult.groupsToRemove());
 
         invalidateCheckoutCaches(userId);
+
+        // Publish notification for each new order
+        savedOrders.forEach(order -> notificationPublisher.publish(new OrderNotificationEvent(
+                order.getId(),
+                order.getUserId(),
+                null,
+                order.getRestaurantName(),
+                order.getTotalPrice(),
+                order.getStatus().name(),
+                order.getDeliveryAddress())));
 
         return orderMapper.toResponseList(savedOrders);
     }
@@ -144,6 +157,16 @@ public class OrderServiceImpl implements OrderService {
         clearRestaurantOrderCache(order.getRestaurantId());
         clearUserOrderCache(order.getUserId());
 
+        // Publish notification
+        notificationPublisher.publish(new OrderNotificationEvent(
+                saved.getId(),
+                saved.getUserId(),
+                null,
+                saved.getRestaurantName(),
+                saved.getTotalPrice(),
+                saved.getStatus().name(),
+                saved.getDeliveryAddress()));
+
         return orderMapper.toResponse(saved);
     }
 
@@ -164,6 +187,16 @@ public class OrderServiceImpl implements OrderService {
 
         clearUserOrderCache(userId);
         clearRestaurantOrderCache(order.getRestaurantId());
+
+        // Publish notification
+        notificationPublisher.publish(new OrderNotificationEvent(
+                saved.getId(),
+                saved.getUserId(),
+                null,
+                saved.getRestaurantName(),
+                saved.getTotalPrice(),
+                saved.getStatus().name(),
+                saved.getDeliveryAddress()));
 
         return orderMapper.toResponse(saved);
     }
