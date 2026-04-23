@@ -11,6 +11,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.CNTTK18.Common.Event.OrderNotificationContract;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,6 +48,26 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(confirmationQueue())
                 .to(confirmationExchange())
                 .with("Confirmation");
+    }
+
+    @Bean
+    Queue orderNotificationQueue() {
+        return QueueBuilder.durable(OrderNotificationContract.QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", DLX_KEY)
+                .build();
+    }
+
+    @Bean
+    TopicExchange orderNotificationExchange() {
+        return new TopicExchange(OrderNotificationContract.EXCHANGE);
+    }
+
+    @Bean
+    Binding orderNotificationBinding() {
+        return BindingBuilder.bind(orderNotificationQueue())
+                .to(orderNotificationExchange())
+                .with(OrderNotificationContract.ROUTING_KEY);
     }
 
     @Bean
