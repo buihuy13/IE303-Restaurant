@@ -48,7 +48,9 @@ public class EmailService {
     }
 
     public void sendOrderStatusEmail(OrderNotificationEvent event) {
-        if (event == null || event.getUserEmail() == null || event.getUserEmail().isBlank()) {
+        if (event == null
+                || event.getUserEmail() == null
+                || event.getUserEmail().isBlank()) {
             return;
         }
 

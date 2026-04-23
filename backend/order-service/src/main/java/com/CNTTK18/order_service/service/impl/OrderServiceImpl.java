@@ -218,13 +218,13 @@ public class OrderServiceImpl implements OrderService {
         clearRestaurantOrderCache(order.getRestaurantId());
 
         notificationPublisher.publish(new OrderNotificationEvent(
-            saved.getId(),
-            saved.getUserId(),
-            null,
-            saved.getRestaurantName(),
-            saved.getTotalPrice(),
-            saved.getPaymentStatus().name(),
-            saved.getDeliveryAddress()));
+                saved.getId(),
+                saved.getUserId(),
+                null,
+                saved.getRestaurantName(),
+                saved.getTotalPrice(),
+                saved.getPaymentStatus().name(),
+                saved.getDeliveryAddress()));
     }
 
     private void clearUserOrderCache(UUID userId) {
