@@ -213,9 +213,18 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderCode(orderCode);
         order.setPaymentLinkId(paymentLinkId);
 
-        orderRepository.save(order);
+        Order saved = orderRepository.save(order);
         clearUserOrderCache(order.getUserId());
         clearRestaurantOrderCache(order.getRestaurantId());
+
+        notificationPublisher.publish(new OrderNotificationEvent(
+                saved.getId(),
+                saved.getUserId(),
+                null,
+                saved.getRestaurantName(),
+                saved.getTotalPrice(),
+                saved.getPaymentStatus().name(),
+                saved.getDeliveryAddress()));
     }
 
     private void clearUserOrderCache(UUID userId) {
