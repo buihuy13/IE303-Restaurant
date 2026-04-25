@@ -283,6 +283,32 @@ services:
         depends_on:
             service-discovery:
                 condition: service_started
+    blog-service:
+        build:
+            context: ./backend
+            dockerfile: ./blog-service/Dockerfile
+            args:
+                MODULE_PATH: blog-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${BLOG_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    payment-service:
+        build:
+            context: ./backend
+            dockerfile: ./payment-service/Dockerfile
+            args:
+                MODULE_PATH: payment-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${PAYMENT_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
 
 volumes:
     rabbitmq-data:

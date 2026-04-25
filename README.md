@@ -49,31 +49,105 @@ Nền tảng đặt món nhà hàng theo kiến trúc microservices, gồm backe
 └─ spot.sh                      # Format Java code (Spotless)
 ```
 
-## 3. Backend modules
+## 3. Chức năng từng backend service
 
-Các module hiện có trong Gradle settings:
+### 3.1. Hạ tầng lõi
 
-- Common
-- service-discovery
-- api-gateway
-- user-service
-- notification-service
-- chat-service
-- restaurant-service
-- dashboard-service
-- recommendation-service
-- blog-service
-- payment-service
-- order-service
+- service-discovery:
+	- Chạy Eureka Server để toàn bộ service đăng ký và tìm nhau.
+	- Là dependency khởi động sớm cho gateway và hầu hết service nghiệp vụ.
+- api-gateway:
+	- Điểm vào thống nhất cho frontend/client.
+	- Xử lý bảo mật OAuth2 Resource Server, chuyển role từ JWT (Keycloak), định tuyến về service đích.
+	- Public một số route đặc thù như register user, webhook payment, SSE.
+- Common:
+	- Module thư viện dùng chung cho DTO/event/contract liên service.
+	- Hiện dùng rõ cho contract sự kiện thông báo đơn hàng qua RabbitMQ.
 
-## 4. Yêu cầu môi trường
+### 3.2. Nhóm service nghiệp vụ chính
+
+- user-service:
+	- Quản lý hồ sơ người dùng, địa chỉ, truy vấn user theo vai trò.
+	- Hỗ trợ luồng đăng ký và đồng bộ user với Keycloak.
+	- Endpoint chính: /api/users/*.
+- restaurant-service:
+	- Quản lý nhà hàng (CRUD), tìm kiếm/lọc và logic vị trí địa lý.
+	- Hỗ trợ upload media phục vụ nghiệp vụ merchant.
+	- Endpoint chính: /api/restaurant/*.
+- order-service:
+	- Xử lý checkout, tạo đơn, truy vấn đơn theo user/merchant/restaurant.
+	- Cập nhật trạng thái đơn và phát sự kiện thông báo.
+	- Endpoint chính: /api/order/*.
+- payment-service:
+	- Tạo payment link cho đơn hàng và nhận webhook từ cổng thanh toán (PayOS).
+	- Tách riêng domain thanh toán khỏi order-service.
+	- Endpoint chính: /api/payments/create, /api/payments/webhook.
+- notification-service:
+	- Nhận event từ RabbitMQ để gửi thông báo theo thời gian thực (SSE) và email.
+	- Tập trung cho luồng cập nhật trạng thái đơn hàng.
+- chat-service:
+	- Quản lý hội thoại, room, lịch sử chat giữa user, merchant, admin.
+	- Cung cấp API room/tin nhắn, phân trang và thao tác trạng thái.
+	- Endpoint chính: /api/chat/*.
+- recommendation-service:
+	- Gợi ý món ăn theo ngữ cảnh và tâm trạng.
+	- Sinh mô tả món ăn, tóm tắt review bằng AI.
+	- Endpoint chính: /api/recommendations/**.
+- dashboard-service:
+	- Cung cấp dữ liệu tổng hợp cho dashboard admin/merchant.
+	- Bao gồm overview, doanh thu theo kỳ, thống kê đơn và báo cáo.
+	- Endpoint chính: /api/dashboard/*.
+- blog-service:
+	- Quản lý bài viết (draft/published/archived), upload ảnh, đọc công khai theo slug.
+	- Endpoint chính: /api/blogs/*.
+
+### 3.3. Trạng thái Docker hóa module
+
+- Có Dockerfile sẵn trong backend/: api-gateway, service-discovery, user-service, notification-service, chat-service, restaurant-service, dashboard-service, recommendation-service, order-service.
+- Chưa có Dockerfile trong backend/ ở trạng thái hiện tại: blog-service, payment-service.
+
+## 4. Một số flow nghiệp vụ (docs/images)
+
+Các flow dưới đây lấy trực tiếp từ thư mục docs/images.
+
+### 4.1. User flow
+
+![User flow](docs/images/user-flow.png)
+
+### 4.2. Merchant flow
+
+![Merchant flow](docs/images/merchant-flow.png)
+
+### 4.3. Admin flow
+
+![Admin flow](docs/images/admin-flow.png)
+
+### 4.4. Order flow
+
+![Order flow](docs/images/order-flow.png)
+
+### 4.5. Chat flow
+
+![Chat flow](docs/images/chat-flow.png)
+
+### 4.6. Restaurant flow
+
+![Restaurant flow](docs/images/restaurant.png)
+
+### 4.7. OIDC authentication flow
+
+Flow này mô tả luồng đăng nhập OIDC (Authorization Code + PKCE) giữa frontend, Keycloak và backend.
+
+![OIDC flow](docs/images/oidc-flow.png)
+
+## 5. Yêu cầu môi trường
 
 - Docker + Docker Compose
 - Java 21 (theo toolchain của backend)
 - Node.js 20+ và npm (cho frontend local)
 - Bash shell (Linux/macOS/WSL)
 
-## 5. Cấu hình biến môi trường
+## 6. Cấu hình biến môi trường
 
 Project dùng file .env ở thư mục gốc.
 
@@ -91,7 +165,7 @@ cp .env.example .env
 - Frontend public vars: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_BACKEND_ORIGIN, NEXT_PUBLIC_KEYCLOAK_*
 - Monitoring/security: GF_SECURITY_ADMIN_*, CADDY_HASH_PASSWORD
 
-## 6. Chạy local (khuyến nghị cho dev)
+## 7. Chạy local (khuyến nghị cho dev)
 
 ### Cách A: Chạy infra bằng Docker, chạy app bằng local process
 
@@ -147,7 +221,7 @@ Dừng toàn bộ:
 docker compose down -v
 ```
 
-## 7. Các URL hữu ích khi chạy dev
+## 8. Các URL hữu ích khi chạy dev
 
 Theo docker-compose.dev.yml:
 
@@ -164,7 +238,7 @@ Theo docker-compose.yml (full stack):
 - Caddy entrypoint: https://localhost:8443
 - Các dịch vụ nội bộ expose qua Caddy/API Gateway tùy route cấu hình.
 
-## 8. Build, format, quality
+## 9. Build, format, quality
 
 Từ thư mục gốc:
 
@@ -187,7 +261,7 @@ npm run build
 npm run validate
 ```
 
-## 9. Triển khai production
+## 10. Triển khai production
 
 Thư mục deploy/ chứa luồng build & deploy:
 
@@ -207,11 +281,11 @@ Lưu ý:
 - Cần chuẩn bị sẵn file bí mật/chứng thực (ví dụ ghcr.pem, key.pem, .env).
 - Kiểm tra chính xác host, username, key và đường dẫn remote trước khi deploy thật.
 
-## 10. Gợi ý thứ tự khởi động backend local
+## 11. Gợi ý thứ tự khởi động backend local
 
 Khi chạy từng service bằng ./start.sh, nên theo thứ tự:
 
 1. service-discovery
 2. api-gateway
-3. các service lõi (user/restaurant/chat/recommendation/notification/dashboard/order...)
+3. các service lõi (user/restaurant/chat/recommendation/notification/dashboard/order/blog/payment)
 4. frontend
