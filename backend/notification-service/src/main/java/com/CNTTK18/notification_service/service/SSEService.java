@@ -1,11 +1,14 @@
 package com.CNTTK18.notification_service.service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.CNTTK18.Common.Event.OrderNotificationEvent;
 
 @Service
 public class SSEService {
@@ -44,7 +47,38 @@ public class SSEService {
         }
     }
 
-    private void handleEmit(SseEmitter emitter, String eventName, String message, String userId) {
+    public void sendOrderNotification(OrderNotificationEvent event) {
+        if (event == null || event.getUserId() == null) {
+            return;
+        }
+
+        String userId = event.getUserId().toString();
+        SseEmitter emitter = this.emitters.get(userId);
+        if (emitter == null) {
+            return;
+        }
+
+        String status = event.getStatus() == null ? "UNKNOWN" : event.getStatus();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("orderId", event.getOrderId());
+        payload.put("status", status);
+        payload.put("restaurantName", event.getRestaurantName());
+        payload.put("totalPrice", event.getTotalPrice());
+        payload.put("deliveryAddress", event.getDeliveryAddress());
+        payload.put("message", buildStatusMessage(status, event.getRestaurantName()));
+
+        handleEmit(emitter, "ORDER_NOTIFICATION", payload, userId);
+    }
+
+    private String buildStatusMessage(String status, String restaurantName) {
+        String resName = restaurantName == null ? "restaurant" : restaurantName;
+        if ("CANCELLED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
+            return "Your order at " + resName + " failed or was cancelled.";
+        }
+        return "Your order at " + resName + " was processed successfully.";
+    }
+
+    private void handleEmit(SseEmitter emitter, String eventName, Object message, String userId) {
         try {
             emitter.send(SseEmitter.event().name(eventName).data(message));
         } catch (Exception e) {

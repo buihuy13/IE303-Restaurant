@@ -18,6 +18,7 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import com.CNTTK18.Common.Event.ConfirmationEvent;
+import com.CNTTK18.Common.Event.OrderNotificationEvent;
 
 @Service
 public class EmailService {
@@ -44,6 +45,31 @@ public class EmailService {
         String templateName = "confirmation";
         String subject = genSubject(request.getEmail());
         sendEmail(map, templateName, subject, request.getEmail());
+    }
+
+    public void sendOrderStatusEmail(OrderNotificationEvent event) {
+        if (event == null
+                || event.getUserEmail() == null
+                || event.getUserEmail().isBlank()) {
+            return;
+        }
+
+        String status = event.getStatus() == null ? "UNKNOWN" : event.getStatus();
+        Map<String, Object> map = new HashMap<>();
+        map.put("orderId", event.getOrderId());
+        map.put("restaurantName", event.getRestaurantName());
+        map.put("status", status);
+        map.put("totalPrice", event.getTotalPrice());
+        map.put("deliveryAddress", event.getDeliveryAddress());
+        map.put(
+                "message",
+                ("CANCELLED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status))
+                        ? "Unfortunately, your order could not be completed."
+                        : "Your order has been received successfully.");
+
+        String templateName = "order-status";
+        String subject = "Order " + status + " - " + event.getOrderId();
+        sendEmail(map, templateName, subject, event.getUserEmail());
     }
 
     private String genSubject(String email) {

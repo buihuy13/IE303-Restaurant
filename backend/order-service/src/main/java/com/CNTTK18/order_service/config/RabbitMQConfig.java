@@ -10,6 +10,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.CNTTK18.Common.Event.OrderNotificationContract;
 import com.CNTTK18.Common.Event.PaymentStatusSyncContract;
 
 @Configuration
@@ -34,5 +35,22 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(paymentStatusQueue())
                 .to(paymentStatusExchange())
                 .with(PaymentStatusSyncContract.ROUTING_KEY);
+    }
+
+    @Bean
+    public TopicExchange orderNotificationExchange() {
+        return new TopicExchange(OrderNotificationContract.EXCHANGE);
+    }
+
+    @Bean
+    public Queue orderNotificationQueue() {
+        return QueueBuilder.durable(OrderNotificationContract.QUEUE).build();
+    }
+
+    @Bean
+    public Binding orderNotificationBinding() {
+        return BindingBuilder.bind(orderNotificationQueue())
+                .to(orderNotificationExchange())
+                .with(OrderNotificationContract.ROUTING_KEY);
     }
 }

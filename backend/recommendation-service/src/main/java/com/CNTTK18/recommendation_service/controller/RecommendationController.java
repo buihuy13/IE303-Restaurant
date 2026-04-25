@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.CNTTK18.recommendation_service.dto.request.MoodFoodRecommendationRequest;
 import com.CNTTK18.recommendation_service.dto.request.ReviewRequest;
 import com.CNTTK18.recommendation_service.dto.request.UserContext;
 import com.CNTTK18.recommendation_service.dto.response.MessageResponse;
@@ -33,6 +34,16 @@ public class RecommendationController {
     @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
     public ResponseEntity<MessageResponse> getFoodRecommendations(@Valid @RequestBody UserContext userContext) {
         MessageResponse response = recommendationService.recommendFood(userContext.getContext());
+        return ResponseEntity.ok(response);
+    }
+
+    @Tag(name = "POST")
+    @Operation(summary = "Get mood-based food recommendations")
+    @PostMapping("/food/mood")
+    @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
+    public ResponseEntity<MessageResponse> getMoodBasedFoodRecommendations(
+            @Valid @RequestBody MoodFoodRecommendationRequest request) {
+        MessageResponse response = recommendationService.recommendFoodByMood(request);
         return ResponseEntity.ok(response);
     }
 
