@@ -1,167 +1,154 @@
-export type BlogCategory = "recipe" | "review" | "tips" | "news" | "health" | "other";
-export type BlogStatus = "draft" | "published" | "archived";
-
-export interface BlogAuthor {
-        userId: string;
-        name: string;
-        avatar?: string;
-}
-
-export interface BlogFeaturedImage {
-        url?: string;
-        publicId?: string;
-        alt?: string;
-}
-
-export interface BlogImage {
-        url: string;
-        publicId?: string;
-        alt?: string;
-}
-
-export interface BlogSEO {
-        metaTitle?: string;
-        metaDescription?: string;
-        keywords?: string[];
-}
+export type BlogStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type BlogCommentStatus = "PUBLISHED" | "PENDING" | "HIDDEN";
 
 export interface Blog {
-        _id: string;
-        title: string;
-        slug: string;
-        content: string; // Markdown content
-        contentHtml?: string; // Parsed HTML from backend (optional)
-        excerpt?: string;
-        author: BlogAuthor;
-        featuredImage?: BlogFeaturedImage;
-        images?: BlogImage[];
-        category: BlogCategory;
-        tags?: string[];
-        status: BlogStatus;
-        readTime: number;
-        views: number;
-        likes: string[]; // userIds
-        likesCount?: number;
-        commentsCount?: number;
-        publishedAt?: string;
-        createdAt: string;
-        updatedAt: string;
-        seo?: BlogSEO;
+    id: string;
+    authorId: string;
+    title: string;
+    slug: string;
+    content: string;
+    coverImageUrl?: string | null;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    viewsCount?: number;
+    likesCount?: number;
+    commentsCount?: number;
+    likedByCurrentUser?: boolean;
+    authorName?: string | null;
+    authorAvatarUrl?: string | null;
+    authorRole?: string | null;
+    templateKey?: string | null;
+    templateVersion?: string | null;
+    status: BlogStatus;
+    publishedAt?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
 }
 
 export interface BlogCreateRequest {
-        title: string;
-        content: string;
-        excerpt?: string;
-        author: BlogAuthor;
-        featuredImage?: File;
-        images?: File[];
-        category?: BlogCategory;
-        tags?: string[];
-        status?: BlogStatus;
-        seo?: BlogSEO;
+    title: string;
+    content: string;
+    coverImageUrl?: string | null;
+    status?: Exclude<BlogStatus, "ARCHIVED">;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    templateKey?: string | null;
+    templateVersion?: string | null;
 }
 
 export interface BlogUpdateRequest {
-        title?: string;
-        content?: string;
-        excerpt?: string;
-        featuredImage?: File;
-        images?: File[];
-        category?: BlogCategory;
-        tags?: string[];
-        status?: BlogStatus;
-        seo?: BlogSEO;
-        userId?: string;
+    title: string;
+    content: string;
+    coverImageUrl?: string | null;
+    status: BlogStatus;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[];
+    readTime?: number | null;
+    featured?: boolean;
+    templateKey?: string | null;
+    templateVersion?: string | null;
 }
 
-export interface BlogListResponse {
-        success: boolean;
-        message: string;
-        data: Blog[];
-        pagination: {
-                page: number;
-                limit: number;
-                total: number;
-                pages: number;
-        };
+export interface BlogPageResponse {
+    content: Blog[];
+    pageable?: unknown;
+    totalElements: number;
+    totalPages: number;
+    last?: boolean;
+    size: number;
+    number: number;
+    sort?: unknown;
+    numberOfElements?: number;
+    first?: boolean;
+    empty?: boolean;
 }
 
-export interface BlogDetailResponse {
-        success: boolean;
-        message: string;
-        data: Blog;
+export interface BlogComment {
+    id: string;
+    blogId: string;
+    authorId?: string | null;
+    name: string;
+    email?: string | null;
+    message: string;
+    notify?: boolean;
+    status: BlogCommentStatus;
+    createdAt?: string | null;
 }
 
-export interface BlogLikeResponse {
-        success: boolean;
-        message: string;
-        likesCount: number;
-        liked: boolean;
+export interface BlogCommentPageResponse {
+    content: BlogComment[];
+    pageable?: unknown;
+    totalElements: number;
+    totalPages: number;
+    last?: boolean;
+    size: number;
+    number: number;
+    sort?: unknown;
+    numberOfElements?: number;
+    first?: boolean;
+    empty?: boolean;
 }
 
-export interface CommentImage {
-        url: string;
-        publicId: string;
-        width?: number;
-        height?: number;
-        format?: string;
+export interface BlogCommentCreateRequest {
+    message: string;
+    notify?: boolean;
 }
 
-export interface CommentAuthor {
-        userId: string;
-        name: string;
-        avatar?: string;
+export interface BlogMetricsResponse {
+    blogId: string;
+    viewsCount: number;
+    likesCount: number;
+    commentsCount: number;
+    likedByCurrentUser: boolean;
+    viewCounted?: boolean;
 }
 
-export interface Comment {
-        _id: string;
-        blogId: string;
-        parentId?: string;
-        path: string;
-        ancestors?: string[];
-        author: CommentAuthor;
-        content: string;
-        images?: CommentImage[];
-        likes: string[]; // userIds
-        likesCount?: number;
-        isDeleted?: boolean;
-        createdAt: string;
-        updatedAt: string;
+export interface BlogPageParams {
+    page?: number;
+    size?: number;
+    authorId?: string;
+    search?: string;
+    category?: string;
+    tag?: string;
+    featured?: boolean;
+    sort?: string | string[];
 }
 
-export interface CommentCreateRequest {
-        content: string;
-        author: CommentAuthor;
-        images?: File[];
+export interface BlogMessageResponse {
+    message: string;
 }
 
-export interface CommentReplyRequest {
-        content: string;
-        author: CommentAuthor;
-        images?: File[];
+export interface BlogImageUploadResponse {
+    imageUrls: string[];
 }
 
-export interface CommentUpdateRequest {
-        content?: string;
-        images?: File[];
+export interface BlogEditorialTemplate {
+    key: string;
+    name: string;
+    description: string;
+    language: string;
+    version: number;
+    sections: string[];
+    defaultContent: string;
+    qualityRules: string[];
 }
 
-export interface CommentListResponse {
-        success: boolean;
-        data: Comment[];
-        pagination: {
-                page: number;
-                limit: number;
-                total: number;
-                pages: number;
-        };
+export interface BlogEditorialTemplateRenderRequest {
+    title: string;
+    topic: string;
+    language?: string;
+    category?: string | null;
 }
 
-export interface CommentResponse {
-        success: boolean;
-        comment: Comment;
-        message?: string;
-        likesCount?: number;
-        liked?: boolean;
+export interface BlogEditorialTemplateRenderResponse {
+    content: string;
+    templateKey: string;
+    templateVersion: string;
 }

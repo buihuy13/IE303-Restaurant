@@ -1,23 +1,32 @@
+import { useState } from "react";
 import toast from "react-hot-toast";
-import type { Blog } from "@/types/blog.type";
+import type { BlogViewModel } from "@/types/blogView.type";
 
-export function useBlogDetailShare(blog: Blog | null) {
+export function useBlogDetailShare(blog: BlogViewModel | null) {
+    const [copied, setCopied] = useState(false);
+
+    const copyLink = async () => {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        toast.success("Article link copied");
+        window.setTimeout(() => setCopied(false), 1800);
+    };
+
     const handleShare = async () => {
         if (!blog || typeof window === "undefined") return;
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: blog.title,
-                    text: blog.excerpt ?? "",
+                    text: blog.content.slice(0, 140),
                     url: window.location.href,
                 });
             } catch {
-                // User cancelled or error
+                // User cancelled or sharing is unavailable.
             }
         } else {
-            navigator.clipboard.writeText(window.location.href);
-            toast.success("Link copied!");
+            await copyLink();
         }
     };
-    return { handleShare };
+    return { copied, handleShare };
 }

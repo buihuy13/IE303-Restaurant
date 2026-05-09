@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useBlogCreateForm } from "@/hooks/client/blog/useBlogCreateForm";
 import { useEditorToolbarImageOverride } from "@/hooks/client/blog/useEditorToolbarImageOverride";
 import { BlogCreatePageView } from "@/components/client/blog/BlogCreatePageView";
 
 export default function BlogCreatePageClient() {
-    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
-    const form = useBlogCreateForm(
-        user?.id,
-        user?.username ?? undefined,
-        typeof user?.avatar === "string" ? user.avatar : undefined,
-    );
+    const router = useRouter();
+    const { user, isAuthenticated, authRole, loginWithKeycloak } = useAuthStore();
+    const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
+    const form = useBlogCreateForm();
 
     useEditorToolbarImageOverride(form.editorImageInputRef, form.content);
 
@@ -21,11 +20,14 @@ export default function BlogCreatePageClient() {
             void loginWithKeycloak({
                 redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog/create",
             });
+            return;
         }
-    }, [isAuthenticated, user, loginWithKeycloak]);
+        if (!canManageBlogs) {
+            router.push("/blog");
+        }
+    }, [isAuthenticated, user, canManageBlogs, loginWithKeycloak, router]);
 
-    if (!isAuthenticated || !user) return null;
+    if (!isAuthenticated || !user || !canManageBlogs) return null;
 
     return <BlogCreatePageView form={form} />;
 }
-

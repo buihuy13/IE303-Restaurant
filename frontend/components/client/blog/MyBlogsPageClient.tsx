@@ -1,23 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { MyBlogsPageView } from "@/components/client/blog/MyBlogsPageView";
 import { useMyBlogsData } from "@/hooks/client/blog/useMyBlogsData";
 import { useMyBlogsFilters } from "@/hooks/client/blog/useMyBlogsFilters";
 import { useMyBlogsActions } from "@/hooks/client/blog/useMyBlogsActions";
+import { useBlogCommentModeration } from "@/hooks/client/blog/useBlogCommentModeration";
 
 export default function MyBlogsPageClient() {
-    const { user, isAuthenticated, loginWithKeycloak } = useAuthStore();
+    const router = useRouter();
+    const { user, isAuthenticated, authRole, loginWithKeycloak } = useAuthStore();
+    const canManageBlogs = authRole === "ADMIN" || authRole === "MERCHANT";
     const filters = useMyBlogsFilters();
-    const { blogs, loading, totalPages, fetchMyBlogs } = useMyBlogsData(
+    const { blogs, loading, totalPages, stats, fetchMyBlogs } = useMyBlogsData(
         user?.id,
         filters.page,
-        filters.category,
         filters.status,
-        filters.search,
     );
     const { handleDelete } = useMyBlogsActions(fetchMyBlogs);
+    const commentModeration = useBlogCommentModeration(canManageBlogs && isAuthenticated);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -25,10 +28,14 @@ export default function MyBlogsPageClient() {
             void loginWithKeycloak({
                 redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/blog/my-blogs",
             });
+            return;
         }
-    }, [isAuthenticated, user, loginWithKeycloak]);
+        if (!canManageBlogs) {
+            router.replace("/blog");
+        }
+    }, [isAuthenticated, user, canManageBlogs, loginWithKeycloak, router]);
 
-    if (!isAuthenticated || !user) return null;
+    if (!isAuthenticated || !user || !canManageBlogs) return null;
 
     const onDelete = async (blogId: string, title: string) => {
         setDeletingId(blogId);
@@ -44,14 +51,11 @@ export default function MyBlogsPageClient() {
             loading={loading}
             blogs={blogs}
             totalPages={totalPages}
+            stats={stats}
             page={filters.page}
-            searchInput={filters.searchInput}
-            category={filters.category}
             status={filters.status}
             deletingId={deletingId}
-            onSearchInputChange={filters.setSearchInput}
-            onSearch={filters.handleSearch}
-            onCategoryChange={filters.handleCategoryChange}
+            commentModeration={commentModeration}
             onStatusChange={filters.handleStatusChange}
             onPageChange={filters.handlePageChange}
             onDelete={onDelete}

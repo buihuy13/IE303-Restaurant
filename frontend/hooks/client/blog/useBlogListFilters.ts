@@ -1,20 +1,36 @@
-import { useState } from "react";
-import type { BlogCategory } from "@/types/blog.type";
+import { useEffect, useState } from "react";
+import type { BlogViewFilters } from "@/types/blogView.type";
 
 export function useBlogListFilters() {
     const [page, setPage] = useState(1);
-    const [category, setCategory] = useState<BlogCategory | "">("");
-    const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
+    const [search, setSearch] = useState("");
+    const [category, setCategory] = useState("");
+    const [sort, setSort] = useState<NonNullable<BlogViewFilters["sort"]>>("latest");
 
-    const handleSearch = () => {
-        setSearch(searchInput);
-        setPage(1);
+    const resetPage = () => setPage(1);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setSearch(searchInput);
+        }, 400);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchInput]);
+
+    const handleSearchChange = (value: string) => {
+        setSearchInput(value);
+        resetPage();
     };
 
-    const handleCategoryChange = (cat: BlogCategory | "") => {
-        setCategory(cat);
-        setPage(1);
+    const handleCategoryChange = (value: string) => {
+        setCategory(value);
+        resetPage();
+    };
+
+    const handleSortChange = (value: NonNullable<BlogViewFilters["sort"]>) => {
+        setSort(value);
+        resetPage();
     };
 
     const handlePageChange = (newPage: number) => {
@@ -25,12 +41,13 @@ export function useBlogListFilters() {
     return {
         page,
         setPage,
-        category,
         search,
         searchInput,
-        setSearchInput,
-        handleSearch,
+        category,
+        sort,
+        handleSearchChange,
         handleCategoryChange,
+        handleSortChange,
         handlePageChange,
     };
 }

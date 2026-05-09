@@ -3,6 +3,7 @@ package com.CNTTK18.blog_service.controller;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,11 +26,19 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.blog_service.dto.UserRole;
+import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
 import com.CNTTK18.blog_service.dto.request.CreateBlogRequest;
+import com.CNTTK18.blog_service.dto.request.EditorialTemplateRenderRequest;
+import com.CNTTK18.blog_service.dto.request.UpdateBlogCommentStatusRequest;
 import com.CNTTK18.blog_service.dto.request.UpdateBlogRequest;
+import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
+import com.CNTTK18.blog_service.dto.response.BlogMetricsResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
+import com.CNTTK18.blog_service.dto.response.EditorialTemplateRenderResponse;
+import com.CNTTK18.blog_service.dto.response.EditorialTemplateResponse;
 import com.CNTTK18.blog_service.dto.response.ImageUploadResponse;
 import com.CNTTK18.blog_service.dto.response.MessageResponse;
+import com.CNTTK18.blog_service.model.data.BlogCommentStatus;
 import com.CNTTK18.blog_service.service.BlogService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -230,7 +240,8 @@ public class BlogController {
 
     @Operation(
             summary = "Get all published blogs",
-            description = "Public endpoint. Returns only posts with status PUBLISHED.")
+            description = "Public endpoint. Returns only posts with status PUBLISHED. "
+                    + "When authorId is provided, returns published posts by that author.")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
@@ -241,8 +252,67 @@ public class BlogController {
                                 examples = @ExampleObject(value = PAGED_BLOG_RESPONSE_EXAMPLE)))
     })
     @GetMapping("")
-    public ResponseEntity<Page<BlogResponse>> getPublishedBlogs(Pageable pageable) {
-        return ResponseEntity.ok(blogService.getPublishedBlogs(pageable));
+    public ResponseEntity<Page<BlogResponse>> getPublishedBlogs(
+            @RequestParam(required = false) UUID authorId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) Boolean featured,
+            Pageable pageable,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(
+                blogService.getPublishedBlogs(authorId, search, category, tag, featured, authUser, pageable));
+    }
+
+    @GetMapping("/editorial-templates")
+    public ResponseEntity<List<EditorialTemplateResponse>> getEditorialTemplates() {
+        return ResponseEntity.ok(blogService.getEditorialTemplates());
+    }
+
+    @GetMapping("/editorial-templates/{key}")
+    public ResponseEntity<EditorialTemplateResponse> getEditorialTemplate(@PathVariable String key) {
+        return ResponseEntity.ok(blogService.getEditorialTemplate(key));
+    }
+
+    @PostMapping("/editorial-templates/{key}/render")
+    public ResponseEntity<EditorialTemplateRenderResponse> renderEditorialTemplate(
+            @PathVariable String key, @RequestBody @Valid EditorialTemplateRenderRequest request) {
+        return ResponseEntity.ok(blogService.renderEditorialTemplate(key, request));
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        return ResponseEntity.ok(blogService.getCategories());
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<List<String>> getTags() {
+        return ResponseEntity.ok(blogService.getTags());
+    }
+
+    @GetMapping("/related/{id}")
+    public ResponseEntity<Page<BlogResponse>> getRelatedBlogs(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "3") int size,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getRelatedBlogs(id, size, authUser));
+    }
+
+    @GetMapping("/comments")
+    public ResponseEntity<Page<BlogCommentResponse>> getModerationComments(
+            @RequestParam(required = false) UUID blogId,
+            @RequestParam(required = false) BlogCommentStatus status,
+            Pageable pageable,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getModerationComments(blogId, status, authUser, pageable));
+    }
+
+    @PatchMapping("/comments/{commentId}/status")
+    public ResponseEntity<BlogCommentResponse> updateCommentStatus(
+            @PathVariable UUID commentId,
+            @RequestBody @Valid UpdateBlogCommentStatusRequest request,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.updateCommentStatus(commentId, request.getStatus(), authUser));
     }
 
     @Operation(summary = "Get draft blogs by author (default current user)")
@@ -308,8 +378,41 @@ public class BlogController {
                         @Content(mediaType = "application/json", examples = @ExampleObject(value = ERROR_404_EXAMPLE)))
     })
     @GetMapping("/slug/{slug}")
-    public ResponseEntity<BlogResponse> getBlogBySlug(@PathVariable String slug) {
-        return ResponseEntity.ok(blogService.getBlogBySlug(slug));
+    public ResponseEntity<BlogResponse> getBlogBySlug(
+            @PathVariable String slug, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.getBlogBySlug(slug, authUser));
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<Page<BlogCommentResponse>> getComments(@PathVariable UUID id, Pageable pageable) {
+        return ResponseEntity.ok(blogService.getComments(id, pageable));
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<BlogCommentResponse> createComment(
+            @PathVariable UUID id,
+            @RequestBody @Valid CreateBlogCommentRequest request,
+            @AuthenticationPrincipal UserRole authUser) {
+        return new ResponseEntity<>(blogService.createComment(id, request, authUser), HttpStatusCode.valueOf(201));
+    }
+
+    @PostMapping("/{id}/views")
+    public ResponseEntity<BlogMetricsResponse> incrementViews(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser, HttpServletRequest request) {
+        return ResponseEntity.ok(
+                blogService.incrementViews(id, authUser, resolveClientIp(request), request.getHeader("User-Agent")));
+    }
+
+    @PostMapping("/{id}/likes")
+    public ResponseEntity<BlogMetricsResponse> likeBlog(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.likeBlog(id, authUser));
+    }
+
+    @DeleteMapping("/{id}/likes")
+    public ResponseEntity<BlogMetricsResponse> unlikeBlog(
+            @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(blogService.unlikeBlog(id, authUser));
     }
 
     @Operation(summary = "Get blog by ID")
@@ -408,5 +511,17 @@ public class BlogController {
             @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser) {
         blogService.deleteBlog(id, authUser);
         return ResponseEntity.ok(new MessageResponse("Blog archived successfully"));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

@@ -1,5 +1,7 @@
 package com.CNTTK18.notification_service.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,5 +21,10 @@ public class SSEController {
     @GetMapping(value = "/api/sse/subscribe/{userId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subcribeEmitter(@PathVariable String userId) {
         return sseService.createEmitter(userId);
+    }
+
+    @GetMapping(value = "/api/sse/blogs/{blogId}/metrics/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeBlogMetrics(@PathVariable UUID blogId) {
+        return sseService.createBlogMetricsEmitter(blogId);
     }
 }

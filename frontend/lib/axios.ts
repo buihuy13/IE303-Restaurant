@@ -19,7 +19,6 @@ const getRuntimeApiUrl = () => {
         }
     }
     // Browser (or fallback)
-    
     return API_URL;
 };
 
@@ -53,6 +52,21 @@ const getAccessTokenFromSources = (): string | null => {
     const fromStorage =
         typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
     return fromStore || fromStorage;
+};
+
+const isPublicBlogRequestWithoutAuth = (config: InternalAxiosRequestConfig) => {
+    const method = (config.method ?? "get").toLowerCase();
+    const url = config.url ?? "";
+    const isPublicBlogRead = method === "get" && (url === "/blogs" || url.startsWith("/blogs?") || url.startsWith("/blogs/slug/"));
+    const isPublicBlogComment = method === "get" && /\/blogs\/[^/?]+\/comments(?:\?.*)?$/.test(url);
+
+    return isPublicBlogRead || isPublicBlogComment;
+};
+
+const isPublicBlogViewRequest = (config: InternalAxiosRequestConfig) => {
+    const method = (config.method ?? "get").toLowerCase();
+    const url = config.url ?? "";
+    return method === "post" && /\/blogs\/[^/?]+\/views(?:\?.*)?$/.test(url);
 };
 
 const getRefreshTokenFromSources = (): string | null => {
@@ -138,6 +152,10 @@ api.interceptors.request.use(
         }
 
         if (accessToken && config.headers) {
+            const isAuthenticated = useAuthStore.getState().isAuthenticated;
+            if (isPublicBlogRequestWithoutAuth(config) || (isPublicBlogViewRequest(config) && !isAuthenticated)) {
+                return config;
+            }
             if (!config.url?.includes("/users/refreshtoken")) {
                 config.headers["Authorization"] = `Bearer ${accessToken}`;
             }

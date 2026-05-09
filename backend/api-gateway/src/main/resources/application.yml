@@ -95,6 +95,11 @@ spring:
                   predicates:
                       - Path=/api/sse/subscribe/**
                       - Method=GET
+                - id: blog-metrics-sse-connection
+                  uri: lb://notification-service
+                  predicates:
+                      - Path=/api/sse/blogs/**
+                      - Method=GET
                 # recommendation-service
                 - id: recommendation-service
                   uri: lb://recommendation-service

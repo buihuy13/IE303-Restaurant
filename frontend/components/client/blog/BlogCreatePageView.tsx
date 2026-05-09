@@ -6,30 +6,32 @@ import dynamic from "next/dynamic";
 import type { MDEditorProps } from "@uiw/react-md-editor";
 import { ArrowLeft, Image as ImageIcon, Loader2, X } from "lucide-react";
 import "@uiw/react-md-editor/markdown-editor.css";
-import { BLOG_CATEGORIES_FORM } from "@/lib/constants/blog";
-import type { BlogCategory, BlogStatus } from "@/types/blog.type";
+import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
+import { BlogEditorPreview } from "@/components/client/blog/BlogEditorPreview";
+import { BlogWritingQualityPanel } from "@/components/client/blog/BlogWritingQualityPanel";
+import type { BlogEditorialTemplate, BlogStatus } from "@/types/blog.type";
 
 type BlogCreateForm = {
     title: string;
     setTitle: (value: string) => void;
     excerpt: string;
     setExcerpt: (value: string) => void;
-    imagePreview: string | null;
-    handleRemoveImage: () => void;
-    handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    imagePreviews: string[];
-    images: File[];
-    handleRemoveImageAt: (index: number) => void;
-    handleImagesChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    category: BlogCategory;
-    setCategory: (value: BlogCategory) => void;
-    status: BlogStatus;
-    setStatus: (value: BlogStatus) => void;
-    tagInput: string;
-    setTagInput: (value: string) => void;
-    tags: string[];
-    handleAddTag: () => void;
-    handleRemoveTag: (tag: string) => void;
+    category: string;
+    setCategory: (value: string) => void;
+    tagsInput: string;
+    setTagsInput: (value: string) => void;
+    featured: boolean;
+    setFeatured: (value: boolean) => void;
+    editorialTemplates: BlogEditorialTemplate[];
+    selectedTemplateKey: string;
+    setSelectedTemplateKey: (value: string) => void;
+    templateLoading: boolean;
+    handleInsertTemplate: () => void;
+    coverImagePreview: string | null;
+    handleRemoveCoverImage: () => void;
+    handleCoverImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    status: Exclude<BlogStatus, "ARCHIVED">;
+    setStatus: (value: Exclude<BlogStatus, "ARCHIVED">) => void;
     editorImageInputRef: React.RefObject<HTMLInputElement | null>;
     handleEditorImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     content: string;
@@ -40,10 +42,9 @@ type BlogCreateForm = {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
-const MDEditor = dynamic<MDEditorProps>(
-    () => import("@uiw/react-md-editor").then((mod) => mod.default),
-    { ssr: false },
-);
+const MDEditor = dynamic<MDEditorProps>(() => import("@uiw/react-md-editor").then((mod) => mod.default), {
+    ssr: false,
+});
 
 export interface BlogCreatePageViewProps {
     form: BlogCreateForm;
@@ -51,287 +52,236 @@ export interface BlogCreatePageViewProps {
 
 export function BlogCreatePageView({ form }: BlogCreatePageViewProps) {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8">
-            <div className="custom-container max-w-4xl">
+        <div className="min-h-screen bg-white py-8">
+            <div className="custom-container max-w-7xl">
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/blog" className="rounded-full p-2 transition-colors hover:bg-gray-200">
-                        <ArrowLeft className="w-5 h-5" />
+                    <Link href="/blog" className="rounded-lg p-2 transition-colors hover:bg-gray-100">
+                        <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Write New Article</h1>
-                        <p className="text-gray-600 mt-1">Share your food story with the community</p>
+                        <p className="mt-1 text-gray-600">Publish a clean FoodEats blog post</p>
                     </div>
                 </div>
 
-                <form onSubmit={form.handleSubmit} className="space-y-6 rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)] md:p-8">
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="title"
-                            type="text"
-                            value={form.title}
-                            onChange={(e) => form.setTitle(e.target.value)}
-                            placeholder="Enter article title..."
-                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
-                            maxLength={200}
-                            required
-                        />
-                        <p className="text-xs text-gray-500 mt-1">{form.title.length}/200 characters</p>
-                    </div>
-
-                    <div>
-                        <label htmlFor="excerpt" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Excerpt
-                        </label>
-                        <textarea
-                            id="excerpt"
-                            value={form.excerpt}
-                            onChange={(e) => form.setExcerpt(e.target.value)}
-                            placeholder="Brief description of your article (optional)..."
-                            rows={3}
-                            maxLength={500}
-                            className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">{form.excerpt.length}/500 characters</p>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Featured Image</label>
-                        {form.imagePreview ? (
-                            <div className="relative h-64 w-full overflow-hidden rounded-2xl border-2 border-gray-300">
-                                <Image src={form.imagePreview} alt="Preview" fill className="object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={form.handleRemoveImage}
-                                    className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
-                                    aria-label="Remove image"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
-                                    <p className="mb-2 text-sm text-gray-500">
-                                        <span className="font-semibold">Click to upload</span> or drag and drop
-                                    </p>
-                                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                                </div>
-                                <input type="file" accept="image/*" onChange={form.handleImageChange} className="hidden" />
-                            </label>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Content Images <span className="text-xs text-gray-500 font-normal">(Optional, up to 10 images)</span>
-                        </label>
-                        {form.imagePreviews.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                                {form.imagePreviews.map((preview, index) => (
-                                    <div
-                                        key={`preview-${index}`}
-                                        className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300"
-                                    >
-                                        <Image src={preview} alt={`Preview ${index + 1}`} fill className="object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => form.handleRemoveImageAt(index)}
-                                            className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                            aria-label={`Remove image ${index + 1}`}
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {form.images.length < 10 && (
-                            <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
-                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                                    <ImageIcon className="w-8 h-8 mb-2 text-gray-400" />
-                                    <p className="mb-1 text-sm text-gray-500">
-                                        <span className="font-semibold">Click to upload</span> multiple images
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        PNG, JPG, GIF up to 5MB each ({form.images.length}/10)
-                                    </p>
-                                </div>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={form.handleImagesChange}
-                                    className="hidden"
-                                />
-                            </label>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+                    <form
+                        onSubmit={form.handleSubmit}
+                        className="space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8"
+                    >
                         <div>
-                            <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
-                                Category
+                            <label htmlFor="title" className="mb-2 block text-sm font-semibold text-gray-700">
+                                Title <span className="text-red-500">*</span>
                             </label>
-                            <select
-                                id="category"
-                                value={form.category}
-                                onChange={(e) => form.setCategory(e.target.value as BlogCategory)}
-                                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
-                                aria-label="Category"
-                            >
-                                {BLOG_CATEGORIES_FORM.map((cat) => (
-                                    <option key={cat.value} value={cat.value}>
-                                        {cat.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <input
+                                id="title"
+                                type="text"
+                                value={form.title}
+                                onChange={(e) => form.setTitle(e.target.value)}
+                                placeholder="Enter article title..."
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                maxLength={255}
+                                required
+                            />
+                            <p className="mt-1 text-xs text-gray-500">{form.title.length}/255 characters</p>
                         </div>
+
                         <div>
-                            <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="excerpt" className="mb-2 block text-sm font-semibold text-gray-700">
+                                Excerpt
+                            </label>
+                            <textarea
+                                id="excerpt"
+                                value={form.excerpt}
+                                onChange={(e) => form.setExcerpt(e.target.value)}
+                                placeholder="Short summary for list cards and detail intro. Leave blank to auto-generate."
+                                className="min-h-24 w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                maxLength={240}
+                            />
+                            <p className="mt-1 text-xs text-gray-500">{form.excerpt.length}/240 characters</p>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label htmlFor="category" className="mb-2 block text-sm font-semibold text-gray-700">
+                                    Category
+                                </label>
+                                <input
+                                    id="category"
+                                    type="text"
+                                    value={form.category}
+                                    onChange={(e) => form.setCategory(e.target.value)}
+                                    placeholder="Menu Strategy"
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                    maxLength={120}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="tags" className="mb-2 block text-sm font-semibold text-gray-700">
+                                    Tags
+                                </label>
+                                <input
+                                    id="tags"
+                                    type="text"
+                                    value={form.tagsInput}
+                                    onChange={(e) => form.setTagsInput(e.target.value)}
+                                    placeholder="lunch, menu, operations"
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Separate tags with commas. Max 8 tags.</p>
+                            </div>
+                        </div>
+
+                        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-orange-100 bg-orange-50/50 px-4 py-3 text-sm font-semibold text-gray-800">
+                            <input
+                                type="checkbox"
+                                checked={form.featured}
+                                onChange={(e) => form.setFeatured(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-brand-orange focus:ring-brand-orange"
+                            />
+                            Mark as featured story
+                        </label>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-gray-700">Cover Image</label>
+                            {form.coverImagePreview ? (
+                                <div className="relative h-64 w-full overflow-hidden rounded-lg border border-gray-300">
+                                    <Image src={form.coverImagePreview} alt="Preview" fill className="object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={form.handleRemoveCoverImage}
+                                        className="absolute right-2 top-2 rounded-md bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+                                        aria-label="Remove image"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 transition-colors hover:bg-gray-50">
+                                    <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                                        <ImageIcon className="mb-3 h-10 w-10 text-gray-400" />
+                                        <p className="mb-2 text-sm text-gray-500">
+                                            <span className="font-semibold">Click to upload</span> PNG, JPG, WebP or GIF
+                                        </p>
+                                        <p className="text-xs text-gray-500">Up to 5MB</p>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={form.handleCoverImageChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="status" className="mb-2 block text-sm font-semibold text-gray-700">
                                 Status
                             </label>
                             <select
                                 id="status"
                                 value={form.status}
-                                onChange={(e) => form.setStatus(e.target.value as BlogStatus)}
-                                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                                onChange={(e) => form.setStatus(e.target.value as Exclude<BlogStatus, "ARCHIVED">)}
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 aria-label="Publish status"
                             >
-                                <option value="draft">Draft</option>
-                                <option value="published">Published</option>
+                                <option value="DRAFT">Draft</option>
+                                <option value="PUBLISHED">Published</option>
                             </select>
                         </div>
-                    </div>
 
-                    <div>
-                        <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Tags
-                        </label>
-                        <div className="flex gap-2 mb-2">
-                            <input
-                                id="tags"
-                                type="text"
-                                value={form.tagInput}
-                                onChange={(e) => form.setTagInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        form.handleAddTag();
-                                    }
-                                }}
-                                placeholder="Add tags (press Enter)..."
-                                className="flex-1 rounded-xl border border-gray-300 px-4 py-2 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
-                            />
-                            <button
-                                type="button"
-                                onClick={form.handleAddTag}
-                                className="rounded-xl bg-brand-orange px-4 py-2 text-white transition-opacity hover:opacity-90"
-                            >
-                                Add
-                            </button>
-                        </div>
-                        {form.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {form.tags.map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                                    >
-                                        {tag}
-                                        <button
-                                            type="button"
-                                            onClick={() => form.handleRemoveTag(tag)}
-                                            className="hover:text-red-500"
-                                            aria-label={`Remove tag ${tag}`}
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </span>
-                                ))}
+                        <div>
+                            <label htmlFor="content" className="mb-2 block text-sm font-semibold text-gray-700">
+                                Content <span className="text-red-500">*</span>
+                            </label>
+                            <div className="mb-4">
+                                <BlogWritingQualityPanel
+                                    content={form.content}
+                                    coverImageUrl={form.coverImagePreview}
+                                    templates={form.editorialTemplates}
+                                    selectedTemplateKey={form.selectedTemplateKey}
+                                    templateLoading={form.templateLoading}
+                                    onTemplateChange={form.setSelectedTemplateKey}
+                                    onInsertTemplate={form.handleInsertTemplate}
+                                />
                             </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <label htmlFor="content" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Content <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            ref={form.editorImageInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={form.handleEditorImageSelect}
-                            className="hidden"
-                            aria-label="Upload image for editor"
-                        />
-                        <div data-color-mode="light">
-                            <MDEditor
-                                value={form.content}
-                                onChange={(val) => form.setContent(val ?? "")}
-                                height={500}
-                                preview="edit"
-                                visibleDragbar={false}
-                                onDrop={(event: React.DragEvent<HTMLDivElement>) => {
-                                    const files = Array.from(event.dataTransfer.files);
-                                    const imageFile = files.find((f) => f.type.startsWith("image/"));
-                                    if (imageFile) {
-                                        event.preventDefault();
-                                        form.handleEditorImageUpload(imageFile)
-                                            .then((url) => form.insertEditorImage(url, imageFile.name))
-                                            .catch(() => {});
-                                    }
-                                }}
-                                onPaste={(event: React.ClipboardEvent<HTMLDivElement>) => {
-                                    const items = Array.from(event.clipboardData.items);
-                                    const imageItem = items.find((item) => item.type.startsWith("image/"));
-                                    if (imageItem) {
-                                        event.preventDefault();
-                                        const file = imageItem.getAsFile();
-                                        if (file) {
-                                            form.handleEditorImageUpload(file)
-                                                .then((url) => form.insertEditorImage(url, file.name))
+                            <input
+                                ref={form.editorImageInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={form.handleEditorImageSelect}
+                                className="hidden"
+                                aria-label="Upload image for editor"
+                            />
+                            <div data-color-mode="light">
+                                <MDEditor
+                                    value={form.content}
+                                    onChange={(val) => form.setContent(val ?? "")}
+                                    height={500}
+                                    preview="edit"
+                                    visibleDragbar={false}
+                                    onDrop={(event: React.DragEvent<HTMLDivElement>) => {
+                                        const imageFile = Array.from(event.dataTransfer.files).find((file) =>
+                                            file.type.startsWith("image/"),
+                                        );
+                                        if (imageFile) {
+                                            event.preventDefault();
+                                            form.handleEditorImageUpload(imageFile)
+                                                .then((url) => form.insertEditorImage(url, imageFile.name))
                                                 .catch(() => {});
                                         }
-                                    }
-                                }}
-                            />
+                                    }}
+                                    onPaste={(event: React.ClipboardEvent<HTMLDivElement>) => {
+                                        const imageItem = Array.from(event.clipboardData.items).find((item) =>
+                                            item.type.startsWith("image/"),
+                                        );
+                                        if (imageItem) {
+                                            event.preventDefault();
+                                            const file = imageItem.getAsFile();
+                                            if (file) {
+                                                form.handleEditorImageUpload(file)
+                                                    .then((url) => form.insertEditorImage(url, file.name))
+                                                    .catch(() => {});
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                            Write your article in Markdown format. Use <code className="bg-gray-100 px-1 rounded">#</code> for
-                            headings, <code className="bg-gray-100 px-1 rounded">**bold**</code> for bold text. Click the
-                            image button to upload images.
-                        </p>
-                    </div>
 
-                    <div className="flex gap-4 border-t border-gray-200 pt-4">
-                        <button
-                            type="submit"
-                            disabled={form.loading}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {form.loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Creating...
-                                </>
-                            ) : (
-                                `Create ${form.status === "published" ? "and Publish" : "as Draft"}`
-                            )}
-                        </button>
-                        <Link
-                            href="/blog"
-                            className="rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-                        >
-                            Cancel
-                        </Link>
-                    </div>
-                </form>
+                        <div className="flex gap-4 border-t border-gray-200 pt-4">
+                            <button
+                                type="submit"
+                                disabled={form.loading}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-orange px-6 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {form.loading ? (
+                                    <>
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    `Create ${form.status === "PUBLISHED" ? "and Publish" : "as Draft"}`
+                                )}
+                            </button>
+                            <Link
+                                href="/blog"
+                                className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                            >
+                                Cancel
+                            </Link>
+                        </div>
+                    </form>
+
+                    <BlogEditorPreview
+                        title={form.title}
+                        content={form.content}
+                        coverImageUrl={form.coverImagePreview}
+                        statusLabel={BLOG_STATUS_LABELS[form.status].label}
+                    />
+                </div>
             </div>
         </div>
     );
 }
-

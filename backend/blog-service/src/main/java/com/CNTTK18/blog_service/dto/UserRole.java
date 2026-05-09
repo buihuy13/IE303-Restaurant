@@ -16,4 +16,11 @@ import lombok.Setter;
 public class UserRole {
     private UUID userId;
     private String role;
+    private String username;
+    private String email;
+
+    public UserRole(UUID userId, String role) {
+        this.userId = userId;
+        this.role = role;
+    }
 }

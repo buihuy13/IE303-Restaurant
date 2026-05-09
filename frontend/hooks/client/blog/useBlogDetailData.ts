@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { mapPublicBlogApiToViewModel } from "@/lib/adapters/blogViewAdapter";
 import { blogApi } from "@/lib/api/blogApi";
-import type { Blog } from "@/types/blog.type";
+import type { BlogViewModel } from "@/types/blogView.type";
 
 export function useBlogDetailData(slug: string | undefined) {
-    const [blog, setBlog] = useState<Blog | null>(null);
+    const [blog, setBlog] = useState<BlogViewModel | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchBlog = useCallback(async () => {
@@ -12,9 +13,10 @@ export function useBlogDetailData(slug: string | undefined) {
         setLoading(true);
         try {
             const response = await blogApi.getBlogBySlug(slug);
-            setBlog(response.data);
+            setBlog(mapPublicBlogApiToViewModel(response));
         } catch (error) {
             console.error("Failed to fetch blog:", error);
+            setBlog(null);
             toast.error("Failed to load blog post");
         } finally {
             setLoading(false);
@@ -27,12 +29,5 @@ export function useBlogDetailData(slug: string | undefined) {
         }
     }, [slug, fetchBlog]);
 
-    const incrementCommentsCount = useCallback(() => {
-        setBlog((prev) => {
-            if (!prev) return prev;
-            return { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 };
-        });
-    }, []);
-
-    return { blog, setBlog, loading, fetchBlog, incrementCommentsCount };
+    return { blog, setBlog, loading, fetchBlog };
 }

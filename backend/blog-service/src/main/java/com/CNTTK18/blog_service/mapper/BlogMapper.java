@@ -16,6 +16,10 @@ public interface BlogMapper {
     @Mapping(target = "publishedAt", source = "publishedAt", qualifiedByName = "convertToVNZone")
     @Mapping(target = "createdAt", source = "createdAt", qualifiedByName = "convertToVNZone")
     @Mapping(target = "updatedAt", source = "updatedAt", qualifiedByName = "convertToVNZone")
+    @Mapping(target = "likedByCurrentUser", ignore = true)
+    @Mapping(target = "authorName", ignore = true)
+    @Mapping(target = "authorAvatarUrl", ignore = true)
+    @Mapping(target = "authorRole", ignore = true)
     BlogResponse toBlogResponse(BlogPost blogPost);
 
     @Named("convertToVNZone")

@@ -1,34 +1,22 @@
 import { useEffect, useState } from "react";
-import type { BlogCategory, BlogStatus } from "@/types/blog.type";
+import type { BlogStatus } from "@/types/blog.type";
+
+const normalizeStatusParam = (value: string | null): BlogStatus | "" => {
+    const normalized = value?.toUpperCase();
+    if (normalized === "DRAFT" || normalized === "PUBLISHED" || normalized === "ARCHIVED") {
+        return normalized;
+    }
+    return "";
+};
 
 export function useMyBlogsFilters() {
     const [page, setPage] = useState(1);
-    const [category, setCategory] = useState<BlogCategory | "">("");
     const [status, setStatus] = useState<BlogStatus | "">("");
-    const [search, setSearch] = useState("");
-    const [searchInput, setSearchInput] = useState("");
 
     useEffect(() => {
         if (typeof window === "undefined") return;
-        const params = new URLSearchParams(window.location.search);
-        const statusParam = params.get("status");
-        if (
-            statusParam &&
-            (statusParam === "draft" || statusParam === "published" || statusParam === "archived")
-        ) {
-            setStatus(statusParam as BlogStatus);
-        }
+        setStatus(normalizeStatusParam(new URLSearchParams(window.location.search).get("status")));
     }, []);
-
-    const handleSearch = () => {
-        setSearch(searchInput);
-        setPage(1);
-    };
-
-    const handleCategoryChange = (cat: BlogCategory | "") => {
-        setCategory(cat);
-        setPage(1);
-    };
 
     const handleStatusChange = (stat: BlogStatus | "") => {
         setStatus(stat);
@@ -42,13 +30,7 @@ export function useMyBlogsFilters() {
 
     return {
         page,
-        category,
         status,
-        search,
-        searchInput,
-        setSearchInput,
-        handleSearch,
-        handleCategoryChange,
         handleStatusChange,
         handlePageChange,
     };

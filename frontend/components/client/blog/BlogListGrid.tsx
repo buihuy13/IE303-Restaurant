@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Clock, Eye, Heart } from "lucide-react";
-import Pagination from "@/components/client/Pagination";
-import { BLOG_CATEGORIES } from "@/lib/constants/blog";
-import type { Blog } from "@/types/blog.type";
+import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { BLOG_STATUS_LABELS } from "@/lib/constants/blog";
+import type { BlogViewModel } from "@/types/blogView.type";
 
-function formatDate(dateString: string) {
+function formatDate(dateString?: string | null) {
+    if (!dateString) return "Unpublished";
     return new Date(dateString).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -14,107 +14,91 @@ function formatDate(dateString: string) {
 }
 
 interface BlogListGridProps {
-    blogs: Blog[];
+    blogs: BlogViewModel[];
+}
+
+interface BlogListPaginationProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    buttonClassName?: string;
 }
 
-export function BlogListGrid({ blogs, currentPage, totalPages, onPageChange }: BlogListGridProps) {
+const formatPage = (page: number) => String(page).padStart(2, "0");
+
+export function BlogListPagination({ currentPage, totalPages, onPageChange, buttonClassName = "" }: BlogListPaginationProps) {
+    if (totalPages <= 1) return null;
+
+    const canGoPrevious = currentPage > 1;
+    const canGoNext = currentPage < totalPages;
+
     return (
-        <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
-                {blogs.map((blog) => (
-                    <Link
-                        key={blog._id}
-                        href={`/blog/${blog.slug}`}
-                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 group flex flex-col border border-gray-100"
-                    >
-                        <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
-                            {blog.featuredImage?.url ? (
-                                <Image
-                                    src={blog.featuredImage.url}
-                                    alt={blog.featuredImage.alt || blog.title}
-                                    fill
-                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-brand-orange/10">
-                                    <span className="text-5xl">🍽️</span>
-                                </div>
-                            )}
-                            <div className="absolute top-4 left-4">
-                                <span className="px-3 py-1.5 text-white text-xs font-bold rounded-full backdrop-blur-md shadow-lg bg-brand-orange">
-                                    {BLOG_CATEGORIES.find((c) => c.value === blog.category)?.label ?? "Other"}
-                                </span>
+        <div className="flex items-center gap-4" aria-label="Blog pagination">
+            <button
+                type="button"
+                aria-label="Previous page"
+                disabled={!canGoPrevious}
+                onClick={() => onPageChange(currentPage - 1)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border border-brand-orange text-brand-orange transition hover:bg-brand-orange hover:text-white disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-300 ${buttonClassName}`}
+            >
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
+            </button>
+            <span className="min-w-[72px] text-center text-base font-black text-gray-950">
+                {formatPage(currentPage)}
+                <span className="px-1.5 font-medium text-gray-500">/</span>
+                <span className="font-medium text-gray-950">{formatPage(totalPages)}</span>
+            </span>
+            <button
+                type="button"
+                aria-label="Next page"
+                disabled={!canGoNext}
+                onClick={() => onPageChange(currentPage + 1)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white transition hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${buttonClassName}`}
+            >
+                <ChevronRight className="h-5 w-5" strokeWidth={2.2} />
+            </button>
+        </div>
+    );
+}
+
+export function BlogListGrid({ blogs }: BlogListGridProps) {
+    return (
+        <div className="grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+            {blogs.map((blog) => (
+                <Link
+                    key={blog.id}
+                    href={`/blog/${blog.slug}`}
+                    className="group block rounded-lg border border-transparent p-4 outline-none transition duration-300 hover:border-brand-orange/20 hover:bg-orange-50/80 focus-visible:bg-orange-50 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-4"
+                >
+                    <div className="relative aspect-[1.42] w-full overflow-hidden rounded-lg bg-gray-100">
+                        {blog.coverImageUrl ? (
+                            <Image
+                                src={blog.coverImageUrl}
+                                alt={blog.title}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
+                                <FileText className="h-12 w-12" />
                             </div>
+                        )}
+                    </div>
+                    <div className="pt-5">
+                        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm font-medium text-gray-500">
+                            <span>{blog.category ?? BLOG_STATUS_LABELS[blog.status].label}</span>
+                            <span className="h-1 w-1 rounded-full bg-gray-400" />
+                            <span>{formatDate(blog.publishedAt ?? blog.createdAt)}</span>
                         </div>
-                        <div className="p-6 flex-1 flex flex-col">
-                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-brand-orange transition-colors">
-                                {blog.title}
-                            </h3>
-                            {blog.excerpt && (
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">{blog.excerpt}</p>
-                            )}
-                            <div className="flex items-center justify-between text-sm text-gray-500 mb-4 pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1">
-                                        <Eye className="w-4 h-4" />
-                                        <span>{blog.views}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Heart className="w-4 h-4 text-red-500" />
-                                        <span>{blog.likesCount ?? blog.likes?.length ?? 0}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{blog.readTime} min</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                                <div className="flex items-center gap-2">
-                                    {blog.author?.avatar ? (
-                                        <Image
-                                            src={blog.author.avatar}
-                                            alt={blog.author?.name ?? "Author"}
-                                            width={36}
-                                            height={36}
-                                            className="rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md bg-brand-orange">
-                                            {blog.author?.name?.charAt(0).toUpperCase() ?? "?"}
-                                        </div>
-                                    )}
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-semibold text-gray-700">
-                                            {blog.author?.name ?? "Author"}
-                                        </span>
-                                        {blog.publishedAt && (
-                                            <span className="text-xs text-gray-500">
-                                                {formatDate(blog.publishedAt)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
-                            </div>
+                        <h3 className="line-clamp-2 text-2xl font-bold leading-snug text-gray-900 transition-colors">
+                            {blog.title}
+                        </h3>
+                        <div className="mt-6 inline-flex rounded-full border border-brand-orange px-4 py-2 text-sm font-bold text-brand-orange transition-colors group-hover:bg-brand-orange group-hover:text-white">
+                            Read More
                         </div>
-                    </Link>
-                ))}
-            </div>
-            {totalPages > 1 && (
-                <div className="flex justify-center">
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={onPageChange}
-                        showInfo={true}
-                        scrollToTop={true}
-                    />
-                </div>
-            )}
-        </>
+                    </div>
+                </Link>
+            ))}
+        </div>
     );
 }

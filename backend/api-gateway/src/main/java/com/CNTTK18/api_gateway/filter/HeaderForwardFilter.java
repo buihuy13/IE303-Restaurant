@@ -23,6 +23,8 @@ public class HeaderForwardFilter implements WebFilter {
                     Jwt jwt = (Jwt) authentication.getPrincipal();
                     var authorities = authentication.getAuthorities();
                     String userId = jwt.getSubject();
+                    String username = jwt.getClaimAsString("preferred_username");
+                    String email = jwt.getClaimAsString("email");
                     String role = authorities.stream()
                             .findFirst()
                             .get()
@@ -34,6 +36,14 @@ public class HeaderForwardFilter implements WebFilter {
                             .mutate()
                             .header("user-id", userId)
                             .header("role", role)
+                            .headers(headers -> {
+                                if (username != null && !username.isBlank()) {
+                                    headers.set("username", username);
+                                }
+                                if (email != null && !email.isBlank()) {
+                                    headers.set("email", email);
+                                }
+                            })
                             .build();
 
                     return chain.filter(exchange.mutate().request(mutated).build());

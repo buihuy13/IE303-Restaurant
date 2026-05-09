@@ -23,10 +23,12 @@ public class InternalFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String id = request.getHeader("user-id");
         String role = request.getHeader("role");
+        String username = request.getHeader("username");
+        String email = request.getHeader("email");
 
         if (id != null && !id.isBlank()) {
             UUID userId = UUID.fromString(id);
-            UserRole userRole = new UserRole(userId, role);
+            UserRole userRole = new UserRole(userId, role, username, email);
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userRole, null, null);
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
