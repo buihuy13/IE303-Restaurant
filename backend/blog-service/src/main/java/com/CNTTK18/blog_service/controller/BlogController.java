@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
@@ -402,11 +401,6 @@ public class BlogController {
             @PathVariable UUID id, @AuthenticationPrincipal UserRole authUser, HttpServletRequest request) {
         return ResponseEntity.ok(
                 blogService.incrementViews(id, authUser, resolveClientIp(request), request.getHeader("User-Agent")));
-    }
-
-    @GetMapping(value = "/{id}/metrics/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamMetrics(@PathVariable UUID id) {
-        return blogService.streamMetrics(id);
     }
 
     @PostMapping("/{id}/likes")

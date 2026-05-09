@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { API_URL } from "@/lib/config/publicRuntime";
+import { NOTIFICATION_SSE_ORIGIN } from "@/lib/config/publicRuntime";
 import type { BlogMetricsResponse } from "@/types/blog.type";
 import type { BlogViewModel } from "@/types/blogView.type";
 
@@ -21,7 +21,9 @@ export function useBlogMetricsStream(
     useEffect(() => {
         if (!blogId || typeof window === "undefined") return;
 
-        const eventSource = new EventSource(`${API_URL}/blogs/${blogId}/metrics/stream`);
+        const eventSource = new EventSource(
+            `${NOTIFICATION_SSE_ORIGIN}/api/sse/blogs/${blogId}/metrics/stream`,
+        );
 
         const handleMetricsEvent = (event: MessageEvent<string>) => {
             const metrics = parseMetrics(event.data);

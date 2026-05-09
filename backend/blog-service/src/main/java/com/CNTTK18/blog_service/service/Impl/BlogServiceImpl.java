@@ -30,7 +30,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
@@ -47,6 +46,7 @@ import com.CNTTK18.blog_service.dto.response.EditorialTemplateRenderResponse;
 import com.CNTTK18.blog_service.dto.response.EditorialTemplateResponse;
 import com.CNTTK18.blog_service.exception.ForbiddenException;
 import com.CNTTK18.blog_service.mapper.BlogMapper;
+import com.CNTTK18.blog_service.messaging.BlogMetricsPublisher;
 import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogLike;
@@ -59,7 +59,6 @@ import com.CNTTK18.blog_service.repository.BlogImageRepository;
 import com.CNTTK18.blog_service.repository.BlogLikeRepository;
 import com.CNTTK18.blog_service.repository.BlogRepository;
 import com.CNTTK18.blog_service.repository.BlogViewEventRepository;
-import com.CNTTK18.blog_service.service.BlogMetricsSseService;
 import com.CNTTK18.blog_service.service.BlogService;
 import com.CNTTK18.blog_service.service.ImageHandleService;
 
@@ -84,7 +83,7 @@ public class BlogServiceImpl implements BlogService {
     private final ImageHandleService imageHandleService;
     private final BlogImageProperties blogImageProperties;
     private final BlogMapper blogMapper;
-    private final BlogMetricsSseService blogMetricsSseService;
+    private final BlogMetricsPublisher blogMetricsPublisher;
 
     @Override
     @Transactional
@@ -401,12 +400,6 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
-    public SseEmitter streamMetrics(UUID blogId) {
-        BlogPost blogPost = ensurePublishedBlog(blogId);
-        return blogMetricsSseService.createEmitter(blogId, toMetricsResponse(blogPost, false, false));
-    }
-
-    @Override
     @Transactional
     public BlogMetricsResponse likeBlog(UUID blogId, UserRole authUser) {
         UUID userId = extractAuthorId(authUser);
@@ -663,7 +656,7 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private void broadcastMetrics(BlogPost blogPost) {
-        blogMetricsSseService.broadcastMetrics(toMetricsResponse(blogPost, false, false));
+        blogMetricsPublisher.publish(toMetricsResponse(blogPost, false, false));
     }
 
     private long resolvePublishedCommentCount(BlogPost blogPost) {

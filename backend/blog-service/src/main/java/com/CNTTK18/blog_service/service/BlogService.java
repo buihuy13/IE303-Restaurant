@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.CNTTK18.blog_service.dto.UserRole;
 import com.CNTTK18.blog_service.dto.request.CreateBlogCommentRequest;
@@ -62,8 +61,6 @@ public interface BlogService {
     BlogCommentResponse updateCommentStatus(UUID commentId, BlogCommentStatus status, UserRole authUser);
 
     BlogMetricsResponse incrementViews(UUID blogId, UserRole authUser, String ipAddress, String userAgent);
-
-    SseEmitter streamMetrics(UUID blogId);
 
     BlogMetricsResponse likeBlog(UUID blogId, UserRole authUser);
 

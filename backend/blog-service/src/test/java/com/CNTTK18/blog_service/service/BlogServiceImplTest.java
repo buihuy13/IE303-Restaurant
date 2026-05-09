@@ -43,6 +43,7 @@ import com.CNTTK18.blog_service.dto.response.BlogCommentResponse;
 import com.CNTTK18.blog_service.dto.response.BlogResponse;
 import com.CNTTK18.blog_service.exception.ForbiddenException;
 import com.CNTTK18.blog_service.mapper.BlogMapper;
+import com.CNTTK18.blog_service.messaging.BlogMetricsPublisher;
 import com.CNTTK18.blog_service.model.BlogComment;
 import com.CNTTK18.blog_service.model.BlogImageAsset;
 import com.CNTTK18.blog_service.model.BlogLike;
@@ -87,7 +88,7 @@ class BlogServiceImplTest {
     private BlogMapper blogMapper;
 
     @Mock
-    private BlogMetricsSseService blogMetricsSseService;
+    private BlogMetricsPublisher blogMetricsPublisher;
 
     @InjectMocks
     private BlogServiceImpl blogService;
@@ -461,7 +462,7 @@ class BlogServiceImplTest {
         assertEquals(true, response.getViewCounted());
         verify(blogViewEventRepository).save(any(BlogViewEvent.class));
         verify(blogRepository).save(publishedBlog);
-        verify(blogMetricsSseService, never()).broadcastMetrics(any());
+        verify(blogMetricsPublisher, never()).publish(any());
     }
 
     @Test
@@ -488,7 +489,7 @@ class BlogServiceImplTest {
         assertEquals(false, response.getViewCounted());
         verify(blogViewEventRepository, never()).save(any(BlogViewEvent.class));
         verify(blogRepository, never()).save(publishedBlog);
-        verify(blogMetricsSseService, never()).broadcastMetrics(any());
+        verify(blogMetricsPublisher, never()).publish(any());
     }
 
     @Test
