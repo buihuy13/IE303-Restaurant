@@ -100,9 +100,10 @@ export default function HeroSearchSection() {
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full bg-[url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')]"
                 />
                 {/* Premium overlay stack: vignette + radial lift + bottom gradient */}
-                <div className="absolute inset-0 bg-black/55 w-full h-full" />
-                <div className="absolute inset-0 bg-[radial-gradient(1200px_circle_at_50%_35%,rgba(255,255,255,0.12),transparent_55%)]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/25" />
+                <div className="absolute inset-0 bg-black/65 w-full h-full" />
+                <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_30%,rgba(87,42,248,0.22),transparent_58%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_18%_18%,rgba(41,176,103,0.14),transparent_60%)]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/20" />
             </div>
 
             {/* Content - Centered */}
@@ -119,23 +120,23 @@ export default function HeroSearchSection() {
 
                 {/* Search Bar - Wider and More Prominent */}
                 <form onSubmit={handleSearch} className="mb-8 max-w-2xl mx-auto">
-                    <div className="relative">
+                    <div className="relative surface-glass rounded-full p-1.5">
                         <Input
                             type="text"
                             placeholder="Search for beef noodle soup, bubble tea, fried chicken..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={cn(
-                                "h-14 w-full py-4 pl-14 pr-32 rounded-full text-gray-900 placeholder:text-gray-500 text-base shadow-2xl",
-                                "bg-white/95 backdrop-blur-md border border-white/40",
-                                "focus-visible:ring-brand-orange/40",
+                                "h-14 w-full py-4 pl-14 pr-32 rounded-full text-white placeholder:text-white/55 text-base",
+                                "bg-black/25 border border-white/10",
+                                "focus-visible:ring-[color:var(--ring)] focus-visible:border-white/20",
                             )}
                         />
-                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
                         <Button
                             type="submit"
                             variant="brand"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6 py-2 shadow-lg hover:shadow-xl"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6 py-2 shadow-lg hover:shadow-xl btn-primary"
                         >
                             Search
                         </Button>
@@ -156,7 +157,7 @@ export default function HeroSearchSection() {
                             variant={!activeCategory ? "brand" : "secondary"}
                             className={cn(
                                 "rounded-full shadow-sm transition-all",
-                                !activeCategory ? "shadow-lg" : "bg-white/90 text-gray-800 hover:bg-white",
+                                !activeCategory ? "shadow-lg btn-primary" : "chip-glass",
                             )}
                         >
                             <span>🍽️</span>
@@ -179,7 +180,7 @@ export default function HeroSearchSection() {
                                     variant={isActive ? "brand" : "secondary"}
                                     className={cn(
                                         "rounded-full shadow-sm transition-all",
-                                        isActive ? "shadow-lg" : "bg-white/90 text-gray-800 hover:bg-white",
+                                        isActive ? "shadow-lg btn-primary" : "chip-glass",
                                     )}
                                 >
                                     <span>{icon}</span>

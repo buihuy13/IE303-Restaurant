@@ -2,6 +2,7 @@
 
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { BookOpen, Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function MobileMenu() {
+    const { theme } = useClientTheme();
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -50,11 +52,13 @@ export default function MobileMenu() {
                 <Link
                     href="/search"
                     prefetch={true}
-                    className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
+                    className={`relative p-2 rounded-full transition-colors ${
+                        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                    }`}
                     aria-label="Explore foods"
                 >
                     <UtensilsCrossed
-                        className={`w-5 h-5 ${pathname === "/search" ? "text-brand-orange" : "text-brand-grey"}`}
+                        className={`w-5 h-5 ${pathname === "/search" ? "text-brand-orange" : theme === "dark" ? "text-white/75" : "text-brand-grey"}`}
                     />
                 </Link>
 
@@ -62,7 +66,7 @@ export default function MobileMenu() {
                 {isAuthenticated && user && !loading && (
                     <Link href="/cart" prefetch={true} className="relative group">
                         <div className="relative p-2 rounded-full hover:bg-gray-50 transition-colors duration-200">
-                            <ShoppingCart className="w-5 h-5 text-brand-grey group-hover:text-brand-black transition-colors" />
+                            <ShoppingCart className={`w-5 h-5 transition-colors ${theme === "dark" ? "text-white/75 group-hover:text-white" : "text-brand-grey group-hover:text-brand-black"}`} />
                             {cartItemCount > 0 && (
                                 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
                                     {cartItemCount > 9 ? "9+" : cartItemCount}
@@ -74,7 +78,9 @@ export default function MobileMenu() {
 
                 {/* Hamburger Menu Button */}
                 <button
-                    className="p-2 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
+                    className={`p-2 rounded-full transition-colors focus:outline-none ${
+                        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                    }`}
                     onClick={() => setOpen(true)}
                     aria-label="Open menu"
                 >
@@ -92,18 +98,20 @@ export default function MobileMenu() {
 
             {/* Mobile Menu Sidebar */}
             <div
-                className={`fixed top-0 right-0 h-full w-80 bg-brand-white shadow-2xl z-[100] transform transition-transform duration-300 ease-in-out lg:hidden ${
+                className={`fixed top-0 right-0 h-full w-80 shadow-2xl z-[100] transform transition-transform duration-300 ease-in-out lg:hidden ${
+                    theme === "dark" ? "bg-[#12182b] border-l border-white/10" : "bg-brand-white"
+                } ${
                     open ? "translate-x-0" : "translate-x-full"
                 }`}
             >
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                    <h2 className="text-h5 font-roboto-serif text-brand-black">Menu</h2>
+                <div className={`flex items-center justify-between p-6 border-b ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                    <h2 className={`text-h5 font-roboto-serif ${theme === "dark" ? "text-white" : "text-brand-black"}`}>Menu</h2>
                     <button
-                        className="p-2 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
+                        className={`p-2 rounded-full transition-colors focus:outline-none ${theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"}`}
                         onClick={() => setOpen(false)}
                         aria-label="Close menu"
                     >
-                        <X className="w-6 h-6 text-brand-black" />
+                        <X className={`w-6 h-6 ${theme === "dark" ? "text-white" : "text-brand-black"}`} />
                     </button>
                 </div>
 
@@ -115,7 +123,11 @@ export default function MobileMenu() {
                                 href="/orders"
                                 prefetch={true}
                                 onClick={() => setOpen(false)}
-                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                                className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                                    theme === "dark"
+                                        ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                        : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                }`}
                             >
                                 <Package className="w-5 h-5" />
                                 My orders
@@ -124,7 +136,11 @@ export default function MobileMenu() {
                                 href="/chat"
                                 prefetch={true}
                                 onClick={() => setOpen(false)}
-                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                                className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                                    theme === "dark"
+                                        ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                        : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                }`}
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 Messages
@@ -133,7 +149,11 @@ export default function MobileMenu() {
                                 href="/blog"
                                 prefetch={true}
                                 onClick={() => setOpen(false)}
-                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                                className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                                    theme === "dark"
+                                        ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                        : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                }`}
                             >
                                 <BookOpen className="w-5 h-5" />
                                 Blog
@@ -144,23 +164,27 @@ export default function MobileMenu() {
                     {/* Settings Section */}
                     {mounted && isAuthenticated && user && (
                         <>
-                            <div className="border-t border-gray-100 pt-4 mt-4">
+                            <div className={`border-t pt-4 mt-4 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
                                 <div className="flex items-center gap-3 px-4 py-2 mb-2">
                                     <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center">
                                         <User className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-brand-black font-manrope">
+                                        <p className={`text-sm font-semibold font-manrope ${theme === "dark" ? "text-white/92" : "text-brand-black"}`}>
                                             {user?.username || "User"}
                                         </p>
-                                        <p className="text-xs text-brand-grey font-manrope">{user?.email}</p>
+                                        <p className={`text-xs font-manrope ${theme === "dark" ? "text-white/60" : "text-brand-grey"}`}>{user?.email}</p>
                                     </div>
                                 </div>
                                 <Link
                                     href="/account"
                                     prefetch={true}
                                     onClick={() => setOpen(false)}
-                                    className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
+                                    className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors block ${
+                                        theme === "dark"
+                                            ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                            : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                    }`}
                                 >
                                     Profile
                                 </Link>
@@ -168,7 +192,11 @@ export default function MobileMenu() {
                                     href="/account/addresses"
                                     prefetch={true}
                                     onClick={() => setOpen(false)}
-                                    className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
+                                    className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors block ${
+                                        theme === "dark"
+                                            ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                            : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                    }`}
                                 >
                                     Delivery addresses
                                 </Link>
@@ -177,7 +205,11 @@ export default function MobileMenu() {
                                         href="/admin"
                                         prefetch={true}
                                         onClick={() => setOpen(false)}
-                                        className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
+                                        className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors block ${
+                                            theme === "dark"
+                                                ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                                : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                        }`}
                                     >
                                         Admin Panel
                                     </Link>
@@ -187,14 +219,20 @@ export default function MobileMenu() {
                                         href="/merchant"
                                         prefetch={true}
                                         onClick={() => setOpen(false)}
-                                        className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
+                                        className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors block ${
+                                            theme === "dark"
+                                                ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                                : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                        }`}
                                     >
                                         Merchant Dashboard
                                     </Link>
                                 )}
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full text-left text-red-600 text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-red-50 transition-colors"
+                                    className={`w-full text-left text-red-600 text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors ${
+                                        theme === "dark" ? "hover:bg-red-500/15" : "hover:bg-red-50"
+                                    }`}
                                 >
                                     Log out
                                 </button>
@@ -205,12 +243,16 @@ export default function MobileMenu() {
                     {/* Not Authenticated */}
                     {mounted && !isAuthenticated && (
                         <>
-                            <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
+                            <div className={`border-t pt-4 mt-4 space-y-2 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
                                 <Link
                                     href="/login"
                                     prefetch={true}
                                     onClick={() => setOpen(false)}
-                                    className="block text-center text-brand-black hover:text-brand-orange transition-colors font-manrope text-p2 font-medium py-3 px-4 rounded-lg hover:bg-gray-50"
+                                    className={`block text-center transition-colors font-manrope text-p2 font-medium py-3 px-4 rounded-lg ${
+                                        theme === "dark"
+                                            ? "text-white/88 hover:text-white hover:bg-white/10"
+                                            : "text-brand-black hover:text-brand-orange hover:bg-gray-50"
+                                    }`}
                                 >
                                     Sign In
                                 </Link>
@@ -218,7 +260,9 @@ export default function MobileMenu() {
                                     href="/register"
                                     prefetch={true}
                                     onClick={() => setOpen(false)}
-                                    className="block text-center px-5 py-2.5 bg-brand-black hover:bg-brand-purpledark text-brand-white font-manrope text-p2 font-medium rounded-full transition-colors"
+                                    className={`block text-center px-5 py-2.5 text-brand-white font-manrope text-p2 font-medium rounded-full transition-colors ${
+                                        theme === "dark" ? "bg-brand-orange hover:bg-brand-orange/90" : "bg-brand-black hover:bg-brand-purpledark"
+                                    }`}
                                 >
                                     Sign Up
                                 </Link>

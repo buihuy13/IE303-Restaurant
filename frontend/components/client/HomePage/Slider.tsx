@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination } from "swiper/modules";
@@ -7,6 +8,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import RatingStar from "./RatingStar";
 
 export default function Slider() {
+        const { theme } = useClientTheme();
         const reviews = [
                 {
                         id: 1,
@@ -69,14 +71,28 @@ export default function Slider() {
                         >
                                 {reviews.map((review) => (
                                         <SwiperSlide key={review.id}>
-                                                <div className="p-6 bg-white rounded-2xl shadow-sm ring-1 ring-black/5 h-full flex flex-col hover:shadow-md transition-shadow">
+                                                <div
+                                                        className={`p-5 md:p-6 rounded-2xl h-full flex flex-col transition-shadow ${
+                                                                theme === "dark"
+                                                                        ? "surface-glass border border-white/10 shadow-[0_14px_40px_rgba(2,6,25,0.35)]"
+                                                                        : "bg-white shadow-sm ring-1 ring-black/5 hover:shadow-md"
+                                                        }`}
+                                                >
                                                         <RatingStar rating={5} />
-                                                        <p className="mt-[16px] text-gray-700 flex-grow">
+                                                        <p
+                                                                className={`mt-4 flex-grow text-[15px] leading-7 ${
+                                                                        theme === "dark" ? "text-white/78" : "text-gray-700"
+                                                                }`}
+                                                        >
                                                                 {review.text}
                                                         </p>
-                                                        <hr className="my-4" />
-                                                        <p className="font-bold">{review.name}</p>
-                                                        <p className="text-sm text-gray-500">{review.role}</p>
+                                                        <hr className={`my-4 ${theme === "dark" ? "border-white/12" : ""}`} />
+                                                        <p className={`font-semibold text-base ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                                                                {review.name}
+                                                        </p>
+                                                        <p className={`text-sm mt-0.5 ${theme === "dark" ? "text-white/58" : "text-gray-500"}`}>
+                                                                {review.role}
+                                                        </p>
                                                 </div>
                                         </SwiperSlide>
                                 ))}

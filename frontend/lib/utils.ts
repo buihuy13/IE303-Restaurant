@@ -93,6 +93,14 @@ export function getImageUrl(imageURL: string | null | StaticImageData, fallback:
                 }
         }
         
+        // Reject obviously non-image/doc-like URLs so cards can fallback to placeholder.
+        const lowered = urlString.toLowerCase();
+        const nonImageExtPattern = /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt)(\?|#|$)/;
+        const suspiciousKeywordPattern = /(certificate|cv|resume|toeic|ielts|transcript|document|drive\.google\.com\/file)/;
+        if (nonImageExtPattern.test(lowered) || suspiciousKeywordPattern.test(lowered)) {
+                return fallback;
+        }
+
         // Return the URL as-is if it's a valid external URL or relative path
         return urlString;
 }

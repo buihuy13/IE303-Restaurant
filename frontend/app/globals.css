@@ -104,6 +104,241 @@
         @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
     }
 
+    /* Client theme (Midnight + Aurora) — scoped via wrapper class */
+    .theme-aurora {
+        --background: oklch(0.145 0.02 265);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.19 0.02 265);
+        --card-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.24 0.02 265);
+        --muted-foreground: oklch(0.78 0.02 265);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.72 0.18 275 / 45%);
+
+        /* Extra tokens for richer UI */
+        --aurora-1: rgba(87, 42, 248, 0.38); /* brand purple */
+        --aurora-2: rgba(41, 176, 103, 0.18); /* brand green */
+        --aurora-3: rgba(238, 77, 45, 0.16); /* brand orange */
+        --surface-glass: rgba(255, 255, 255, 0.06);
+        --surface-glass-strong: rgba(255, 255, 255, 0.10);
+        --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.35);
+
+        color: hsl(var(--foreground));
+        position: relative;
+        isolation: isolate;
+        min-height: 100vh;
+    }
+
+    .theme-aurora::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+            radial-gradient(1200px 700px at 15% 10%, var(--aurora-1), transparent 60%),
+            radial-gradient(900px 520px at 85% 18%, var(--aurora-2), transparent 58%),
+            radial-gradient(900px 560px at 50% 95%, var(--aurora-3), transparent 62%),
+            linear-gradient(180deg, #05060d 0%, #070a12 30%, #0b1020 100%);
+        filter: saturate(1.08);
+    }
+
+    .surface-glass {
+        @apply border shadow-sm;
+        background: var(--surface-glass);
+        border-color: var(--border);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.28);
+    }
+
+    .surface-card {
+        @apply border;
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--border);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-semibold transition-all duration-200;
+        background: linear-gradient(135deg, rgba(87, 42, 248, 0.95), rgba(56, 12, 211, 0.95));
+        color: #fff;
+        box-shadow: 0 16px 45px rgba(87, 42, 248, 0.28);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 22px 55px rgba(87, 42, 248, 0.38);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0px);
+    }
+
+    .chip-glass {
+        @apply inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .chip-glass:hover {
+        background: rgba(255, 255, 255, 0.14);
+        transform: translateY(-1px);
+    }
+
+    /* Let light pages keep their original backgrounds */
+    body.theme-aurora .bg-gradient-to-b.from-slate-50.via-gray-50.to-white {
+        background: transparent !important;
+    }
+    body.theme-aurora .bg-gradient-to-b.from-gray-50.via-gray-50.to-white {
+        background: transparent !important;
+    }
+
+    body.theme-aurora .border-gray-200 {
+        border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+
+    body.theme-aurora .bg-white\/70 {
+        background-color: rgba(0, 0, 0, 0.10) !important;
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    body.theme-aurora .via-gray-200 {
+        --tw-gradient-to: rgba(255, 255, 255, 0.10) !important;
+    }
+
+    /* Global dark mode harmonization for all client pages */
+    body.theme-aurora .client-theme-scope {
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    body.theme-aurora .client-theme-scope .bg-white {
+        background-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    body.theme-aurora .client-theme-scope [class*="bg-white/"] {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .bg-gray-50,
+    body.theme-aurora .client-theme-scope .bg-gray-100 {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    body.theme-aurora .client-theme-scope .bg-gray-200,
+    body.theme-aurora .client-theme-scope .bg-gray-300 {
+        background-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .text-gray-900 {
+        color: rgba(255, 255, 255, 0.96) !important;
+    }
+    body.theme-aurora .client-theme-scope .text-black {
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .text-gray-800 {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .text-gray-700,
+    body.theme-aurora .client-theme-scope .text-gray-600 {
+        color: rgba(255, 255, 255, 0.75) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .text-gray-500,
+    body.theme-aurora .client-theme-scope .text-gray-400 {
+        color: rgba(255, 255, 255, 0.58) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .border-gray-100,
+    body.theme-aurora .client-theme-scope .border-gray-200,
+    body.theme-aurora .client-theme-scope .border-gray-300 {
+        border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+    body.theme-aurora .client-theme-scope .border-black\/5,
+    body.theme-aurora .client-theme-scope .border-black\/10 {
+        border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .ring-black\/5 {
+        --tw-ring-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .shadow-sm,
+    body.theme-aurora .client-theme-scope .shadow-md,
+    body.theme-aurora .client-theme-scope .shadow-lg {
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    body.theme-aurora .client-theme-scope input,
+    body.theme-aurora .client-theme-scope textarea,
+    body.theme-aurora .client-theme-scope select {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        color: rgba(255, 255, 255, 0.94) !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+
+    body.theme-aurora .client-theme-scope input::placeholder,
+    body.theme-aurora .client-theme-scope textarea::placeholder {
+        color: rgba(255, 255, 255, 0.48) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .bg-orange-50,
+    body.theme-aurora .client-theme-scope .bg-orange-100 {
+        background-color: rgba(238, 77, 45, 0.15) !important;
+    }
+
+    /* Final polish: disabled/button/chip/toast consistency in dark mode */
+    body.theme-aurora .client-theme-scope button:disabled,
+    body.theme-aurora .client-theme-scope [role="button"][aria-disabled="true"] {
+        background-color: rgba(255, 255, 255, 0.14) !important;
+        color: rgba(255, 255, 255, 0.55) !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+        box-shadow: none !important;
+    }
+
+    body.theme-aurora .client-theme-scope .disabled\:bg-gray-300:disabled,
+    body.theme-aurora .client-theme-scope .disabled\:text-white:disabled {
+        background-color: rgba(255, 255, 255, 0.14) !important;
+        color: rgba(255, 255, 255, 0.55) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .hover\:bg-gray-100:hover {
+        background-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .text-red-500 {
+        color: rgba(248, 113, 113, 0.95) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .bg-gradient-to-r.from-brand-orange\/10.via-brand-orange\/5.to-transparent {
+        background-image: linear-gradient(
+            90deg,
+            rgba(238, 77, 45, 0.22),
+            rgba(238, 77, 45, 0.12),
+            rgba(238, 77, 45, 0.02)
+        ) !important;
+    }
+
+    body.theme-aurora .client-theme-scope .bg-gradient-to-b.from-gray-50.to-white {
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)) !important;
+    }
+
+    body.theme-aurora [data-sonner-toaster],
+    body.theme-aurora .go3958317564,
+    body.theme-aurora .go4109123758 {
+        --normal-bg: rgba(12, 16, 28, 0.95) !important;
+        --normal-text: rgba(255, 255, 255, 0.92) !important;
+        --normal-border: rgba(255, 255, 255, 0.14) !important;
+    }
+
     .custom-pagination .swiper-pagination-bullet {
         @apply w-3 h-3 rounded-full mx-1 opacity-70 transition bg-brand-black;
     }

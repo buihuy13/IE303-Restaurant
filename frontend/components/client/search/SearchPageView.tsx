@@ -3,6 +3,7 @@
 import { CompactFoodCard } from "@/components/client/HomePage/CompactFoodCard";
 import { CompactFoodCardSkeleton } from "@/components/client/HomePage/CompactFoodCardSkeleton";
 import Pagination from "@/components/client/Pagination";
+import { FoodCard } from "@/components/client/restaurants/FoodCard";
 import { RestaurantCard } from "@/components/client/restaurants/RestaurantCard";
 import { RestaurantCardSkeleton } from "@/components/client/restaurants/RestaurantCardSkeleton";
 import { ActiveFilterPills } from "@/components/client/search/ActiveFilterPills";
@@ -10,11 +11,12 @@ import { SearchEmptyState } from "@/components/client/search/SearchEmptyState";
 import SearchFilters from "@/components/client/search/SearchFilters";
 import { SearchResultsHeader } from "@/components/client/search/SearchResultsHeader";
 import SearchSortBar from "@/components/client/search/SearchSortBar";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
 import type { Category, Product, Restaurant } from "@/types";
-import { Filter } from "lucide-react";
+import { Filter, Flame, LayoutGrid, List } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const TAB_PARAMS_KEY = "search:tabParams";
 
@@ -75,8 +77,10 @@ export function SearchPageView({
     onPageChange,
     onReset,
 }: SearchPageViewProps) {
+    const { theme } = useClientTheme();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const activeFilterCount = useMemo(() => {
         const categories = searchParams.getAll("category").length;
         const price = searchParams.get("priceRange") ? 1 : 0;
@@ -168,36 +172,22 @@ export function SearchPageView({
                                     )}
                                 </Button>
                             </div>
-                            <div className="mb-6 rounded-2xl border border-brand-orange/20 bg-gradient-to-r from-brand-orange/10 via-brand-orange/5 to-transparent px-4 py-3.5">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="flex items-start gap-3">
-                                        <span
-                                            className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-brand-orange shrink-0 animate-[pulse_2.2s_ease-in-out_infinite]"
-                                            aria-hidden="true"
-                                        />
-                                        <div className="text-sm text-gray-700">
-                                            <span className="font-semibold text-gray-900">
-                                                You’re searching {searchType === "foods" ? "Foods" : "Restaurants"}.
-                                            </span>{" "}
-                                            <span className="text-gray-600">
-                                                {searchType === "foods"
-                                                    ? "Want to find a restaurant instead?"
-                                                    : "Want to find food items instead?"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="brand"
-                                        size="sm"
-                                        className="h-9 rounded-full px-4 shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange/20"
-                                        onClick={() => {
-                                        handleSwitchTab(searchType === "foods" ? "restaurants" : "foods");
-                                        }}
-                                    >
-                                        Switch to {searchType === "foods" ? "Restaurants" : "Foods"}
-                                    </Button>
-                                </div>
+                            <div className={`mb-4 flex items-center justify-between gap-2 rounded-lg border-l-2 border-brand-orange px-3 py-2 ${
+                                theme === "dark" ? "border-y border-r border-white/10 bg-white/5" : "border-y border-r border-gray-200 bg-gray-50"
+                            }`}>
+                                <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-white/72" : "text-gray-700"}`}>
+                                    <span className={`font-semibold ${theme === "dark" ? "text-white/92" : "text-gray-900"}`}>
+                                        {searchType === "foods" ? "Foods" : "Restaurants"}
+                                    </span>{" "}
+                                    mode
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSwitchTab(searchType === "foods" ? "restaurants" : "foods")}
+                                    className="text-xs font-semibold text-brand-orange hover:underline"
+                                >
+                                    Switch
+                                </button>
                             </div>
                             <SearchResultsHeader
                                 searchType={searchType}
@@ -210,14 +200,47 @@ export function SearchPageView({
                                 onReset={onReset}
                             />
                             <ActiveFilterPills />
-                            <SearchSortBar searchType={searchType} />
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <SearchSortBar searchType={searchType} />
+                                {searchType === "foods" && (
+                                    <div className={`inline-flex shrink-0 rounded-full border p-1 ${theme === "dark" ? "border-white/14 bg-white/6" : "border-gray-200 bg-white"}`}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode("grid")}
+                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
+                                                viewMode === "grid"
+                                                    ? "bg-brand-orange text-white"
+                                                    : theme === "dark"
+                                                      ? "text-white/70"
+                                                      : "text-gray-700"
+                                            }`}
+                                        >
+                                            <LayoutGrid className="h-3.5 w-3.5" />
+                                            Grid
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode("list")}
+                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
+                                                viewMode === "list"
+                                                    ? "bg-brand-orange text-white"
+                                                    : theme === "dark"
+                                                      ? "text-white/70"
+                                                      : "text-gray-700"
+                                            }`}
+                                        >
+                                            <List className="h-3.5 w-3.5" />
+                                            List
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
 
                             {!hasActiveFilters && (
-                                <div className="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4 sm:p-5">
-                                    <div className="text-sm font-semibold text-gray-900 mb-2">
-                                        {searchType === "restaurants"
-                                            ? "Popular restaurants"
-                                            : "Trending categories"}
+                                <div className="mb-4">
+                                    <div className={`text-sm font-semibold mb-2 flex items-center gap-2 ${theme === "dark" ? "text-white/85" : "text-gray-800"}`}>
+                                        <Flame className="h-4 w-4 text-brand-orange" />
+                                        {searchType === "restaurants" ? "Popular restaurants" : "Trending categories"}
                                     </div>
                                     {searchType === "restaurants" ? (
                                         <div className="flex flex-wrap gap-2">
@@ -226,7 +249,11 @@ export function SearchPageView({
                                                     {Array.from({ length: 8 }).map((_, i) => (
                                                         <div
                                                             key={`popular-skeleton-${i}`}
-                                                            className="h-9 w-28 rounded-full bg-white border border-gray-200/70 animate-pulse"
+                                                            className={`h-9 w-28 rounded-full animate-pulse ${
+                                                                theme === "dark"
+                                                                    ? "bg-white/10 border border-white/14"
+                                                                    : "bg-white border border-gray-200/70"
+                                                            }`}
                                                             aria-hidden="true"
                                                         />
                                                     ))}
@@ -239,7 +266,11 @@ export function SearchPageView({
                                                             type="button"
                                                             variant="secondary"
                                                             size="sm"
-                                                            className="rounded-full border border-gray-200/70 bg-white shadow-sm hover:bg-gray-100"
+                                                            className={`rounded-full border shadow-sm ${
+                                                                theme === "dark"
+                                                                    ? "border-white/16 bg-white/10 text-white/92 hover:bg-white/16"
+                                                                    : "border-gray-200/70 bg-white hover:bg-gray-100"
+                                                            }`}
                                                             onClick={() => router.push(`/restaurants/${r.slug}`)}
                                                         >
                                                             {r.resName}
@@ -248,7 +279,7 @@ export function SearchPageView({
                                                 </>
                                             )}
                                             {!productsLoading && restaurants.length === 0 && (
-                                                <div className="text-sm text-gray-600">
+                                                <div className={`text-sm ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>
                                                     Start typing to discover restaurants near you.
                                                 </div>
                                             )}
@@ -260,7 +291,11 @@ export function SearchPageView({
                                                     {Array.from({ length: 10 }).map((_, i) => (
                                                         <div
                                                             key={`trending-skeleton-${i}`}
-                                                            className="h-9 w-24 rounded-full bg-white border border-gray-200/70 animate-pulse"
+                                                            className={`h-9 w-24 rounded-full animate-pulse ${
+                                                                theme === "dark"
+                                                                    ? "bg-white/10 border border-white/14"
+                                                                    : "bg-white border border-gray-200/70"
+                                                            }`}
                                                             aria-hidden="true"
                                                         />
                                                     ))}
@@ -273,7 +308,11 @@ export function SearchPageView({
                                                             type="button"
                                                             variant="secondary"
                                                             size="sm"
-                                                            className="rounded-full border border-gray-200/70 bg-white shadow-sm hover:bg-gray-100"
+                                                            className={`rounded-full border shadow-sm ${
+                                                                theme === "dark"
+                                                                    ? "border-white/16 bg-white/10 text-white/92 hover:bg-white/16"
+                                                                    : "border-gray-200/70 bg-white hover:bg-gray-100"
+                                                            }`}
                                                             onClick={() => {
                                                                 const p = new URLSearchParams(Array.from(searchParams.entries()));
                                                                 p.set("type", "foods");
@@ -289,7 +328,7 @@ export function SearchPageView({
                                                 </>
                                             )}
                                             {!productsLoading && initialCategories.length === 0 && (
-                                                <div className="text-sm text-gray-600">
+                                                <div className={`text-sm ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>
                                                     Try searching for a dish name, or explore filters.
                                                 </div>
                                             )}
@@ -303,7 +342,9 @@ export function SearchPageView({
                                     className={
                                         searchType === "restaurants"
                                             ? "grid grid-cols-1 gap-4 md:gap-6"
-                                            : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
+                                            : viewMode === "list"
+                                              ? "grid grid-cols-1 gap-5"
+                                              : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-6"
                                     }
                                 >
                                     {Array.from({ length: 8 }).map((_, i) =>
@@ -339,9 +380,13 @@ export function SearchPageView({
                                 )
                             ) : filteredProducts.length > 0 ? (
                                 <>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+                                    <div className={viewMode === "list" ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-6"}>
                                         {filteredProducts.map((product) => (
-                                            <CompactFoodCard key={product.id} product={product} />
+                                            viewMode === "list" ? (
+                                                <FoodCard key={product.id} product={product} layout="flex" />
+                                            ) : (
+                                                <CompactFoodCard key={product.id} product={product} />
+                                            )
                                         ))}
                                     </div>
                                     {totalPages > 1 && (

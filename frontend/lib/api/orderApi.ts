@@ -941,26 +941,27 @@ export const orderApi = {
         return parseSingleOrderPayload(response.data);
     },
 
-    // Merchant: Accept order
+    // Merchant: Accept order (backend uses generic status update endpoint).
     acceptOrder: async (orderId: string): Promise<Order> => {
-        const response = await api.post<{ success: boolean; data: Order }>(
-            `/merchant/orders/${orderId}/accept`,
-            undefined,
+        const encodedOrderId = encodeURIComponent(orderId.trim());
+        const response = await api.put<unknown>(
+            `${ORDER_BASE_PATH}/${encodedOrderId}/status`,
+            { status: "CONFIRMED" },
             withOrderApiBaseUrl(),
         );
-        return response.data.data;
+        return parseSingleOrderPayload(response.data);
     },
 
-    // Merchant: Reject order
+    // Merchant: Reject order (mapped to CANCELLED status on order-service).
     rejectOrder: async (orderId: string, reason: string): Promise<Order> => {
-        const response = await api.post<{ success: boolean; data: Order }>(
-            `/merchant/orders/${orderId}/reject`,
-            {
-                reason,
-            },
+        void reason;
+        const encodedOrderId = encodeURIComponent(orderId.trim());
+        const response = await api.put<unknown>(
+            `${ORDER_BASE_PATH}/${encodedOrderId}/status`,
+            { status: "CANCELLED" },
             withOrderApiBaseUrl(),
         );
-        return response.data.data;
+        return parseSingleOrderPayload(response.data);
     },
 
     // Merchant: Get restaurant orders
@@ -969,17 +970,21 @@ export const orderApi = {
         filters?: { status?: string; page?: number; limit?: number },
     ): Promise<{ orders: Order[]; pagination?: Pagination }> => {
         const params = new URLSearchParams();
-        if (filters?.status) params.append("status", filters.status);
-        if (filters?.page) params.append("page", filters.page.toString());
-        if (filters?.limit) params.append("limit", filters.limit.toString());
+        if (filters?.status?.trim()) params.append("status", toBackendOrderStatus(filters.status));
+        if (filters?.page) params.append("page", String(Math.max(filters.page - 1, 0)));
+        if (filters?.limit) params.append("size", filters.limit.toString());
+        const encodedRestaurantId = encodeURIComponent(restaurantId.trim());
 
-        const response = await api.get<{ success: boolean; data: Order[]; pagination?: Pagination }>(
-            `/merchant/orders/restaurants/${restaurantId}/orders${params.toString() ? `?${params.toString()}` : ""}`,
+        const response = await api.get<unknown>(
+            `${ORDER_BASE_PATH}/restaurant/${encodedRestaurantId}${params.toString() ? `?${params.toString()}` : ""}`,
             withOrderApiBaseUrl(),
         );
+
+        const rawPayload = unwrapOrderPayload(response.data);
+        const rawOrders = Array.isArray(rawPayload) ? rawPayload : [];
         return {
-            orders: response.data.data,
-            pagination: response.data.pagination,
+            orders: rawOrders.map(normalizeOrderDto),
+            pagination: undefined,
         };
     },
 };

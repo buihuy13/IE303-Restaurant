@@ -1,9 +1,11 @@
 "use client";
 
 import AuthProvider from "@/components/auth/AuthProvider";
+import CravingSuggestionCard from "@/components/client/HomePage/CravingSuggestionCard";
 import Header from "@/components/header/Header";
 import Footer from "@/components/layout/client/Footer";
 import ChatProvider from "@/components/providers/ChatProvider";
+import { ClientThemeProvider } from "@/components/providers/ClientThemeProvider";
 import SSEProvider from "@/components/providers/SSEProvider";
 import ConfirmProvider from "@/components/ui/ConfirmModal";
 import { useCartSync } from "@/lib/hooks/useCartSync";
@@ -29,17 +31,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     // Show Header/Footer only for client pages (not admin/manager/merchant)
     const showHeaderFooter = !isMerchant && !isAdmin && !isManager && !isAuthPage;
 
-    // No padding-top needed since Header is sticky (not fixed)
-    const mainClassName = "bg-gray-50";
+    // Theme is applied to <body> by ClientThemeProvider (light default, dark=aurora)
+    const mainClassName = showHeaderFooter ? "min-h-screen" : "";
+    const clientScopeClass = showHeaderFooter ? "client-theme-scope" : "";
 
     return (
         <AuthProvider>
             <ConfirmProvider>
                 <SSEProvider>
                     <ChatProvider>
-                        {showHeaderFooter && <Header />}
-                        <main className={mainClassName}>{children}</main>
-                        {showHeaderFooter && <Footer />}
+                        <ClientThemeProvider>
+                            <div className={clientScopeClass}>
+                                {showHeaderFooter && <Header />}
+                                <main className={mainClassName}>{children}</main>
+                                {showHeaderFooter && <Footer />}
+                                {showHeaderFooter && <CravingSuggestionCard />}
+                            </div>
+                        </ClientThemeProvider>
                     </ChatProvider>
                 </SSEProvider>
             </ConfirmProvider>

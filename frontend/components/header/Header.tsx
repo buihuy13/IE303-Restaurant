@@ -1,7 +1,8 @@
 "use client";
 
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -16,6 +17,7 @@ export default function Header() {
         const [isScrolled, setIsScrolled] = useState(false);
         const pathname = usePathname();
         const { user, isAuthenticated } = useAuthStore();
+        const { theme } = useClientTheme();
 
         // Check if we're in client view (not in dashboard/admin/merchant pages)
         const isClientView = !pathname.startsWith("/admin") && !pathname.startsWith("/merchant") && !pathname.startsWith("/manager");
@@ -38,8 +40,12 @@ export default function Header() {
                 <header
                         className={`sticky top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
                                 isScrolled
-                                        ? "bg-white/85 backdrop-blur-xl border-gray-200/90 shadow-[0_10px_35px_rgba(15,23,42,0.08)]"
-                                        : "bg-white/95 border-gray-100"
+                                        ? theme === "dark"
+                                                ? "bg-black/25 backdrop-blur-2xl border-white/10 shadow-[0_18px_70px_rgba(0,0,0,0.35)]"
+                                                : "bg-white/85 backdrop-blur-xl border-gray-200/90 shadow-[0_10px_35px_rgba(15,23,42,0.08)]"
+                                        : theme === "dark"
+                                                ? "bg-black/15 backdrop-blur-xl border-white/10"
+                                                : "bg-white/95 border-gray-100"
                         }`}
                 >
                         <div className="custom-container">
@@ -55,7 +61,13 @@ export default function Header() {
                                                 <div className="flex-1 max-w-3xl">
                                                         <Suspense
                                                                 fallback={
-                                                                        <div className="h-11 w-full rounded-full bg-gray-50 border border-gray-200/80 animate-pulse" />
+                                                                        <div
+                                                                                className={`h-11 w-full rounded-full border animate-pulse ${
+                                                                                        theme === "dark"
+                                                                                                ? "bg-white/10 border-white/10"
+                                                                                                : "bg-gray-50 border-gray-200/80"
+                                                                                }`}
+                                                                        />
                                                                 }
                                                         >
                                                                 <SearchBar />
@@ -66,13 +78,18 @@ export default function Header() {
                                         {/* Right: Navigation Links + Cart + User */}
                                         <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
                                                 <NavigationLinks />
+                                             
                                                 {/* Dashboard Button - Show if Merchant/Admin in client view */}
                                                 {showDashboardButton && (
                                                         <Button
                                                                 asChild
                                                                 variant="brandOutline"
                                                                 size="sm"
-                                                                className="rounded-full whitespace-nowrap border-brand-orange/70 bg-white/80 shadow-sm hover:shadow-md"
+                                                                className={`rounded-full whitespace-nowrap shadow-sm hover:shadow-md ${
+                                                                        theme === "dark"
+                                                                                ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
+                                                                                : "border-brand-orange/70 bg-white/80"
+                                                                }`}
                                                         >
                                                                 <Link href={dashboardPath}>{dashboardLabel}</Link>
                                                         </Button>
