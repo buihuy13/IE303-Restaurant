@@ -1,9 +1,12 @@
 package com.CNTTK18.review_service.dto.review.response;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import com.CNTTK18.review_service.model.data.ReviewType;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +27,12 @@ public class ReviewResponse {
     private String title;
     private String content;
     private Float rating;
-    private Instant createdAt;
-    private Instant updatedAt;
+
+    @JsonSerialize(using = ZonedDateTimeSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
+    private ZonedDateTime createdAt;
+
+    @JsonSerialize(using = ZonedDateTimeSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
+    private ZonedDateTime updatedAt;
 }

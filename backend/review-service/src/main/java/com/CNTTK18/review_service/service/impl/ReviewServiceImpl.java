@@ -1,17 +1,21 @@
 package com.CNTTK18.review_service.service.impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import feign.FeignException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.CNTTK18.Common.Exception.ResourceNotFoundException;
+import com.CNTTK18.review_service.client.ProductServiceClient;
+import com.CNTTK18.review_service.client.RestaurantServiceClient;
+import com.CNTTK18.review_service.client.UserServiceClient;
 import com.CNTTK18.review_service.dto.review.request.ReviewRequest;
 import com.CNTTK18.review_service.dto.review.response.ReviewListResponse;
 import com.CNTTK18.review_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.review_service.dto.review.response.ReviewStatsResponse;
+import com.CNTTK18.review_service.mapper.ReviewMapper;
 import com.CNTTK18.review_service.model.Review;
 import com.CNTTK18.review_service.model.data.ReviewType;
 import com.CNTTK18.review_service.repository.ReviewRepository;
@@ -24,30 +28,37 @@ import lombok.RequiredArgsConstructor;
 public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ReviewMapper reviewMapper;
+    private final UserServiceClient userServiceClient;
+    private final ProductServiceClient productServiceClient;
+    private final RestaurantServiceClient restaurantServiceClient;
 
     @Override
     public List<ReviewResponse> getAllReviews(UUID resId, UUID productId) {
         if (resId != null) {
             List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(resId, ReviewType.RESTAURANT);
-            return reviews.stream().map(this::mapToResponse).toList();
+            return reviews.stream().map(reviewMapper::toReviewResponse).toList();
         } else if (productId != null) {
             List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(productId, ReviewType.PRODUCT);
-            return reviews.stream().map(this::mapToResponse).toList();
+            return reviews.stream().map(reviewMapper::toReviewResponse).toList();
         }
-        return reviewRepository.findAll().stream().map(this::mapToResponse).toList();
+        return reviewRepository.findAll().stream().map(reviewMapper::toReviewResponse).toList();
     }
 
     @Override
     public ReviewResponse getReviewById(UUID id) {
         Review review = reviewRepository
                 .findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found with id: " + id));
-        return mapToResponse(review);
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + id));
+        return reviewMapper.toReviewResponse(review);
     }
 
     @Override
     @Transactional
     public ReviewResponse createReview(ReviewRequest reviewRequest) {
+        validateUserExists(reviewRequest.getUserId());
+        validateReviewTargetExists(reviewRequest.getReviewType(), reviewRequest.getReviewId());
+
         Review review = Review.builder()
                 .userId(reviewRequest.getUserId())
                 .reviewId(reviewRequest.getReviewId())
@@ -57,7 +68,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .rating(reviewRequest.getRating())
                 .build();
         Review savedReview = reviewRepository.save(review);
-        return mapToResponse(savedReview);
+        return reviewMapper.toReviewResponse(savedReview);
     }
 
     @Override
@@ -65,7 +76,7 @@ public class ReviewServiceImpl implements ReviewService {
     public void deleteReview(UUID id, UUID userId) {
         Review review = reviewRepository
                 .findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + id));
         if (!review.getUserId().equals(userId)) {
             throw new RuntimeException("You are not authorized to delete this review");
         }
@@ -75,19 +86,13 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public ReviewListResponse getProductReviewsById(UUID id) {
         List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.PRODUCT);
-        return ReviewListResponse.builder()
-                .reviews(reviews.stream().map(this::mapToResponse).toList())
-                .total(reviews.size())
-                .build();
+        return reviewMapper.toReviewListResponse(reviews);
     }
 
     @Override
     public ReviewListResponse getRestaurantReviewsById(UUID id) {
         List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT);
-        return ReviewListResponse.builder()
-                .reviews(reviews.stream().map(this::mapToResponse).toList())
-                .total(reviews.size())
-                .build();
+        return reviewMapper.toReviewListResponse(reviews);
     }
 
     @Override
@@ -102,31 +107,32 @@ public class ReviewServiceImpl implements ReviewService {
 
     private ReviewStatsResponse getReviewStats(UUID id, ReviewType reviewType) {
         List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(id, reviewType);
-
-        Double averageRating =
-                reviews.stream().mapToDouble(Review::getRating).average().orElse(0.0);
-
-        Map<Integer, Long> ratingDistribution = reviews.stream()
-                .collect(Collectors.groupingBy(r -> (int) Math.floor(r.getRating()), Collectors.counting()));
-
-        return ReviewStatsResponse.builder()
-                .averageRating(averageRating)
-                .totalReviews((long) reviews.size())
-                .ratingDistribution(ratingDistribution)
-                .build();
+        return reviewMapper.toReviewStats(reviews);
     }
 
-    private ReviewResponse mapToResponse(Review review) {
-        return ReviewResponse.builder()
-                .id(review.getId())
-                .userId(review.getUserId())
-                .reviewId(review.getReviewId())
-                .reviewType(review.getReviewType())
-                .title(review.getTitle())
-                .content(review.getContent())
-                .rating(review.getRating())
-                .createdAt(review.getCreatedAt())
-                .updatedAt(review.getUpdatedAt())
-                .build();
+    private void validateUserExists(UUID userId) {
+        try {
+            userServiceClient.getUserById(userId);
+        } catch (FeignException.NotFound ex) {
+            throw new ResourceNotFoundException("Không tồn tại user");
+        }
+    }
+
+    private void validateReviewTargetExists(ReviewType reviewType, UUID reviewId) {
+        try {
+            switch (reviewType) {
+                case PRODUCT -> productServiceClient.getProductById(reviewId);
+                case RESTAURANT -> restaurantServiceClient.getRestaurantById(reviewId);
+                default -> throw new IllegalArgumentException("Review Type phải là PRODUCT hoặc RESTAURANT");
+            }
+        } catch (FeignException.NotFound ex) {
+            if (ReviewType.PRODUCT.equals(reviewType)) {
+                throw new ResourceNotFoundException("Product not found");
+            }
+            if (ReviewType.RESTAURANT.equals(reviewType)) {
+                throw new ResourceNotFoundException("Restaurant not found");
+            }
+            throw ex;
+        }
     }
 }

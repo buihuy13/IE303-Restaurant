@@ -9,21 +9,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.CNTTK18.review_service.model.Review;
+import com.CNTTK18.review_service.model.data.ReviewType;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
-    List<Review> findByReviewIdAndReviewType(
-            UUID reviewId, com.CNTTK18.review_service.model.data.ReviewType reviewType);
+    List<Review> findByReviewIdAndReviewType(UUID reviewId, ReviewType reviewType);
 
     List<Review> findByUserId(UUID userId);
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.reviewId = :entityId AND r.reviewType = :reviewType")
-    Float getAverageRating(
-            @Param("entityId") UUID entityId,
-            @Param("reviewType") com.CNTTK18.review_service.model.data.ReviewType reviewType);
+    Float getAverageRating(@Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.reviewId = :entityId AND r.reviewType = :reviewType")
-    Long getTotalReviews(
-            @Param("entityId") UUID entityId,
-            @Param("reviewType") com.CNTTK18.review_service.model.data.ReviewType reviewType);
+    Long getTotalReviews( @Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);
 }
