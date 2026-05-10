@@ -21,5 +21,5 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     Float getAverageRating(@Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.reviewId = :entityId AND r.reviewType = :reviewType")
-    Long getTotalReviews( @Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);
+    Long getTotalReviews(@Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);
 }

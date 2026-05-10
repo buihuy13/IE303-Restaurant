@@ -29,12 +29,10 @@ public interface ReviewMapper {
     }
 
     default ReviewListResponse toReviewListResponse(List<Review> reviews) {
-        List<ReviewResponse> items = reviews == null ? List.of()
+        List<ReviewResponse> items = reviews == null
+                ? List.of()
                 : reviews.stream().map(this::toReviewResponse).collect(Collectors.toList());
-        return ReviewListResponse.builder()
-                .reviews(items)
-                .total(items.size())
-                .build();
+        return ReviewListResponse.builder().reviews(items).total(items.size()).build();
     }
 
     default ReviewStatsResponse toReviewStats(List<Review> reviews) {
@@ -46,7 +44,8 @@ public interface ReviewMapper {
                     .build();
         }
 
-        double average = reviews.stream().mapToDouble(Review::getRating).average().orElse(0.0);
+        double average =
+                reviews.stream().mapToDouble(Review::getRating).average().orElse(0.0);
         Map<Integer, Long> dist = reviews.stream()
                 .collect(Collectors.groupingBy(r -> (int) Math.floor(r.getRating()), Collectors.counting()));
 

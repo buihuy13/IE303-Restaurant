@@ -56,7 +56,8 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryRepository.existsByCateName(categoryRequest.getCateName())) {
             throw new RuntimeException("Category already exists with name: " + categoryRequest.getCateName());
         }
-        Category category = Category.builder().cateName(categoryRequest.getCateName()).build();
+        Category category =
+                Category.builder().cateName(categoryRequest.getCateName()).build();
         Category savedCategory = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(savedCategory);
     }
@@ -86,7 +87,8 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private Category getCategoryEntityById(UUID id) {
-        return categoryRepository.findById(id)
+        return categoryRepository
+                .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
     }
 }

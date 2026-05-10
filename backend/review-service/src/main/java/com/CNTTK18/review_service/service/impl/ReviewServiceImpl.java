@@ -3,7 +3,6 @@ package com.CNTTK18.review_service.service.impl;
 import java.util.List;
 import java.util.UUID;
 
-import feign.FeignException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +20,7 @@ import com.CNTTK18.review_service.model.data.ReviewType;
 import com.CNTTK18.review_service.repository.ReviewRepository;
 import com.CNTTK18.review_service.service.ReviewService;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -42,7 +42,9 @@ public class ReviewServiceImpl implements ReviewService {
             List<Review> reviews = reviewRepository.findByReviewIdAndReviewType(productId, ReviewType.PRODUCT);
             return reviews.stream().map(reviewMapper::toReviewResponse).toList();
         }
-        return reviewRepository.findAll().stream().map(reviewMapper::toReviewResponse).toList();
+        return reviewRepository.findAll().stream()
+                .map(reviewMapper::toReviewResponse)
+                .toList();
     }
 
     @Override

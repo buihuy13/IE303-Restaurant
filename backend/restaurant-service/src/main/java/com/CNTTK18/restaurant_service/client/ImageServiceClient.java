@@ -1,12 +1,11 @@
 package com.CNTTK18.restaurant_service.client;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.CNTTK18.restaurant_service.client.dto.ImageUploadResponse;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,7 @@ public class ImageServiceClient {
     private static final String IMAGE_SERVICE_URL = "http://image-service";
 
     @CircuitBreaker(name = IMAGE_SERVICE, fallbackMethod = "uploadImageFallback")
-    public ImageUploadResponse uploadImage(org.springframework.web.multipart.MultipartFile file, String folder) {
+    public Map<String, String> uploadImage(org.springframework.web.multipart.MultipartFile file, String folder) {
         WebClient webClient = webClientBuilder.build();
 
         MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
@@ -41,7 +40,7 @@ public class ImageServiceClient {
                 .uri(IMAGE_SERVICE_URL + "/api/images/upload")
                 .bodyValue(bodyBuilder.build())
                 .retrieve()
-                .bodyToMono(ImageUploadResponse.class)
+                .bodyToMono(Map.class)
                 .timeout(Duration.ofSeconds(10))
                 .block();
     }
@@ -59,7 +58,7 @@ public class ImageServiceClient {
     }
 
     // Fallback methods
-    private ImageUploadResponse uploadImageFallback(
+    private Map<String, String> uploadImageFallback(
             org.springframework.web.multipart.MultipartFile file, String folder, Throwable throwable) {
         log.error("Failed to upload image: {}", throwable.getMessage());
         throw new RuntimeException("Failed to upload image. Please try again later.");

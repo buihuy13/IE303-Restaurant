@@ -165,8 +165,8 @@ public class ProductServiceImpl implements ProductService {
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = product.getPublicID();
             var image = imageServiceClient.uploadImage(imageFile, "product");
-            product.setImageURL(image.getUrl());
-            product.setPublicID(image.getPublicId());
+            product.setImageURL(image.get("url"));
+            product.setPublicID(image.get("public_id"));
 
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
                 imageServiceClient.deleteImage(oldPublicId);
@@ -250,8 +250,8 @@ public class ProductServiceImpl implements ProductService {
     private void setImageIfPresent(Products product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty()) return;
         var image = imageServiceClient.uploadImage(imageFile, "product");
-        product.setImageURL(image.getUrl());
-        product.setPublicID(image.getPublicId());
+        product.setImageURL(image.get("url"));
+        product.setPublicID(image.get("public_id"));
     }
 
     private List<ProductResponse> sortProductResponse(

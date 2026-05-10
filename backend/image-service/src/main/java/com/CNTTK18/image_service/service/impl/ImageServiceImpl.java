@@ -1,16 +1,15 @@
 package com.CNTTK18.image_service.service.impl;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.CNTTK18.image_service.dto.request.TransformRequest;
-import com.CNTTK18.image_service.dto.response.ImageUploadResponse;
 import com.CNTTK18.image_service.service.ImageService;
-import com.CNTTK18.image_service.storage.ImageStorageProvider;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,45 +17,29 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ImageServiceImpl implements ImageService {
 
-    private final ImageStorageProvider storageProvider;
+    private final Cloudinary cloudinary;
 
     @Override
-    @CacheEvict(value = "images", allEntries = true)
-    public ImageUploadResponse uploadImage(MultipartFile file, String folder) {
+    public Map<String, String> uploadImage(MultipartFile file, String folder) {
         try {
-            byte[] imageData = file.getBytes();
-            String fileName = file.getOriginalFilename();
+            Map<String, Object> uploadParams = ObjectUtils.asMap("folder", folder != null ? folder : "restaurant_app");
+            Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
 
-            ImageStorageProvider.ImageUploadResult result = storageProvider.upload(imageData, fileName, folder);
-
-            return ImageUploadResponse.builder()
-                    .publicId(result.publicId())
-                    .url(result.url())
-                    .secureUrl(result.secureUrl())
-                    .width(result.width())
-                    .height(result.height())
-                    .format(result.format())
-                    .bytes(result.bytes())
-                    .build();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to process image file", e);
+            Map<String, String> res = new HashMap<>();
+            res.put("public_id", (String) result.get("public_id"));
+            res.put("url", (String) result.get("secure_url"));
+            return res;
+        } catch (IOException ex) {
+            throw new RuntimeException("Không thể tải file lên", ex);
         }
     }
 
     @Override
-    @CacheEvict(value = "images", allEntries = true)
     public void deleteImage(String publicId) {
-        storageProvider.delete(publicId);
-    }
-
-    @Override
-    @Cacheable(value = "images", key = "#publicId")
-    public String getImageUrl(String publicId) {
-        return storageProvider.getUrl(publicId);
-    }
-
-    @Override
-    public String getTransformedUrl(TransformRequest request) {
-        return storageProvider.getTransformedUrl(request.getPublicId(), request.getTransformations());
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể xóa file.", e);
+        }
     }
 }

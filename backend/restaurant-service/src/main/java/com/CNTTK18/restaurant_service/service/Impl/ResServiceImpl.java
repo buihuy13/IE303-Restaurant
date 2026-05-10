@@ -1,6 +1,7 @@
 package com.CNTTK18.restaurant_service.service.Impl;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -17,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.client.ImageServiceClient;
-import com.CNTTK18.restaurant_service.client.dto.ImageUploadResponse;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
@@ -159,9 +159,9 @@ public class ResServiceImpl implements ResService {
         }
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = res.getPublicID();
-            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
-            res.setImageURL(image.getUrl());
-            res.setPublicID(image.getPublicId());
+            Map<String, String> image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.get("url"));
+            res.setPublicID(image.get("public_id"));
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
                 imageServiceClient.deleteImage(oldPublicId);
             }
@@ -270,9 +270,9 @@ public class ResServiceImpl implements ResService {
     @Transactional
     private Restaurants saveRestaurant(Restaurants res, MultipartFile imageFile) {
         if (imageFile != null && !imageFile.isEmpty()) {
-            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
-            res.setImageURL(image.getUrl());
-            res.setPublicID(image.getPublicId());
+            Map<String, String> image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.get("url"));
+            res.setPublicID(image.get("public_id"));
         }
         return resRepository.save(res);
     }

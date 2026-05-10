@@ -74,6 +74,8 @@ public class SizeServiceImpl implements SizeService {
     }
 
     private Size getSizeEntityById(UUID id) {
-        return sizeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + id));
+        return sizeRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Size not found with id: " + id));
     }
 }
