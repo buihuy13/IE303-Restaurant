@@ -7,10 +7,12 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { CompactFoodCard } from "./CompactFoodCard";
 import { CompactFoodCardSkeleton } from "./CompactFoodCardSkeleton";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 
 export default function FeaturedFoodPanel() {
     const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
     const { currentAddress, isLocationSet } = useLocationStore();
+    const { theme } = useClientTheme();
     /** True after the first fetch is scheduled (avoids empty UI when persist restores location before useEffect runs). */
     const [listFetchInitiated, setListFetchInitiated] = useState(false);
 
@@ -57,10 +59,14 @@ export default function FeaturedFoodPanel() {
             {/* Header */}
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-2">
+                    <h2
+                        className={`text-2xl md:text-3xl font-bold tracking-tight mb-2 ${
+                            theme === "dark" ? "text-white" : "text-gray-900"
+                        }`}
+                    >
                         Featured Foods
                     </h2>
-                    <p className="text-sm text-gray-600">
+                    <p className={`text-sm ${theme === "dark" ? "text-white/70" : "text-gray-600"}`}>
                         {showSkeleton ? "Loading..." : `${featuredProducts.length} featured items`}
                     </p>
                 </div>

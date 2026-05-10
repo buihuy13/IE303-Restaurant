@@ -1,6 +1,7 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DEFAULT_ADDRESSES, LocationAddress, useLocationStore } from "@/stores/useLocationStore";
 import { Address } from "@/types";
@@ -9,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function AddressSelector() {
+    const { theme } = useClientTheme();
     const { user, isAuthenticated } = useAuthStore();
     const { currentAddress, setCurrentAddress, setCurrentLocation, setLoading } = useLocationStore();
     const [isOpen, setIsOpen] = useState(false);
@@ -262,30 +264,42 @@ export default function AddressSelector() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gray-50/70 rounded-full border border-gray-200/60 hover:bg-white hover:border-brand-orange/40 transition-all duration-200 text-sm font-medium text-gray-800 min-w-[200px] max-w-[260px] shadow-sm"
+                className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-200 text-sm font-medium min-w-[200px] max-w-[260px] shadow-sm ${
+                    theme === "dark"
+                        ? "bg-white/8 border-white/12 hover:bg-white/10 hover:border-white/20 text-white/90"
+                        : "bg-gray-50/70 border-gray-200/60 hover:bg-white hover:border-brand-orange/40 text-gray-800"
+                }`}
             >
                 <MapPin className="w-4 h-4 text-brand-orange flex-shrink-0" />
                 <span className="truncate text-left flex-1 text-xs">
                     {currentAddress ? `Deliver to: ${displayText}` : "Deliver to: Select address"}
                 </span>
                 <ChevronDown
-                    className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${
+                        theme === "dark" ? "text-white/55" : "text-gray-400"
+                    } ${
                         isOpen ? "rotate-180" : ""
                     }`}
                 />
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-[340px] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-50 overflow-hidden">
-                    <div className="p-3 border-b border-gray-100">
-                        <h3 className="text-sm font-semibold text-gray-800">Select delivery address</h3>
+                <div
+                    className={`absolute top-full left-0 mt-2 w-[340px] rounded-2xl shadow-2xl border z-50 overflow-hidden ${
+                        theme === "dark" ? "bg-[#12182b] border-white/12" : "bg-white border-gray-200/80"
+                    }`}
+                >
+                    <div className={`p-3 border-b ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                        <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-white/90" : "text-gray-800"}`}>Select delivery address</h3>
                     </div>
                     <div className="max-h-[400px] overflow-y-auto">
                         {/* Current Location Button */}
                         <button
                             onClick={handleGetCurrentLocation}
                             disabled={isGettingLocation}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`w-full px-4 py-3 text-left transition-colors border-b disabled:opacity-50 disabled:cursor-not-allowed ${
+                                theme === "dark" ? "hover:bg-white/8 border-white/10" : "hover:bg-gray-50 border-gray-100"
+                            }`}
                         >
                             <div className="flex items-center gap-3">
                                 <Navigation className="w-4 h-4 text-brand-orange mt-0.5 flex-shrink-0" />
@@ -299,8 +313,8 @@ export default function AddressSelector() {
                         {/* User Addresses */}
                         {userAddresses.length > 0 && (
                             <>
-                                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                <div className={`px-4 py-2 border-b ${theme === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-100"}`}>
+                                    <h4 className={`text-xs font-semibold uppercase tracking-wide ${theme === "dark" ? "text-white/60" : "text-gray-600"}`}>
                                         My Addresses
                                     </h4>
                                 </div>
@@ -316,19 +330,21 @@ export default function AddressSelector() {
                                         <button
                                             key={address.id}
                                             onClick={() => handleAddressSelect(locationAddress)}
-                                            className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                                            className={`w-full px-4 py-3 text-left transition-colors border-b last:border-b-0 ${
+                                                theme === "dark" ? "hover:bg-white/8 border-white/10" : "hover:bg-gray-50 border-gray-50"
+                                            } ${
                                                 isSelected ? "bg-brand-orange/5" : ""
                                             }`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <MapPin
                                                     className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                                                        isSelected ? "text-brand-orange" : "text-gray-400"
+                                                        isSelected ? "text-brand-orange" : theme === "dark" ? "text-white/50" : "text-gray-400"
                                                     }`}
                                                 />
                                                 <span
                                                     className={`text-sm ${
-                                                        isSelected ? "font-medium text-brand-orange" : "text-gray-700"
+                                                        isSelected ? "font-medium text-brand-orange" : theme === "dark" ? "text-white/82" : "text-gray-700"
                                                     }`}
                                                 >
                                                     {address.location}
@@ -342,8 +358,8 @@ export default function AddressSelector() {
 
                         {/* Default Addresses */}
                         {userAddresses.length > 0 && (
-                            <div className="px-4 py-2 bg-gray-50 border-y border-gray-100">
-                                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                            <div className={`px-4 py-2 border-y ${theme === "dark" ? "bg-white/5 border-white/10" : "bg-gray-50 border-gray-100"}`}>
+                                <h4 className={`text-xs font-semibold uppercase tracking-wide ${theme === "dark" ? "text-white/60" : "text-gray-600"}`}>
                                     Popular Areas
                                 </h4>
                             </div>
@@ -354,19 +370,21 @@ export default function AddressSelector() {
                                 <button
                                     key={address.id}
                                     onClick={() => handleAddressSelect(address)}
-                                    className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                                    className={`w-full px-4 py-3 text-left transition-colors border-b last:border-b-0 ${
+                                        theme === "dark" ? "hover:bg-white/8 border-white/10" : "hover:bg-gray-50 border-gray-50"
+                                    } ${
                                         isSelected ? "bg-brand-orange/5" : ""
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <MapPin
                                             className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                                                isSelected ? "text-brand-orange" : "text-gray-400"
+                                                isSelected ? "text-brand-orange" : theme === "dark" ? "text-white/50" : "text-gray-400"
                                             }`}
                                         />
                                         <span
                                             className={`text-sm ${
-                                                isSelected ? "font-medium text-brand-orange" : "text-gray-700"
+                                                isSelected ? "font-medium text-brand-orange" : theme === "dark" ? "text-white/82" : "text-gray-700"
                                             }`}
                                         >
                                             {address.address}
@@ -383,7 +401,9 @@ export default function AddressSelector() {
                                     window.location.href = "/account/addresses";
                                     setIsOpen(false);
                                 }}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-t border-gray-100"
+                                className={`w-full px-4 py-3 text-left transition-colors border-t ${
+                                    theme === "dark" ? "hover:bg-white/8 border-white/10" : "hover:bg-gray-50 border-gray-100"
+                                }`}
                             >
                                 <div className="flex items-center gap-3">
                                     <MapPin className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />

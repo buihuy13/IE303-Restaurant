@@ -1,9 +1,9 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
 import { Product } from "@/types";
@@ -27,6 +27,7 @@ type FoodCardProps = {
 
 export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurantOverride }: FoodCardProps) => {
     const pathname = usePathname();
+    const { theme } = useClientTheme();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
     const { user, loginWithKeycloak } = useAuthStore();
@@ -63,7 +64,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
     const formattedPrice = useMemo(() => {
         if (displayPrice === undefined) return null;
-        return formatCurrency(displayPrice);
+        return `${displayPrice.toLocaleString("vi-VN")} ₫`;
     }, [displayPrice]);
 
     const reviewCountText = useMemo(() => {
@@ -235,14 +236,25 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
     if (layout === "grid") {
+        const cardClass =
+            theme === "dark"
+                ? "bg-[#111427] border-white/10 hover:border-white/20 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(3,6,20,0.55)]"
+                : "bg-white border-gray-200 hover:border-brand-orange/20 hover:-translate-y-0.5 hover:shadow-md";
+
         return (
-            <div className="group relative bg-white rounded-2xl overflow-visible border border-gray-200 shadow-sm hover:shadow-md transition-[transform,shadow,border-color] duration-300 h-full flex flex-col hover:-translate-y-0.5 hover:border-brand-orange/20 max-w-[280px] mx-auto">
+            <div
+                className={`group relative rounded-3xl overflow-hidden border shadow-sm transition-[transform,shadow,border-color] duration-300 h-full flex flex-col max-w-[280px] mx-auto ${cardClass}`}
+            >
                 {/* Image Section - Rounded top corners */}
                 <Link
                     href={productLink}
                     className="block relative"
                 >
-                    <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-2xl">
+                    <div
+                        className={`relative w-full aspect-[3/2] overflow-hidden rounded-t-3xl ${
+                            theme === "dark" ? "bg-[#1b2140]" : "bg-gray-100"
+                        }`}
+                    >
                         <Image
                             src={imageError ? "/placeholder.png" : cardImageUrl}
                             alt={product.productName}
@@ -259,38 +271,77 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         />
                         {/* Placeholder overlay for broken images */}
                         {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                            <div
+                                className={`absolute inset-0 flex items-center justify-center ${
+                                    theme === "dark"
+                                        ? "bg-gradient-to-br from-white/10 to-white/5"
+                                        : "bg-gradient-to-br from-orange-100 to-orange-200"
+                                }`}
+                            >
                                 <div className="text-center">
                                     <span className="text-4xl mb-2 block">🍽️</span>
-                                    <span className="text-xs text-gray-600 font-medium">Preparing...</span>
+                                    <span className={`text-xs font-medium ${theme === "dark" ? "text-white/70" : "text-gray-600"}`}>
+                                        Preparing...
+                                    </span>
                                 </div>
                             </div>
                         )}
 
+                        {theme === "dark" && (
+                            <>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+                                <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_20%,rgba(87,42,248,0.16),transparent_58%)]" />
+                            </>
+                        )}
+
                         {/* Best Seller/Popular Badges - Top Left */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                        <div className="absolute top-2.5 left-2.5 flex flex-col gap-2 z-10">
                             {isBestSeller && (
-                                <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
+                                <span
+                                    className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                                        theme === "dark"
+                                            ? "bg-brand-orange/90 border border-brand-orange/60 backdrop-blur-md"
+                                            : "bg-gradient-to-r from-orange-500 to-red-500 ring-1 ring-white/30"
+                                    }`}
+                                >
                                     🔥 Best Seller
                                 </span>
                             )}
                             {!isBestSeller && isPopular && (
-                                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
+                                <span
+                                    className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                                        theme === "dark"
+                                            ? "bg-white/12 border border-white/16 backdrop-blur-md"
+                                            : "bg-gradient-to-r from-purple-500 to-pink-500 ring-1 ring-white/30"
+                                    }`}
+                                >
                                     ⚡ Bestseller
                                 </span>
                             )}
                         </div>
 
                         {/* Rating & Time Badges - Bottom Left Overlay */}
-                        <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
+                        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-2 z-10">
                             {product.rating > 0 && (
-                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
+                                <div
+                                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                                        theme === "dark"
+                                            ? "bg-black/50 border border-white/15 text-white/95 backdrop-blur-md"
+                                            : "bg-white/90 backdrop-blur-md text-gray-800 ring-1 ring-white/60"
+                                    }`}
+                                >
                                     <span className="text-yellow-500">⭐</span>
                                     <span>{product.rating.toFixed(1)}</span>
                                 </div>
                             )}
                             {deliveryTime && (
-                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
+                                <div
+                                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                                        theme === "dark"
+                                            ? "bg-black/50 border border-white/15 text-white/95 backdrop-blur-md"
+                                            : "bg-white/90 backdrop-blur-md text-gray-800 ring-1 ring-white/60"
+                                    }`}
+                                >
                                     <span>🕒</span>
                                     <span>{deliveryTime} min</span>
                                 </div>
@@ -299,68 +350,77 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                     </div>
                 </Link>
 
-                {/* Content Section - More padding for breathing room */}
-                <div className="p-5 flex-grow flex flex-col">
+                {/* Content Section */}
+                <div className={`p-4 flex-grow flex flex-col ${theme === "dark" ? "bg-[#0f172a]" : ""}`}>
                     <Link
                         href={productLink}
                         className="flex-grow flex flex-col"
                     >
                         {/* Product Name - Bold and Larger */}
                         <h3
-                            className="font-bold text-lg tracking-tight text-gray-900 line-clamp-2 mb-2 leading-tight"
+                            className={`font-semibold text-sm tracking-tight line-clamp-2 mb-2 leading-snug ${
+                                theme === "dark" ? "text-white" : "text-gray-900"
+                            }`}
                             title={product.productName}
                         >
                             {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
                         </h3>
 
                         {/* Rating & Sold Count - Trust Information */}
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 min-h-[18px]">
                             {product.rating > 0 && (
                                 <div className="flex items-center gap-1">
                                     <span className="text-yellow-500 text-xs">⭐</span>
-                                    <span className="text-xs font-semibold text-gray-700">
+                                    <span className={`text-xs font-semibold ${theme === "dark" ? "text-white/85" : "text-gray-700"}`}>
                                         {product.rating.toFixed(1)}
                                     </span>
                                 </div>
                             )}
                             {reviewCountText && (
-                                <span className="text-xs text-gray-500">• {reviewCountText} reviews</span>
+                                <span className={`text-xs ${theme === "dark" ? "text-white/55" : "text-gray-500"}`}>
+                                    • {reviewCountText} reviews
+                                </span>
                             )}
                         </div>
 
                         {/* Restaurant Name with Verified Icon */}
-                        <div className="flex items-center gap-1.5 mb-3">
-                            <p className="text-sm text-gray-500 line-clamp-1 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <p className={`text-sm line-clamp-1 flex-1 ${theme === "dark" ? "text-white/72" : "text-gray-500"}`}>
                                 {restaurant?.resName || "Restaurant"}
                             </p>
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                         </div>
-
-                        {/* Price - Orange-Red color, Prominent */}
-                        <div className="mt-auto pt-2 relative pr-14">
-                            {formattedPrice ? (
-                                <p className="text-base md:text-lg font-bold text-brand-orange">{formattedPrice}</p>
-                            ) : (
-                                <p className="text-sm text-gray-400">No price</p>
-                            )}
-                        </div>
                     </Link>
 
-                    {/* Circle Add Button - Bottom Right Corner of Image */}
-                    <div className="absolute bottom-3 right-3 z-20">
+                    {/* Price + CTA (unified with Home card) */}
+                    <div className={`mt-3 pt-3 border-t flex items-center justify-between gap-3 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                        <div className="min-w-0">
+                            {formattedPrice ? (
+                                <p className="text-base font-bold text-brand-orange">{formattedPrice}</p>
+                            ) : (
+                                <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No price</p>
+                            )}
+                        </div>
                         <Button
                             onClick={handleAddToCart}
                             disabled={isAdding || !isMounted}
-                            variant="brand"
-                            size="icon"
-                            className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                            variant="brandSoft"
+                            size="sm"
+                            className={`h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 ${
+                                theme === "dark"
+                                    ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90"
+                                    : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
+                            }`}
                             title="Add to Cart"
                             aria-label="Add to Cart"
                         >
                             {isAdding ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
-                                <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
+                                <>
+                                    <Plus className="w-4 h-4" />
+                                    <span className="ml-1.5 text-sm font-semibold">Add</span>
+                                </>
                             )}
                         </Button>
                     </div>
@@ -369,61 +429,107 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         );
     }
 
-    // Option 2: Flex Layout (Horizontal) - For long lists - Larger image
+    // Option 2: Flex Layout (Horizontal) - Optimized for list view
     return (
-        <div className="group relative bg-white rounded-2xl overflow-visible border border-gray-200 shadow-sm hover:shadow-md transition-[transform,shadow,border-color] duration-300 flex flex-row h-full hover:-translate-y-0.5 hover:border-brand-orange/20">
-            {/* Image Section - Left - Much larger (60-65% width) */}
+        <div
+            className={`group relative overflow-hidden rounded-2xl border transition-[transform,shadow,border-color] duration-300 flex h-full min-h-[180px] hover:-translate-y-0.5 ${
+                theme === "dark"
+                    ? "bg-[#111427] border-white/10 shadow-[0_10px_35px_rgba(2,6,20,0.42)] hover:border-white/20 hover:shadow-[0_18px_45px_rgba(2,6,20,0.5)]"
+                    : "bg-white border-gray-200 shadow-sm hover:border-brand-orange/20 hover:shadow-md"
+            }`}
+        >
             <Link
                 href={productLink}
-                className="block relative flex-shrink-0 w-[60%] md:w-[65%] min-w-[200px]"
+                className="block relative flex-shrink-0 w-[42%] sm:w-[38%] min-w-[150px] max-w-[220px]"
             >
-                <div className="relative w-full h-full min-h-[180px] md:min-h-[220px] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-l-2xl">
+                <div
+                    className={`relative h-full w-full overflow-hidden ${
+                        theme === "dark" ? "bg-[#1b2140]" : "bg-gradient-to-br from-gray-100 to-gray-200"
+                    }`}
+                >
                     <Image
-                        src={cardImageUrl}
+                        src={imageError ? "/placeholder.png" : cardImageUrl}
                         alt={product.productName}
                         fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-l-2xl"
-                        sizes="(max-width: 768px) 200px, 280px"
-                        unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png"}
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/placeholder.png";
+                        className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                        sizes="(max-width: 768px) 45vw, 220px"
+                        unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png" || imageError}
+                        onError={() => {
+                            if (!imageError) {
+                                setImageError(true);
+                            }
                         }}
                     />
-                    {/* Placeholder overlay - Larger and more visible */}
                     {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-l-2xl">
+                        <div
+                            className={`absolute inset-0 flex items-center justify-center ${
+                                theme === "dark"
+                                    ? "bg-gradient-to-br from-white/10 to-white/5"
+                                    : "bg-gradient-to-br from-orange-100 to-orange-200"
+                            }`}
+                        >
                             <div className="text-center">
-                                <span className="text-4xl md:text-5xl block mb-2">🍽️</span>
-                                <span className="text-xs md:text-sm text-gray-600 font-medium">Preparing...</span>
+                                <span className="text-3xl block mb-1.5">🍽️</span>
+                                <span className={`text-[11px] font-medium ${theme === "dark" ? "text-white/70" : "text-gray-600"}`}>
+                                    Preparing...
+                                </span>
                             </div>
                         </div>
                     )}
 
-                    {/* Best Seller/Popular Badges - Top Left */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                    {theme === "dark" && (
+                        <>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/8 to-transparent" />
+                            <div className="absolute inset-0 bg-[radial-gradient(700px_circle_at_55%_15%,rgba(87,42,248,0.16),transparent_60%)]" />
+                        </>
+                    )}
+
+                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
                         {isBestSeller && (
-                            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
+                            <span
+                                className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                                    theme === "dark"
+                                        ? "bg-brand-orange/90 border border-brand-orange/60 backdrop-blur-md"
+                                        : "bg-gradient-to-r from-orange-500 to-red-500 ring-1 ring-white/30"
+                                }`}
+                            >
                                 🔥 Best Seller
                             </span>
                         )}
                         {!isBestSeller && isPopular && (
-                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/30">
+                            <span
+                                className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                                    theme === "dark"
+                                        ? "bg-white/12 border border-white/16 backdrop-blur-md"
+                                        : "bg-gradient-to-r from-purple-500 to-pink-500 ring-1 ring-white/30"
+                                }`}
+                            >
                                 ⚡ Bestseller
                             </span>
                         )}
                     </div>
 
-                    {/* Rating & Time Badges - Bottom Left Overlay */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
                         {product.rating > 0 && (
-                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
+                            <div
+                                className={`text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                                    theme === "dark"
+                                        ? "bg-black/50 border border-white/15 text-white/95 backdrop-blur-md"
+                                        : "bg-white/90 backdrop-blur-md text-gray-800 ring-1 ring-white/60"
+                                }`}
+                            >
                                 <span className="text-yellow-500">⭐</span>
                                 <span>{product.rating.toFixed(1)}</span>
                             </div>
                         )}
                         {deliveryTime && (
-                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-sm ring-1 ring-white/60 flex items-center gap-1">
+                            <div
+                                className={`text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                                    theme === "dark"
+                                        ? "bg-black/50 border border-white/15 text-white/95 backdrop-blur-md"
+                                        : "bg-white/90 backdrop-blur-md text-gray-800 ring-1 ring-white/60"
+                                }`}
+                            >
                                 <span>🕒</span>
                                 <span>{deliveryTime} min</span>
                             </div>
@@ -432,80 +538,73 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                 </div>
             </Link>
 
-            {/* Content Section - Right - More spacious and better layout */}
-            <div className="flex-1 flex flex-col p-5 md:p-6 min-w-0 justify-between">
-                <Link
-                    href={productLink}
-                    className="flex-grow flex flex-col min-w-0"
-                >
-                    {/* Restaurant Name - Small, light gray at top */}
+            <div className={`flex-1 min-w-0 p-4 flex flex-col justify-between ${theme === "dark" ? "bg-[#0f172a]" : ""}`}>
+                <Link href={productLink} className="flex-grow flex flex-col min-w-0">
                     {restaurant?.resName && (
-                        <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide mb-1.5 font-semibold">
+                        <p className={`text-[10px] uppercase tracking-wide font-semibold mb-1.5 ${theme === "dark" ? "text-white/55" : "text-gray-400"}`}>
                             {restaurant.resName}
                         </p>
                     )}
 
-                    {/* Product Name - Large, Bold, Black */}
                     <h3
-                        className="font-bold text-xl md:text-2xl text-gray-900 line-clamp-2 mb-3 leading-tight tracking-tight"
+                        className={`font-semibold text-base sm:text-lg line-clamp-2 leading-snug mb-1.5 ${
+                            theme === "dark" ? "text-white/95" : "text-gray-900"
+                        }`}
                         title={product.productName}
                     >
                         {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
                     </h3>
 
-                    {/* Restaurant Name with Rating */}
-                    {restaurant?.resName && (
-                        <div className="flex items-center gap-2 mb-2">
-                            <p className="text-xs text-gray-500 flex-1">{restaurant.resName}</p>
-                            {product.rating > 0 && (
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                    <span className="text-yellow-500 text-xs">⭐</span>
-                                    <span className="text-xs font-semibold text-gray-700">
-                                        {product.rating.toFixed(1)}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Rating & Sold Count - Trust Information */}
-                    <div className="flex items-center gap-2 mb-3">
-                        {product.rating > 0 && (
-                            <div className="flex items-center gap-1">
-                                <span className="text-yellow-500 text-xs">⭐</span>
-                                <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
-                            </div>
-                        )}
-                        {reviewCountText && <span className="text-xs text-gray-500">• {reviewCountText} reviews</span>}
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <p className={`text-xs line-clamp-1 ${theme === "dark" ? "text-white/68" : "text-gray-600"}`}>
+                            {restaurant?.resName || "Restaurant"}
+                        </p>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                     </div>
 
-                    {/* Price - Large, Orange-Red */}
-                    <div className="mt-auto mb-4 relative">
-                        {formattedPrice ? (
-                            <p className="text-2xl md:text-3xl font-bold text-brand-orange leading-none">
-                                {formattedPrice}
-                            </p>
+                    <div className="flex items-center gap-2 mb-3 min-h-[18px]">
+                        {product.rating > 0 ? (
+                            <div className="flex items-center gap-1">
+                                <span className="text-yellow-500 text-xs">⭐</span>
+                                <span className={`text-xs font-semibold ${theme === "dark" ? "text-white/88" : "text-gray-700"}`}>
+                                    {product.rating.toFixed(1)}
+                                </span>
+                            </div>
                         ) : (
-                            <p className="text-sm text-gray-400">No price</p>
+                            <span className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No ratings yet</span>
+                        )}
+                        {reviewCountText && (
+                            <span className={`text-xs ${theme === "dark" ? "text-white/58" : "text-gray-500"}`}>• {reviewCountText} reviews</span>
                         )}
                     </div>
                 </Link>
 
-                {/* Circle Add Button - Bottom Right Corner */}
-                <div className="absolute bottom-4 right-4 z-20">
+                <div className={`mt-auto pt-3 border-t flex items-center justify-between gap-2 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                    {formattedPrice ? (
+                        <p className="text-lg sm:text-xl font-bold text-brand-orange leading-none">{formattedPrice}</p>
+                    ) : (
+                        <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No price</p>
+                    )}
                     <Button
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
-                        variant="brand"
-                        size="icon"
-                        className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                        variant="brandSoft"
+                        size="sm"
+                        className={`h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 ${
+                            theme === "dark"
+                                ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90"
+                                : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
+                        }`}
                         title="Add to cart"
                         aria-label="Add to cart"
                     >
                         {isAdding ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : (
-                            <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
+                            <>
+                                <Plus className="w-4 h-4" />
+                                <span className="ml-1.5 text-sm font-semibold">Add</span>
+                            </>
                         )}
                     </Button>
                 </div>

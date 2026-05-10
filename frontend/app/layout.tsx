@@ -1,4 +1,3 @@
-import CravingSuggestionCard from "@/components/client/HomePage/CravingSuggestionCard";
 import CustomToaster from "@/components/ui/CustomToaster";
 import type { Metadata } from "next";
 import { Manrope, Roboto_Serif } from "next/font/google";
@@ -31,7 +30,6 @@ export default function RootLayout({
                 <html lang="en">
                         <body className={`${robotoSerif.variable} ${manrope.variable}`}>
                                 <ClientLayout>{children}</ClientLayout>
-                                <CravingSuggestionCard />
                                 <CustomToaster />
                         </body>
                 </html>

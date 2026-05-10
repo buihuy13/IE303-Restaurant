@@ -1,13 +1,15 @@
 "use client";
 
 import { isRecommendationUnauthorizedError, recommendationApi } from "@/lib/api/recommendationApi";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { AxiosError } from "axios";
-import { Copy, Expand, Minimize2, Sparkles, X } from "lucide-react";
+import { Copy, Expand, Minimize2, Moon, Sparkles, Sun, X } from "lucide-react";
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import toast from "react-hot-toast";
 
 export default function CravingSuggestionCard() {
+    const { theme, toggleTheme } = useClientTheme();
     const [open, setOpen] = useState(false);
     const [context, setContext] = useState("");
     const [loading, setLoading] = useState(false);
@@ -84,6 +86,20 @@ export default function CravingSuggestionCard() {
     return (
         <>
             <div className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6">
+                <div className="mb-2 flex justify-end">
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        aria-label="Toggle theme"
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-all ${
+                            theme === "dark"
+                                ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
+                                : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                        }`}
+                    >
+                        {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    </button>
+                </div>
                 {open ? (
                     <div className="w-[min(92vw,390px)] max-h-[min(80vh,680px)] overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl">
                         <div className="mb-3 flex items-start justify-between gap-3">

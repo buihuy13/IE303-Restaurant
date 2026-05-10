@@ -1,6 +1,7 @@
 "use client";
 
 import { useNotifications } from "@/lib/hooks/useNotifications";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Bell, CheckCircle, Clock, Package, Truck, X, XCircle } from "lucide-react";
@@ -66,6 +67,7 @@ const getNotificationImage = (type: string): string => {
 };
 
 export default function NotificationDropdown() {
+    const { theme } = useClientTheme();
     const { isAuthenticated, user, loading } = useAuthStore();
     useNotifications(); // Track order status changes and create notifications
     const { notifications: allNotifications, markAsRead, markAllAsRead } = useNotificationStore();
@@ -140,11 +142,13 @@ export default function NotificationDropdown() {
                     }, 100);
                 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
+                className={`relative p-2 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
+                    theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                }`}
                 aria-label="Notifications"
                 title="Notifications"
             >
-                <Bell className="w-5 h-5 text-gray-600" />
+                <Bell className={`w-5 h-5 ${theme === "dark" ? "text-white/75" : "text-gray-600"}`} />
                 {unread > 0 && (
                     <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
                         {unread > 99 ? "99+" : unread}
@@ -161,14 +165,16 @@ export default function NotificationDropdown() {
                         setIsHovering(false);
                         setIsOpen(false);
                     }}
-                    className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200/80 z-50 max-h-[500px] flex flex-col overflow-hidden"
+                    className={`absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl border z-50 max-h-[500px] flex flex-col overflow-hidden ${
+                        theme === "dark" ? "bg-[#12182b] border-white/12 text-white" : "bg-white border-gray-200/80"
+                    }`}
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <div className={`flex items-center justify-between px-4 py-3 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
                         <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                            <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-white/92" : "text-gray-900"}`}>Notifications</h3>
                             {unread > 0 && (
-                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${theme === "dark" ? "text-white/70 bg-white/10" : "text-gray-500 bg-gray-100"}`}>
                                     {unread} {unread === 1 ? "new" : "new"}
                                 </span>
                             )}
@@ -191,16 +197,22 @@ export default function NotificationDropdown() {
                     <div className="overflow-y-auto flex-1">
                         {orderNotifications.length === 0 ? (
                             <div className="p-8 text-center">
-                                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-sm text-gray-500">No notifications</p>
+                                <Bell className={`w-12 h-12 mx-auto mb-3 ${theme === "dark" ? "text-white/30" : "text-gray-300"}`} />
+                                <p className={`text-sm ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>No notifications</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-gray-100">
+                            <div className={`divide-y ${theme === "dark" ? "divide-white/10" : "divide-gray-100"}`}>
                                 {orderNotifications.slice(0, 10).map((notif) => (
                                     <div
                                         key={notif.id}
-                                        className={`group relative w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                                            !notif.read ? "bg-orange-50/50" : "bg-white"
+                                        className={`group relative w-full text-left p-4 transition-colors ${
+                                            theme === "dark"
+                                                ? !notif.read
+                                                    ? "bg-brand-orange/8 hover:bg-white/8"
+                                                    : "bg-transparent hover:bg-white/6"
+                                                : !notif.read
+                                                  ? "bg-orange-50/50 hover:bg-gray-50"
+                                                  : "bg-white hover:bg-gray-50"
                                         }`}
                                     >
                                         <button
@@ -214,11 +226,11 @@ export default function NotificationDropdown() {
                                                     notif.type === "ORDER_CONFIRMED" ||
                                                     notif.type === "ORDER_ACCEPTED" ||
                                                     notif.type === "ORDER_REJECTED" ? (
-                                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${theme === "dark" ? "bg-white/8" : "bg-gray-100"}`}>
                                                             {getNotificationIcon(notif.type)}
                                                         </div>
                                                     ) : (
-                                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                                                        <div className={`relative w-12 h-12 rounded-lg overflow-hidden ${theme === "dark" ? "bg-white/8" : "bg-gray-100"}`}>
                                                             <Image
                                                                 src={getNotificationImage(notif.type)}
                                                                 alt={notif.title}
@@ -234,17 +246,19 @@ export default function NotificationDropdown() {
                                                 {/* Content */}
                                                 <div className="flex-1 min-w-0">
                                                     <p
-                                                        className={`text-sm font-medium text-gray-900 mb-1 ${
+                                                        className={`text-sm font-medium mb-1 ${
+                                                            theme === "dark" ? "text-white/92" : "text-gray-900"
+                                                        } ${
                                                             !notif.read ? "font-semibold" : ""
                                                         }`}
                                                     >
                                                         {notif.title}
                                                     </p>
-                                                    <p className="text-xs text-gray-600 line-clamp-2 mb-2">{notif.message}</p>
+                                                    <p className={`text-xs line-clamp-2 mb-2 ${theme === "dark" ? "text-white/70" : "text-gray-600"}`}>{notif.message}</p>
                                                     {notif.restaurantName && (
-                                                        <p className="text-xs text-gray-500 mb-1">Restaurant: {notif.restaurantName}</p>
+                                                        <p className={`text-xs mb-1 ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>Restaurant: {notif.restaurantName}</p>
                                                     )}
-                                                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                    <div className={`flex items-center gap-2 text-xs ${theme === "dark" ? "text-white/50" : "text-gray-400"}`}>
                                                         <Clock className="w-3 h-3" />
                                                         <span>{formatTimeAgo(notif.createdAt)}</span>
                                                     </div>
@@ -266,10 +280,12 @@ export default function NotificationDropdown() {
                                                     e.stopPropagation();
                                                     markAsRead(notif.id);
                                                 }}
-                                                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                                                className={`absolute top-4 right-4 p-1.5 rounded-full transition-colors opacity-0 group-hover:opacity-100 ${
+                                                    theme === "dark" ? "hover:bg-white/15" : "hover:bg-gray-200"
+                                                }`}
                                                 title="Mark as read"
                                             >
-                                                <X className="w-4 h-4 text-gray-500" />
+                                                <X className={`w-4 h-4 ${theme === "dark" ? "text-white/70" : "text-gray-500"}`} />
                                             </button>
                                         )}
                                     </div>
@@ -280,7 +296,7 @@ export default function NotificationDropdown() {
 
                     {/* Footer */}
                     {orderNotifications.length > 0 && (
-                        <div className="border-t border-gray-200 px-4 py-3">
+                        <div className={`border-t px-4 py-3 ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
                             <Link
                                 href="/account/orders"
                                 onClick={() => {

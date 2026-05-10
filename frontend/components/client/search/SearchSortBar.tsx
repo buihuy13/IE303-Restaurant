@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 
 const sortOptions = [
     { value: "relevance", label: "Relevance" },
@@ -11,6 +12,7 @@ const sortOptions = [
 ];
 
 export default function SearchSortBar({ searchType = "foods" }: { searchType?: "foods" | "restaurants" }) {
+    const { theme } = useClientTheme();
     const router = useRouter();
     const searchParams = useSearchParams();
     const currentSort = searchParams.get("sort") || "relevance";
@@ -31,9 +33,9 @@ export default function SearchSortBar({ searchType = "foods" }: { searchType?: "
             : sortOptions;
 
     return (
-        <div className="bg-gray-50 rounded-xl border border-gray-200/80 p-3 mb-6">
+        <div className={`flex-1 rounded-xl border p-2.5 ${theme === "dark" ? "bg-white/6 border-white/12" : "bg-gray-50 border-gray-200/80"}`}>
             <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                <span className={`text-sm font-medium ${theme === "dark" ? "text-white/78" : "text-gray-700"}`}>Sort by:</span>
                 {optionsToUse.map((option) => (
                     <Button
                         key={option.value}
@@ -44,7 +46,9 @@ export default function SearchSortBar({ searchType = "foods" }: { searchType?: "
                         className={
                             currentSort === option.value
                                 ? "shadow-sm"
-                                : "bg-white text-gray-800 hover:bg-gray-100 border border-gray-200/70"
+                                : theme === "dark"
+                                  ? "bg-white/10 text-white/90 hover:bg-white/16 border border-white/14"
+                                  : "bg-white text-gray-800 hover:bg-gray-100 border border-gray-200/70"
                         }
                     >
                         {option.label}

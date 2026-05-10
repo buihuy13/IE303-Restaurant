@@ -1,13 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { Category } from "@/types";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import FilterSection from "./FilterSection";
 
 // Prices are stored and searched in USD directly
@@ -51,6 +52,7 @@ export default function SearchFilters({
     initialCategories = [],
     searchType = "foods",
 }: SearchFiltersProps) {
+    const { theme } = useClientTheme();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { categories, fetchAllCategories } = useCategoryStore();
@@ -140,78 +142,25 @@ export default function SearchFilters({
             ? selectedCategories.filter((c) => c !== categoryName)
             : [...selectedCategories, categoryName];
         setSelectedCategories(newCategories);
-        updateURL({ category: newCategories.length > 0 ? newCategories : null });
     };
-
-    const priceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const handlePriceRangeChange = () => {
-        // Clear existing timeout
-        if (priceUpdateTimeoutRef.current) {
-            clearTimeout(priceUpdateTimeoutRef.current);
-        }
-
-        // Debounce the update to avoid too many URL changes
-        priceUpdateTimeoutRef.current = setTimeout(() => {
-            // Use USD directly - no conversion needed
-            const minUSD = parseFloat(minPriceUSD);
-            const maxUSD = parseFloat(maxPriceUSD);
-            
-            let priceRangeValue: string | null = null;
-            
-            // Check if both are valid numbers
-            const hasMin = !isNaN(minUSD) && minUSD > 0;
-            const hasMax = !isNaN(maxUSD) && maxUSD > 0;
-            
-            if (hasMin && hasMax) {
-                // Both min and max provided
-                if (minUSD <= maxUSD) {
-                    priceRangeValue = `${minUSD}-${maxUSD}`;
-                }
-            } else if (hasMin) {
-                // Only min provided (over $X)
-                priceRangeValue = `${minUSD}+`;
-            } else if (hasMax) {
-                // Only max provided (under $X)
-                priceRangeValue = `0-${maxUSD}`;
-            }
-            // If neither is provided, priceRangeValue stays null (clears filter)
-            
-            updateURL({ priceRange: priceRangeValue });
-        }, 500); // 500ms debounce
-    };
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (priceUpdateTimeoutRef.current) {
-                clearTimeout(priceUpdateTimeoutRef.current);
-            }
-        };
-    }, []);
 
     const handleRatingChange = (value: string) => {
         const newValue = selectedRating === value ? "" : value;
         setSelectedRating(newValue);
-        updateURL({ rating: newValue || null });
     };
 
     const handleDistrictChange = (value: string) => {
         const newValue = selectedDistrict === value ? "" : value;
         setSelectedDistrict(newValue);
-        updateURL({ district: newValue || null });
     };
 
     const handleOpenNowToggle = () => {
-        const next = !openNow;
-        setOpenNow(next);
-        updateURL({ openNow: next ? "1" : null });
+        setOpenNow((prev) => !prev);
     };
 
     const handleDistanceChange = (value: string) => {
         const next = distanceRange === value ? "" : value;
         setDistanceRange(next);
-        updateURL({ distanceRange: next || null });
     };
 
     const handleClearAll = () => {
@@ -244,18 +193,46 @@ export default function SearchFilters({
         (openNow ? 1 : 0) +
         (distanceRange ? 1 : 0);
 
+    const handleApplyFilters = () => {
+        const minUSD = parseFloat(minPriceUSD);
+        const maxUSD = parseFloat(maxPriceUSD);
+
+        let priceRangeValue: string | null = null;
+        const hasMin = !isNaN(minUSD) && minUSD > 0;
+        const hasMax = !isNaN(maxUSD) && maxUSD > 0;
+
+        if (hasMin && hasMax && minUSD <= maxUSD) {
+            priceRangeValue = `${minUSD}-${maxUSD}`;
+        } else if (hasMin) {
+            priceRangeValue = `${minUSD}+`;
+        } else if (hasMax) {
+            priceRangeValue = `0-${maxUSD}`;
+        }
+
+        updateURL({
+            category: selectedCategories.length > 0 ? selectedCategories : null,
+            priceRange: priceRangeValue,
+            rating: selectedRating || null,
+            district: selectedDistrict || null,
+            openNow: openNow ? "1" : null,
+            distanceRange: distanceRange || null,
+        });
+    };
+
     const content = (
         <div
             className={`${
                 isMobile ? "p-4" : "p-4"
-            } rounded-xl border border-gray-200 bg-white shadow-sm ${
+            } rounded-xl border shadow-sm ${
+                theme === "dark" ? "border-white/12 bg-[#11172a]" : "border-gray-200 bg-white"
+            } ${
                 isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"
             }`}
         >
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
                 <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+                    <h3 className={`text-lg font-bold ${theme === "dark" ? "text-white/95" : "text-gray-900"}`}>Filters</h3>
                     {activeFilterCount > 0 && (
                         <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-orange/10 px-2 text-xs font-semibold text-brand-orange">
                             {activeFilterCount}
@@ -269,7 +246,7 @@ export default function SearchFilters({
                         aria-label="Close filters"
                         title="Close"
                     >
-                        <X className="w-5 h-5 text-gray-600" />
+                        <X className={`w-5 h-5 ${theme === "dark" ? "text-white/70" : "text-gray-600"}`} />
                     </button>
                 ) : (
                     hasActiveFilters && (
@@ -287,70 +264,67 @@ export default function SearchFilters({
                 )}
             </div>
 
-            {/* Category Filter */}
-            {/* Default closed so it doesn't pop open again on URL changes (price/rating/etc.) */}
+            {/* Category Filter (pill chips) */}
             {searchType === "foods" && (
-                <FilterSection title="Categories" defaultOpen={false}>
+                <div className={`py-4 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
+                    <h5 className={`font-semibold text-sm mb-3 ${theme === "dark" ? "text-white/90" : "text-gray-900"}`}>Categories</h5>
                     {categories && categories.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
                             {categories.map((category: Category) => (
-                                <label
+                                <button
                                     key={category.cateName}
-                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                                    type="button"
+                                    onClick={() => handleCategoryToggle(category.cateName)}
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        selectedCategories.includes(category.cateName)
+                                            ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                            : theme === "dark"
+                                              ? "border-white/16 bg-white/6 text-white/80 hover:bg-white/10"
+                                              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                                    }`}
                                 >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedCategories.includes(category.cateName)}
-                                        onChange={() => handleCategoryToggle(category.cateName)}
-                                        className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
-                                    />
-                                    <span className="text-sm text-gray-700">{category.cateName}</span>
-                                </label>
+                                    {selectedCategories.includes(category.cateName) && <Check className="h-3 w-3" />}
+                                    {category.cateName}
+                                </button>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-500">Loading...</p>
+                        <p className={`text-sm ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>Loading...</p>
                     )}
-                </FilterSection>
+                </div>
             )}
 
             {/* Price Range Filter */}
             {searchType === "foods" && (
                 <FilterSection title="Price Range">
                     <div className="space-y-3">
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-gray-600">Min Price (USD)</label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={minPriceUSD}
-                                onChange={(e) => {
-                                    setMinPriceUSD(e.target.value);
-                                    handlePriceRangeChange();
-                                }}
-                                onBlur={handlePriceRangeChange}
-                                className="h-10"
-                            />
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1.5">
+                                <label className={`block text-xs font-medium ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Min Price (VND)</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={minPriceUSD}
+                                    onChange={(e) => setMinPriceUSD(e.target.value)}
+                                    className="h-10"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className={`block text-xs font-medium ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Max Price (VND)</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={maxPriceUSD}
+                                    onChange={(e) => setMaxPriceUSD(e.target.value)}
+                                    className="h-10"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-gray-600">Max Price (USD)</label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={maxPriceUSD}
-                                onChange={(e) => {
-                                    setMaxPriceUSD(e.target.value);
-                                    handlePriceRangeChange();
-                                }}
-                                onBlur={handlePriceRangeChange}
-                                className="h-10"
-                            />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">Leave empty for no limit. Prices are in USD.</p>
+                        <p className={`text-xs mt-1 ${theme === "dark" ? "text-white/55" : "text-gray-500"}`}>Leave empty for no limit. Prices are shown in VND.</p>
                     </div>
                 </FilterSection>
             )}
@@ -361,7 +335,9 @@ export default function SearchFilters({
                     {ratingOptions.map((option) => (
                         <label
                             key={option.value}
-                            className={`flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded ${
+                            className={`flex items-center gap-2 cursor-pointer p-2 rounded ${
+                                theme === "dark" ? "hover:bg-white/8" : "hover:bg-gray-50"
+                            } ${
                                 selectedRating === option.value ? "bg-brand-orange/10" : ""
                             }`}
                         >
@@ -373,7 +349,7 @@ export default function SearchFilters({
                                 onChange={() => handleRatingChange(option.value)}
                                 className="w-4 h-4 text-brand-orange focus:ring-brand-orange"
                             />
-                            <span className="text-sm text-gray-700 flex items-center gap-1">
+                            <span className={`text-sm flex items-center gap-1 ${theme === "dark" ? "text-white/80" : "text-gray-700"}`}>
                                 {option.value === "5" && "⭐⭐⭐⭐⭐"}
                                 {option.value === "4" && "⭐⭐⭐⭐"}
                                 {option.value === "3" && "⭐⭐⭐"}
@@ -403,16 +379,16 @@ export default function SearchFilters({
 
             {searchType === "restaurants" && (
                 <FilterSection title="Open Now">
-                    <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <label className={`flex items-center gap-2 cursor-pointer p-2 rounded ${theme === "dark" ? "hover:bg-white/8" : "hover:bg-gray-50"}`}>
                         <input
                             type="checkbox"
                             checked={openNow}
                             onChange={handleOpenNowToggle}
                             className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
                         />
-                        <span className="text-sm text-gray-700">Show restaurants open right now</span>
+                        <span className={`text-sm ${theme === "dark" ? "text-white/80" : "text-gray-700"}`}>Show restaurants open right now</span>
                     </label>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className={`text-xs mt-2 ${theme === "dark" ? "text-white/55" : "text-gray-500"}`}>
                         UI-only if backend doesn&apos;t support hours yet.
                     </p>
                 </FilterSection>
@@ -432,35 +408,33 @@ export default function SearchFilters({
                             </option>
                         ))}
                     </Select>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className={`text-xs mt-2 ${theme === "dark" ? "text-white/55" : "text-gray-500"}`}>
                         UI-only if backend doesn&apos;t support distance filtering yet.
                     </p>
                 </FilterSection>
             )}
 
-            {/* Mobile footer actions */}
-            {isMobile && (
-                <div className="pt-4 mt-4 border-t border-gray-200 flex gap-2">
-                    <Button
-                        type="button"
-                        onClick={handleClearAll}
-                        variant="brandOutline"
-                        className="flex-1 h-11 rounded-full"
-                        disabled={!hasActiveFilters}
-                        title={!hasActiveFilters ? "No filters to clear" : "Clear all filters"}
-                    >
-                        Clear all
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={onClose}
-                        variant="brand"
-                        className="flex-1 h-11 rounded-full shadow-sm hover:shadow-md"
-                    >
-                        Done
-                    </Button>
-                </div>
-            )}
+            {/* Apply / Clear actions */}
+            <div className={`pt-4 mt-4 border-t ${theme === "dark" ? "border-white/10" : "border-gray-200"} flex gap-2`}>
+                <Button
+                    type="button"
+                    onClick={handleClearAll}
+                    variant="brandOutline"
+                    className="flex-1 h-11 rounded-full"
+                    disabled={!hasActiveFilters}
+                >
+                    Clear
+                </Button>
+                <Button
+                    type="button"
+                    onClick={handleApplyFilters}
+                    variant="brand"
+                    className="flex-1 h-11 rounded-full shadow-sm hover:shadow-md"
+                >
+                    Apply filters
+                </Button>
+            </div>
+
         </div>
     );
 
@@ -469,7 +443,9 @@ export default function SearchFilters({
         return (
             <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
                 <div
-                    className="fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-2xl overflow-y-auto"
+                    className={`fixed top-0 left-0 h-full w-[85%] max-w-sm shadow-2xl overflow-y-auto ${
+                        theme === "dark" ? "bg-[#11172a]" : "bg-white"
+                    }`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {content}

@@ -27,7 +27,7 @@ export default function HomePage() {
                         {/* 3. VALUE PROPS */}
                         <section className="relative">
                                 {/* Section divider (clear) */}
-                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                                 <div className="border-y border-gray-200 bg-white/70 backdrop-blur-[2px]">
                                         <div className="custom-container pb-16 pt-12 md:pb-20 md:pt-14">
                                                 <FeaturesAction />
