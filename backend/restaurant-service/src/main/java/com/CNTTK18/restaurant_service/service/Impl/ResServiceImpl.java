@@ -1,7 +1,6 @@
 package com.CNTTK18.restaurant_service.service.Impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -17,6 +16,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
+import com.CNTTK18.restaurant_service.client.ImageServiceClient;
+import com.CNTTK18.restaurant_service.client.dto.ImageUploadResponse;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
@@ -32,12 +33,8 @@ import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.exception.InvalidRequestException;
 import com.CNTTK18.restaurant_service.mapper.ResMapper;
 import com.CNTTK18.restaurant_service.model.Restaurants;
-import com.CNTTK18.restaurant_service.model.Reviews;
-import com.CNTTK18.restaurant_service.model.data.ReviewType;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
-import com.CNTTK18.restaurant_service.repository.ReviewRepository;
 import com.CNTTK18.restaurant_service.service.DistanceService;
-import com.CNTTK18.restaurant_service.service.ImageHandleService;
 import com.CNTTK18.restaurant_service.service.ResService;
 
 import lombok.RequiredArgsConstructor;
@@ -47,8 +44,7 @@ import lombok.RequiredArgsConstructor;
 public class ResServiceImpl implements ResService {
     private final ResRepository resRepository;
     private final WebClient.Builder webClientBuilder;
-    private final ImageHandleService imageService;
-    private final ReviewRepository reviewRepository;
+    private final ImageServiceClient imageServiceClient;
     private final DistanceService distanceService;
     private final ResMapper resMapper;
 
@@ -97,13 +93,7 @@ public class ResServiceImpl implements ResService {
         int nearby = (resQuery.getNearby() == null || resQuery.getNearby() > 20000) ? 20000 : resQuery.getNearby();
 
         return resRepository.findRestaurantsWithinDistance(
-                location.getLongitude(),
-                location.getLatitude(),
-                nearby,
-                search,
-                categoryName,
-                resQuery.getEnabled(),
-                newPageable);
+                location.getLongitude(), location.getLatitude(), nearby, search, resQuery.getEnabled(), newPageable);
     }
 
     @Override
@@ -169,11 +159,11 @@ public class ResServiceImpl implements ResService {
         }
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = res.getPublicID();
-            Map<String, String> image = imageService.saveImageFile(imageFile);
-            res.setImageURL(image.get("url"));
-            res.setPublicID(image.get("public_id"));
+            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.getUrl());
+            res.setPublicID(image.getPublicId());
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
-                imageService.deleteImage(oldPublicId);
+                imageServiceClient.deleteImage(oldPublicId);
             }
         }
         resRepository.save(res);
@@ -185,12 +175,10 @@ public class ResServiceImpl implements ResService {
     public void deleteRestaurant(UUID id, UserRole authUser) {
         Restaurants res = getById(id);
         checkAuthority(res.getMerchantId(), authUser);
-        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.RESTAURANT);
 
         if (res.getPublicID() != null && !res.getPublicID().isEmpty()) {
-            imageService.deleteImage(res.getPublicID());
+            imageServiceClient.deleteImage(res.getPublicID());
         }
-        reviewRepository.deleteAll(rv);
         resRepository.delete(res);
     }
 
@@ -208,7 +196,7 @@ public class ResServiceImpl implements ResService {
         Restaurants res = getById(resId);
 
         checkAuthority(res.getMerchantId(), authUser);
-        imageService.deleteImage(res.getPublicID());
+        imageServiceClient.deleteImage(res.getPublicID());
         res.setImageURL(null);
         res.setPublicID(null);
         resRepository.save(res);
@@ -282,9 +270,9 @@ public class ResServiceImpl implements ResService {
     @Transactional
     private Restaurants saveRestaurant(Restaurants res, MultipartFile imageFile) {
         if (imageFile != null && !imageFile.isEmpty()) {
-            Map<String, String> image = imageService.saveImageFile(imageFile);
-            res.setImageURL(image.get("url"));
-            res.setPublicID(image.get("public_id"));
+            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.getUrl());
+            res.setPublicID(image.getPublicId());
         }
         return resRepository.save(res);
     }

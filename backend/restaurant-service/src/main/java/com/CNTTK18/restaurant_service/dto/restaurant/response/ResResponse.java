@@ -5,7 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-import com.CNTTK18.restaurant_service.dto.cate.response.CateResponse;
+import com.CNTTK18.restaurant_service.dto.category.response.CategoryResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,5 +37,5 @@ public class ResResponse {
     private String slug;
     private Instant createdAt;
     private Instant updatedAt;
-    private List<CateResponse> cate;
+    private List<CategoryResponse> cate;
 }

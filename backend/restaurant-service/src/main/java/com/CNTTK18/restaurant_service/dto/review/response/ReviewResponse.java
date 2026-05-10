@@ -1,9 +1,9 @@
 package com.CNTTK18.restaurant_service.dto.review.response;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
-import com.CNTTK18.restaurant_service.model.data.ReviewType;
+import com.CNTTK18.restaurant_service.dto.review.data.ReviewType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,10 +11,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ReviewResponse {
     private UUID id;
@@ -23,6 +23,7 @@ public class ReviewResponse {
     private ReviewType reviewType;
     private String title;
     private String content;
-    private float rating;
-    private ZonedDateTime createdAt;
+    private Float rating;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -18,7 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
+import com.CNTTK18.restaurant_service.client.CatalogServiceClient;
+import com.CNTTK18.restaurant_service.client.ImageServiceClient;
+import com.CNTTK18.restaurant_service.client.ReviewServiceClient;
 import com.CNTTK18.restaurant_service.dto.UserRole;
+import com.CNTTK18.restaurant_service.dto.category.response.CategoryResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
 import com.CNTTK18.restaurant_service.dto.product.ProductIdWithRating;
 import com.CNTTK18.restaurant_service.dto.product.request.ProductQuery;
@@ -29,23 +33,16 @@ import com.CNTTK18.restaurant_service.dto.product.response.ProductResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.request.Coordinates;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResResponse;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.ResWithDistance;
+import com.CNTTK18.restaurant_service.dto.size.response.SizeResponse;
 import com.CNTTK18.restaurant_service.exception.ForbiddenException;
 import com.CNTTK18.restaurant_service.mapper.ProductMapper;
 import com.CNTTK18.restaurant_service.mapper.ResMapper;
-import com.CNTTK18.restaurant_service.model.Categories;
 import com.CNTTK18.restaurant_service.model.ProductSize;
 import com.CNTTK18.restaurant_service.model.Products;
 import com.CNTTK18.restaurant_service.model.Restaurants;
-import com.CNTTK18.restaurant_service.model.Reviews;
-import com.CNTTK18.restaurant_service.model.Size;
-import com.CNTTK18.restaurant_service.model.data.ReviewType;
-import com.CNTTK18.restaurant_service.repository.CateRepository;
 import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
-import com.CNTTK18.restaurant_service.repository.ReviewRepository;
-import com.CNTTK18.restaurant_service.repository.SizeRepository;
 import com.CNTTK18.restaurant_service.service.DistanceService;
-import com.CNTTK18.restaurant_service.service.ImageHandleService;
 import com.CNTTK18.restaurant_service.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -54,11 +51,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepo;
-    private final CateRepository cateRepository;
     private final ResRepository resRepository;
-    private final SizeRepository sizeRepository;
-    private final ImageHandleService imageFileService;
-    private final ReviewRepository reviewRepository;
+    private final CatalogServiceClient catalogServiceClient;
+    private final ImageServiceClient imageServiceClient;
+    private final ReviewServiceClient reviewServiceClient;
     private final DistanceService distanceService;
     private final ProductMapper productMapper;
     private final ResMapper resMapper;
@@ -98,9 +94,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse createProduct(ProductRequest productRequest, MultipartFile imageFile) {
-        Categories cate = cateRepository
-                .findById(productRequest.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("category not found"));
+        CategoryResponse category = catalogServiceClient.getCategory(productRequest.getCategoryId());
+        if (category == null) {
+            throw new ResourceNotFoundException("category not found");
+        }
 
         Restaurants res = getResById(productRequest.getRestaurantId());
 
@@ -108,16 +105,12 @@ public class ProductServiceImpl implements ProductService {
                 .id(UUID.randomUUID())
                 .productName(productRequest.getProductName())
                 .description(productRequest.getDescription())
-                .category(cate)
+                .categoryId(productRequest.getCategoryId())
                 .restaurant(res)
                 .available(productRequest.isAvailable())
                 .slug(SlugGenerator.generate(productRequest.getProductName()))
                 .build();
-        // Check cate
-        if (!res.getCategories().contains(cate)) {
-            res.getCategories().add(cate);
-            resRepository.save(res);
-        }
+
         addProductSizes(product, productRequest.getSizeIds());
         setImageIfPresent(product, imageFile);
 
@@ -131,50 +124,39 @@ public class ProductServiceImpl implements ProductService {
             UpdateProduct updateProduct, UUID id, MultipartFile imageFile, UserRole authUser) {
         Products product = getById(id);
 
-        Categories cate = cateRepository
-                .findById(updateProduct.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("category not found"));
+        CategoryResponse category = catalogServiceClient.getCategory(updateProduct.getCategoryId());
+        if (category == null) {
+            throw new ResourceNotFoundException("category not found");
+        }
 
         Restaurants res = getResById(product.getRestaurant().getId());
 
         checkAuthority(res.getMerchantId(), authUser);
-        Categories oldCategory = product.getCategory();
-        boolean categoryChanged = !oldCategory.getId().equals(cate.getId());
-
-        if (categoryChanged) {
-            Long count = productRepo.countProductWithCateIdWithInRes(
-                    product.getCategory().getId(), product.getRestaurant().getId());
-            if (count == 1) {
-                res.getCategories().remove(product.getCategory());
-            }
-        }
+        UUID oldCategoryId = product.getCategoryId();
+        boolean categoryChanged = !oldCategoryId.equals(updateProduct.getCategoryId());
 
         if (!product.getProductName().equals(updateProduct.getProductName())) {
             product.setProductName(updateProduct.getProductName());
             product.setSlug(SlugGenerator.generate(updateProduct.getProductName()));
         }
 
-        product.setCategory(cate);
+        product.setCategoryId(updateProduct.getCategoryId());
         product.setDescription(updateProduct.getDescription());
-
-        if (!res.getCategories().contains(cate)) {
-            res.getCategories().add(cate);
-        }
-
-        resRepository.save(res);
 
         if (updateProduct.getSizeIds() != null) {
 
             product.clearAllProductSizes();
             for (SizePrice psDto : updateProduct.getSizeIds()) {
 
-                Size size = sizeRepository
-                        .findById(psDto.getSizeId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + psDto.getSizeId()));
+                SizeResponse size = catalogServiceClient.getSize(psDto.getSizeId());
+                if (size == null) {
+                    throw new ResourceNotFoundException("Size not found: " + psDto.getSizeId());
+                }
 
-                // Tạo ProductSize entity
-                ProductSize productSize =
-                        ProductSize.builder().size(size).price(psDto.getPrice()).build();
+                ProductSize productSize = ProductSize.builder()
+                        .sizeId(size.getId())
+                        .price(psDto.getPrice())
+                        .build();
 
                 product.addProductSize(productSize);
             }
@@ -182,12 +164,12 @@ public class ProductServiceImpl implements ProductService {
 
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = product.getPublicID();
-            Map<String, String> image = imageFileService.saveImageFile(imageFile);
-            product.setImageURL(image.get("url"));
-            product.setPublicID(image.get("public_id"));
+            var image = imageServiceClient.uploadImage(imageFile, "product");
+            product.setImageURL(image.getUrl());
+            product.setPublicID(image.getPublicId());
 
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
-                imageFileService.deleteImage(oldPublicId);
+                imageServiceClient.deleteImage(oldPublicId);
             }
         }
         productRepo.save(product);
@@ -200,20 +182,11 @@ public class ProductServiceImpl implements ProductService {
         Products product = getById(id);
 
         checkAuthority(product.getRestaurant().getMerchantId(), authUser);
-        List<Reviews> rv = reviewRepository.findByReviewIdAndReviewType(id, ReviewType.PRODUCT);
 
         if (product.getPublicID() != null && !product.getPublicID().isEmpty()) {
-            imageFileService.deleteImage(product.getPublicID());
+            imageServiceClient.deleteImage(product.getPublicID());
         }
-        Long count = productRepo.countProductWithCateIdWithInRes(
-                product.getCategory().getId(), product.getRestaurant().getId());
-        if (count == 1) {
-            Restaurants res = product.getRestaurant();
-            Categories cate = product.getCategory();
-            res.getCategories().remove(cate);
-            resRepository.save(res);
-        }
-        reviewRepository.deleteAll(rv);
+
         productRepo.delete(product);
     }
 
@@ -231,7 +204,7 @@ public class ProductServiceImpl implements ProductService {
     public void deleteImage(UUID productId, UserRole authUser) {
         Products product = getById(productId);
         checkAuthority(product.getRestaurant().getMerchantId(), authUser);
-        imageFileService.deleteImage(product.getPublicID());
+        imageServiceClient.deleteImage(product.getPublicID());
         product.setImageURL(null);
         product.setPublicID(null);
         productRepo.save(product);
@@ -263,19 +236,22 @@ public class ProductServiceImpl implements ProductService {
     private void addProductSizes(Products product, List<SizePrice> sizePrices) {
         if (sizePrices == null) return;
         for (SizePrice psDto : sizePrices) {
-            Size size = sizeRepository
-                    .findById(psDto.getSizeId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + psDto.getSizeId()));
-            product.addProductSize(
-                    ProductSize.builder().size(size).price(psDto.getPrice()).build());
+            SizeResponse size = catalogServiceClient.getSize(psDto.getSizeId());
+            if (size == null) {
+                throw new ResourceNotFoundException("Size not found: " + psDto.getSizeId());
+            }
+            product.addProductSize(ProductSize.builder()
+                    .sizeId(size.getId())
+                    .price(psDto.getPrice())
+                    .build());
         }
     }
 
     private void setImageIfPresent(Products product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty()) return;
-        Map<String, String> image = imageFileService.saveImageFile(imageFile);
-        product.setImageURL(image.get("url"));
-        product.setPublicID(image.get("public_id"));
+        var image = imageServiceClient.uploadImage(imageFile, "product");
+        product.setImageURL(image.getUrl());
+        product.setPublicID(image.getPublicId());
     }
 
     private List<ProductResponse> sortProductResponse(
@@ -324,7 +300,6 @@ public class ProductServiceImpl implements ProductService {
                 location.getLatitude(),
                 normalizedNearby,
                 normalizedSearch,
-                categoryName,
                 productQuery.getMaxPrice(),
                 productQuery.getMinPrice(),
                 sort,

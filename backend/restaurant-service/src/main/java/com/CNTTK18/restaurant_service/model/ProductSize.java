@@ -35,9 +35,8 @@ public class ProductSize {
     @JoinColumn(name = "product_id", nullable = false)
     private Products product;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "size_id", nullable = false)
-    private Size size;
+    @Column(name = "size_id", nullable = false)
+    private UUID sizeId;
 
     @Column(nullable = false)
     private BigDecimal price;

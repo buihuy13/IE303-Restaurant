@@ -7,7 +7,6 @@ import jakarta.persistence.LockModeType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,13 +21,10 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Restaurants> findRestaurantById(UUID id);
 
-    @EntityGraph(attributePaths = {"categories"})
     Optional<Restaurants> findRestaurantsByMerchantId(UUID id);
 
-    @EntityGraph(attributePaths = {"categories"})
     Optional<Restaurants> findBySlug(String slug);
 
-    @EntityGraph(attributePaths = {"categories"})
     Optional<Restaurants> findWithCategoriesAndProductsById(UUID id);
 
     @Query(
@@ -36,11 +32,8 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
                     """
         SELECT DISTINCT r.*
         FROM restaurants r
-        JOIN restaurant_categories rc ON r.id = rc.restaurant_id
-        JOIN categories c ON c.id = rc.category_id
         WHERE (:enabled IS NULL OR r.enabled = :enabled)
         AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
             r.geom::geography,
             ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
@@ -51,11 +44,8 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
                     """
         SELECT COUNT(DISTINCT r.id)
         FROM restaurants r
-        JOIN restaurant_categories rc ON r.id = rc.restaurant_id
-        JOIN categories c ON c.id = rc.category_id
         WHERE (:enabled IS NULL OR r.enabled = :enabled)
         AND (:search IS NULL OR LOWER(r.res_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND ST_DWithin(
             r.geom::geography,
             ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
@@ -68,7 +58,6 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
             @Param("latitude") Double latitude,
             @Param("maxDistance") Integer maxDistance,
             @Param("search") String search,
-            @Param("categories") String categories,
             @Param("enabled") Boolean enabled,
             Pageable pageable);
 }

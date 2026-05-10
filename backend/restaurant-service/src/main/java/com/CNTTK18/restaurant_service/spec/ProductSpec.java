@@ -1,13 +1,12 @@
 package com.CNTTK18.restaurant_service.spec;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.UUID;
 
 import jakarta.persistence.criteria.Join;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import com.CNTTK18.restaurant_service.model.Categories;
 import com.CNTTK18.restaurant_service.model.ProductSize;
 import com.CNTTK18.restaurant_service.model.Products;
 
@@ -30,13 +29,12 @@ public class ProductSpec {
         };
     }
 
-    private static Specification<Products> hasCategory(List<String> categories) {
+    public static Specification<Products> hasCategoryId(UUID categoryId) {
         return (root, query, criteriaBuilder) -> {
-            if (categories == null || categories.isEmpty()) {
+            if (categoryId == null) {
                 return criteriaBuilder.conjunction();
             }
-            Join<Products, Categories> categoryJoin = root.join("category");
-            return criteriaBuilder.lower(categoryJoin.get("cateName")).in(categories);
+            return criteriaBuilder.equal(root.get("categoryId"), categoryId);
         };
     }
 
@@ -61,10 +59,10 @@ public class ProductSpec {
     }
 
     public static Specification<Products> allSpecification(
-            String name, Boolean available, List<String> categories, BigDecimal minPrice, BigDecimal maxPrice) {
+            String name, Boolean available, UUID categoryId, BigDecimal minPrice, BigDecimal maxPrice) {
         return Specification.allOf(hasNameLike(name))
                 .and(isAvailable(available))
-                .and(hasCategory(categories))
+                .and(hasCategoryId(categoryId))
                 .and(hasMinPrice(minPrice))
                 .and(hasMaxPrice(maxPrice));
     }

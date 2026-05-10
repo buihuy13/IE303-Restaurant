@@ -49,9 +49,8 @@ public class Products {
     @Column(name = "public_id")
     private String publicID; // Cho việc xóa ảnh trong cloud
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "category_id", nullable = false)
-    private Categories category;
+    @Column(name = "category_id")
+    private UUID categoryId;
 
     private boolean available;
 

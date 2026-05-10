@@ -11,20 +11,27 @@ export interface ReviewData {
 }
 
 export interface ReviewListResponse {
-    response: string[];
+    reviews: Review[];
+    total: number;
+}
+
+export interface ReviewStatsResponse {
+    averageRating: number;
+    totalReviews: number;
+    ratingDistribution: Record<number, number>;
 }
 
 export const reviewApi = {
     // Get reviews by restaurant
     getReviewsByRestaurant: async (restaurantId: string) => {
-        const response = await api.get<Review[]>(`/review?resId=${restaurantId}`);
-        return response.data;
+        const response = await api.get<ReviewListResponse>(`/review/restaurant/${restaurantId}`);
+        return response.data.reviews;
     },
 
     // Get reviews by product
     getReviewsByProduct: async (productId: string) => {
-        const response = await api.get<Review[]>(`/review?productId=${productId}`);
-        return response.data;
+        const response = await api.get<ReviewListResponse>(`/review/product/${productId}`);
+        return response.data.reviews;
     },
     getProductReviewSummary: async (productId: string) => {
         const response = await api.get<ReviewListResponse>(`/review/product/${productId}`);
@@ -32,6 +39,16 @@ export const reviewApi = {
     },
     getRestaurantReviewSummary: async (restaurantId: string) => {
         const response = await api.get<ReviewListResponse>(`/review/restaurant/${restaurantId}`);
+        return response.data;
+    },
+
+    // Get review stats
+    getProductReviewStats: async (productId: string) => {
+        const response = await api.get<ReviewStatsResponse>(`/review/stats/product/${productId}`);
+        return response.data;
+    },
+    getRestaurantReviewStats: async (restaurantId: string) => {
+        const response = await api.get<ReviewStatsResponse>(`/review/stats/restaurant/${restaurantId}`);
         return response.data;
     },
 
@@ -48,8 +65,8 @@ export const reviewApi = {
     },
 
     // Delete review
-    deleteReview: async (reviewId: string) => {
-        const response = await api.delete(`/review/${reviewId}`);
+    deleteReview: async (reviewId: string, userId: string) => {
+        const response = await api.delete(`/review/${reviewId}?userId=${userId}`);
         return response.data;
     },
 };

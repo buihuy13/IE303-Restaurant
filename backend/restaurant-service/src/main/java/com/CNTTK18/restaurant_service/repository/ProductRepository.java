@@ -20,8 +20,7 @@ import com.CNTTK18.restaurant_service.model.Restaurants;
 @Repository
 public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpecificationExecutor<Products> {
 
-    @Query(
-            "SELECT COUNT(p) FROM Products p JOIN p.category c JOIN p.restaurant r WHERE c.id = :cateId AND r.id = :resId")
+    @Query("SELECT COUNT(p) FROM Products p WHERE p.categoryId = :cateId AND p.restaurant.id = :resId")
     Long countProductWithCateIdWithInRes(@Param("cateId") UUID cateId, @Param("resId") UUID resId);
 
     Optional<Products> findProductById(UUID id);
@@ -39,7 +38,6 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             p.rating
         FROM products p
         JOIN restaurants r ON p.restaurant_id = r.id
-        JOIN categories c ON c.id = p.category_id
         JOIN product_sizes ps ON ps.product_id = p.id
         WHERE r.enabled = true
         AND ST_DWithin(
@@ -48,7 +46,6 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             :maxDistance
         )
         AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND (:minPrice IS NULL OR ps.price >= :minPrice)
         AND (:maxPrice IS NULL OR ps.price <= :maxPrice)
         ORDER BY
@@ -60,7 +57,6 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
         SELECT COUNT(DISTINCT p.id)
         FROM products p
         JOIN restaurants r ON p.restaurant_id = r.id
-        JOIN categories c ON c.id = p.category_id
         JOIN product_sizes ps ON ps.product_id = p.id
         WHERE r.enabled = true
         AND ST_DWithin(
@@ -69,7 +65,6 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             :maxDistance
         )
         AND (:search IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categories IS NULL OR LOWER(c.cate_name) LIKE LOWER(CONCAT('%', :categories, '%')))
         AND (:minPrice IS NULL OR ps.price >= :minPrice)
         AND (:maxPrice IS NULL OR ps.price <= :maxPrice)
         """,
@@ -79,7 +74,6 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
             @Param("latitude") Double latitude,
             @Param("maxDistance") Integer maxDistance,
             @Param("search") String search,
-            @Param("categories") String categories,
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("minPrice") BigDecimal minPrice,
             @Param("sort") String sort,
@@ -87,11 +81,7 @@ public interface ProductRepository extends JpaRepository<Products, UUID>, JpaSpe
 
     @Query("SELECT DISTINCT p FROM Products p "
             + "LEFT JOIN FETCH p.restaurant r "
-            + // Lấy luôn Danh mục của Món ăn
-            "LEFT JOIN FETCH p.productSizes ps "
-            + "LEFT JOIN FETCH ps.size "
-            + "LEFT JOIN FETCH p.category "
-            + // Lấy luôn bảng nối ProductSize
-            "WHERE p.id IN :ids")
+            + "LEFT JOIN FETCH p.productSizes ps "
+            + "WHERE p.id IN :ids")
     List<Products> findByIdIn(List<UUID> ids);
 }

@@ -10,14 +10,14 @@ import com.CNTTK18.restaurant_service.model.Restaurants;
 
 @Mapper(
         componentModel = "spring",
-        uses = {CateMapper.class, ProductMapper.class})
+        uses = {ProductMapper.class})
 public interface ResMapper {
-    @Mapping(target = "cate", source = "categories")
+    @Mapping(target = "cate", ignore = true)
     @Mapping(target = "distance", ignore = true)
     @Mapping(target = "duration", ignore = true)
     ResResponse toResResponse(Restaurants res);
 
-    @Mapping(target = "cate", source = "res.categories")
+    @Mapping(target = "cate", ignore = true)
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")
     ResResponse toResResponse(Restaurants res, Double distance, Double duration);
@@ -26,13 +26,13 @@ public interface ResMapper {
     @Mapping(target = "duration", source = "duration")
     ResWithDistance toResResponseWithDistanceAndDuration(Restaurants res, Double distance, Double duration);
 
-    @Mapping(target = "cate", source = "categories")
+    @Mapping(target = "cate", ignore = true)
     @Mapping(target = "products", source = "products")
     @Mapping(target = "distance", ignore = true)
     @Mapping(target = "duration", ignore = true)
     ResResponseWithProduct toResResponseWithProduct(Restaurants res);
 
-    @Mapping(target = "cate", source = "res.categories")
+    @Mapping(target = "cate", ignore = true)
     @Mapping(target = "products", source = "res.products")
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")

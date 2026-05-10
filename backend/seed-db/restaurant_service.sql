@@ -1,9 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
--- Categories table
-CREATE TABLE categories (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    cate_name VARCHAR(100) NOT NULL UNIQUE
-);
+
 
 CREATE TABLE restaurants (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -55,17 +51,11 @@ CREATE TABLE restaurant_categories (
     restaurant_id UUID NOT NULL,
     category_id UUID NOT NULL,
     PRIMARY KEY (restaurant_id, category_id),
-    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_restaurant_categories_restaurant ON restaurant_categories(restaurant_id);
 CREATE INDEX idx_restaurant_categories_category ON restaurant_categories(category_id);
-
-CREATE TABLE size (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
-);
 
 CREATE TABLE products (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -74,7 +64,7 @@ CREATE TABLE products (
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     image_url VARCHAR(255),
     public_id VARCHAR(255),
-    category_id UUID NOT NULL REFERENCES categories(id),
+    category_id UUID NOT NULL,
     total_review INTEGER DEFAULT 0,
     rating REAL,
     slug VARCHAR(255) NOT NULL UNIQUE,

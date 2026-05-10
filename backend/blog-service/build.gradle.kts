@@ -29,6 +29,8 @@ dependencies {
 	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 	implementation("com.cloudinary:cloudinary-core:2.3.2")
 	implementation("com.cloudinary:cloudinary-http5:2.3.2")
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
+  	implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
 }
 
 dependencyManagement {

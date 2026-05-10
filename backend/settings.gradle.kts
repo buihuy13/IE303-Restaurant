@@ -12,7 +12,10 @@ listOf(
     "recommendation-service",
     "blog-service",
     "payment-service",
-    "order-service"
+    "order-service",
+    "catalog-service",
+    "review-service",
+    "image-service"
 ).forEach { module ->
     val dir = file(module)
     if (dir.exists()) {  //chỉ include nếu folder tồn tại

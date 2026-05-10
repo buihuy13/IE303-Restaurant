@@ -6,16 +6,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
+import com.CNTTK18.restaurant_service.client.CatalogServiceClient;
 import com.CNTTK18.restaurant_service.dto.productSize.request.ProductSizeCreate;
 import com.CNTTK18.restaurant_service.dto.productSize.request.ProductSizeRequest;
 import com.CNTTK18.restaurant_service.dto.productSize.response.ProductSizeResponse;
+import com.CNTTK18.restaurant_service.dto.size.response.SizeResponse;
 import com.CNTTK18.restaurant_service.mapper.ProductSizeMapper;
 import com.CNTTK18.restaurant_service.model.ProductSize;
 import com.CNTTK18.restaurant_service.model.Products;
-import com.CNTTK18.restaurant_service.model.Size;
 import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ProductSizeRepository;
-import com.CNTTK18.restaurant_service.repository.SizeRepository;
 import com.CNTTK18.restaurant_service.service.ProductSizeService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductSizeServiceImpl implements ProductSizeService {
     private final ProductSizeRepository productSizeRepository;
     private final ProductRepository productRepository;
-    private final SizeRepository sizeRepository;
+    private final CatalogServiceClient catalogServiceClient;
     private final ProductSizeMapper productSizeMapper;
 
     @Override
@@ -45,9 +45,10 @@ public class ProductSizeServiceImpl implements ProductSizeService {
     @Override
     @Transactional
     public ProductSizeResponse createProductSize(ProductSizeCreate productSize) {
-        Size size = sizeRepository
-                .findById(productSize.getSizeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find size"));
+        SizeResponse size = catalogServiceClient.getSize(productSize.getSizeId());
+        if (size == null) {
+            throw new ResourceNotFoundException("Cannot find size");
+        }
 
         Products product = productRepository
                 .findById(productSize.getProductId())
@@ -55,7 +56,7 @@ public class ProductSizeServiceImpl implements ProductSizeService {
 
         ProductSize ps = ProductSize.builder()
                 .product(product)
-                .size(size)
+                .sizeId(productSize.getSizeId())
                 .price(productSize.getPrice())
                 .build();
 

@@ -10,10 +10,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -75,6 +72,9 @@ public class Restaurants {
 
     private String slug;
 
+    @Column(name = "category_ids")
+    private String categoryIds; // JSON array of category UUIDs
+
     @Column(name = "created_at")
     @CreatedDate
     private Instant createdAt;
@@ -86,14 +86,6 @@ public class Restaurants {
     // Sử dụng kdl của postgis spatial type
     @Column(columnDefinition = "geometry(Point,4326)")
     private Point geom;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "restaurant_categories",
-            joinColumns = @jakarta.persistence.JoinColumn(name = "restaurant_id"),
-            inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "category_id"))
-    @Builder.Default
-    private Set<Categories> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
