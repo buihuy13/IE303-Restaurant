@@ -1,7 +1,6 @@
 package com.CNTTK18.restaurant_service.service.Impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -17,7 +16,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
-import com.CNTTK18.restaurant_service.client.ImageServiceClient;
+import com.CNTTK18.restaurant_service.client.feign.ImageServiceFeignClient;
+import com.CNTTK18.restaurant_service.client.feign.dto.ImageUploadResponse;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.api.UserResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
@@ -44,7 +44,7 @@ import lombok.RequiredArgsConstructor;
 public class ResServiceImpl implements ResService {
     private final ResRepository resRepository;
     private final WebClient.Builder webClientBuilder;
-    private final ImageServiceClient imageServiceClient;
+    private final ImageServiceFeignClient imageServiceClient;
     private final DistanceService distanceService;
     private final ResMapper resMapper;
 
@@ -159,9 +159,9 @@ public class ResServiceImpl implements ResService {
         }
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = res.getPublicID();
-            Map<String, String> image = imageServiceClient.uploadImage(imageFile, "restaurant");
-            res.setImageURL(image.get("url"));
-            res.setPublicID(image.get("public_id"));
+            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.getUrl());
+            res.setPublicID(image.getPublic_id());
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
                 imageServiceClient.deleteImage(oldPublicId);
             }
@@ -270,9 +270,9 @@ public class ResServiceImpl implements ResService {
     @Transactional
     private Restaurants saveRestaurant(Restaurants res, MultipartFile imageFile) {
         if (imageFile != null && !imageFile.isEmpty()) {
-            Map<String, String> image = imageServiceClient.uploadImage(imageFile, "restaurant");
-            res.setImageURL(image.get("url"));
-            res.setPublicID(image.get("public_id"));
+            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "restaurant");
+            res.setImageURL(image.getUrl());
+            res.setPublicID(image.getPublic_id());
         }
         return resRepository.save(res);
     }

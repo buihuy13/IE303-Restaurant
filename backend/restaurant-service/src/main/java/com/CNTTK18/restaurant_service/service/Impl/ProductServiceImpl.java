@@ -19,8 +19,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 import com.CNTTK18.Common.Util.SlugGenerator;
 import com.CNTTK18.restaurant_service.client.CatalogServiceClient;
-import com.CNTTK18.restaurant_service.client.ImageServiceClient;
 import com.CNTTK18.restaurant_service.client.ReviewServiceClient;
+import com.CNTTK18.restaurant_service.client.feign.ImageServiceFeignClient;
+import com.CNTTK18.restaurant_service.client.feign.dto.ImageUploadResponse;
 import com.CNTTK18.restaurant_service.dto.UserRole;
 import com.CNTTK18.restaurant_service.dto.category.response.CategoryResponse;
 import com.CNTTK18.restaurant_service.dto.distance.response.DistanceResponse;
@@ -53,7 +54,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepo;
     private final ResRepository resRepository;
     private final CatalogServiceClient catalogServiceClient;
-    private final ImageServiceClient imageServiceClient;
+    private final ImageServiceFeignClient imageServiceClient;
     private final ReviewServiceClient reviewServiceClient;
     private final DistanceService distanceService;
     private final ProductMapper productMapper;
@@ -164,9 +165,9 @@ public class ProductServiceImpl implements ProductService {
 
         if (imageFile != null && !imageFile.isEmpty()) {
             String oldPublicId = product.getPublicID();
-            var image = imageServiceClient.uploadImage(imageFile, "product");
-            product.setImageURL(image.get("url"));
-            product.setPublicID(image.get("public_id"));
+            ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "product");
+            product.setImageURL(image.getUrl());
+            product.setPublicID(image.getPublic_id());
 
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
                 imageServiceClient.deleteImage(oldPublicId);
@@ -249,9 +250,9 @@ public class ProductServiceImpl implements ProductService {
 
     private void setImageIfPresent(Products product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty()) return;
-        var image = imageServiceClient.uploadImage(imageFile, "product");
-        product.setImageURL(image.get("url"));
-        product.setPublicID(image.get("public_id"));
+        ImageUploadResponse image = imageServiceClient.uploadImage(imageFile, "product");
+        product.setImageURL(image.getUrl());
+        product.setPublicID(image.getPublic_id());
     }
 
     private List<ProductResponse> sortProductResponse(
