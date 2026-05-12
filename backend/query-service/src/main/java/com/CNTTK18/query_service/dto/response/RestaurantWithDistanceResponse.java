@@ -1,5 +1,6 @@
-package com.CNTTK18.product_service.client.feign.dto;
+package com.CNTTK18.query_service.dto.response;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -15,21 +16,23 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RestaurantExistsResponse {
+public class RestaurantWithDistanceResponse {
     private UUID id;
     private String resName;
     private String address;
-    private Double longitude;
     private Double latitude;
-    private Float rating;
+    private Double longitude;
+    private BigDecimal rating;
     private LocalTime openingTime;
     private LocalTime closingTime;
     private String phone;
     private String imageURL;
     private UUID merchantId;
     private boolean enabled;
-    private int totalReview;
+    private Integer totalReview;
     private String slug;
+    private Double distance;
+    private Double duration;
     private Instant createdAt;
     private Instant updatedAt;
 }

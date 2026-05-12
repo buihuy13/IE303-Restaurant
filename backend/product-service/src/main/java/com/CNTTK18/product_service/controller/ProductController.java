@@ -24,6 +24,7 @@ import com.CNTTK18.product_service.dto.product.request.ProductRequest;
 import com.CNTTK18.product_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.product_service.dto.product.response.ProductResponse;
 import com.CNTTK18.product_service.dto.response.MessageResponse;
+import com.CNTTK18.product_service.client.feign.dto.RestaurantExistsResponse;
 import com.CNTTK18.product_service.model.ProductSize;
 import com.CNTTK18.product_service.service.ProductService;
 
@@ -49,6 +50,13 @@ public class ProductController {
     @GetMapping("/slug/{slug}")
     public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getProductBySlug(slug));
+    }
+
+    @Tag(name = "Get")
+    @Operation(summary = "Get restaurant by product ID")
+    @GetMapping("/res/{id}")
+    public ResponseEntity<RestaurantExistsResponse> getRestaurantByProductId(@PathVariable UUID id) {
+        return ResponseEntity.ok(productService.getRestaurantByProductId(id));
     }
 
     @Tag(name = "Post")

@@ -57,6 +57,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public RestaurantExistsResponse getRestaurantByProductId(UUID productId) {
+        Products product = getById(productId);
+        return restaurantServiceClient.getRestaurantById(product.getRestaurantId());
+    }
+
+    @Override
     @Transactional
     public ProductResponse createProduct(ProductRequest productRequest, MultipartFile imageFile) {
         @SuppressWarnings("unused")

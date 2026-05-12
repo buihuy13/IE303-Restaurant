@@ -10,12 +10,15 @@ import com.CNTTK18.product_service.dto.UserRole;
 import com.CNTTK18.product_service.dto.product.request.ProductRequest;
 import com.CNTTK18.product_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.product_service.dto.product.response.ProductResponse;
+import com.CNTTK18.product_service.client.feign.dto.RestaurantExistsResponse;
 import com.CNTTK18.product_service.model.ProductSize;
 
 public interface ProductService {
     ProductResponse getProductById(UUID id);
 
     ProductResponse getProductBySlug(String slug);
+
+    RestaurantExistsResponse getRestaurantByProductId(UUID productId);
 
     ProductResponse createProduct(ProductRequest productRequest, MultipartFile imageFile);
 
