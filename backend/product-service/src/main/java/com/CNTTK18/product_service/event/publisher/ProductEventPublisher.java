@@ -42,8 +42,8 @@ public class ProductEventPublisher {
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .imageUrl(imageUrl)
-            .rating(0f)
-            .totalReview(0)
+                .rating(0f)
+                .totalReview(0)
                 .createdAt(createdAt)
                 .build();
         rabbitTemplate.convertAndSend(EXCHANGE, "product.created", event);

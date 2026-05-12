@@ -8,6 +8,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE chat_service;
     CREATE DATABASE payment_service;
     CREATE DATABASE restaurant_service;
+    CREATE DATABASE product_service;
+    CREATE DATABASE catalog_service;
+    CREATE DATABASE review_service;
     CREATE DATABASE auth_service;
 EOSQL
 
@@ -26,3 +29,12 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="payment_service" \
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="restaurant_service" \
     -f /docker-entrypoint-initdb.d/restaurant_service.sql
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="product_service" \
+    -f /docker-entrypoint-initdb.d/product_service.sql
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="catalog_service" \
+    -f /docker-entrypoint-initdb.d/catalog_service.sql
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="review_service" \
+    -f /docker-entrypoint-initdb.d/review_service.sql

@@ -15,7 +15,6 @@ import io.github.resilience4j.retry.annotation.Retry;
 
 @FeignClient(
         name = "image-service",
-        url = "${image-service.base-url:http://image-service}",
         configuration = FeignMultipartSupportConfig.class,
         fallbackFactory = ImageServiceFallbackFactory.class)
 public interface ImageServiceFeignClient {

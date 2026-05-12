@@ -6,10 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.CNTTK18.restaurant_service.client.CatalogServiceClient;
-import com.CNTTK18.restaurant_service.client.ReviewServiceClient;
+import com.CNTTK18.restaurant_service.client.feign.CatalogServiceFeignClient;
 import com.CNTTK18.restaurant_service.dto.restaurant.response.RestaurantCountsResponse;
-import com.CNTTK18.restaurant_service.repository.ProductRepository;
 import com.CNTTK18.restaurant_service.repository.ResRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -19,9 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InternalDashboardRestaurantController {
     private final ResRepository resRepository;
-    private final ProductRepository productRepository;
-    private final CatalogServiceClient catalogServiceClient;
-    private final ReviewServiceClient reviewServiceClient;
+    private final CatalogServiceFeignClient catalogServiceClient;
 
     @GetMapping("/counts")
     public ResponseEntity<RestaurantCountsResponse> getCounts() {
@@ -32,12 +28,8 @@ public class InternalDashboardRestaurantController {
             totalRestaurants = 0L;
         }
 
-        long totalProducts;
-        try {
-            totalProducts = productRepository.count();
-        } catch (DataAccessException ex) {
-            totalProducts = 0L;
-        }
+        // Products are now in product-service, set to 0 for now
+        long totalProducts = 0L;
 
         // Get category count from catalog service
         long totalCategories = 0L;

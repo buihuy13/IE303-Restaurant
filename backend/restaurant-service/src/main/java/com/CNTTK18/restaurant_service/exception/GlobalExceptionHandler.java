@@ -15,10 +15,12 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.CNTTK18.Common.Exception.ErrorResponse;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
+
+import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -29,10 +31,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(WebClientResponseException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(WebClientResponseException ex) {
-        ErrorResponse errorResponse = new ErrorResponse("Error while calling another service", ex.getMessage());
-        return new ResponseEntity<>(errorResponse, ex.getStatusCode());
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleFeignException(FeignException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.status());
+        if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+        ErrorResponse errorResponse = new ErrorResponse("REMOTE_SERVICE_ERROR", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, status);
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ResponseEntity<ErrorResponse> handleCircuitOpen(CallNotPermittedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse("CIRCUIT_BREAKER_OPEN", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
@@ -70,13 +81,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleInvalidRequestException(InvalidRequestException ex) {
         ErrorResponse errorResponse = new ErrorResponse("INVALID REQUEST", ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(DistanceDurationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ErrorResponse> handleDistanceDurationException(DistanceDurationException ex) {
-        ErrorResponse errorResponse = new ErrorResponse("Invalid distance or duration", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 

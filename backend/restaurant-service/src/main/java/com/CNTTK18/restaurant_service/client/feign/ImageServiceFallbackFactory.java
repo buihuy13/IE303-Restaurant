@@ -25,7 +25,6 @@ public class ImageServiceFallbackFactory implements FallbackFactory<ImageService
             @Override
             public void deleteImage(String publicId) {
                 log.error("ImageService delete failed for {}: {}", publicId, cause.getMessage());
-                // Don't throw for delete failures
             }
         };
     }
