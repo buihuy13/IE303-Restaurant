@@ -2,13 +2,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE reviews (
     id UUID PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
+    title VARCHAR(255),
+    content TEXT,
     rating REAL,
-    review_id UUID NOT NULL,
-    review_type VARCHAR(20) NOT NULL,
+    review_id UUID,
+    review_type VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_review INTEGER,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     user_id UUID NOT NULL
 );
 

@@ -3,9 +3,7 @@
     debug
 }
 
-localhost:8443 {
-
-    tls internal
+http://localhost:8443 {
 
     log {
         output stdout

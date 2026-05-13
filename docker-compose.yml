@@ -39,7 +39,7 @@ services:
             - KC_HEALTH_ENABLED=true
             - KC_METRICS_ENABLED=true
             - KC_HTTP_PORT=9091
-            - KC_HOSTNAME=localhost
+            - KC_HOSTNAME=${KC_HOSTNAME}
             - KC_HOSTNAME_PATH=/auth
             - KC_PROXY=edge
             - KC_HTTP_RELATIVE_PATH=/auth
@@ -116,6 +116,7 @@ services:
             - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
             - ./backend/seed-db/product_service.sql:/docker-entrypoint-initdb.d/product_service.sql
             - ./backend/seed-db/catalog_service.sql:/docker-entrypoint-initdb.d/catalog_service.sql
+            - ./backend/seed-db/catalog_service_data.sql:/docker-entrypoint-initdb.d/catalog_service_data.sql
             - ./backend/seed-db/review_service.sql:/docker-entrypoint-initdb.d/review_service.sql
             - ./backend/seed-db/query_service.sql:/docker-entrypoint-initdb.d/query_service.sql
         healthcheck:

@@ -18,7 +18,7 @@ CREATE TABLE product_read_model (
     max_price DECIMAL(10, 2),
     rating DECIMAL(3, 2),
     review_count INTEGER,
-    geom GEOMETRY(Point, 4326), -- PostGIS geometry column
+    geom GEOMETRY(Point, 4326),
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );

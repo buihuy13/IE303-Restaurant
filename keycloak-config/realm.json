@@ -117,7 +117,8 @@
       "redirectUris": [
         "http://localhost:3000/*",
         "http://localhost:8080/*",
-        "https://localhost:8443/*"
+        "https://localhost:8443/*",
+        "http://localhost:8443/*"
       ],
       "webOrigins": [
         "+"
@@ -159,6 +160,7 @@
 
   "users": [
     {
+      "id": "00000000-0000-0000-0000-000000000001",
       "username": "test_user",
       "enabled": true,
       "email": "testuser@example.com",
@@ -174,6 +176,7 @@
       "realmRoles": [ "USER" ]
     },
     {
+      "id": "00000000-0000-0000-0000-000000000002",
       "username": "admin_manager",
       "enabled": true,
       "email": "manager@example.com",
@@ -189,6 +192,7 @@
       "realmRoles": [ "ADMIN" ]
     },
     {
+      "id": "00000000-0000-0000-0000-000000000003",
       "username": "merchant",
       "enabled": true,
       "email": "merchant@example.com",
