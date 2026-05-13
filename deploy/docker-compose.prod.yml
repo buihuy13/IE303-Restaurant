@@ -36,6 +36,10 @@ services:
             - ./seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
             - ./seed-db/payment_service.sql:/docker-entrypoint-initdb.d/payment_service.sql
             - ./seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
+            - ./seed-db/product_service.sql:/docker-entrypoint-initdb.d/product_service.sql
+            - ./seed-db/catalog_service.sql:/docker-entrypoint-initdb.d/catalog_service.sql
+            - ./seed-db/review_service.sql:/docker-entrypoint-initdb.d/review_service.sql
+            - ./seed-db/query_service.sql:/docker-entrypoint-initdb.d/query_service.sql
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
             interval: 10s
@@ -187,6 +191,73 @@ services:
         environment:
             - PORT=${RECOMMENDATION_PORT}
         depends_on:
+            service-discovery:
+                condition: service_started
+            product-service:
+                condition: service_started
+            review-service:
+                condition: service_started
+    product-service:
+        image: ghcr.io/buihuy13/product-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${PRODUCT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+            catalog-service:
+                condition: service_started
+            image-service:
+                condition: service_started
+    catalog-service:
+        image: ghcr.io/buihuy13/catalog-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${CATALOG_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    review-service:
+        image: ghcr.io/buihuy13/review-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${REVIEW_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    image-service:
+        image: ghcr.io/buihuy13/image-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${IMAGE_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    query-service:
+        image: ghcr.io/buihuy13/query-service:${VERSION}
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${QUERY_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
             service-discovery:
                 condition: service_started
     dashboard-service:

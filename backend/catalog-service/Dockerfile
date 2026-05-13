@@ -18,5 +18,5 @@ FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 ARG MODULE_PATH
 COPY --from=builder /app/${MODULE_PATH}/build/libs/*.jar application.jar
-EXPOSE 8086
+EXPOSE 8091
 ENTRYPOINT ["java", "-jar", "/app/application.jar"]

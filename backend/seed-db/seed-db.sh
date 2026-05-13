@@ -11,6 +11,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE product_service;
     CREATE DATABASE catalog_service;
     CREATE DATABASE review_service;
+    CREATE DATABASE query_service;
     CREATE DATABASE auth_service;
 EOSQL
 
@@ -38,3 +39,6 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="catalog_service" \
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="review_service" \
     -f /docker-entrypoint-initdb.d/review_service.sql
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="query_service" \
+    -f /docker-entrypoint-initdb.d/query_service.sql
