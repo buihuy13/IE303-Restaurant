@@ -26,7 +26,8 @@ dependencies {
 	implementation("org.mapstruct:mapstruct:1.6.3")
 	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
-	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+	implementation("io.github.resilience4j:resilience4j-spring-boot2:2.2.0")
 }
 
 dependencyManagement {
