@@ -5,8 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -32,19 +32,14 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     public Page<ProductWithDistanceResponse> getNearbyProducts(ProductQuery query, Pageable pageable) {
         Integer nearby = query.getNearby() == null || query.getNearby() > 20000 ? 20000 : query.getNearby();
 
-        String categoryName = (query.getCategory() != null
-                        && !query.getCategory().isBlank())
-                ? query.getCategory()
-                : null;
+        String categoryName =
+                (query.getCategory() != null && !query.getCategory().isBlank()) ? query.getCategory() : null;
 
         String normalizedSearch =
-                (query.getSearch() != null && !query.getSearch().isBlank())
-                        ? query.getSearch()
-                        : null;
+                (query.getSearch() != null && !query.getSearch().isBlank()) ? query.getSearch() : null;
 
-        String sort = query.getRating() != null && "desc".equalsIgnoreCase(query.getRating())
-                ? "rating_id_desc"
-                : "id_asc";
+        String sort =
+                query.getRating() != null && "desc".equalsIgnoreCase(query.getRating()) ? "rating_id_desc" : "id_asc";
 
         Page<ProductReadModel> products = repository.findProductsWithinDistance(
                 query.getLon(),
@@ -62,8 +57,8 @@ public class ProductQueryServiceImpl implements ProductQueryService {
         }
 
         List<Double> startingPoints = List.of(query.getLon(), query.getLat());
-                List<ProductReadModel> productList = products.getContent();
-                List<List<Double>> endPoints = productList.stream()
+        List<ProductReadModel> productList = products.getContent();
+        List<List<Double>> endPoints = productList.stream()
                 .map(p -> List.of(p.getRestaurantLongitude(), p.getRestaurantLatitude()))
                 .toList();
 
@@ -72,21 +67,18 @@ public class ProductQueryServiceImpl implements ProductQueryService {
         List<Double> durations = response.getDurations().get(0);
         List<Double> distances = response.getDistances().get(0);
 
-                List<ProductWithDistanceResponse> responseList = IntStream.range(0, productList.size())
+        List<ProductWithDistanceResponse> responseList = IntStream.range(0, productList.size())
                 .mapToObj(i -> {
-                                        ProductReadModel product = productList.get(i);
+                    ProductReadModel product = productList.get(i);
                     return mapper.toProductResponse(product, distances.get(i), durations.get(i));
                 })
                 .toList();
 
-                return sortProducts(responseList, query.getRating(), query.getLocationsorted(), pageable);
+        return sortProducts(responseList, query.getRating(), query.getLocationsorted(), pageable);
     }
 
     private Page<ProductWithDistanceResponse> sortProducts(
-                        List<ProductWithDistanceResponse> products,
-                        String rating,
-                        String locationsorted,
-                        Pageable pageable) {
+            List<ProductWithDistanceResponse> products, String rating, String locationsorted, Pageable pageable) {
         List<ProductWithDistanceResponse> sorted = new ArrayList<>(products);
 
         if ("desc".equalsIgnoreCase(rating)) {
@@ -96,6 +88,6 @@ public class ProductQueryServiceImpl implements ProductQueryService {
             sorted.sort(Comparator.comparing(p -> p.getDistance()));
         }
 
-                return new PageImpl<>(sorted, pageable, sorted.size());
+        return new PageImpl<>(sorted, pageable, sorted.size());
     }
 }

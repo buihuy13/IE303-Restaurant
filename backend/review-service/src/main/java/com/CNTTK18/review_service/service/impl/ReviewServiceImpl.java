@@ -152,8 +152,8 @@ public class ReviewServiceImpl implements ReviewService {
 
         switch (reviewType) {
             case PRODUCT -> reviewEventPublisher.publishProductReviewSummaryUpdated(reviewId, rating, totalReview);
-            case RESTAURANT ->
-                reviewEventPublisher.publishRestaurantReviewSummaryUpdated(reviewId, rating, totalReview);
+            case RESTAURANT -> reviewEventPublisher.publishRestaurantReviewSummaryUpdated(
+                    reviewId, rating, totalReview);
             default -> throw new IllegalArgumentException("Review Type phải là PRODUCT hoặc RESTAURANT");
         }
     }

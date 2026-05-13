@@ -47,7 +47,7 @@ public class RestaurantQueryServiceImpl implements RestaurantQueryService {
         if (response == null || response.getFeatures().isEmpty()) {
             throw new DistanceDurationException("Error while calculating distance and duration");
         }
- 
+
         double distance =
                 response.getFeatures().get(0).getProperties().getSummary().getDistance();
         double duration =
@@ -59,20 +59,13 @@ public class RestaurantQueryServiceImpl implements RestaurantQueryService {
     @Override
     public Page<RestaurantWithDistanceResponse> getNearbyRestaurants(RestaurantQuery query, Pageable pageable) {
         int nearby = query.getNearby() == null || query.getNearby() > 20000 ? 20000 : query.getNearby();
-        String sort = query.getRating() != null && "desc".equalsIgnoreCase(query.getRating())
-                ? "rating_id_desc"
-                : "id_asc";
+        String sort =
+                query.getRating() != null && "desc".equalsIgnoreCase(query.getRating()) ? "rating_id_desc" : "id_asc";
 
         String search = (query.getSearch() != null && !query.getSearch().isBlank()) ? query.getSearch() : null;
 
         Page<RestaurantReadModel> restaurantsPage = repository.findRestaurantsWithinDistance(
-            query.getLon(),
-            query.getLat(),
-            nearby,
-            search,
-            query.getEnabled(),
-            sort,
-            pageable);
+                query.getLon(), query.getLat(), nearby, search, query.getEnabled(), sort, pageable);
 
         if (restaurantsPage.isEmpty()) {
             return Page.empty(pageable);

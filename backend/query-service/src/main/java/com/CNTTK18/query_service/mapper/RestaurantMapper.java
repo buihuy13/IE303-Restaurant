@@ -13,5 +13,6 @@ public interface RestaurantMapper {
     @Mapping(target = "totalReview", source = "restaurant.reviewCount")
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")
-    RestaurantWithDistanceResponse toRestaurantResponse(RestaurantReadModel restaurant, Double distance, Double duration);
+    RestaurantWithDistanceResponse toRestaurantResponse(
+            RestaurantReadModel restaurant, Double distance, Double duration);
 }

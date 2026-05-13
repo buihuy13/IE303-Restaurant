@@ -5,12 +5,12 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import org.locationtech.jts.geom.Point;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import org.locationtech.jts.geom.Point;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

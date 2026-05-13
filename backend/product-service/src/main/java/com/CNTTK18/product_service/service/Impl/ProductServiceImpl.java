@@ -162,8 +162,8 @@ public class ProductServiceImpl implements ProductService {
                 priceStats.getMin(),
                 priceStats.getMax(),
                 savedProduct.getImageURL(),
-            savedProduct.getRating(),
-            savedProduct.getTotalReview(),
+                savedProduct.getRating(),
+                savedProduct.getTotalReview(),
                 savedProduct.getUpdatedAt());
 
         return productMapper.toProductResponse(savedProduct);
@@ -203,8 +203,8 @@ public class ProductServiceImpl implements ProductService {
                 priceStats.getMin(),
                 priceStats.getMax(),
                 savedProduct.getImageURL(),
-            savedProduct.getRating(),
-            savedProduct.getTotalReview(),
+                savedProduct.getRating(),
+                savedProduct.getTotalReview(),
                 savedProduct.getUpdatedAt());
     }
 

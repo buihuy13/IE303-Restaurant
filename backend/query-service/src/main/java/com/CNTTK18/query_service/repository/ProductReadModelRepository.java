@@ -61,5 +61,4 @@ public interface ProductReadModelRepository extends JpaRepository<ProductReadMod
             @Param("minPrice") BigDecimal minPrice,
             @Param("sort") String sort,
             Pageable pageable);
-
 }

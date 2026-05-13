@@ -29,12 +29,16 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding productDeletedBinding() {
-        return BindingBuilder.bind(productDeletedQueue()).to(domainEventsExchange()).with("product.deleted");
+        return BindingBuilder.bind(productDeletedQueue())
+                .to(domainEventsExchange())
+                .with("product.deleted");
     }
 
     @Bean
     public Binding restaurantDeletedBinding() {
-        return BindingBuilder.bind(restaurantDeletedQueue()).to(domainEventsExchange()).with("restaurant.deleted");
+        return BindingBuilder.bind(restaurantDeletedQueue())
+                .to(domainEventsExchange())
+                .with("restaurant.deleted");
     }
 
     @Bean

@@ -19,12 +19,12 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.CNTTK18.product_service.client.feign.dto.RestaurantExistsResponse;
 import com.CNTTK18.product_service.dto.UserRole;
 import com.CNTTK18.product_service.dto.product.request.ProductRequest;
 import com.CNTTK18.product_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.product_service.dto.product.response.ProductResponse;
 import com.CNTTK18.product_service.dto.response.MessageResponse;
-import com.CNTTK18.product_service.client.feign.dto.RestaurantExistsResponse;
 import com.CNTTK18.product_service.model.ProductSize;
 import com.CNTTK18.product_service.service.ProductService;
 

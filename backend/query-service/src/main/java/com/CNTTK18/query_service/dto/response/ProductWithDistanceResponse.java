@@ -3,6 +3,7 @@ package com.CNTTK18.query_service.dto.response;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

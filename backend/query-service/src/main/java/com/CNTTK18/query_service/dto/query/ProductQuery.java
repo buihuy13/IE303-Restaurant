@@ -3,6 +3,7 @@ package com.CNTTK18.query_service.dto.query;
 import java.math.BigDecimal;
 
 import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,9 +20,12 @@ public class ProductQuery {
     private BigDecimal maxPrice;
     private String search;
     private Integer nearby;
+
     @NotNull
     private Double lat;
+
     @NotNull
     private Double lon;
+
     private String locationsorted;
 }
