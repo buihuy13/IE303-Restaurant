@@ -21,7 +21,7 @@ public class RestaurantClient {
         return webClientBuilder
                 .build()
                 .get()
-                .uri("http://restaurant-service/api/productsize/{id}", productSizeId)
+                .uri("http://product-service/api/productsize/{id}", productSizeId)
                 .retrieve()
                 .bodyToMono(ProductSizeClientResponse.class);
     }
@@ -30,7 +30,7 @@ public class RestaurantClient {
         return webClientBuilder
                 .build()
                 .get()
-                .uri("http://restaurant-service/api/products/admin/{id}", productId)
+                .uri("http://product-service/api/products/{id}", productId)
                 .retrieve()
                 .bodyToMono(ProductClientResponse.class);
     }

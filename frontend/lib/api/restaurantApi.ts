@@ -144,7 +144,7 @@ export const restaurantApi = {
         return api.delete(`/restaurant/image/${restaurantId}`);
     },
     getAllCategories: () => {
-        return api.get<Category[]>(`/category`);
+        return api.get<Category[]>(`/catalog/category`);
     },
     getAllReviews: (restaurantId: string) => {
         return api.get<Review[]>(`/review?resId=${restaurantId}`);

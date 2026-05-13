@@ -14,29 +14,29 @@ const mapCateResponseToCategory = (cate: CateResponse): Category => ({
 
 export const categoryApi = {
     getAllCategories: async () => {
-        const res = await api.get<CateResponse[]>("/category");
+        const res = await api.get<CateResponse[]>("/catalog/category");
         const data: Category[] = res.data.map(mapCateResponseToCategory);
         return { ...res, data };
     },
     getCategoryById: async (categoryId: string) => {
-        const res = await api.get<CateResponse>(`/category/${categoryId}`);
+        const res = await api.get<CateResponse>(`/catalog/category/${categoryId}`);
         const data: Category = mapCateResponseToCategory(res.data);
         return { ...res, data };
     },
     getCategoryByName: async (categoryName: string) => {
-        const res = await api.get<CateResponse>(`/category/search?name=${categoryName}`);
+        const res = await api.get<CateResponse>(`/catalog/category/search?name=${categoryName}`);
         const data: Category = mapCateResponseToCategory(res.data);
         return { ...res, data };
     },
     createCategory: async (categoryData: CategoryData) => {
-        const res = await api.post<CateResponse>("/category", categoryData);
+        const res = await api.post<CateResponse>("/catalog/category", categoryData);
         const data: Category = mapCateResponseToCategory(res.data);
         return { ...res, data };
     },
     updateCategory: async (categoryId: string, categoryData: CategoryData) => {
-        const res = await api.put<CateResponse>(`/category/${categoryId}`, categoryData);
+        const res = await api.put<CateResponse>(`/catalog/category/${categoryId}`, categoryData);
         const data: Category = mapCateResponseToCategory(res.data);
         return { ...res, data };
     },
-    deleteCategory: (categoryId: string) => api.delete(`/category/${categoryId}`),
+    deleteCategory: (categoryId: string) => api.delete(`/catalog/category/${categoryId}`),
 };

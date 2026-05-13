@@ -114,30 +114,59 @@ spring:
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/api/restaurant/**
-                - id: restaurant-service-cate
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/category/**
-                - id: restaurant-service-product
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/products/**
-                - id: restaurant-service-productsize
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/productsize/**
-                - id: restaurant-service-review
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/review/**
-                - id: restaurant-service-size
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/size/**
                 - id: restaurant-service-docs
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/v3/api-docs/restaurant-service
+                # product-service
+                - id: product-service
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/api/products/**
+                - id: product-service-productsize
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/api/productsize/**
+                - id: product-service-docs
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/v3/api-docs/product-service
+                # query-service
+                - id: query-service
+                  uri: lb://query-service
+                  predicates:
+                      - Path=/api/query/**
+                - id: query-service-docs
+                  uri: lb://query-service
+                  predicates:
+                      - Path=/v3/api-docs/query-service
+                # catalog-service
+                - id: catalog-service
+                  uri: lb://catalog-service
+                  predicates:
+                      - Path=/api/catalog/**
+                - id: catalog-service-docs
+                  uri: lb://catalog-service
+                  predicates:
+                      - Path=/v3/api-docs/catalog-service
+                # review-service
+                - id: review-service
+                  uri: lb://review-service
+                  predicates:
+                      - Path=/api/review/**
+                - id: review-service-docs
+                  uri: lb://review-service
+                  predicates:
+                      - Path=/v3/api-docs/review-service
+                # image-service
+                - id: image-service
+                  uri: lb://image-service
+                  predicates:
+                      - Path=/api/images/**
+                - id: image-service-docs
+                  uri: lb://image-service
+                  predicates:
+                      - Path=/v3/api-docs/image-service
                 # payment-service
                 - id: payment-service
                   uri: lb://payment-service
@@ -207,6 +236,16 @@ springdoc:
               url: /v3/api-docs/dashboard-service
             - name: Restaurant Service
               url: /v3/api-docs/restaurant-service
+            - name: Product Service
+              url: /v3/api-docs/product-service
+            - name: Query Service
+              url: /v3/api-docs/query-service
+            - name: Catalog Service
+              url: /v3/api-docs/catalog-service
+            - name: Review Service
+              url: /v3/api-docs/review-service
+            - name: Image Service
+              url: /v3/api-docs/image-service
             - name: Payment Service
               url: /v3/api-docs/payment-service
             - name: Blog Service
