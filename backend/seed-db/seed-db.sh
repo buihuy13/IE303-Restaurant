@@ -37,6 +37,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="product_service" \
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="catalog_service" \
     -f /docker-entrypoint-initdb.d/catalog_service.sql
 
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="catalog_service" \
+    -f /docker-entrypoint-initdb.d/catalog_service_data.sql
+
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="review_service" \
     -f /docker-entrypoint-initdb.d/review_service.sql
 

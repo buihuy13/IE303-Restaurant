@@ -116,6 +116,7 @@ services:
             - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
             - ./backend/seed-db/product_service.sql:/docker-entrypoint-initdb.d/product_service.sql
             - ./backend/seed-db/catalog_service.sql:/docker-entrypoint-initdb.d/catalog_service.sql
+            - ./backend/seed-db/catalog_service_data.sql:/docker-entrypoint-initdb.d/catalog_service_data.sql
             - ./backend/seed-db/review_service.sql:/docker-entrypoint-initdb.d/review_service.sql
             - ./backend/seed-db/query_service.sql:/docker-entrypoint-initdb.d/query_service.sql
         healthcheck:

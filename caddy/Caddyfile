@@ -5,8 +5,6 @@
 
 localhost:8443 {
 
-    tls internal
-
     log {
         output stdout
         format console

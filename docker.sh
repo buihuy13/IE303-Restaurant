@@ -20,7 +20,7 @@ if [ "$command" = "up" ]; then
   bash ./keycloak-config/role-management.sh
 
   echo "Running Keycloak-aware seed script"
-  bash ./backend/seed-db/seed-from-keycloak.sh
+  bash ./backend/seed-db/seed-all.sh
   
 elif [ "$command" = "down" ]; then
   docker compose -f docker-compose.dev.yml down -v
