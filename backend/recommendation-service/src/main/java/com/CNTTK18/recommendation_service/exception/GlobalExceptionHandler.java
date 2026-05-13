@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.CNTTK18.Common.Exception.ErrorResponse;
 import com.CNTTK18.Common.Exception.ResourceNotFoundException;
 
+import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -88,6 +91,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         ErrorResponse errorResponse = new ErrorResponse("ILLEGAL_ARGUMENT", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleFeignException(FeignException ex) {
+        ErrorResponse errorResponse =
+                new ErrorResponse("SERVICE_CALL_ERROR", "Error while calling another service: " + ex.getMessage());
+        HttpStatus status;
+        try {
+            status = HttpStatus.valueOf(ex.status());
+        } catch (IllegalArgumentException e) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        return new ResponseEntity<>(errorResponse, status);
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ErrorResponse> handleCallNotPermittedException(CallNotPermittedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                "CIRCUIT_BREAKER_OPEN",
+                "Service temporarily unavailable due to repeated failures. Please try again later.");
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     // Xử lý exception chung

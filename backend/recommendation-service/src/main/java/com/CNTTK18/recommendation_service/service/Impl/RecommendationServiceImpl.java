@@ -10,36 +10,30 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
+import com.CNTTK18.recommendation_service.client.feign.ProductServiceFeignClient;
+import com.CNTTK18.recommendation_service.client.feign.ReviewServiceFeignClient;
 import com.CNTTK18.recommendation_service.dto.request.MoodFoodRecommendationRequest;
 import com.CNTTK18.recommendation_service.dto.request.ReviewRequest;
 import com.CNTTK18.recommendation_service.dto.response.MessageResponse;
-import com.CNTTK18.recommendation_service.dto.response.ReviewListResponse;
 import com.CNTTK18.recommendation_service.dto.response.ReviewSummarizeResponse;
+import com.CNTTK18.recommendation_service.dto.review.ReviewListResponse;
+import com.CNTTK18.recommendation_service.dto.review.ReviewResponse;
 import com.CNTTK18.recommendation_service.service.RecommendationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class RecommendationServiceImpl implements RecommendationService {
     private final ChatClient merchantChatClient;
     private final ChatClient userChatClient;
-    private final WebClient.Builder webClientBuilder;
+    private final ProductServiceFeignClient productServiceClient;
+    private final ReviewServiceFeignClient reviewServiceClient;
     private final ObjectMapper objectMapper;
-
-    public RecommendationServiceImpl(
-            @Qualifier("merchantChatClient") ChatClient merchantChatClient,
-            @Qualifier("userChatClient") ChatClient userChatClient,
-            WebClient.Builder webclientBuilder) {
-        this.merchantChatClient = merchantChatClient;
-        this.userChatClient = userChatClient;
-        this.webClientBuilder = webclientBuilder;
-        this.objectMapper = new ObjectMapper();
-    }
 
     @Override
     public MessageResponse recommendFood(String userContext) {
@@ -50,22 +44,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public MessageResponse recommendFoodByMood(MoodFoodRecommendationRequest request) {
 
-        Map<String, Object> productPage = webClientBuilder
-                .build()
-                .get()
-                .uri(uriBuilder -> {
-                    var builder = uriBuilder
-                            .path("lb://restaurant-service/api/products")
-                            .queryParam("lat", request.getLat())
-                            .queryParam("lon", request.getLon())
-                            .queryParam("page", 0)
-                            .queryParam("size", 60);
-
-                    return builder.build();
-                })
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                .block();
+        Map<String, Object> productPage = productServiceClient.getProducts(request.getLat(), request.getLon(), 0, 60);
 
         if (productPage == null
                 || !(productPage.get("content") instanceof List<?> rawContent)
@@ -114,31 +93,30 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .options(ChatOptions.builder().temperature(0.7).build())
                 .user(text)
                 .call()
-                .entity(new ParameterizedTypeReference<List<MessageResponse>>() {});
+                .entity(new org.springframework.core.ParameterizedTypeReference<List<MessageResponse>>() {});
 
         return response;
     }
 
     @Override
     public ReviewSummarizeResponse summarizeReviews(ReviewRequest reviewRequest) {
-        String rvType = reviewRequest.getRvType().toString().toLowerCase();
+        String rvType = reviewRequest.getRvType().toString().toUpperCase();
         UUID id = reviewRequest.getId();
-        ReviewListResponse reviewList = webClientBuilder
-                .build()
-                .get()
-                .uri("lb://restaurant-service/api/review/{rvType}/{id}", rvType, id)
-                .retrieve()
-                .bodyToMono(ReviewListResponse.class)
-                .block();
 
-        List<String> reviewResponses = reviewList.getResponse();
-        if (reviewResponses == null || reviewResponses.size() <= 3) {
+        ReviewListResponse reviewList = "PRODUCT".equals(rvType)
+                ? reviewServiceClient.getProductReviews(id.toString())
+                : reviewServiceClient.getRestaurantReviews(id.toString());
+
+        List<ReviewResponse> reviews = reviewList.getReviews();
+        if (reviews == null || reviews.size() <= 3) {
             return new ReviewSummarizeResponse(
                     "Không đủ đánh giá để tóm tắt. Vui lòng cung cấp ít nhất 4 đánh giá.", null);
         }
 
-        String reviewsText = reviewResponses.stream()
-                .map(r -> String.format("Review: %s", r))
+        String reviewsText = reviews.stream()
+                .filter(r -> r.getContent() != null)
+                .map(r -> String.format(
+                        "Review (rating %.1f/5): %s", r.getRating() != null ? r.getRating() : 0, r.getContent()))
                 .collect(Collectors.joining("\n"));
 
         String prompt = String.format(
@@ -154,7 +132,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .options(ChatOptions.builder().temperature(0.5).build())
                 .user(prompt)
                 .call()
-                .entity(new ParameterizedTypeReference<ReviewSummarizeResponse>() {});
+                .entity(new org.springframework.core.ParameterizedTypeReference<ReviewSummarizeResponse>() {});
 
         return response;
     }
