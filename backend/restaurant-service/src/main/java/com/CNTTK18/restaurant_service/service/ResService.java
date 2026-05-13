@@ -27,4 +27,6 @@ public interface ResService {
     public void deleteImage(UUID resId, UserRole authUser);
 
     public ResResponse getRestaurantsByMerchantId(UUID id);
+
+    public void updateReviewSummary(UUID id, float rating, int totalReview);
 }

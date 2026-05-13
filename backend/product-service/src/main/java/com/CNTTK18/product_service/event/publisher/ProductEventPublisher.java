@@ -59,6 +59,8 @@ public class ProductEventPublisher {
             Double minPrice,
             Double maxPrice,
             String imageUrl,
+            float rating,
+            int totalReview,
             Instant updatedAt) {
         ProductUpdatedEvent event = ProductUpdatedEvent.builder()
                 .id(id)
@@ -70,6 +72,8 @@ public class ProductEventPublisher {
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .imageUrl(imageUrl)
+                .rating(rating)
+                .totalReview(totalReview)
                 .updatedAt(updatedAt)
                 .build();
         rabbitTemplate.convertAndSend(EXCHANGE, "product.updated", event);

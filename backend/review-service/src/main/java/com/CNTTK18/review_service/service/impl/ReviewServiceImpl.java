@@ -14,6 +14,7 @@ import com.CNTTK18.review_service.dto.review.request.ReviewRequest;
 import com.CNTTK18.review_service.dto.review.response.ReviewListResponse;
 import com.CNTTK18.review_service.dto.review.response.ReviewResponse;
 import com.CNTTK18.review_service.dto.review.response.ReviewStatsResponse;
+import com.CNTTK18.review_service.event.publisher.ReviewEventPublisher;
 import com.CNTTK18.review_service.mapper.ReviewMapper;
 import com.CNTTK18.review_service.model.Review;
 import com.CNTTK18.review_service.model.data.ReviewType;
@@ -32,6 +33,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final UserServiceClient userServiceClient;
     private final ProductServiceClient productServiceClient;
     private final RestaurantServiceClient restaurantServiceClient;
+    private final ReviewEventPublisher reviewEventPublisher;
 
     @Override
     public List<ReviewResponse> getAllReviews(UUID resId, UUID productId) {
@@ -70,6 +72,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .rating(reviewRequest.getRating())
                 .build();
         Review savedReview = reviewRepository.save(review);
+        publishReviewSummaryUpdated(savedReview.getReviewType(), savedReview.getReviewId());
         return reviewMapper.toReviewResponse(savedReview);
     }
 
@@ -82,7 +85,10 @@ public class ReviewServiceImpl implements ReviewService {
         if (!review.getUserId().equals(userId)) {
             throw new RuntimeException("You are not authorized to delete this review");
         }
+        UUID targetId = review.getReviewId();
+        ReviewType reviewType = review.getReviewType();
         reviewRepository.deleteById(id);
+        publishReviewSummaryUpdated(reviewType, targetId);
     }
 
     @Override
@@ -135,6 +141,20 @@ public class ReviewServiceImpl implements ReviewService {
                 throw new ResourceNotFoundException("Restaurant not found");
             }
             throw ex;
+        }
+    }
+
+    private void publishReviewSummaryUpdated(ReviewType reviewType, UUID reviewId) {
+        Float averageRating = reviewRepository.getAverageRating(reviewId, reviewType);
+        Long totalReviews = reviewRepository.getTotalReviews(reviewId, reviewType);
+        float rating = averageRating == null ? 0f : averageRating;
+        int totalReview = totalReviews == null ? 0 : totalReviews.intValue();
+
+        switch (reviewType) {
+            case PRODUCT -> reviewEventPublisher.publishProductReviewSummaryUpdated(reviewId, rating, totalReview);
+            case RESTAURANT ->
+                reviewEventPublisher.publishRestaurantReviewSummaryUpdated(reviewId, rating, totalReview);
+            default -> throw new IllegalArgumentException("Review Type phải là PRODUCT hoặc RESTAURANT");
         }
     }
 }

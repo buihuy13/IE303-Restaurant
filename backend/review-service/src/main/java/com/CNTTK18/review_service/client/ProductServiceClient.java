@@ -6,9 +6,14 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "restaurant-service")
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+
+@FeignClient(name = "product-service")
 public interface ProductServiceClient {
 
-    @GetMapping("/api/products/admin/{id}")
+    @GetMapping("/api/products/{id}")
+    @CircuitBreaker(name = "productService")
+    @Retry(name = "productService")
     void getProductById(@PathVariable("id") UUID id);
 }

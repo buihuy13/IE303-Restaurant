@@ -119,6 +119,8 @@ public class ResServiceImpl implements ResService {
                 savedRes.getClosingTime().toString(),
                 savedRes.getLatitude(),
                 savedRes.getLongitude(),
+                savedRes.getRating(),
+                savedRes.getTotalReview(),
                 savedRes.getUpdatedAt());
 
         return resMapper.toResResponse(savedRes);
@@ -157,6 +159,8 @@ public class ResServiceImpl implements ResService {
                 savedRes.getClosingTime().toString(),
                 savedRes.getLatitude(),
                 savedRes.getLongitude(),
+                savedRes.getRating(),
+                savedRes.getTotalReview(),
                 savedRes.getUpdatedAt());
     }
 
@@ -183,6 +187,33 @@ public class ResServiceImpl implements ResService {
                 savedRes.getClosingTime().toString(),
                 savedRes.getLatitude(),
                 savedRes.getLongitude(),
+                savedRes.getRating(),
+                savedRes.getTotalReview(),
+                savedRes.getUpdatedAt());
+    }
+
+    @Override
+    @Transactional
+    public void updateReviewSummary(UUID id, float rating, int totalReview) {
+        Restaurants res = getById(id);
+        res.setRating(rating);
+        res.setTotalReview(totalReview);
+        Restaurants savedRes = resRepository.save(res);
+
+        eventPublisher.publishRestaurantUpdated(
+                savedRes.getId(),
+                savedRes.getResName(),
+                savedRes.getSlug(),
+                savedRes.getAddress(),
+                savedRes.getPhone(),
+                savedRes.getImageURL(),
+                savedRes.isEnabled(),
+                savedRes.getOpeningTime().toString(),
+                savedRes.getClosingTime().toString(),
+                savedRes.getLatitude(),
+                savedRes.getLongitude(),
+                savedRes.getRating(),
+                savedRes.getTotalReview(),
                 savedRes.getUpdatedAt());
     }
 

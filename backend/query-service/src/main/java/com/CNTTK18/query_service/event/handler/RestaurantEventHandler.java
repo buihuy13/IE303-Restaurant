@@ -56,6 +56,8 @@ public class RestaurantEventHandler {
             model.setClosingTime(parseStringToLocalTime(event.getClosingTime()));
             model.setLatitude(event.getLatitude());
             model.setLongitude(event.getLongitude());
+            model.setRating(BigDecimal.valueOf(event.getRating()));
+            model.setReviewCount(event.getTotalReview());
             model.setUpdatedAt(event.getUpdatedAt());
             restaurantRepository.save(model);
         });

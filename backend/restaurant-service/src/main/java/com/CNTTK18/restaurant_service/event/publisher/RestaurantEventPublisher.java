@@ -67,6 +67,8 @@ public class RestaurantEventPublisher {
             String closingTime,
             Double latitude,
             Double longitude,
+            float rating,
+            int totalReview,
             Instant updatedAt) {
         RestaurantUpdatedEvent event = RestaurantUpdatedEvent.builder()
                 .id(id)
@@ -80,6 +82,8 @@ public class RestaurantEventPublisher {
                 .closingTime(closingTime)
                 .latitude(latitude)
                 .longitude(longitude)
+                .rating(rating)
+                .totalReview(totalReview)
                 .updatedAt(updatedAt)
                 .build();
         rabbitTemplate.convertAndSend(EXCHANGE, "restaurant.updated", event);

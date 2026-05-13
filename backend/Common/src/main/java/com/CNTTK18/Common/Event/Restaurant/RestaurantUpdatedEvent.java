@@ -24,5 +24,7 @@ public class RestaurantUpdatedEvent {
     private String closingTime;
     private Double latitude;
     private Double longitude;
+    private float rating;
+    private int totalReview;
     private Instant updatedAt;
 }

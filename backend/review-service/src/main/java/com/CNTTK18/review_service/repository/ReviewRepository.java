@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findByReviewIdAndReviewType(UUID reviewId, ReviewType reviewType);
 
     List<Review> findByUserId(UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM Review r WHERE r.reviewId = :reviewId AND r.reviewType = :reviewType")
+    int deleteByReviewIdAndReviewType(@Param("reviewId") UUID reviewId, @Param("reviewType") ReviewType reviewType);
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.reviewId = :entityId AND r.reviewType = :reviewType")
     Float getAverageRating(@Param("entityId") UUID entityId, @Param("reviewType") ReviewType reviewType);

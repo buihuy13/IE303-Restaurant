@@ -53,6 +53,8 @@ public class ProductEventHandler {
             model.setCategoryId(event.getCategoryId());
             model.setMinPrice(event.getMinPrice() != null ? BigDecimal.valueOf(event.getMinPrice()) : null);
             model.setMaxPrice(event.getMaxPrice() != null ? BigDecimal.valueOf(event.getMaxPrice()) : null);
+            model.setRating(BigDecimal.valueOf(event.getRating()));
+            model.setReviewCount(event.getTotalReview());
             productRepository.save(model);
         });
     }

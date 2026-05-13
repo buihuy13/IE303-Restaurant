@@ -114,18 +114,32 @@ spring:
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/api/restaurant/**
-                - id: restaurant-service-product
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/products/**
-                - id: restaurant-service-productsize
-                  uri: lb://restaurant-service
-                  predicates:
-                      - Path=/api/productsize/**
                 - id: restaurant-service-docs
                   uri: lb://restaurant-service
                   predicates:
                       - Path=/v3/api-docs/restaurant-service
+                # product-service
+                - id: product-service
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/api/products/**
+                - id: product-service-productsize
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/api/productsize/**
+                - id: product-service-docs
+                  uri: lb://product-service
+                  predicates:
+                      - Path=/v3/api-docs/product-service
+                # query-service
+                - id: query-service
+                  uri: lb://query-service
+                  predicates:
+                      - Path=/api/query/**
+                - id: query-service-docs
+                  uri: lb://query-service
+                  predicates:
+                      - Path=/v3/api-docs/query-service
                 # catalog-service
                 - id: catalog-service
                   uri: lb://catalog-service
@@ -222,6 +236,10 @@ springdoc:
               url: /v3/api-docs/dashboard-service
             - name: Restaurant Service
               url: /v3/api-docs/restaurant-service
+            - name: Product Service
+              url: /v3/api-docs/product-service
+            - name: Query Service
+              url: /v3/api-docs/query-service
             - name: Catalog Service
               url: /v3/api-docs/catalog-service
             - name: Review Service

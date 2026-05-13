@@ -1,4 +1,4 @@
-package com.CNTTK18.restaurant_service.config;
+package com.CNTTK18.review_service.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -9,10 +9,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import lombok.RequiredArgsConstructor;
-
 @Configuration
-@RequiredArgsConstructor
 public class RabbitMQConfig {
 
     @Bean
@@ -21,15 +18,23 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue reviewSummaryQueue() {
-        return new Queue("restaurant-service-review-queue", true);
+    public Queue productDeletedQueue() {
+        return new Queue("review-service-product-deleted-queue", true);
     }
 
     @Bean
-    public Binding reviewSummaryBinding() {
-        return BindingBuilder.bind(reviewSummaryQueue())
-                .to(domainEventsExchange())
-                .with("review.restaurant.summary.updated");
+    public Queue restaurantDeletedQueue() {
+        return new Queue("review-service-restaurant-deleted-queue", true);
+    }
+
+    @Bean
+    public Binding productDeletedBinding() {
+        return BindingBuilder.bind(productDeletedQueue()).to(domainEventsExchange()).with("product.deleted");
+    }
+
+    @Bean
+    public Binding restaurantDeletedBinding() {
+        return BindingBuilder.bind(restaurantDeletedQueue()).to(domainEventsExchange()).with("restaurant.deleted");
     }
 
     @Bean

@@ -1,4 +1,4 @@
-package com.CNTTK18.Common.Event.Product;
+package com.CNTTK18.Common.Event.Review;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,16 +12,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductUpdatedEvent {
-    private UUID id;
-    private String productName;
+public class RestaurantReviewSummaryUpdatedEvent {
     private UUID restaurantId;
-    private UUID categoryId;
-    private String slug;
-    private boolean available;
-    private Double minPrice;
-    private Double maxPrice;
-    private String imageUrl;
     private float rating;
     private int totalReview;
     private Instant updatedAt;

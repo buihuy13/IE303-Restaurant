@@ -33,4 +33,6 @@ public interface ProductService {
     Set<ProductSize> getAllProductSizeOfProduct(UUID id);
 
     List<ProductResponse> getAllProductsByRestaurantId(UUID id);
+
+    void updateReviewSummary(UUID id, float rating, int totalReview);
 }

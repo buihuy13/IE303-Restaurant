@@ -162,6 +162,8 @@ public class ProductServiceImpl implements ProductService {
                 priceStats.getMin(),
                 priceStats.getMax(),
                 savedProduct.getImageURL(),
+            savedProduct.getRating(),
+            savedProduct.getTotalReview(),
                 savedProduct.getUpdatedAt());
 
         return productMapper.toProductResponse(savedProduct);
@@ -201,6 +203,8 @@ public class ProductServiceImpl implements ProductService {
                 priceStats.getMin(),
                 priceStats.getMax(),
                 savedProduct.getImageURL(),
+            savedProduct.getRating(),
+            savedProduct.getTotalReview(),
                 savedProduct.getUpdatedAt());
     }
 
@@ -225,6 +229,33 @@ public class ProductServiceImpl implements ProductService {
                 priceStats.getMin(),
                 priceStats.getMax(),
                 savedProduct.getImageURL(),
+                savedProduct.getRating(),
+                savedProduct.getTotalReview(),
+                savedProduct.getUpdatedAt());
+    }
+
+    @Override
+    @Transactional
+    public void updateReviewSummary(UUID id, float rating, int totalReview) {
+        Products product = getById(id);
+        product.setRating(rating);
+        product.setTotalReview(totalReview);
+        Products savedProduct = productRepo.save(product);
+
+        DoubleSummaryStatistics priceStats = calculatePriceStats(savedProduct);
+
+        eventPublisher.publishProductUpdated(
+                savedProduct.getId(),
+                savedProduct.getProductName(),
+                savedProduct.getRestaurantId(),
+                savedProduct.getCategoryId(),
+                savedProduct.getSlug(),
+                savedProduct.isAvailable(),
+                priceStats.getMin(),
+                priceStats.getMax(),
+                savedProduct.getImageURL(),
+                savedProduct.getRating(),
+                savedProduct.getTotalReview(),
                 savedProduct.getUpdatedAt());
     }
 

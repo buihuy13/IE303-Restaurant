@@ -8,9 +8,9 @@ import com.CNTTK18.query_service.model.ProductReadModel;
 
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
-    @Mapping(target = "productName", source = "name")
-    @Mapping(target = "imageURL", source = "imageUrl")
-    @Mapping(target = "totalReview", source = "reviewCount")
+    @Mapping(target = "productName", source = "product.name")
+    @Mapping(target = "imageURL", source = "product.imageUrl")
+    @Mapping(target = "totalReview", source = "product.reviewCount")
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")
     ProductWithDistanceResponse toProductResponse(ProductReadModel product, Double distance, Double duration);

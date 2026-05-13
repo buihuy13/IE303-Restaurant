@@ -8,9 +8,9 @@ import com.CNTTK18.query_service.model.RestaurantReadModel;
 
 @Mapper(componentModel = "spring")
 public interface RestaurantMapper {
-    @Mapping(target = "resName", source = "name")
-    @Mapping(target = "imageURL", source = "imageUrl")
-    @Mapping(target = "totalReview", source = "reviewCount")
+    @Mapping(target = "resName", source = "restaurant.name")
+    @Mapping(target = "imageURL", source = "restaurant.imageUrl")
+    @Mapping(target = "totalReview", source = "restaurant.reviewCount")
     @Mapping(target = "distance", source = "distance")
     @Mapping(target = "duration", source = "duration")
     RestaurantWithDistanceResponse toRestaurantResponse(RestaurantReadModel restaurant, Double distance, Double duration);
