@@ -35,6 +35,11 @@ IMAGES=(
     "ghcr.io/$GITHUB_USER/frontend:$VERSION"
     "ghcr.io/$GITHUB_USER/dashboard-service:$VERSION"
     "ghcr.io/$GITHUB_USER/recommendation-service:$VERSION"
+    "ghcr.io/$GITHUB_USER/product-service:$VERSION"
+    "ghcr.io/$GITHUB_USER/catalog-service:$VERSION"
+    "ghcr.io/$GITHUB_USER/review-service:$VERSION"
+    "ghcr.io/$GITHUB_USER/image-service:$VERSION"
+    "ghcr.io/$GITHUB_USER/query-service:$VERSION"
 )
 
 echo "Pull từng image để giảm tải I/O"
