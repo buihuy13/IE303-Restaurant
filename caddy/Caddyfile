@@ -3,7 +3,7 @@
     debug
 }
 
-localhost:8443 {
+http://localhost:8443 {
 
     log {
         output stdout
