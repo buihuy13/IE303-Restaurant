@@ -16,4 +16,5 @@ public class RestaurantAdminStatsResponse {
     private long totalProducts;
     private long totalCategories;
     private double averageRating;
+    private long totalReviews;
 }

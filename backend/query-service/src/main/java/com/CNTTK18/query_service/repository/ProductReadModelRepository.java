@@ -2,6 +2,7 @@ package com.CNTTK18.query_service.repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -61,4 +62,12 @@ public interface ProductReadModelRepository extends JpaRepository<ProductReadMod
             @Param("minPrice") BigDecimal minPrice,
             @Param("sort") String sort,
             Pageable pageable);
+
+    long countByRestaurantId(UUID restaurantId);
+
+    @Query("SELECT COALESCE(AVG(p.rating), 0.0) FROM ProductReadModel p WHERE p.rating IS NOT NULL")
+    Optional<Double> findAverageRating();
+
+    @Query("SELECT COALESCE(SUM(p.reviewCount), 0L) FROM ProductReadModel p WHERE p.reviewCount IS NOT NULL")
+    Optional<Long> findTotalReviews();
 }

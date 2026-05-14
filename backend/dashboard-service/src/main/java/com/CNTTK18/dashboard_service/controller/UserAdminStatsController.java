@@ -1,5 +1,7 @@
 package com.CNTTK18.dashboard_service.controller;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +23,7 @@ public class UserAdminStatsController {
 
     @GetMapping("/overview")
     @Operation(summary = "Get admin user statistics overview")
-    public ResponseEntity<UserAdminStatsOverviewResponse> getAdminStatsOverview() {
-        return ResponseEntity.ok(userStatsAggregationService.getAdminStatsOverview());
+    public CompletableFuture<ResponseEntity<UserAdminStatsOverviewResponse>> getAdminStatsOverview() {
+        return userStatsAggregationService.getAdminStatsOverview().thenApply(ResponseEntity::ok);
     }
 }

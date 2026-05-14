@@ -56,4 +56,10 @@ public interface RestaurantReadModelRepository extends JpaRepository<RestaurantR
             @Param("enabled") Boolean enabled,
             @Param("sort") String sort,
             Pageable pageable);
+
+    @Query("SELECT COALESCE(AVG(r.rating), 0.0) FROM RestaurantReadModel r WHERE r.rating IS NOT NULL")
+    Optional<Double> findAverageRating();
+
+    @Query("SELECT COALESCE(SUM(r.reviewCount), 0L) FROM RestaurantReadModel r WHERE r.reviewCount IS NOT NULL")
+    Optional<Long> findTotalReviews();
 }

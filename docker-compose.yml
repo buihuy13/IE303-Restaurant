@@ -373,6 +373,8 @@ services:
         environment:
             - PORT=${DASHBOARD_PORT}
         depends_on:
+            redis:
+                condition: service_started
             service-discovery:
                 condition: service_started
     blog-service:
