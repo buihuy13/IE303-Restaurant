@@ -241,8 +241,14 @@ public class ResServiceImpl implements ResService {
 
     private void validateMerchant(UserResponse user, UserRole authUser) {
         if (user == null) throw new ResourceNotFoundException("Không tồn tại user");
-        if ((!user.getId().equals(authUser.getId()) && !authUser.getRole().equals("MERCHANT"))
-                && !authUser.getRole().equals("ADMIN")) {
+        if (authUser == null) {
+            throw new ForbiddenException("You are not authorized to perform this action");
+        }
+
+        boolean isAdmin = "ADMIN".equals(authUser.getRole());
+        boolean isMerchantOwner = "MERCHANT".equals(authUser.getRole()) && user.getId().equals(authUser.getId());
+
+        if (!isAdmin && !isMerchantOwner) {
             throw new InvalidRequestException("User không phải là merchant hay admin");
         }
         if (resRepository.findRestaurantsByMerchantId(user.getId()).isPresent()) {
