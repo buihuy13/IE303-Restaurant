@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -33,6 +34,6 @@ public class ProductRequest {
     @NotNull(message = "Restaurant is required")
     private UUID restaurantId;
 
-    @NotNull(message = "List of sizes is required")
+    @NotEmpty(message = "At least one product size is required")
     private List<SizePrice> sizeIds;
 }

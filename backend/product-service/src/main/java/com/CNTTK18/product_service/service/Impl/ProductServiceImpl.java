@@ -25,6 +25,7 @@ import com.CNTTK18.product_service.dto.product.request.SizePrice;
 import com.CNTTK18.product_service.dto.product.request.UpdateProduct;
 import com.CNTTK18.product_service.dto.product.response.ProductResponse;
 import com.CNTTK18.product_service.event.publisher.ProductEventPublisher;
+import com.CNTTK18.product_service.exception.InvalidRequestException;
 import com.CNTTK18.product_service.mapper.ProductMapper;
 import com.CNTTK18.product_service.model.ProductSize;
 import com.CNTTK18.product_service.model.Products;
@@ -272,7 +273,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void addProductSizes(Products product, List<SizePrice> sizePrices) {
-        if (sizePrices == null) return;
+        if (sizePrices == null || sizePrices.isEmpty()) {
+            throw new InvalidRequestException("At least one product size is required");
+        }
         for (SizePrice psDto : sizePrices) {
             SizeResponse size = catalogServiceClient.getSize(psDto.getSizeId());
             product.addProductSize(ProductSize.builder()
