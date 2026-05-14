@@ -246,7 +246,8 @@ public class ResServiceImpl implements ResService {
         }
 
         boolean isAdmin = "ADMIN".equals(authUser.getRole());
-        boolean isMerchantOwner = "MERCHANT".equals(authUser.getRole()) && user.getId().equals(authUser.getId());
+        boolean isMerchantOwner =
+                "MERCHANT".equals(authUser.getRole()) && user.getId().equals(authUser.getId());
 
         if (!isAdmin && !isMerchantOwner) {
             throw new InvalidRequestException("User không phải là merchant hay admin");
