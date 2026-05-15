@@ -1,0 +1,77 @@
+services:
+    zipkin:
+        ports:
+            - "9411:9411"
+    rabbitmq:
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+    redis:
+        ports:
+            - "6379:6379"
+    keycloak:
+        ports:
+            - "9090:9091"
+    prometheus:
+        ports:
+            - "9000:9090"
+    grafana:
+        ports:
+            - "3030:3000"
+    caddy:
+        ports:
+            - "8443:8443"
+    service-discovery:
+        ports:
+            - "${SERVICE_DISCOVERY_PORT}:${SERVICE_DISCOVERY_PORT}"
+    api-gateway:
+        ports:
+            - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    user-service:
+        ports:
+            - "${USER_PORT}:${USER_PORT}"
+    notification-service:
+        ports:
+            - "${NOTIFICATION_PORT}:${NOTIFICATION_PORT}"
+    chat-service:
+        ports:
+            - "${CHAT_PORT}:${CHAT_PORT}"
+    recommendation-service:
+        ports:
+            - "${RECOMMENDATION_PORT}:${RECOMMENDATION_PORT}"
+    product-service:
+        ports:
+            - "${PRODUCT_PORT}:${PRODUCT_PORT}"
+    catalog-service:
+        ports:
+            - "${CATALOG_PORT}:${CATALOG_PORT}"
+    review-service:
+        ports:
+            - "${REVIEW_PORT}:${REVIEW_PORT}"
+    image-service:
+        ports:
+            - "${IMAGE_PORT}:${IMAGE_PORT}"
+    query-service:
+        ports:
+            - "${QUERY_PORT}:${QUERY_PORT}"
+    restaurant-service:
+        ports:
+            - "${RESTAURANT_PORT}:${RESTAURANT_PORT}"
+    frontend:
+        ports:
+            - "3000:3000"
+    mongodb:
+        ports:
+            - "27017:27017"
+    order-service:
+        ports:
+            - "${ORDER_PORT}:${ORDER_PORT}"
+    dashboard-service:
+        ports:
+            - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
+    blog-service:
+        ports:
+            - "${BLOG_PORT}:${BLOG_PORT}"
+    payment-service:
+        ports:
+            - "${PAYMENT_PORT}:${PAYMENT_PORT}"
