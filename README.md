@@ -13,6 +13,7 @@ Nền tảng đặt món nhà hàng theo kiến trúc microservices, gồm backe
 	- MongoDB cho order-service.
 	- Redis cho cache/session/realtime hỗ trợ.
 - Message Broker: RabbitMQ cho giao tiếp bất đồng bộ.
+- CQRS: Query Service (read model) tách biệt từ Command services.
 - Observability:
 	- Zipkin cho tracing.
 	- Prometheus cho metrics.
@@ -31,18 +32,26 @@ Nền tảng đặt món nhà hàng theo kiến trúc microservices, gồm backe
 │  ├─ chat-service/
 │  ├─ recommendation-service/
 │  ├─ restaurant-service/
-│  ├─ dashboard-service/
+│  ├─ catalog-service/          # Quản lý danh mục (Categories, Sizes)
+│  ├─ review-service/           # Quản lý đánh giá
+│  ├─ image-service/            # Quản lý upload hình ảnh
+│  ├─ product-service/
+│  ├─ query-service/            # CQRS read model
 │  ├─ order-service/
 │  ├─ blog-service/
 │  ├─ payment-service/
+│  ├─ dashboard-service/        # Dashboard với Redis cache + Async
 │  ├─ Common/
 │  └─ seed-db/                  # SQL seed dữ liệu ban đầu
+│     ├─ LOCAL-TESTING.md       # Hướng dẫn test local DB
+│     ├─ setup-local-db.sh      # Tạo databases
+│     ├─ init-local-schemas.sh  # Tạo tables
+│     └─ seed-local.sh          # Seed dữ liệu
 ├─ frontend/                    # Next.js frontend (client/merchant/admin)
 ├─ keycloak-config/             # Realm, theme, script init/role
 ├─ caddy/                       # Caddyfile cho local/prod
 ├─ monitoring/                  # Prometheus + Grafana provisioning
 ├─ deploy/                      # Script build/push/deploy production
-├─ docker-compose.dev.yml       # Infra dev (keycloak/rabbitmq/redis/...)
 ├─ docker-compose.yml           # Stack đầy đủ local bằng Docker
 ├─ docker.sh                    # Script up/down dev infra
 ├─ start.sh                     # Chạy nhanh 1 backend module bằng Gradle
@@ -53,88 +62,132 @@ Nền tảng đặt món nhà hàng theo kiến trúc microservices, gồm backe
 
 ### 3.1. Hạ tầng lõi
 
-- service-discovery:
+- **service-discovery** (port 8761):
 	- Chạy Eureka Server để toàn bộ service đăng ký và tìm nhau.
 	- Là dependency khởi động sớm cho gateway và hầu hết service nghiệp vụ.
-- api-gateway:
+
+- **api-gateway** (port 8080):
 	- Điểm vào thống nhất cho frontend/client.
 	- Xử lý bảo mật OAuth2 Resource Server, chuyển role từ JWT (Keycloak), định tuyến về service đích.
 	- Public một số route đặc thù như register user, webhook payment, SSE.
-- Common:
+
+- **Common**:
 	- Module thư viện dùng chung cho DTO/event/contract liên service.
 	- Hiện dùng rõ cho contract sự kiện thông báo đơn hàng qua RabbitMQ.
 
 ### 3.2. Nhóm service nghiệp vụ chính
 
-- user-service:
+- **user-service**:
 	- Quản lý hồ sơ người dùng, địa chỉ, truy vấn user theo vai trò.
 	- Hỗ trợ luồng đăng ký và đồng bộ user với Keycloak.
 	- Endpoint chính: /api/users/*.
-- restaurant-service:
+
+- **restaurant-service**:
 	- Quản lý nhà hàng (CRUD), tìm kiếm/lọc và logic vị trí địa lý.
-	- Hỗ trợ upload media phục vụ nghiệp vụ merchant.
 	- Endpoint chính: /api/restaurant/*.
-- order-service:
+
+- **catalog-service** (port 8091):
+	- Quản lý danh mục sản phẩm: Categories và Sizes.
+	- Endpoint chính: /api/catalog/*.
+	- Internal API cho dashboard tại /internal/dashboard/*.
+
+- **review-service** (port 8092):
+	- Quản lý đánh giá nhà hàng và sản phẩm.
+	- Endpoint chính: /api/review/*.
+	- Internal API cho dashboard tại /internal/dashboard/*.
+
+- **image-service** (port 8093):
+	- Quản lý upload, storage, và serving hình ảnh.
+	- Endpoint chính: /api/images/*.
+
+- **product-service**:
+	- Quản lý sản phẩm, giá, size mapping.
+	- Tích hợp với catalog-service cho categories/sizes.
+	- Endpoint chính: /api/products/*.
+
+- **query-service** (port 8094):
+	- CQRS read model cho truy vấn phức tạp.
+	- Tổng hợp dữ liệu từ restaurant, product, review services.
+	- Hỗ trợ tìm kiếm nhà hàng theo vị trí với PostGIS.
+	- Internal API cho dashboard tại /internal/dashboard/*.
+
+- **order-service**:
 	- Xử lý checkout, tạo đơn, truy vấn đơn theo user/merchant/restaurant.
 	- Cập nhật trạng thái đơn và phát sự kiện thông báo.
 	- Endpoint chính: /api/order/*.
-- payment-service:
+	- Database: MongoDB.
+
+- **payment-service**:
 	- Tạo payment link cho đơn hàng và nhận webhook từ cổng thanh toán (PayOS).
 	- Tách riêng domain thanh toán khỏi order-service.
 	- Endpoint chính: /api/payments/create, /api/payments/webhook.
-- notification-service:
+
+- **notification-service**:
 	- Nhận event từ RabbitMQ để gửi thông báo theo thời gian thực (SSE) và email.
 	- Tập trung cho luồng cập nhật trạng thái đơn hàng.
-- chat-service:
+
+- **chat-service**:
 	- Quản lý hội thoại, room, lịch sử chat giữa user, merchant, admin.
 	- Cung cấp API room/tin nhắn, phân trang và thao tác trạng thái.
 	- Endpoint chính: /api/chat/*.
-- recommendation-service:
+
+- **recommendation-service**:
 	- Gợi ý món ăn theo ngữ cảnh và tâm trạng.
 	- Sinh mô tả món ăn, tóm tắt review bằng AI.
 	- Endpoint chính: /api/recommendations/**.
-- dashboard-service:
+
+- **dashboard-service** (port 8089):
 	- Cung cấp dữ liệu tổng hợp cho dashboard admin/merchant.
+	- Sử dụng CompletableFuture cho parallel async operations.
+	- Redis caching với @Cacheable annotations.
 	- Bao gồm overview, doanh thu theo kỳ, thống kê đơn và báo cáo.
 	- Endpoint chính: /api/dashboard/*.
-- blog-service:
+
+- **blog-service**:
 	- Quản lý bài viết (draft/published/archived), upload ảnh, đọc công khai theo slug.
 	- Endpoint chính: /api/blogs/*.
 
 ### 3.3. Trạng thái Docker hóa module
 
-- Có Dockerfile sẵn trong backend/: api-gateway, service-discovery, user-service, notification-service, chat-service, restaurant-service, dashboard-service, recommendation-service, order-service.
-- Chưa có Dockerfile trong backend/ ở trạng thái hiện tại: blog-service, payment-service.
+Tất cả services đều đã có Dockerfile:
+- api-gateway, service-discovery, user-service, notification-service
+- chat-service, restaurant-service, catalog-service, review-service, image-service
+- product-service, query-service, order-service, blog-service, payment-service
+- dashboard-service, recommendation-service
 
 ## 4. Một số flow nghiệp vụ (docs/images)
 
 Các flow dưới đây lấy trực tiếp từ thư mục docs/images.
 
-### 4.1. User flow
+### 4.1. System Architecture
+
+![System Architecture](docs/images/architecture.png)
+
+### 4.2. User flow
 
 ![User flow](docs/images/user-flow.png)
 
-### 4.2. Merchant flow
+### 4.3. Merchant flow
 
 ![Merchant flow](docs/images/merchant-flow.png)
 
-### 4.3. Admin flow
+### 4.4. Admin flow
 
 ![Admin flow](docs/images/admin-flow.png)
 
-### 4.4. Order flow
+### 4.5. Order flow
 
 ![Order flow](docs/images/order-flow.png)
 
-### 4.5. Chat flow
+### 4.6. Chat flow
 
 ![Chat flow](docs/images/chat-flow.png)
 
-### 4.6. Restaurant flow
+### 4.7. Restaurant flow
 
 ![Restaurant flow](docs/images/restaurant.png)
 
-### 4.7. OIDC authentication flow
+### 4.8. OIDC authentication flow
 
 Flow này mô tả luồng đăng nhập OIDC (Authorization Code + PKCE) giữa frontend, Keycloak và backend.
 
@@ -161,7 +214,7 @@ cp .env.example .env
 
 - Hạ tầng: DB_PASSWORD, REDIS_*, RABBITMQ_*, MONGO_*
 - Keycloak/OAuth: KEYCLOAK_*, BACKEND_CLIENT_*, JWT_ISSUER_URI
-- Service ports: SERVICE_DISCOVERY_PORT, API_GATEWAY_PORT, USER_PORT, ...
+- Service ports: SERVICE_DISCOVERY_PORT, API_GATEWAY_PORT, USER_PORT, CATALOG_PORT, REVIEW_PORT, IMAGE_PORT, QUERY_PORT, DASHBOARD_PORT, ...
 - Frontend public vars: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_BACKEND_ORIGIN, NEXT_PUBLIC_KEYCLOAK_*
 - Monitoring/security: GF_SECURITY_ADMIN_*, CADDY_HASH_PASSWORD
 
@@ -188,6 +241,9 @@ Script sẽ:
 ```bash
 ./start.sh service-discovery
 ./start.sh api-gateway
+./start.sh catalog-service
+./start.sh review-service
+./start.sh query-service
 ./start.sh user-service
 ```
 
@@ -219,6 +275,26 @@ Dừng toàn bộ:
 
 ```bash
 docker compose down -v
+```
+
+### Cách C: Test với local database (không Docker)
+
+Xem hướng dẫn chi tiết tại [backend/seed-db/LOCAL-TESTING.md](backend/seed-db/LOCAL-TESTING.md)
+
+Tóm tắt:
+
+```bash
+cd backend/seed-db
+chmod +x setup-local-db.sh init-local-schemas.sh seed-local.sh
+
+# 1. Tạo databases
+./setup-local-db.sh
+
+# 2. Tạo tables từ schema files
+./init-local-schemas.sh
+
+# 3. Seed dữ liệu mẫu
+./seed-local.sh
 ```
 
 ## 8. Các URL hữu ích khi chạy dev
@@ -287,5 +363,7 @@ Khi chạy từng service bằng ./start.sh, nên theo thứ tự:
 
 1. service-discovery
 2. api-gateway
-3. các service lõi (user/restaurant/chat/recommendation/notification/dashboard/order/blog/payment)
-4. frontend
+3. catalog-service, review-service, image-service (services phụ trợ)
+4. query-service (phụ thuộc vào catalog/review/restaurant)
+5. các service lõi (user/restaurant/chat/recommendation/notification/dashboard/order/blog/payment)
+6. frontend
