@@ -10,19 +10,12 @@ function formatPriceRange(raw: string) {
     const decoded = decodeURIComponent(raw);
     if (decoded.endsWith("+")) {
         const min = decoded.replace("+", "");
-        return `Price: $${min}+`;
+        return `Price: ${Number(min).toLocaleString("vi-VN")}₫+`;
     }
     const [min, max] = decoded.split("-");
-    if (min === "0" && max) return `Price: ≤ $${max}`;
-    if (min && max) return `Price: $${min}–$${max}`;
+    if (min === "0" && max) return `Price: ≤ ${Number(max).toLocaleString("vi-VN")}₫`;
+    if (min && max) return `Price: ${Number(min).toLocaleString("vi-VN")}–${Number(max).toLocaleString("vi-VN")}₫`;
     return `Price: ${decoded}`;
-}
-
-function formatRating(raw: string) {
-    if (raw === "5") return "Rating: 5★";
-    if (raw === "4") return "Rating: ≥ 4★";
-    if (raw === "3") return "Rating: ≥ 3★";
-    return `Rating: ${raw}`;
 }
 
 function formatSort(raw: string) {
@@ -33,18 +26,10 @@ function formatSort(raw: string) {
     return `Sort: ${raw}`;
 }
 
-function formatDistanceRange(raw: string) {
-    const decoded = decodeURIComponent(raw);
-    if (decoded.endsWith("+")) return `Distance: ${decoded.replace("+", "")}+ km`;
-    const [min, max] = decoded.split("-");
-    if (min === "0" && max) return `Distance: ≤ ${max} km`;
-    if (min && max) return `Distance: ${min}–${max} km`;
-    return `Distance: ${decoded}`;
-}
-
 export function ActiveFilterPills({ className }: { className?: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const searchType = searchParams.get("type") || "foods";
 
     const pills = useMemo(() => {
         const out: Array<{ key: string; label: string; onRemove: () => void }> = [];
@@ -55,63 +40,52 @@ export function ActiveFilterPills({ className }: { className?: string }) {
             router.push(`/search?${current.toString()}`, { scroll: false });
         };
 
-        const categories = searchParams.getAll("category");
-        for (const c of categories) {
+        const q = searchParams.get("q") || searchParams.get("search");
+        if (q) {
             out.push({
-                key: `category:${c}`,
-                label: `Category: ${c}`,
+                key: `q:${q}`,
+                label: `Search: ${q}`,
                 onRemove: () => {
                     const current = new URLSearchParams(Array.from(searchParams.entries()));
-                    const remaining = current.getAll("category").filter((v) => v !== c);
-                    current.delete("category");
-                    for (const v of remaining) current.append("category", v);
+                    current.delete("q");
+                    current.delete("search");
                     router.push(`/search?${current.toString()}`, { scroll: false });
                 },
             });
         }
 
-        const priceRange = searchParams.get("priceRange");
-        if (priceRange) {
-            out.push({
-                key: `priceRange:${priceRange}`,
-                label: formatPriceRange(priceRange),
-                onRemove: () => removeParam("priceRange"),
-            });
+        if (searchType === "foods") {
+            const categories = searchParams.getAll("category");
+            for (const c of categories) {
+                out.push({
+                    key: `category:${c}`,
+                    label: `Category: ${c}`,
+                    onRemove: () => {
+                        const current = new URLSearchParams(Array.from(searchParams.entries()));
+                        const remaining = current.getAll("category").filter((v) => v !== c);
+                        current.delete("category");
+                        for (const v of remaining) current.append("category", v);
+                        router.push(`/search?${current.toString()}`, { scroll: false });
+                    },
+                });
+            }
+
+            const priceRange = searchParams.get("priceRange");
+            if (priceRange) {
+                out.push({
+                    key: `priceRange:${priceRange}`,
+                    label: formatPriceRange(priceRange),
+                    onRemove: () => removeParam("priceRange"),
+                });
+            }
         }
 
-        const rating = searchParams.get("rating");
-        if (rating) {
+        const nearby = searchParams.get("nearby");
+        if (nearby) {
             out.push({
-                key: `rating:${rating}`,
-                label: formatRating(rating),
-                onRemove: () => removeParam("rating"),
-            });
-        }
-
-        const district = searchParams.get("district");
-        if (district) {
-            out.push({
-                key: `district:${district}`,
-                label: `Area: ${district}`,
-                onRemove: () => removeParam("district"),
-            });
-        }
-
-        const openNow = searchParams.get("openNow");
-        if (openNow) {
-            out.push({
-                key: `openNow:${openNow}`,
-                label: "Open now",
-                onRemove: () => removeParam("openNow"),
-            });
-        }
-
-        const distanceRange = searchParams.get("distanceRange");
-        if (distanceRange) {
-            out.push({
-                key: `distanceRange:${distanceRange}`,
-                label: formatDistanceRange(distanceRange),
-                onRemove: () => removeParam("distanceRange"),
+                key: `nearby:${nearby}`,
+                label: `Within ${Number(nearby).toLocaleString("vi-VN")} m`,
+                onRemove: () => removeParam("nearby"),
             });
         }
 
@@ -125,7 +99,7 @@ export function ActiveFilterPills({ className }: { className?: string }) {
         }
 
         return out;
-    }, [searchParams, router]);
+    }, [searchParams, router, searchType]);
 
     if (pills.length === 0) return null;
 
@@ -160,4 +134,3 @@ export function ActiveFilterPills({ className }: { className?: string }) {
         </div>
     );
 }
-

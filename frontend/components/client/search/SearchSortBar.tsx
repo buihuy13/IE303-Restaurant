@@ -7,7 +7,6 @@ import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 const sortOptions = [
     { value: "relevance", label: "Relevance" },
     { value: "distance", label: "Nearest" },
-    { value: "popular", label: "Top Sales" },
     { value: "rating", label: "Top Rated" },
 ];
 
@@ -29,7 +28,7 @@ export default function SearchSortBar({ searchType = "foods" }: { searchType?: "
 
     const optionsToUse =
         searchType === "restaurants"
-            ? sortOptions.filter((o) => o.value !== "popular") // restaurants: no "Top Sales"
+            ? sortOptions.filter((o) => o.value === "relevance" || o.value === "rating")
             : sortOptions;
 
     return (

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { merchantRestaurantsFromResponse, restaurantApi } from "@/lib/api/restaurantApi";
+import { buildRestaurantQueryParams, type RestaurantSearchSort } from "@/lib/api/backendQueryParams";
 import type { Category, Product, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import { create } from "zustand";
@@ -19,7 +20,7 @@ interface RestaurantState {
     fetchRestaurantById: (id: string) => Promise<void>;
     fetchRestaurantBySlug: (slug: string) => Promise<void>;
     getRestaurantByMerchantId: (merchantId: string) => Promise<void>;
-    getAllRestaurants: (params?: URLSearchParams) => Promise<void>;
+    getAllRestaurants: (params?: URLSearchParams, sort?: RestaurantSearchSort) => Promise<void>;
     setSelectedRestaurantId: (id: string | null) => void;
     clearRestaurant: () => void;
     getAllCategories: () => Promise<void>;
@@ -114,7 +115,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
         }
     },
 
-    getAllRestaurants: async (params?: URLSearchParams) => {
+    getAllRestaurants: async (params?: URLSearchParams, sortOverride?: RestaurantSearchSort) => {
         set({ loading: true, error: null });
         try {
             const defaultParams = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" }); // Default: UIT
@@ -122,14 +123,20 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
             // Ensure lat/lon are present
             if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
             if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
-            const res = await restaurantApi.getAllRestaurants(finalParams);
-            // Handle Page response structure: { content: Restaurant[], ... } or direct array
+
+            const sort = (sortOverride ||
+                finalParams.get("sort") ||
+                finalParams.get("order") ||
+                "relevance") as RestaurantSearchSort;
+            const apiParams = buildRestaurantQueryParams(finalParams, sort);
+            const res = await restaurantApi.getAllRestaurants(apiParams, sort);
             const data = res.data;
-            const restaurantsArray = Array.isArray(data)
-                ? data
-                : data && typeof data === "object" && "content" in data && Array.isArray(data.content)
-                  ? data.content
-                  : [];
+            const restaurantsArray =
+                data && typeof data === "object" && "content" in data && Array.isArray(data.content)
+                    ? data.content
+                    : Array.isArray(data)
+                      ? data
+                      : [];
             const totalElements =
                 data && typeof data === "object" && "totalElements" in data && typeof data.totalElements === "number"
                     ? data.totalElements
@@ -278,7 +285,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
         try {
             set({ loading: true });
             const response = await restaurantApi.getAllReviews(restaurantId);
-            set({ reviews: response.data, loading: false });
+            set({ reviews: response.data.reviews ?? [], loading: false });
         } catch (error: any) {
             set({
                 error: error.message || "Failed to get all reviews",
