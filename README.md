@@ -177,15 +177,15 @@ Các flow dưới đây lấy trực tiếp từ thư mục docs/images.
 
 ### 4.5. Order flow
 
-![Order flow](docs/images/order-flow.png)
+![Order flow](docs/images/order-flow.jpg)
 
 ### 4.6. Chat flow
 
-![Chat flow](docs/images/chat-flow.png)
+![Chat flow](docs/images/chat-flow.jpg)
 
 ### 4.7. Restaurant flow
 
-![Restaurant flow](docs/images/restaurant.png)
+![Restaurant flow](docs/images/restaurant.jpg)
 
 ### 4.8. OIDC authentication flow
 
@@ -193,14 +193,54 @@ Flow này mô tả luồng đăng nhập OIDC (Authorization Code + PKCE) giữa
 
 ![OIDC flow](docs/images/oidc-flow.png)
 
-## 5. Yêu cầu môi trường
+## 5. Database Schemas (docs/db-diagrams)
+
+Các sơ đồ database dưới đây mô tả cấu trúc dữ liệu của từng service.
+
+### 5.1. User Service Database
+
+![User DB Schema](docs/db-diagrams/user.png)
+
+### 5.2. Catalog Service Database
+
+![Catalog DB Schema](docs/db-diagrams/catalog.png)
+
+### 5.3. Product Service Database
+
+![Product DB Schema](docs/db-diagrams/product.png)
+
+### 5.4. Restaurant Service Database
+
+![Restaurant DB Schema](docs/db-diagrams/restaurant.png)
+
+### 5.5. Reviews Service Database
+
+![Reviews DB Schema](docs/db-diagrams/reviews.png)
+
+### 5.6. Chat Service Database
+
+![Chat DB Schema](docs/db-diagrams/chat.png)
+
+### 5.7. Payment Service Database
+
+![Payment DB Schema](docs/db-diagrams/payment.png)
+
+### 5.8. Query Service Database
+
+![Query DB Schema](docs/db-diagrams/query.png)
+
+### 5.9. Blog Service Database
+
+![Blog DB Schema](docs/db-diagrams/blog.png)
+
+## 6. Yêu cầu môi trường
 
 - Docker + Docker Compose
 - Java 21 (theo toolchain của backend)
 - Node.js 20+ và npm (cho frontend local)
 - Bash shell (Linux/macOS/WSL)
 
-## 6. Cấu hình biến môi trường
+## 7. Cấu hình biến môi trường
 
 Project dùng file .env ở thư mục gốc.
 
@@ -218,7 +258,7 @@ cp .env.example .env
 - Frontend public vars: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_BACKEND_ORIGIN, NEXT_PUBLIC_KEYCLOAK_*
 - Monitoring/security: GF_SECURITY_ADMIN_*, CADDY_HASH_PASSWORD
 
-## 7. Chạy local (khuyến nghị cho dev)
+## 8. Chạy local (khuyến nghị cho dev)
 
 ### Cách A: Chạy infra bằng Docker, chạy app bằng local process
 
@@ -297,7 +337,7 @@ chmod +x setup-local-db.sh init-local-schemas.sh seed-local.sh
 ./seed-local.sh
 ```
 
-## 8. Các URL hữu ích khi chạy dev
+## 9. Các URL hữu ích khi chạy dev
 
 Theo docker-compose.dev.yml:
 
@@ -314,7 +354,7 @@ Theo docker-compose.yml (full stack):
 - Caddy entrypoint: https://localhost:8443
 - Các dịch vụ nội bộ expose qua Caddy/API Gateway tùy route cấu hình.
 
-## 9. Build, format, quality
+## 10. Build, format, quality
 
 Từ thư mục gốc:
 
@@ -337,7 +377,7 @@ npm run build
 npm run validate
 ```
 
-## 10. Triển khai production
+## 11. Triển khai production
 
 Thư mục deploy/ chứa luồng build & deploy:
 
@@ -357,7 +397,7 @@ Lưu ý:
 - Cần chuẩn bị sẵn file bí mật/chứng thực (ví dụ ghcr.pem, key.pem, .env).
 - Kiểm tra chính xác host, username, key và đường dẫn remote trước khi deploy thật.
 
-## 11. Gợi ý thứ tự khởi động backend local
+## 12. Gợi ý thứ tự khởi động backend local
 
 Khi chạy từng service bằng ./start.sh, nên theo thứ tự:
 
