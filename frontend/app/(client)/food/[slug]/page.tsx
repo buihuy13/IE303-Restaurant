@@ -3,6 +3,7 @@
 import FoodDetail from "@/components/client/Food/FoodDetail";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
+import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product, Restaurant } from "@/types";
 import { useParams, useRouter } from "next/navigation";
@@ -34,7 +35,7 @@ type RestaurantByProductDto = {
 type LoadState =
     | { status: "loading" }
     | { status: "error"; message: string; code?: number }
-    | { status: "ready"; foodItem: Product };
+    | { status: "ready"; foodItem: Product; reviewStats: ReviewStatsResponse | null };
 
 export default function FoodDetailPage() {
     const router = useRouter();
@@ -100,7 +101,9 @@ export default function FoodDetailPage() {
                     foodItem.restaurant = restaurant;
                 }
 
-                if (!cancelled) setState({ status: "ready", foodItem });
+                const reviewStats = await reviewApi.getProductReviewStats(foodItem.id).catch(() => null);
+
+                if (!cancelled) setState({ status: "ready", foodItem, reviewStats });
             } catch (err: unknown) {
                 const e = err as { response?: { status?: number } };
                 const code = e?.response?.status;
@@ -183,7 +186,11 @@ export default function FoodDetailPage() {
     return (
         <main className="bg-white">
             <div className="custom-container py-12 md:py-20">
-                <FoodDetail foodItem={state.foodItem} restaurant={state.foodItem.restaurant!} />
+                <FoodDetail
+                    foodItem={state.foodItem}
+                    restaurant={state.foodItem.restaurant!}
+                    reviewStats={state.reviewStats}
+                />
             </div>
         </main>
     );

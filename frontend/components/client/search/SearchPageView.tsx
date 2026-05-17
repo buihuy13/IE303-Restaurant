@@ -82,13 +82,15 @@ export function SearchPageView({
     const searchParams = useSearchParams();
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const activeFilterCount = useMemo(() => {
-        const categories = searchParams.getAll("category").length;
-        const price = searchParams.get("priceRange") ? 1 : 0;
-        const rating = searchParams.get("rating") ? 1 : 0;
-        const district = searchParams.get("district") ? 1 : 0;
-        const openNow = searchParams.get("openNow") ? 1 : 0;
-        const distance = searchParams.get("distanceRange") ? 1 : 0;
-        return categories + price + rating + district + openNow + distance;
+        const searchType = searchParams.get("type") || "foods";
+        let count = 0;
+        if (searchParams.get("nearby")) count += 1;
+        if (searchParams.get("q") || searchParams.get("search")) count += 1;
+        if (searchType === "foods") {
+            count += searchParams.getAll("category").length;
+            if (searchParams.get("priceRange")) count += 1;
+        }
+        return count;
     }, [searchParams]);
 
     const handleSwitchTab = (nextType: "foods" | "restaurants") => {

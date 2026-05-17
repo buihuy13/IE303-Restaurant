@@ -5,6 +5,12 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { productApi } from "@/lib/api/productApi";
+import {
+    fetchProductSizesForCart,
+    getListPriceDisplay,
+    hasListPriceRange,
+    pickDefaultProductSize,
+} from "@/lib/utils/productListDisplay";
 import { Product } from "@/types";
 import { Check, CheckCircle2, Clock, Plus } from "lucide-react";
 import Image from "next/image";
@@ -72,39 +78,15 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         }
     }, [searchParams]);
 
-    // Get price to display: if there's a minPrice filter, show first price >= minPrice, otherwise show minimum price
-    const displayPrice = useMemo(() => {
-        if (!product.productSizes || product.productSizes.length === 0) return undefined;
-        
-        // If there's a minPrice filter, find first size with price >= minPrice
-        if (minPriceFilter !== null) {
-            const matchingSize = product.productSizes
-                .sort((a, b) => a.price - b.price) // Sort by price ascending
-                .find(size => size.price >= minPriceFilter);
-            return matchingSize?.price;
+    const displayPriceLabel = useMemo(() => {
+        if (product.productSizes.length > 0) {
+            const defaultFromSizes = pickDefaultProductSize(product.productSizes, minPriceFilter);
+            if (defaultFromSizes) {
+                return `${defaultFromSizes.price.toLocaleString("vi-VN")} ₫`;
+            }
         }
-        
-        // Otherwise, show minimum price
-        return Math.min(...product.productSizes.map(size => size.price));
-    }, [product.productSizes, minPriceFilter]);
-    
-    // Get the size to use as default: if there's a minPrice filter, use first size >= minPrice, otherwise use minimum price size
-    const defaultSize = useMemo(() => {
-        if (!product.productSizes || product.productSizes.length === 0) return undefined;
-        
-        // If there's a minPrice filter, find first size with price >= minPrice
-        if (minPriceFilter !== null) {
-            const matchingSize = product.productSizes
-                .sort((a, b) => a.price - b.price) // Sort by price ascending
-                .find(size => size.price >= minPriceFilter);
-            return matchingSize || product.productSizes[0]; // Fallback to first size if no match
-        }
-        
-        // Otherwise, use size with minimum price
-        return product.productSizes.reduce((min, size) => 
-            size.price < min.price ? size : min
-        );
-    }, [product.productSizes, minPriceFilter]);
+        return getListPriceDisplay(product);
+    }, [product, minPriceFilter]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
     useEffect(() => {
@@ -242,10 +224,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     }, [restaurant?.duration]);
 
     // Format price to VND
-    const formatPrice = useMemo(() => {
-        if (displayPrice === undefined) return null;
-        return `${displayPrice.toLocaleString("vi-VN")} ₫`;
-    }, [displayPrice]);
+    const formatPrice = displayPriceLabel;
 
     // Format review count
     const formatReviewCount = useMemo(() => {
@@ -278,18 +257,22 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                 return;
             }
 
-            if (!product.productSizes || product.productSizes.length === 0) {
-                toast.error("This product has no available sizes");
-                return;
-            }
-
-            if (!defaultSize) {
-                toast.error("Default size not found");
-                return;
-            }
-
             setIsAdding(true);
             try {
+                let sizes = product.productSizes;
+                if (sizes.length === 0) {
+                    if (!hasListPriceRange(product)) {
+                        toast.error("This product has no available sizes");
+                        return;
+                    }
+                    sizes = await fetchProductSizesForCart(product.id);
+                }
+                const defaultSize = pickDefaultProductSize(sizes, minPriceFilter);
+                if (!defaultSize) {
+                    toast.error("This product has no available sizes");
+                    return;
+                }
+
                 const restaurantForCart = await resolveRestaurantForCart();
                 if (!restaurantForCart) {
                     toast.error("Restaurant information not found");
@@ -324,7 +307,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
+        [isAdding, isMounted, user, product, minPriceFilter, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
     );
 
     const cardShellClass =

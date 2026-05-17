@@ -1,5 +1,6 @@
 "use client";
 
+import { buildProductSearchParamsFromUrl } from "@/lib/api/backendQueryParams";
 import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocationStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { Button } from "@/components/ui/Button";
@@ -32,12 +33,9 @@ export default function FeaturedFoodPanel() {
         }
 
         setListFetchInitiated(true);
-        const params = new URLSearchParams();
-        params.set("type", "foods");
-        // Set location for distance calculation from current address
-        params.set("lat", currentAddress.lat.toString());
-        params.set("lon", currentAddress.lng.toString());
-        fetchAllProducts(params);
+        const params = buildProductSearchParamsFromUrl(new URLSearchParams(), currentAddress.lat, currentAddress.lng);
+        params.set("size", "12");
+        fetchAllProducts(params, "relevance");
     }, [fetchAllProducts, currentAddress, isLocationSet]);
 
     // Use API data from store (already ensured to be array by store)

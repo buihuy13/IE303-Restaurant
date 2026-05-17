@@ -23,6 +23,9 @@ export interface Product {
         totalReview: number;
         rating: number;
         productSizes: ProductSize[];
+        /** From query-service list (`minPrice` / `maxPrice`); use until sizes are loaded from product-service. */
+        listMinPrice?: number | null;
+        listMaxPrice?: number | null;
         createdAt?: string;
         updatedAt?: string;
 }

@@ -67,17 +67,23 @@ export default function SearchBar() {
                 // Fetch both restaurants and products in parallel
                 const [restaurantsRes, productsRes] = await Promise.all([
                     restaurantApi.getAllRestaurants(
-                        new URLSearchParams({ search: trimmedQuery, limit: "5", lat: "10.9032198", lon: "106.7750317" }),
-                    ),
-                    // Product search API also requires lat/lon for distance-based queries.
-                    // Use the same default coordinates as restaurant suggestions to avoid 400 errors.
-                    productApi.getAllProducts(
                         new URLSearchParams({
                             search: trimmedQuery,
-                            limit: "5",
+                            page: "0",
+                            size: "5",
                             lat: "10.9032198",
                             lon: "106.7750317",
                         }),
+                    ),
+                    productApi.getAllProducts(
+                        new URLSearchParams({
+                            search: trimmedQuery,
+                            page: "0",
+                            size: "5",
+                            lat: "10.9032198",
+                            lon: "106.7750317",
+                        }),
+                        "relevance",
                     ),
                 ]);
 

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { SearchPageView } from "@/components/client/search/SearchPageView";
 import { useSearchLocation } from "@/hooks/client/search/useSearchLocation";
 import { useSearchProducts } from "@/hooks/client/search/useSearchProducts";
-import { useSearchFilteredProducts } from "@/hooks/client/search/useSearchFilteredProducts";
 import { useSearchRestaurants } from "@/hooks/client/search/useSearchRestaurants";
 import type { Category } from "@/types";
 
@@ -23,10 +22,8 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
 
     const productsState = useSearchProducts(currentAddress, isLocationSet);
     const restaurantsState = useSearchRestaurants(currentAddress, isLocationSet);
-    const sort = searchParams.get("sort") || "relevance";
-    const filteredProducts = useSearchFilteredProducts(productsState.products, sort);
-
-    const query = searchType === "restaurants" ? restaurantsState.query : productsState.query;
+    const query = searchParams.get("q") || "";
+    const filteredProducts = productsState.products;
     const productsLoading = searchType === "restaurants" ? restaurantsState.restaurantsLoading : productsState.productsLoading;
     const totalPages = searchType === "restaurants" ? restaurantsState.totalPages : productsState.totalPages;
     const totalElements = searchType === "restaurants" ? restaurantsState.totalElements : productsState.totalElements;
@@ -35,12 +32,12 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
     const PAGE_SIZE = searchType === "restaurants" ? restaurantsState.PAGE_SIZE : productsState.PAGE_SIZE;
 
     const hasActiveFilters = (() => {
-        if (query) return true;
-        const p = new URLSearchParams(Array.from(searchParams.entries()));
-        p.delete("type");
-        p.delete("sort");
-        p.delete("page");
-        return p.toString().length > 0;
+        const allowed = ["category", "priceRange", "nearby", "q", "search"];
+        for (const key of allowed) {
+            if (searchType === "restaurants" && (key === "category" || key === "priceRange")) continue;
+            if (searchParams.get(key) || searchParams.getAll(key).length > 0) return true;
+        }
+        return false;
     })();
 
     const handlePageChange = (newPage: number) => {

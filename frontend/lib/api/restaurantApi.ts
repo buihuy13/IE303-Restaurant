@@ -1,14 +1,14 @@
 import type { Category, Restaurant, RestaurantData } from "@/types";
-import { Review } from "@/types/review.type";
+import { buildRestaurantQueryParams, type RestaurantSearchSort } from "@/lib/api/backendQueryParams";
 import api from "../axios";
+import { queryApi } from "./queryApi";
 
 /**
- * Restaurant-service REST clients. Paths are relative to `NEXT_PUBLIC_API_URL` (e.g. `/api`):
- * `/restaurant`, `/products`, `/category`, `/review`, `/size`, `/productsize` — matching
- * `ResController`, `ProductController`, `CateController`, `ReviewController`, etc.
+ * restaurant-service (`/restaurant`), catalog (`/catalog/category`), review (`/review`).
+ * Paginated nearby lists use query-service via {@link queryApi}.
  */
 
-/** Spring Data Page JSON for GET /restaurant */
+/** Spring Data Page JSON for GET /query/restaurants */
 export type RestaurantPageResponse = {
     content: Restaurant[];
     totalElements: number;
@@ -16,6 +16,12 @@ export type RestaurantPageResponse = {
     size?: number;
     number?: number;
 };
+
+type CatalogCategoryDto = { id: string; cateName: string; cateId?: string };
+
+function mapCatalogCategory(c: CatalogCategoryDto): Category {
+    return { id: String(c.id ?? c.cateId), cateName: c.cateName };
+}
 
 const DEFAULT_LIST_LAT = "10.9032198";
 const DEFAULT_LIST_LON = "106.7750317";
@@ -32,7 +38,7 @@ export function merchantRestaurantsFromResponse(
 }
 
 /**
- * Loads every restaurant from the paginated GET /restaurant endpoint (admin dashboards need the full list).
+ * Loads every restaurant from paginated GET /query/restaurants (admin dashboards need the full list).
  */
 export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise<Restaurant[]> {
     const base = new URLSearchParams(extra ? Array.from(extra.entries()) : []);
@@ -49,7 +55,7 @@ export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise
         params.set("page", String(page));
         params.set("size", String(pageSize));
 
-        const res = await api.get<RestaurantPageResponse>("/query/restaurants", { params });
+        const res = await queryApi.getRestaurants(buildRestaurantQueryParams(params));
         const data = res.data;
         const chunk = Array.isArray(data?.content) ? data.content : [];
         all.push(...chunk);
@@ -115,10 +121,9 @@ export const restaurantApi = {
     getRestaurantByMerchantId: (merchantId: string) => {
         return api.get<Restaurant>(`/restaurant/merchant/${merchantId}`);
     },
-    getAllRestaurants: (params: URLSearchParams) => {
-        return api.get<RestaurantPageResponse>("/query/restaurants", {
-            params: params,
-        });
+    getAllRestaurants: (params: URLSearchParams, sort: RestaurantSearchSort = "relevance") => {
+        const sortValue = (params.get("sort") as RestaurantSearchSort | null) ?? sort;
+        return queryApi.getRestaurants(buildRestaurantQueryParams(params, sortValue));
     },
     createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
         // Use new helper function
@@ -143,10 +148,13 @@ export const restaurantApi = {
     deleteRestaurantImage: (restaurantId: string) => {
         return api.delete(`/restaurant/image/${restaurantId}`);
     },
-    getAllCategories: () => {
-        return api.get<Category[]>(`/catalog/category`);
+    getAllCategories: async () => {
+        const res = await api.get<CatalogCategoryDto[]>(`/catalog/category`);
+        const data = res.data.map(mapCatalogCategory);
+        return { ...res, data };
     },
+    /** `GET /review/restaurant/{id}` */
     getAllReviews: (restaurantId: string) => {
-        return api.get<Review[]>(`/review?resId=${restaurantId}`);
+        return api.get<import("@/types").ReviewListResponse>(`/review/restaurant/${restaurantId}`);
     },
 };
