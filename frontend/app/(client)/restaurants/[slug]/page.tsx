@@ -8,8 +8,10 @@ import RestaurantInfo from "@/components/client/Restaurant/RestaurantInfo";
 import RestaurantMenuWrapper from "@/components/client/Restaurant/RestaurantMenuWrapper";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
+import { queryApi } from "@/lib/api/queryApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { productApi } from "@/lib/api/productApi";
+import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product, Restaurant, Review } from "@/types";
 import { useParams, useRouter } from "next/navigation";
@@ -18,7 +20,13 @@ import { useEffect, useMemo, useState } from "react";
 type LoadState =
     | { status: "loading" }
     | { status: "error"; message: string; code?: number }
-    | { status: "ready"; restaurant: Restaurant; products: Product[]; reviews: Review[] };
+    | {
+          status: "ready";
+          restaurant: Restaurant;
+          products: Product[];
+          reviews: Review[];
+          reviewStats: ReviewStatsResponse | null;
+      };
 
 export default function RestaurantDetailPage() {
     const router = useRouter();
@@ -36,23 +44,56 @@ export default function RestaurantDetailPage() {
             setState({ status: "loading" });
             try {
                 const restaurantResponse = await restaurantApi.getByRestaurantSlug(slug);
-                const restaurant = restaurantResponse.data as Restaurant | null;
+                let restaurant = restaurantResponse.data as Restaurant | null;
 
                 if (!restaurant) {
                     if (!cancelled) setState({ status: "error", message: "Restaurant not found." });
                     return;
                 }
 
-                // GET /restaurant/{slug} doesn't include products in the response.
-                // Fetch products separately for the menu section.
+                // Optional: distance/duration from query-service when user location is available.
+                if (typeof navigator !== "undefined" && navigator.geolocation) {
+                    try {
+                        const coords = await new Promise<GeolocationCoordinates>((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(
+                                (pos) => resolve(pos.coords),
+                                reject,
+                                { timeout: 5000, maximumAge: 60_000 },
+                            );
+                        });
+                        const queryRes = await queryApi.getRestaurantById(
+                            restaurant.id,
+                            coords.latitude,
+                            coords.longitude,
+                        );
+                        restaurant = {
+                            ...restaurant,
+                            distance:
+                                typeof queryRes.data.distance === "number"
+                                    ? queryRes.data.distance
+                                    : restaurant.distance,
+                            duration:
+                                typeof queryRes.data.duration === "number"
+                                    ? queryRes.data.duration
+                                    : restaurant.duration,
+                        };
+                    } catch {
+                        // Keep restaurant-service payload without distance.
+                    }
+                }
+
+                // restaurant-service slug response has no products — load menu from product-service.
                 const productsRes = await productApi.getProductsByRestaurantId(restaurant.id);
                 const products = Array.isArray(productsRes.data) ? productsRes.data : [];
 
-                const reviewsResponse = await restaurantApi.getAllReviews(restaurant.id);
-                const reviews = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [];
+                const [reviewsResponse, reviewStats] = await Promise.all([
+                    restaurantApi.getAllReviews(restaurant.id),
+                    reviewApi.getRestaurantReviewStats(restaurant.id).catch(() => null),
+                ]);
+                const reviews = reviewsResponse.data.reviews ?? [];
 
                 if (!cancelled) {
-                    setState({ status: "ready", restaurant, products, reviews });
+                    setState({ status: "ready", restaurant, products, reviews, reviewStats });
                 }
             } catch (err: unknown) {
                 const axiosErr = err as { response?: { status?: number }; message?: string };
@@ -132,11 +173,11 @@ export default function RestaurantDetailPage() {
         );
     }
 
-    const { restaurant, products, reviews } = state;
+    const { restaurant, products, reviews, reviewStats } = state;
 
     return (
         <main className="scroll-smooth bg-gradient-to-b from-gray-50 via-gray-50 to-white pb-24">
-            <RestaurantHero restaurant={restaurant} />
+            <RestaurantHero restaurant={restaurant} reviewStats={reviewStats} />
             <RestaurantNavTabs />
             <div className="custom-container">
                 <div className="rounded-3xl border border-gray-200/70 bg-white/70 backdrop-blur-sm shadow-sm px-4 py-3 sm:px-5 sm:py-4">

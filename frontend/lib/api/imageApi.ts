@@ -1,4 +1,17 @@
+import { useAuthStore } from "@/stores/useAuthStore";
 import api from "../axios";
+
+function requireAuthenticatedSession(): void {
+    if (typeof window === "undefined") {
+        throw new Error("Image upload is only available in the browser.");
+    }
+    const fromStore = useAuthStore.getState().accessToken?.trim();
+    const fromStorage = localStorage.getItem("accessToken")?.trim();
+    const token = fromStore || fromStorage;
+    if (!token || token === "null" || token === "undefined") {
+        throw new Error("Please sign in to upload images.");
+    }
+}
 
 export interface ImageUploadResponse {
     publicId: string;
@@ -10,13 +23,10 @@ export interface ImageUploadResponse {
     bytes: number;
 }
 
-export interface TransformRequest {
-    publicId: string;
-    transformations?: Record<string, unknown>;
-}
-
+/** image-service via gateway — `POST /api/images/upload` requires a JWT (not public). */
 export const imageApi = {
     uploadImage: async (file: File, folder?: string) => {
+        requireAuthenticatedSession();
         const formData = new FormData();
         formData.append("file", file);
         if (folder) {
@@ -32,14 +42,7 @@ export const imageApi = {
     },
 
     deleteImage: (publicId: string) => {
+        requireAuthenticatedSession();
         return api.delete(`/images/${publicId}`);
-    },
-
-    getImageUrl: (publicId: string) => {
-        return api.get<string>(`/images/${publicId}`);
-    },
-
-    transformImage: (request: TransformRequest) => {
-        return api.post<string>("/images/transform", request);
     },
 };
