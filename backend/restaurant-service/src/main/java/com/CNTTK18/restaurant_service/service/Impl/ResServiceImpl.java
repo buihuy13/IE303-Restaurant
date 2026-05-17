@@ -222,7 +222,7 @@ public class ResServiceImpl implements ResService {
         UserResponse user = userServiceClient.getAdminUser(id);
 
         Restaurants res = resRepository
-                .findRestaurantsByMerchantId(id)
+                .findFirstByMerchantId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return resMapper.toResResponse(res);
     }
@@ -252,7 +252,7 @@ public class ResServiceImpl implements ResService {
         if (!isAdmin && !isMerchantOwner) {
             throw new InvalidRequestException("User không phải là merchant hay admin");
         }
-        if (resRepository.findRestaurantsByMerchantId(user.getId()).isPresent()) {
+        if (resRepository.findFirstByMerchantId(user.getId()).isPresent()) {
             throw new InvalidRequestException("User đã là merchant của 1 restaurant");
         }
     }
