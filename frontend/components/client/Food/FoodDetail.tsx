@@ -5,8 +5,9 @@ import { productApi } from "@/lib/api/productApi";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import type { ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { Product, ProductSize, Restaurant } from "@/types";
-import { Check, ChevronRight, Home, Minus, Plus, Store } from "lucide-react";
+import { Check, ChevronRight, Home, Minus, Plus, Star, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -15,9 +16,10 @@ import toast from "react-hot-toast";
 type FoodDetailClientProps = {
     foodItem: Product;
     restaurant: Restaurant;
+    reviewStats?: ReviewStatsResponse | null;
 };
 
-export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientProps) {
+export default function FoodDetail({ foodItem, restaurant, reviewStats }: FoodDetailClientProps) {
     const { addItem } = useCartStore();
     const { user, loginWithKeycloak } = useAuthStore();
     const [quantity, setQuantity] = useState(1);
@@ -155,6 +157,14 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
         });
     };
     const restaurantHref = restaurant?.slug ? `/restaurants/${restaurant.slug}` : "/search?type=restaurants";
+    const displayRating =
+        reviewStats?.averageRating != null && Number.isFinite(reviewStats.averageRating)
+            ? reviewStats.averageRating
+            : foodItem.rating;
+    const displayReviewCount =
+        reviewStats?.totalReviews != null && reviewStats.totalReviews >= 0
+            ? reviewStats.totalReviews
+            : foodItem.totalReview ?? 0;
 
     return (
         <div>
@@ -230,9 +240,18 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                 <div className="flex flex-col space-y-6">
                     {/* Product Name - Bold and prominent */}
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
                             {foodItem.productName || "Special Beef Pho (Pho Dac Biet)"}
                         </h1>
+                        {(displayReviewCount > 0 || displayRating > 0) && (
+                            <div className="mb-4 flex items-center gap-2 text-sm text-gray-700">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-semibold">{Number(displayRating).toFixed(1)}</span>
+                                <span className="text-gray-500">
+                                    ({displayReviewCount.toLocaleString()} reviews)
+                                </span>
+                            </div>
+                        )}
                         {/* Price - Prominent in USD */}
                         {selectedSize ? (
                             <p className="text-3xl md:text-4xl font-bold text-[#EE4D2D]">

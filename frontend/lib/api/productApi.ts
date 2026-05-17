@@ -1,5 +1,7 @@
-import type { Product, ProductCreateData, Review } from "@/types";
+import type { Product, ProductCreateData } from "@/types";
+import { buildProductQueryParams, type ProductSearchSort } from "@/lib/api/backendQueryParams";
 import api from "../axios";
+import { queryApi } from "./queryApi";
 
 // Page response structure from Spring Boot
 export interface PageResponse<T> {
@@ -15,12 +17,13 @@ export interface PageResponse<T> {
 }
 
 export const productApi = {
-    getAllProducts: (params: URLSearchParams) => {
-        const finalParams = new URLSearchParams(params);
-        if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
-        if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
+    getAllProducts: async (params: URLSearchParams, sort: ProductSearchSort = "relevance") => {
+        const sortValue = (params.get("sort") as ProductSearchSort | null) ?? sort;
+        const apiParams = buildProductQueryParams(params, sortValue);
+        if (!apiParams.has("lat")) apiParams.set("lat", "10.9032198");
+        if (!apiParams.has("lon")) apiParams.set("lon", "106.7750317");
 
-        return api.get<PageResponse<Product>>("/products", { params: finalParams });
+        return queryApi.getProducts(apiParams);
     },
     getProductsByRestaurantId: (restaurantId: string) => {
         return api.get<Product[]>(`/products/restaurant/${restaurantId}`);
@@ -61,10 +64,10 @@ export const productApi = {
         }
 
         const encodedSlug = encodeURIComponent(cleanSlug);
-        return api.get<Product>(`/products/${encodedSlug}`);
+        return api.get<Product>(`/products/slug/${encodedSlug}`);
     },
     getProductById: (productId: string) => {
-        return api.get<Product>(`/products/admin/${productId}`);
+        return api.get<Product>(`/products/${productId}`);
     },
     createProduct: (productData: ProductCreateData, imageFile?: File) => {
         const formData = new FormData();
@@ -90,6 +93,6 @@ export const productApi = {
         return api.delete(`/products/image/${productId}`);
     },
     getAllReviews: (productId: string) => {
-        return api.get<Review[]>(`/review?productId=${productId}`);
+        return api.get<import("@/types").ReviewListResponse>(`/review/product/${productId}`);
     },
 };
