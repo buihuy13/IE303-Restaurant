@@ -62,11 +62,13 @@ export interface AddItemToCartRequest {
 
 export const cartApi = {
     getCart: async (_userId: string) => {
+        void _userId;
         const response = await api.get<CartResponse>("/cart", withOrderServiceBase());
         return response.data;
     },
 
     addItemToCart: async (_userId: string, data: AddItemToCartRequest) => {
+        void _userId;
         const restaurantId = data.restaurant.restaurantId.trim();
         const baseProductId = data.item.productId.split("--")[0].trim();
         const sizeId = data.item.sizeId?.trim();
@@ -159,6 +161,7 @@ export const cartApi = {
     },
 
     clearCart: async (_userId: string) => {
+        void _userId;
         const response = await api.delete("/cart", withOrderServiceBase());
         return response.data;
     },

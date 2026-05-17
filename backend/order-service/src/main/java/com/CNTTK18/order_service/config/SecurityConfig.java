@@ -25,7 +25,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**", "/v3/api-docs/**")
                         .permitAll()
                         .anyRequest()
-                        .authenticated())
+                        .permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(internalFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

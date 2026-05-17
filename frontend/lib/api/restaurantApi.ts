@@ -49,7 +49,7 @@ export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise
         params.set("page", String(page));
         params.set("size", String(pageSize));
 
-        const res = await api.get<RestaurantPageResponse>("/restaurant", { params });
+        const res = await api.get<RestaurantPageResponse>("/query/restaurants", { params });
         const data = res.data;
         const chunk = Array.isArray(data?.content) ? data.content : [];
         all.push(...chunk);
@@ -116,7 +116,7 @@ export const restaurantApi = {
         return api.get<Restaurant>(`/restaurant/merchant/${merchantId}`);
     },
     getAllRestaurants: (params: URLSearchParams) => {
-        return api.get<RestaurantPageResponse>("/restaurant", {
+        return api.get<RestaurantPageResponse>("/query/restaurants", {
             params: params,
         });
     },

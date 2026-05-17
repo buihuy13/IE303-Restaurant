@@ -48,7 +48,6 @@ export default function NavActions() {
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const router = useRouter();
     const pathname = usePathname();
 
     const chatUnreadCount = Object.values(unreadCountMap).reduce(
