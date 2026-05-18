@@ -17,7 +17,7 @@ public interface ResRepository extends JpaRepository<Restaurants, UUID>, JpaSpec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Restaurants> findRestaurantById(UUID id);
 
-    Optional<Restaurants> findRestaurantsByMerchantId(UUID id);
+    Optional<Restaurants> findFirstByMerchantId(UUID id);
 
     Optional<Restaurants> findBySlug(String slug);
 }

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { productApi, type PageResponse } from "@/lib/api/productApi";
+import type { ProductSearchSort } from "@/lib/utils/productQueryClient";
 import type { Product, ProductCreateData, Review } from "@/types";
 import { create } from "zustand";
 interface ProductState {
@@ -15,7 +16,7 @@ interface ProductState {
     pageSize: number;
     fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
     fetchProductByProductId: (productId: string) => Promise<void>;
-    fetchAllProducts: (params: URLSearchParams) => Promise<void>;
+    fetchAllProducts: (params: URLSearchParams, sort?: ProductSearchSort) => Promise<void>;
     createNewProduct: (productData: ProductCreateData, imageFile?: File) => Promise<void>;
     updateProduct: (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => Promise<void>;
     updateProductStatus: (ProductId: string) => Promise<void>;
@@ -36,21 +37,19 @@ export const useProductStore = create<ProductState>((set) => ({
     currentPage: 0,
     pageSize: 12,
 
-    fetchAllProducts: async (params: URLSearchParams) => {
+    fetchAllProducts: async (params: URLSearchParams, sort: ProductSearchSort = "relevance") => {
         set({ loading: true, error: null });
         try {
-            // Backend requires coordinates. Keep frontend resilient by injecting defaults
-            // when the caller doesn't provide them (same strategy as restaurant listing).
             const finalParams = new URLSearchParams(params);
             if (!finalParams.has("lat")) finalParams.set("lat", "10.9032198");
             if (!finalParams.has("lon")) finalParams.set("lon", "106.7750317");
 
-            const res = await productApi.getAllProducts(finalParams);
+            const sortValue = (finalParams.get("sort") as ProductSearchSort | null) ?? sort;
+            const res = await productApi.getAllProducts(finalParams, sortValue);
             // Handle Page response structure: { content: Product[], totalPages, totalElements, ... }
             const data = res.data;
 
             if (data && typeof data === "object" && "content" in data) {
-                // It's a Page response
                 const pageData = data as PageResponse<Product>;
                 set({
                     products: pageData.content || [],
@@ -199,7 +198,7 @@ export const useProductStore = create<ProductState>((set) => ({
         set({ loading: true, error: null });
         try {
             const res = await productApi.getAllReviews(productId);
-            set({ reviews: res.data || [], loading: false });
+            set({ reviews: res.data.reviews ?? [], loading: false });
         } catch (err: any) {
             set({ error: err.message || "Failed to load reviews.", loading: false });
         }

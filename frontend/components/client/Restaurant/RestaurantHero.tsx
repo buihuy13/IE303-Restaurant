@@ -1,12 +1,27 @@
 // File: app/_components/client/Restaurant/RestaurantHero.tsx
 "use client";
 
+import type { ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { getImageUrl } from "@/lib/utils";
 import { Restaurant } from "@/types";
 import { Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 
-export default function RestaurantHero({ restaurant }: { restaurant: Restaurant }) {
+export default function RestaurantHero({
+    restaurant,
+    reviewStats,
+}: {
+    restaurant: Restaurant;
+    reviewStats?: ReviewStatsResponse | null;
+}) {
+        const displayRating =
+            reviewStats?.averageRating != null && Number.isFinite(reviewStats.averageRating)
+                ? reviewStats.averageRating
+                : restaurant.rating;
+        const displayReviewCount =
+            reviewStats?.totalReviews != null && reviewStats.totalReviews >= 0
+                ? reviewStats.totalReviews
+                : restaurant.totalReview;
         const mainCategory = restaurant.cate[0]?.cateName || "Restaurant";
         const bannerUrl = restaurant.imageURL || "/placeholder-banner.png";
 
@@ -64,9 +79,11 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                                                 {/* Rating */}
                                                                 <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-sm">
                                                                         <Star className="h-4 w-4 flex-shrink-0 fill-yellow-400 text-yellow-400" />
-                                                                        <span className="font-semibold text-white">{restaurant.rating}</span>
+                                                                        <span className="font-semibold text-white">
+                                                                                {Number(displayRating).toFixed(1)}
+                                                                        </span>
                                                                         <span className="text-xs text-gray-200">
-                                                                                ({restaurant.totalReview.toLocaleString()} reviews)
+                                                                                ({displayReviewCount.toLocaleString()} reviews)
                                                                         </span>
                                                                 </div>
 

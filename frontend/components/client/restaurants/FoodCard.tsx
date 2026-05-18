@@ -6,6 +6,12 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
+import {
+    fetchProductSizesForCart,
+    getListPriceDisplay,
+    hasListPriceRange,
+    pickDefaultProductSize,
+} from "@/lib/utils/productListDisplay";
 import { Product } from "@/types";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
@@ -47,25 +53,16 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         }
     }, [isMounted, user?.id, setUserId]);
 
-    // Get minimum price from all sizes (instead of first size)
-    const displayPrice = useMemo(() => {
-        if (!product.productSizes || product.productSizes.length === 0) return undefined;
-        return Math.min(...product.productSizes.map(size => size.price));
-    }, [product.productSizes]);
-    
-    // Get the size with minimum price as default
-    const defaultSize = useMemo(() => {
-        if (!product.productSizes || product.productSizes.length === 0) return undefined;
-        return product.productSizes.reduce((min, size) => 
-            size.price < min.price ? size : min
-        );
-    }, [product.productSizes]);
+    const displayPriceLabel = useMemo(() => {
+        if (product.productSizes.length > 0) {
+            const min = Math.min(...product.productSizes.map((size) => size.price));
+            return `${min.toLocaleString("vi-VN")} ₫`;
+        }
+        return getListPriceDisplay(product);
+    }, [product]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
-    const formattedPrice = useMemo(() => {
-        if (displayPrice === undefined) return null;
-        return `${displayPrice.toLocaleString("vi-VN")} ₫`;
-    }, [displayPrice]);
+    const formattedPrice = displayPriceLabel;
 
     const reviewCountText = useMemo(() => {
         const count = typeof product.totalReview === "number" ? product.totalReview : 0;
@@ -188,18 +185,22 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                 return;
             }
 
-            if (!product.productSizes || product.productSizes.length === 0) {
-                toast.error("This product has no available sizes");
-                return;
-            }
-
-            if (!defaultSize) {
-                toast.error("Default size not found");
-                return;
-            }
-
             setIsAdding(true);
             try {
+                let sizes = product.productSizes;
+                if (sizes.length === 0) {
+                    if (!hasListPriceRange(product)) {
+                        toast.error("This product has no available sizes");
+                        return;
+                    }
+                    sizes = await fetchProductSizesForCart(product.id);
+                }
+                const defaultSize = pickDefaultProductSize(sizes);
+                if (!defaultSize) {
+                    toast.error("This product has no available sizes");
+                    return;
+                }
+
                 const restaurantForCart = await resolveRestaurantForCart();
                 if (!restaurantForCart) {
                     toast.error("Restaurant information not found");
@@ -231,7 +232,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
+        [isAdding, isMounted, user, product, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
     );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED

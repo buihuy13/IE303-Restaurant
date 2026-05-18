@@ -50,6 +50,8 @@ services:
             - KC_SPI_THEME_CACHE_TEMPLATES=false
             - KC_SPI_THEME_STATIC_MAX_AGE=-1
             - KC_HTTP_PORT=9091
+            # Dev: Keycloak is exposed on host :9090 (no Caddy on :8443). Overrides KC_HOSTNAME in .env.
+            - KC_HOSTNAME=localhost:9090
             - KC_HOSTNAME_PATH=/auth
             - KC_PROXY=edge
             - KC_HTTP_RELATIVE_PATH=/auth

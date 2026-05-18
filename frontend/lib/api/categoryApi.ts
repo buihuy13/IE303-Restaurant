@@ -1,14 +1,16 @@
 import type { Category, CategoryData } from "@/types";
 import api from "../axios";
 
-// Backend returns CateResponse { cateId, cateName }
+// catalog-service CategoryResponse { id, cateName }
 type CateResponse = {
-    cateId: string;
+    id: string;
     cateName: string;
+    /** @deprecated legacy field from monolithic restaurant-service */
+    cateId?: string;
 };
 
 const mapCateResponseToCategory = (cate: CateResponse): Category => ({
-    id: cate.cateId,
+    id: String(cate.id ?? cate.cateId),
     cateName: cate.cateName,
 });
 

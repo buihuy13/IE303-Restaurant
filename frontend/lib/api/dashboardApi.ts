@@ -155,6 +155,16 @@ function mapRevenueByRestaurantResponse(raw: unknown): DashboardRevenueByRestaur
 
 function mapOrderSummary(raw: unknown): DashboardOrderSummary {
     const obj = toObject(raw);
+    const itemsArray = toArray<unknown>(obj.items);
+    
+    let computedItemCount = toNumber(obj.itemCount, 0);
+    if (!obj.itemCount && itemsArray.length > 0) {
+        computedItemCount = itemsArray.reduce((acc: number, curr) => {
+            const item = toObject(curr);
+            return acc + toNumber(item.quantity, 1);
+        }, 0);
+    }
+
     return {
         id: toString(obj.id),
         orderCode: toNumber(obj.orderCode, 0),
@@ -165,7 +175,7 @@ function mapOrderSummary(raw: unknown): DashboardOrderSummary {
         status: toString(obj.status, "PENDING"),
         paymentStatus: toString(obj.paymentStatus, "PENDING"),
         createdAt: toString(obj.createdAt),
-        itemCount: toNumber(obj.itemCount),
+        itemCount: computedItemCount,
     };
 }
 

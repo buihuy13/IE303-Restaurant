@@ -1,6 +1,12 @@
 "use client";
 
 import Pagination from "@/components/client/Pagination";
+import {
+    buildProductSearchParamsFromUrl,
+    buildRestaurantSearchParamsFromUrl,
+    parseProductSort,
+    parseRestaurantSort,
+} from "@/lib/api/backendQueryParams";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { Category } from "@/types";
@@ -44,7 +50,13 @@ export default function RestaurantList() {
                 restaurantsTotalElements,
                 restaurantsTotalPages,
         } = useRestaurantStore();
-        const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
+        const {
+                fetchAllProducts,
+                products,
+                loading: productsLoading,
+                totalElements: productsTotalElements,
+                totalPages: productsTotalPages,
+        } = useProductStore();
         const searchType = searchParams.get("type") || "restaurants";
 
         // Layout state with localStorage persistence (only for food items)
@@ -80,46 +92,17 @@ export default function RestaurantList() {
         }, [foodLayout]);
 
         useEffect(() => {
-                const params = new URLSearchParams(Array.from(searchParams.entries()));
-                
-                // Convert category params to comma-separated lowercase string for backend
-                const categoryParams = searchParams.getAll("category");
-                params.delete("category"); // Remove all category params
-                if (categoryParams.length > 0) {
-                        // Convert to lowercase and join with comma
-                        const categoryString = categoryParams.map((cat) => cat.toLowerCase()).join(",");
-                        params.set("category", categoryString);
-                }
-                
+                const lat = 10.7626;
+                const lon = 106.6825;
+
                 if (searchType === "restaurants") {
-                        // Spring Pageable: page is 0-based; UI uses 1-based ?page=
-                        const uiPage = Number(searchParams.get("page")) || 1;
-                        params.delete("page");
-                        params.set("page", String(Math.max(0, uiPage - 1)));
+                        const params = buildRestaurantSearchParamsFromUrl(searchParams, lat, lon);
                         params.set("size", String(ITEMS_PER_PAGE));
-                        getAllRestaurants(params);
+                        getAllRestaurants(params, parseRestaurantSort(searchParams.get("sort")));
                 } else if (searchType === "foods") {
-                        // Foods search: ensure coordinates are present for distance-based queries.
-                        if (!params.has("lat")) params.set("lat", "10.7626");
-                        if (!params.has("lon")) params.set("lon", "106.6825");
-
-                        // Map UI sort param "order" to backend sort params:
-                        // - "desc"  -> rating=desc  (top rated)
-                        // - "asc"   -> locationsorted=asc (closest first)
-                        const order = params.get("order");
-                        if (order) {
-                                params.delete("order");
-                                params.delete("rating");
-                                params.delete("locationsorted");
-
-                                if (order === "desc") {
-                                        params.set("rating", "desc");
-                                } else if (order === "asc") {
-                                        params.set("locationsorted", "asc");
-                                }
-                        }
-
-                        fetchAllProducts(params);
+                        const params = buildProductSearchParamsFromUrl(searchParams, lat, lon);
+                        params.set("size", String(ITEMS_PER_PAGE));
+                        fetchAllProducts(params, parseProductSort(searchParams.get("sort")));
                 }
                 getAllCategories();
         }, [getAllRestaurants, getAllCategories, fetchAllProducts, searchType, searchParams]);
@@ -141,16 +124,16 @@ export default function RestaurantList() {
         };
 
         const items = searchType === "restaurants" ? restaurants : products;
-        const totalResults = searchType === "restaurants" ? restaurantsTotalElements : items.length;
+        const totalResults = searchType === "restaurants" ? restaurantsTotalElements : productsTotalElements;
         const title = searchType === "restaurants" ? "Restaurants" : "Food Items";
         const paginationTotalPages =
                 searchType === "restaurants"
                         ? Math.max(restaurantsTotalPages, 1)
-                        : Math.max(Math.ceil((items?.length || 0) / ITEMS_PER_PAGE), 1);
+                        : Math.max(productsTotalPages, 1);
 
         return (
                 <div>
-                        {/* --- Explore by Category --- */}
+                        {searchType === "foods" && (
                         <div className="mb-10">
                                 <div className="flex justify-between items-center mb-4">
                                         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">
@@ -211,6 +194,7 @@ export default function RestaurantList() {
                                         </button>
                                 </div>
                         </div>
+                        )}
 
                         {/* --- List Header & Layout Toggle --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
