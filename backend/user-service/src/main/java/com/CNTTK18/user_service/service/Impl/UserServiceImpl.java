@@ -36,6 +36,7 @@ import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.mapper.AddressMapper;
 import com.CNTTK18.user_service.mapper.UserMapper;
 import com.CNTTK18.user_service.model.Users;
+import com.CNTTK18.user_service.model.data.Role;
 import com.CNTTK18.user_service.repository.UserRepository;
 import com.CNTTK18.user_service.service.UserService;
 
@@ -80,6 +81,12 @@ public class UserServiceImpl implements UserService {
             existingUser.setSlug(SlugGenerator.generate(user.getUsername()));
             eventPublisher.publishEvent(new UpdateKeycloakUser(id.toString(), user.getUsername()));
         }
+        if (user.getBankNumber() != null) {
+            existingUser.setBankNumber(user.getBankNumber());
+        }
+        if (user.getBank() != null) {
+            existingUser.setBank(user.getBank());
+        }
         existingUser = userRepository.save(existingUser);
         return userMapper.toUserResponse(existingUser);
     }
@@ -106,7 +113,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword) {
+    public Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword, UserRole authUser) {
+        requireAdminRole(authUser);
         int safePage = Math.max(page, 0);
         int safeSize = size > 0 ? size : 10;
 
@@ -150,6 +158,10 @@ public class UserServiceImpl implements UserService {
         newUser.setSlug(SlugGenerator.generate(user.getUsername()));
         newUser.setEmail(user.getEmail());
         newUser.setPhone(user.getPhone());
+        if (user.getRole() == Role.MERCHANT) {
+            newUser.setBankNumber(user.getBankNumber());
+            newUser.setBank(user.getBank());
+        }
         newUser = userRepository.save(newUser);
     }
 
@@ -259,5 +271,12 @@ public class UserServiceImpl implements UserService {
             return "USER";
         }
         return roleNames.isEmpty() ? "USER" : roleNames.get(0);
+    }
+
+    private void requireAdminRole(UserRole authUser) {
+        if (!"ADMIN".equals(authUser.getRole())) {
+            log.error("Access denied for role: {}", authUser.getRole());
+            throw new ForbiddenException("Access denied");
+        }
     }
 }

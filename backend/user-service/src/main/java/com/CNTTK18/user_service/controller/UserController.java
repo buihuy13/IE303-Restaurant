@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.CNTTK18.user_service.dto.UserRole;
 import com.CNTTK18.user_service.dto.request.AddressRequest;
+import com.CNTTK18.user_service.dto.request.BankDetailsRequest;
 import com.CNTTK18.user_service.dto.request.Register;
 import com.CNTTK18.user_service.dto.request.UserRequest;
 import com.CNTTK18.user_service.dto.response.AddressResponse;
+import com.CNTTK18.user_service.dto.response.BankListResponse;
 import com.CNTTK18.user_service.dto.response.MessageResponse;
 import com.CNTTK18.user_service.dto.response.RegisterResponse;
 import com.CNTTK18.user_service.dto.response.UserResponse;
 import com.CNTTK18.user_service.dto.response.UserSummaryDTO;
-import com.CNTTK18.user_service.exception.ForbiddenException;
 import com.CNTTK18.user_service.service.AddressService;
+import com.CNTTK18.user_service.service.BankService;
 import com.CNTTK18.user_service.service.KeycloakUserService;
 import com.CNTTK18.user_service.service.UserService;
 
@@ -48,6 +49,7 @@ public class UserController {
     private final UserService userService;
     private final KeycloakUserService keycloakUserService;
     private final AddressService addressService;
+    private final BankService bankService;
 
     @Tag(name = "Get")
     @Operation(summary = "Get all users")
@@ -70,9 +72,9 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String role,
-            @RequestParam(required = false) String keyword) {
-        requireAdminRole();
-        return ResponseEntity.ok(userService.getAdminUsers(page, size, role, keyword));
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(userService.getAdminUsers(page, size, role, keyword, authUser));
     }
 
     @Tag(name = "Get")
@@ -145,19 +147,20 @@ public class UserController {
         return ResponseEntity.ok(addresses);
     }
 
-    private void requireAdminRole() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication() != null
-                ? SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-                : null;
+    @Tag(name = "Get")
+    @Operation(summary = "Get list of Vietnamese banks")
+    @GetMapping("/banks")
+    public ResponseEntity<BankListResponse> getBanks() {
+        return ResponseEntity.ok(bankService.getVietnameseBanks());
+    }
 
-        if (!(principal instanceof UserRole userRole)) {
-            log.error("Missing user role principal in SecurityContext");
-            throw new ForbiddenException("Access denied");
-        }
-
-        if (!"ADMIN".equals(userRole.getRole())) {
-            log.error("Access denied for role: {}", userRole.getRole());
-            throw new ForbiddenException("Access denied");
-        }
+    @Tag(name = "Put")
+    @Operation(summary = "Update merchant bank details")
+    @PutMapping("/{id}/bank-details")
+    public ResponseEntity<UserResponse> updateBankDetails(
+            @PathVariable UUID id,
+            @RequestBody @Valid BankDetailsRequest request,
+            @AuthenticationPrincipal UserRole authUser) {
+        return ResponseEntity.ok(bankService.updateMerchantBankDetails(id, request, authUser));
     }
 }

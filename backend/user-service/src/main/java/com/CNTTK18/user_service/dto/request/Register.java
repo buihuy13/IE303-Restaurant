@@ -34,4 +34,7 @@ public class Register {
 
     @NotBlank(message = "Phone number is required")
     private String phone;
+
+    private String bankNumber;
+    private String bank;
 }

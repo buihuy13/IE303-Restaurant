@@ -111,11 +111,11 @@ fetch_reference_ids() {
 seed_user_service() {
     echo "Seeding users..."
     $PSQL -d user_service >/dev/null 2>&1 <<SQL
-INSERT INTO users (id, username, email, phone, slug) VALUES
-('$MERCHANT_USER_ID', 'merchant', 'merchant@example.com', '0900000000', 'merchant'),
-('$CUSTOMER_USER_ID', 'test_user', 'testuser@example.com', '0900000001', 'test_user'),
-('$ADMIN_USER_ID', 'admin_manager', 'manager@example.com', '0900000002', 'admin_manager')
-ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email;
+INSERT INTO users (id, username, email, phone, slug, bank_number, bank, bank_name) VALUES
+('$MERCHANT_USER_ID', 'merchant', 'merchant@example.com', '0900000000', 'merchant', '123456789', 'VCB', 'Ngân hàng TMCP Ngoại Thương Việt Nam'),
+('$CUSTOMER_USER_ID', 'test_user', 'testuser@example.com', '0900000001', 'test_user', NULL, NULL, NULL),
+('$ADMIN_USER_ID', 'admin_manager', 'manager@example.com', '0900000002', 'admin_manager', NULL, NULL, NULL)
+ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email, phone = EXCLUDED.phone, bank_number = EXCLUDED.bank_number, bank = EXCLUDED.bank, bank_name = EXCLUDED.bank_name;
 SQL
     echo "✓ 3 users seeded"
 }

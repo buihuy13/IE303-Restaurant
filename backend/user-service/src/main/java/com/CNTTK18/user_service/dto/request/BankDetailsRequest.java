@@ -11,14 +11,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRequest {
-    @NotBlank(message = "Username is mandatory")
-    private String username;
-
-    @NotBlank(message = "Phone is mandatory")
-    private String phone;
-
+public class BankDetailsRequest {
+    @NotBlank(message = "Bank number is mandatory")
     private String bankNumber;
 
+    @NotBlank(message = "Bank code is mandatory")
     private String bank;
 }
