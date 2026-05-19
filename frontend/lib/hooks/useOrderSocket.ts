@@ -42,6 +42,25 @@ function getReconnectDelay(attempt: number): number {
 function parseSSEData(raw: string): OrderNotification | null {
     try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+        // If it's a flat payload from Java's ORDER_NOTIFICATION event
+        if (parsed.orderId && parsed.status && !parsed.data) {
+            return {
+                type: "ORDER_NOTIFICATION",
+                data: {
+                    orderId: String(parsed.orderId),
+                    totalAmount: typeof parsed.totalPrice === "number" ? parsed.totalPrice : Number(parsed.totalPrice || 0),
+                    itemCount: typeof parsed.itemCount === "number" ? parsed.itemCount : 1,
+                    status: String(parsed.status),
+                    restaurantName: String(parsed.restaurantName || ""),
+                    createdAt: typeof parsed.timestamp === "string" ? parsed.timestamp : new Date().toISOString(),
+                },
+                orderId: String(parsed.orderId),
+                status: String(parsed.status),
+                timestamp: parsed.timestamp ? new Date(parsed.timestamp as string) : new Date(),
+            };
+        }
+
         return {
             type: typeof parsed.type === "string" ? parsed.type : "unknown",
             data:
@@ -62,7 +81,7 @@ function parseSSEData(raw: string): OrderNotification | null {
     }
 }
 
-export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
+export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const esRef = useRef<EventSource | null>(null);
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,6 +155,19 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                 const notification = parseSSEData(event.data);
                 if (notification) {
                     onNewOrderRef.current?.(notification);
+                }
+            });
+
+            // Lắng nghe event "ORDER_NOTIFICATION" từ Java SSEService
+            es.addEventListener("ORDER_NOTIFICATION", (event: MessageEvent<string>) => {
+                if (!isMountedRef.current) return;
+                const notification = parseSSEData(event.data);
+                if (notification) {
+                    if (notification.status === "PENDING" || notification.status === "pending") {
+                        onNewOrderRef.current?.(notification);
+                    } else {
+                        onOrderStatusUpdateRef.current?.(notification);
+                    }
                 }
             });
 
