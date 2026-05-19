@@ -20,7 +20,7 @@ public interface OrderService {
     OrderResponse updateStatus(
             UUID orderId, UUID currentUserId, String currentUserRole, UpdateOrderStatusRequest request);
 
-    OrderResponse cancelOrder(UUID userId, UUID orderId);
+    OrderResponse cancelOrder(UUID userId, UUID orderId, String reason);
 
     void updatePaymentStatus(UUID orderId, boolean success, Long orderCode, String paymentLinkId);
 }
