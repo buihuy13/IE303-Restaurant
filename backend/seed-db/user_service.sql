@@ -6,6 +6,9 @@ create table users (
     email varchar(255) unique,
     phone varchar(15),
     slug varchar(255) not null unique,
+    bank_number varchar(50),
+    bank varchar(20),
+    bank_name varchar(255),
     created_at timestamp default current_timestamp,
     updated_at timestamp default current_timestamp
 );
