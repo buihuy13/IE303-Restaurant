@@ -21,6 +21,7 @@ public class OrderResponse {
     private UUID id;
     private UUID userId;
     private UUID restaurantId;
+    private UUID merchantId;
     private String restaurantName;
     private List<OrderItemResponse> items;
     private BigDecimal totalPrice;

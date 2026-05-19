@@ -1,6 +1,7 @@
 package com.CNTTK18.order_service.service.impl;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.CNTTK18.Common.Event.MerchantRevenueEvent;
 import com.CNTTK18.Common.Event.OrderNotificationEvent;
 import com.CNTTK18.order_service.client.RestaurantClient;
 import com.CNTTK18.order_service.dto.client.ResClientResponse;
@@ -22,6 +24,7 @@ import com.CNTTK18.order_service.exception.BadRequestException;
 import com.CNTTK18.order_service.exception.ForbiddenException;
 import com.CNTTK18.order_service.exception.NotFoundException;
 import com.CNTTK18.order_service.mapper.OrderMapper;
+import com.CNTTK18.order_service.messaging.MerchantRevenuePublisher;
 import com.CNTTK18.order_service.messaging.OrderNotificationPublisher;
 import com.CNTTK18.order_service.model.Cart;
 import com.CNTTK18.order_service.model.CartRestaurantGroup;
@@ -44,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final RestaurantClient restaurantClient;
     private final OrderNotificationPublisher notificationPublisher;
+    private final MerchantRevenuePublisher merchantRevenuePublisher;
 
     private static final String ORDERS_USER_CACHE_PREFIX = "orders:user:";
     private static final String ORDERS_RES_CACHE_PREFIX = "orders:res:";
@@ -150,6 +154,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Order has not been paid yet");
         }
 
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(request.getStatus());
         Order saved = orderRepository.save(order);
 
@@ -166,6 +171,8 @@ public class OrderServiceImpl implements OrderService {
                 saved.getTotalPrice(),
                 saved.getStatus().name(),
                 saved.getDeliveryAddress()));
+
+        publishMerchantRevenueIfCompleted(previousStatus, saved);
 
         return orderMapper.toResponse(saved);
     }
@@ -285,9 +292,9 @@ public class OrderServiceImpl implements OrderService {
 
         for (UUID restaurantId : request.getRestaurantIds()) {
             CartRestaurantGroup group = findRestaurantGroupInCartOrThrow(cart, restaurantId);
-            validateRestaurantAvailableForCheckout(restaurantId);
+            ResClientResponse resInfo = validateRestaurantAvailableForCheckout(restaurantId);
 
-            Order order = buildOrder(userId, restaurantId, group, request);
+            Order order = buildOrder(userId, restaurantId, resInfo, group, request);
             newOrders.add(order);
             groupsToRemove.add(group);
         }
@@ -310,20 +317,30 @@ public class OrderServiceImpl implements OrderService {
      * Re-validates restaurant status at checkout time to avoid creating invalid
      * orders.
      */
-    private void validateRestaurantAvailableForCheckout(UUID restaurantId) {
+    private ResClientResponse validateRestaurantAvailableForCheckout(UUID restaurantId) {
         ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
         if (resInfo == null || !resInfo.isEnabled()) {
             throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
                     + " is currently unavailable");
         }
+        if (resInfo.getMerchantId() == null) {
+            throw new BadRequestException("Restaurant " + restaurantId + " does not have a merchant owner");
+        }
+        return resInfo;
     }
 
     /** Convert one cart restaurant group into one pending, unpaid order entity. */
-    private Order buildOrder(UUID userId, UUID restaurantId, CartRestaurantGroup group, CheckoutRequest request) {
+    private Order buildOrder(
+            UUID userId,
+            UUID restaurantId,
+            ResClientResponse resInfo,
+            CartRestaurantGroup group,
+            CheckoutRequest request) {
         return Order.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
                 .restaurantId(restaurantId)
+                .merchantId(resInfo.getMerchantId())
                 .restaurantName(group.getRestaurantName())
                 .items(mapToOrderItems(group))
                 .totalPrice(calculateTotalPrice(group))
@@ -356,6 +373,37 @@ public class OrderServiceImpl implements OrderService {
         return group.getItems().stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void publishMerchantRevenueIfCompleted(OrderStatus previousStatus, Order saved) {
+        if (previousStatus == OrderStatus.COMPLETED || saved.getStatus() != OrderStatus.COMPLETED) {
+            return;
+        }
+        if (saved.getPaymentStatus() != PaymentStatus.PAID) {
+            return;
+        }
+
+        UUID merchantId = saved.getMerchantId();
+        if (merchantId == null) {
+            ResClientResponse resInfo =
+                    restaurantClient.getRestaurant(saved.getRestaurantId()).block();
+            if (resInfo == null || resInfo.getMerchantId() == null) {
+                throw new BadRequestException("Cannot resolve merchant owner for completed order");
+            }
+            merchantId = resInfo.getMerchantId();
+            saved.setMerchantId(merchantId);
+            orderRepository.save(saved);
+        }
+
+        Long amount = saved.getTotalPrice() == null ? 0L : saved.getTotalPrice().longValue();
+        MerchantRevenueEvent event = new MerchantRevenueEvent(
+                saved.getId(),
+                merchantId,
+                saved.getRestaurantId(),
+                amount,
+                Instant.now(),
+                "order:" + saved.getId() + ":merchant-revenue");
+        merchantRevenuePublisher.publish(event);
     }
 
     /**
