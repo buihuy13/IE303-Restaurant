@@ -22,7 +22,7 @@ public interface UserService {
 
     UserResponse getUserByAccessToken(UserRole authUser);
 
-    Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword);
+    Page<UserSummaryDTO> getAdminUsers(int page, int size, String role, String keyword, UserRole authUser);
 
     void createUser(UUID id, Register registeredUser);
 
