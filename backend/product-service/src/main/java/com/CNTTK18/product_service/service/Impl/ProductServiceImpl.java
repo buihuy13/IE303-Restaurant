@@ -30,14 +30,18 @@ import com.CNTTK18.product_service.mapper.ProductMapper;
 import com.CNTTK18.product_service.model.ProductSize;
 import com.CNTTK18.product_service.model.Products;
 import com.CNTTK18.product_service.repository.ProductRepository;
+import com.CNTTK18.product_service.repository.ProductSizeRepository;
 import com.CNTTK18.product_service.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepo;
+    private final ProductSizeRepository productSizeRepo;
     private final CatalogServiceFeignClient catalogServiceClient;
     private final RestaurantServiceFeignClient restaurantServiceClient;
     private final ImageServiceFeignClient imageServiceClient;
@@ -69,9 +73,8 @@ public class ProductServiceImpl implements ProductService {
         @SuppressWarnings("unused")
         CategoryResponse category = getCategoryResponse(productRequest.getCategoryId());
 
-        @SuppressWarnings("unused")
-        RestaurantExistsResponse restaurant =
-                restaurantServiceClient.getRestaurantById(productRequest.getRestaurantId());
+        // restaurantId is already validated by the API Gateway (authenticated merchant JWT).
+        // Calling restaurant-service here is redundant and risks tripping the circuit breaker.
 
         Products product = Products.builder()
                 .id(UUID.randomUUID())
@@ -125,7 +128,12 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(updateProduct.getDescription());
 
         if (updateProduct.getSizeIds() != null) {
-            product.clearAllProductSizes();
+            // Use a direct JPQL delete instead of orphanRemoval to guarantee the DELETE
+            // is flushed to the DB *before* new inserts in the same transaction,
+            // preventing a unique_product_size constraint violation.
+            productSizeRepo.deleteAllByProductId(id);
+            product.getProductSizes().clear();
+
             for (SizePrice psDto : updateProduct.getSizeIds()) {
                 SizeResponse size = catalogServiceClient.getSize(psDto.getSizeId());
 
@@ -145,7 +153,11 @@ public class ProductServiceImpl implements ProductService {
             product.setPublicID(image.getPublic_id());
 
             if (oldPublicId != null && !oldPublicId.isEmpty()) {
-                imageServiceClient.deleteImage(oldPublicId);
+                try {
+                    imageServiceClient.deleteImage(oldPublicId);
+                } catch (Exception e) {
+                    log.warn("Failed to delete old image with public ID {}: {}", oldPublicId, e.getMessage());
+                }
             }
         }
 
@@ -176,7 +188,11 @@ public class ProductServiceImpl implements ProductService {
         Products product = getById(id);
 
         if (product.getPublicID() != null && !product.getPublicID().isEmpty()) {
-            imageServiceClient.deleteImage(product.getPublicID());
+            try {
+                imageServiceClient.deleteImage(product.getPublicID());
+            } catch (Exception e) {
+                log.warn("Failed to delete product image with public ID {}: {}", product.getPublicID(), e.getMessage());
+            }
         }
 
         UUID restaurantId = product.getRestaurantId();
@@ -213,7 +229,13 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void deleteImage(UUID productId, UserRole authUser) {
         Products product = getById(productId);
-        imageServiceClient.deleteImage(product.getPublicID());
+        if (product.getPublicID() != null && !product.getPublicID().isEmpty()) {
+            try {
+                imageServiceClient.deleteImage(product.getPublicID());
+            } catch (Exception e) {
+                log.warn("Failed to delete product image with public ID {}: {}", product.getPublicID(), e.getMessage());
+            }
+        }
         product.setImageURL(null);
         product.setPublicID(null);
         Products savedProduct = productRepo.save(product);

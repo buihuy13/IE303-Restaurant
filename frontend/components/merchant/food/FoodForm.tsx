@@ -249,23 +249,27 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
 
         setSaving(true);
 
-        // Kick off upload/save immediately, but don't block navigation.
-        // This optimizes perceived loading time on `/merchant/food/new` and keeps the upload running in background.
-        const savePromise = onSave({ ...formData, sizeIds: parsedSizes, restaurantId: restaurant.id }, imageFile);
+        try {
+            const savePromise = onSave({ ...formData, sizeIds: parsedSizes, restaurantId: restaurant.id }, imageFile);
 
-        toast.promise(savePromise, {
-            loading: food ? "Updating food..." : "Creating food...",
-            success: food ? "Food updated successfully" : "Food created successfully",
-            error: (err) => {
-                console.error("Save food error:", err);
-                return "Something went wrong. Please try again.";
-            },
-        });
+            await toast.promise(savePromise, {
+                loading: food ? "Updating food..." : "Creating food...",
+                success: food ? "Food updated successfully" : "Food created successfully",
+                error: (err) => {
+                    console.error("Save food error:", err);
+                    const msg = err?.response?.data?.message || err?.message || "Something went wrong. Please try again.";
+                    return msg;
+                },
+            });
 
-        onCancel();
-        savePromise.finally(() => {
+            // Chỉ navigate khi save thành công
+            onCancel();
+        } catch {
+            // Lỗi đã được hiển thị bởi toast.promise → không làm gì thêm
+        } finally {
             if (isMountedRef.current) setSaving(false);
-        });
+        }
+
     };
 
     const handleGenerateDescription = async () => {

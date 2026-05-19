@@ -43,7 +43,7 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
     @Aggregation(
             pipeline = {
                 "{ $match: { 'status': 'COMPLETED', 'createdAt': { $gte: ?0, $lte: ?1 } } }",
-                "{ $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, revenue: { $sum: '$totalPrice' }, orderCount: { $sum: 1 } } }",
+                "{ $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, revenue: { $sum: { $toDecimal: { $ifNull: ['$totalPrice', 0] } } }, orderCount: { $sum: 1 } } }",
                 "{ $project: { _id: 0, date: '$_id', revenue: 1, orderCount: 1 } }",
                 "{ $sort: { date: 1 } }"
             })
@@ -52,7 +52,7 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
     @Aggregation(
             pipeline = {
                 "{ $match: { 'restaurantId': ?0, 'status': 'COMPLETED', 'createdAt': { $gte: ?1, $lte: ?2 } } }",
-                "{ $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, revenue: { $sum: '$totalPrice' }, orderCount: { $sum: 1 } } }",
+                "{ $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, revenue: { $sum: { $toDecimal: { $ifNull: ['$totalPrice', 0] } } }, orderCount: { $sum: 1 } } }",
                 "{ $project: { _id: 0, date: '$_id', revenue: 1, orderCount: 1 } }",
                 "{ $sort: { date: 1 } }"
             })
@@ -62,7 +62,7 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
             pipeline = {
                 "{ $match: { 'status': 'COMPLETED', 'createdAt': { $gte: ?0, $lte: ?1 } } }",
                 "{ $unwind: '$items' }",
-                "{ $group: { _id: { productId: '$items.productId', productSizeId: '$items.productSizeId' }, productName: { $first: '$items.productName' }, sizeName: { $first: '$items.sizeName' }, totalQuantitySold: { $sum: '$items.quantity' }, totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } }",
+                "{ $group: { _id: { productId: '$items.productId', productSizeId: '$items.productSizeId' }, productName: { $first: '$items.productName' }, sizeName: { $first: '$items.sizeName' }, totalQuantitySold: { $sum: { $toInt: { $ifNull: ['$items.quantity', 0] } } }, totalRevenue: { $sum: { $multiply: [{ $toDecimal: { $ifNull: ['$items.price', 0] } }, { $toInt: { $ifNull: ['$items.quantity', 0] } }] } } } }",
                 "{ $project: { _id: 0, productId: '$_id.productId', productSizeId: '$_id.productSizeId', productName: 1, sizeName: 1, totalQuantitySold: 1, totalRevenue: 1 } }",
                 "{ $sort: { totalQuantitySold: -1, totalRevenue: -1 } }",
                 "{ $limit: ?2 }"
@@ -73,7 +73,7 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
             pipeline = {
                 "{ $match: { 'restaurantId': ?0, 'status': 'COMPLETED', 'createdAt': { $gte: ?1, $lte: ?2 } } }",
                 "{ $unwind: '$items' }",
-                "{ $group: { _id: { productId: '$items.productId', productSizeId: '$items.productSizeId' }, productName: { $first: '$items.productName' }, sizeName: { $first: '$items.sizeName' }, totalQuantitySold: { $sum: '$items.quantity' }, totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } }",
+                "{ $group: { _id: { productId: '$items.productId', productSizeId: '$items.productSizeId' }, productName: { $first: '$items.productName' }, sizeName: { $first: '$items.sizeName' }, totalQuantitySold: { $sum: { $toInt: { $ifNull: ['$items.quantity', 0] } } }, totalRevenue: { $sum: { $multiply: [{ $toDecimal: { $ifNull: ['$items.price', 0] } }, { $toInt: { $ifNull: ['$items.quantity', 0] } }] } } } }",
                 "{ $project: { _id: 0, productId: '$_id.productId', productSizeId: '$_id.productSizeId', productName: 1, sizeName: 1, totalQuantitySold: 1, totalRevenue: 1 } }",
                 "{ $sort: { totalQuantitySold: -1, totalRevenue: -1 } }",
                 "{ $limit: ?3 }"
@@ -84,7 +84,7 @@ public interface OrderRepository extends MongoRepository<Order, UUID> {
     @Aggregation(
             pipeline = {
                 "{ $match: { 'status': 'COMPLETED', 'createdAt': { $gte: ?0, $lte: ?1 } } }",
-                "{ $group: { _id: { restaurantId: '$restaurantId', restaurantName: '$restaurantName' }, revenue: { $sum: '$totalPrice' }, orderCount: { $sum: 1 } } }",
+                "{ $group: { _id: { restaurantId: '$restaurantId', restaurantName: '$restaurantName' }, revenue: { $sum: { $toDecimal: { $ifNull: ['$totalPrice', 0] } } }, orderCount: { $sum: 1 } } }",
                 "{ $project: { _id: 0, restaurantId: '$_id.restaurantId', restaurantName: '$_id.restaurantName', revenue: 1, orderCount: 1 } }",
                 "{ $sort: { revenue: -1 } }",
                 "{ $limit: ?2 }"

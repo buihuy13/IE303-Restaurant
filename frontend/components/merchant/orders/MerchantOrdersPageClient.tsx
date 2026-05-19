@@ -22,8 +22,6 @@ export default function MerchantOrdersPageClient() {
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [restaurantLoading, setRestaurantLoading] = useState(true);
-    const [rejectReason, setRejectReason] = useState<{ [orderId: string]: string }>({});
-    const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
     const knownOrderIdsRef = useRef<Set<string>>(new Set());
 
@@ -386,21 +384,17 @@ export default function MerchantOrdersPageClient() {
 
     const handleRejectOrder = async (order: Order) => {
         const orderId = (order as Order & { orderId?: string }).orderId || order.orderId;
-        const reason = rejectReason[orderId]?.trim();
-        if (!reason) {
-            toast.error("Please provide a rejection reason.");
-            return;
-        }
+        const ok = await confirmAction({
+            title: "Reject Order",
+            description: `Are you sure you want to reject order ${String(orderId).slice(0, 10)}…?`,
+            confirmText: "Reject",
+            cancelText: "Cancel",
+        });
+        if (!ok) return;
 
         try {
-            await orderApi.rejectOrder(orderId, reason);
+            await orderApi.rejectOrder(orderId, "");
             toast.success("Order rejected.");
-            setShowRejectDialog(null);
-            setRejectReason((prev) => {
-                const next = { ...prev };
-                delete next[orderId];
-                return next;
-            });
             await fetchOrders();
             setTimeout(() => {
                 fetchOrders();
@@ -707,15 +701,7 @@ export default function MerchantOrdersPageClient() {
                                                         Accept
                                                     </button>
                                                     <button
-                                                        onClick={() => {
-                                                            const orderId =
-                                                                (
-                                                                    order as Order & {
-                                                                        orderId?: string;
-                                                                    }
-                                                                ).orderId || order.orderId;
-                                                            setShowRejectDialog(orderId);
-                                                        }}
+                                                        onClick={() => handleRejectOrder(order)}
                                                         className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-red-500 px-4 text-sm font-semibold text-white hover:bg-red-600"
                                                     >
                                                         <XCircle className="h-5 w-5" />
@@ -844,15 +830,7 @@ export default function MerchantOrdersPageClient() {
                                                                 Accept
                                                             </button>
                                                             <button
-                                                                onClick={() => {
-                                                                    const orderId =
-                                                                        (
-                                                                            order as Order & {
-                                                                                orderId?: string;
-                                                                            }
-                                                                        ).orderId || order.orderId;
-                                                                    setShowRejectDialog(orderId);
-                                                                }}
+                                                                onClick={() => handleRejectOrder(order)}
                                                                 className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
                                                             >
                                                                 <XCircle className="h-4 w-4" />
@@ -879,65 +857,6 @@ export default function MerchantOrdersPageClient() {
                     </>
                 )}
             </div>
-
-            {/* Reject Dialog */}
-            {showRejectDialog && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reject Order</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Please enter the reason for rejecting this order:
-                        </p>
-                        <textarea
-                            value={rejectReason[showRejectDialog] || ""}
-                            onChange={(e) =>
-                                setRejectReason((prev) => ({
-                                    ...prev,
-                                    [showRejectDialog]: e.target.value,
-                                }))
-                            }
-                            placeholder="Example: out of stock, restaurant closed..."
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange mb-4"
-                            rows={4}
-                        />
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => {
-                                    setShowRejectDialog(null);
-                                    setRejectReason((prev) => {
-                                        const next = { ...prev };
-                                        delete next[showRejectDialog];
-                                        return next;
-                                    });
-                                }}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const order = orders.find((o) => {
-                                        const oId =
-                                            (
-                                                o as Order & {
-                                                    orderId?: string;
-                                                }
-                                            ).orderId || o.orderId;
-                                        return oId === showRejectDialog;
-                                    });
-                                if (order) {
-                                        void handleRejectOrder(order);
-                                    }
-                                }}
-                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                            >
-                                Confirm rejection
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
-
