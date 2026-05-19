@@ -128,6 +128,10 @@ public class SecurityConfig {
                 // payment-service
                 .pathMatchers("/api/payments/**")
                 .hasRole("USER")
+                .pathMatchers("/api/wallets/**")
+                .hasRole("MERCHANT")
+                .pathMatchers("/api/admin/wallets/**")
+                .hasRole("ADMIN")
                 // blog-service
                 .pathMatchers(HttpMethod.GET, "/api/blogs/drafts", "/api/blogs/archived")
                 .authenticated()
