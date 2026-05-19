@@ -26,6 +26,7 @@ public class OrderResponse {
     private BigDecimal totalPrice;
     private String deliveryAddress;
     private String note;
+    private String cancelReason;
     private OrderStatus status;
     private PaymentStatus paymentStatus;
     private Long orderCode;
