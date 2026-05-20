@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CNTTK18.order_service.dto.UserRole;
+import com.CNTTK18.order_service.dto.order.request.CancelOrderRequest;
 import com.CNTTK18.order_service.dto.order.request.CheckoutRequest;
 import com.CNTTK18.order_service.dto.order.request.UpdateOrderStatusRequest;
 import com.CNTTK18.order_service.dto.order.response.OrderResponse;
@@ -85,8 +86,10 @@ public class OrderController {
     @PutMapping("/{id}/cancel")
     @Operation(summary = "Cancel order (Customers - only if PENDING)")
     public ResponseEntity<OrderResponse> cancelOrder(
-            @AuthenticationPrincipal UserRole userRole, @PathVariable UUID id) {
-        return ResponseEntity.ok(orderService.cancelOrder(userRole.getId(), id));
+            @AuthenticationPrincipal UserRole userRole,
+            @PathVariable UUID id,
+            @Valid @RequestBody CancelOrderRequest request) {
+        return ResponseEntity.ok(orderService.cancelOrder(userRole.getId(), id, request.getReason()));
     }
 
     @PutMapping("/{id}/payment")

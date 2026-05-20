@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import CartDropdown from "./CartDropdown";
@@ -48,7 +48,6 @@ export default function NavActions() {
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const router = useRouter();
     const pathname = usePathname();
 
     const chatUnreadCount = Object.values(unreadCountMap).reduce(

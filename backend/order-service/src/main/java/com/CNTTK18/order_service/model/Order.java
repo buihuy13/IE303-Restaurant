@@ -46,6 +46,7 @@ public class Order {
     private BigDecimal totalPrice;
     private String deliveryAddress;
     private String note;
+    private String cancelReason;
 
     @Indexed
     private OrderStatus status;

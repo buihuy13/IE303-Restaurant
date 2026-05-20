@@ -84,7 +84,7 @@ export const productApi = {
         return api.put<Product>(`/products/${productId}`, formData);
     },
     updateProductStatus: (productId: string) => {
-        return api.put<Product>(`/products/availability/${productId}`);
+        return api.put<{ message: string }>(`/products/availability/${productId}`);
     },
     deleteProduct: (productId: string) => {
         return api.delete(`/products/${productId}`);

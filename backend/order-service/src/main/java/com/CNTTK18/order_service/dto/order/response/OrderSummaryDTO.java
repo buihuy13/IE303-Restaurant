@@ -23,6 +23,7 @@ public class OrderSummaryDTO {
     private UUID restaurantId;
     private String restaurantName;
     private BigDecimal totalPrice;
+    private String cancelReason;
     private OrderStatus status;
     private PaymentStatus paymentStatus;
     private Instant createdAt;

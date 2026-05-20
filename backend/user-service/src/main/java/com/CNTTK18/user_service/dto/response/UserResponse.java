@@ -22,6 +22,9 @@ public class UserResponse {
     private String email;
     private String phone;
     private String slug;
+    private String bankNumber;
+    private String bank;
+    private String bankName;
 
     @JsonSerialize(using = ZonedDateTimeSerializer.class)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")

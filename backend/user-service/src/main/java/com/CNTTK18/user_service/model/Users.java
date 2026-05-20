@@ -49,6 +49,15 @@ public class Users {
 
     private String slug;
 
+    @Column(name = "bank_number")
+    private String bankNumber;
+
+    @Column(name = "bank")
+    private String bank;
+
+    @Column(name = "bank_name")
+    private String bankName;
+
     @Column(name = "created_at")
     @CreatedDate
     private Instant createdAt;

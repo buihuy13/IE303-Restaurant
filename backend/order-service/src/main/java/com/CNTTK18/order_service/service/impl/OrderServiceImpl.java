@@ -171,7 +171,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse cancelOrder(UUID userId, UUID orderId) {
+    public OrderResponse cancelOrder(UUID userId, UUID orderId, String reason) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (!order.getUserId().equals(userId)) {
@@ -183,6 +183,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelReason(reason);
         Order saved = orderRepository.save(order);
 
         clearUserOrderCache(userId);

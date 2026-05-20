@@ -145,6 +145,7 @@ export const useProductStore = create<ProductState>((set) => ({
                 error: error.message || "Failed to update Product",
                 loading: false,
             });
+            throw error; // Re-throw so toast.promise in FoodForm can show the error toast
         }
     },
 
