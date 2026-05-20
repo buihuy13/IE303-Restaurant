@@ -1,4 +1,6 @@
 -- Payment service PostgreSQL schema (matches JPA entity PaymentTransaction).
+-- Docker uses backend/seed-db/payment_service.sql as the authoritative init schema.
+-- Keep this manual local script in sync with that seed-db file when payment schema changes.
 -- Usage:
 --   1) Create DB (once): psql -U postgres -d postgres -f scripts/create-database.sql
 --   2) Tables:          psql -U postgres -d payment_service -f scripts/init-payment-db.sql

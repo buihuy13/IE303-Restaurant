@@ -68,6 +68,18 @@ Các bảng mới:
 - `payout_requests`
 - `payout_batches`
 
+Quan hệ dữ liệu chính trong `payment-service`:
+
+| Bảng | Mục đích | Quan hệ quan trọng |
+| --- | --- | --- |
+| `merchant_wallets` | Lưu số dư của merchant | `merchant_id` unique, có thể snapshot `restaurant_id` |
+| `merchant_bank_accounts` | Lưu tài khoản ngân hàng nhận payout của merchant | Thuộc `merchant_id`, soft delete bằng `is_active` |
+| `wallet_transactions` | Audit tiền vào/ra wallet | Thuộc `wallet_id`, idempotency bằng `reference_key` |
+| `payout_requests` | Request rút tiền do merchant tạo | Thuộc `wallet_id`, snapshot bank info, link `wallet_transaction_id` |
+| `payout_batches` | Batch admin dùng để process PayOS payout | Một batch có nhiều `payout_requests` qua `payout_batch_id` |
+
+Schema Docker đang dùng file `backend/seed-db/payment_service.sql`. File `backend/payment-service/scripts/init-payment-db.sql` chỉ là script local/manual và cần giữ đồng bộ với seed-db khi payment schema thay đổi.
+
 Luồng credit doanh thu:
 
 1. `payment-service` consume `MerchantRevenueEvent`.
@@ -248,13 +260,12 @@ Admin APIs:
 
 ## 5. Cách Test Backend
 
-### 5.1 Automated checks đã chạy
+### 5.1 Automated checks nên chạy
 
 ```bash
 cd backend
-./gradlew :Common:compileJava :order-service:compileJava :payment-service:compileJava :api-gateway:compileJava
-./gradlew :Common:spotlessCheck :order-service:spotlessCheck :payment-service:spotlessCheck :api-gateway:spotlessCheck
-./gradlew :order-service:test :payment-service:test
+./gradlew :payment-service:compileJava :payment-service:test
+./gradlew :payment-service:spotlessCheck
 ```
 
 Frontend:
@@ -270,8 +281,9 @@ npm run build
 
 Chuẩn bị:
 
-1. Apply schema mới cho payment DB bằng `backend/payment-service/scripts/init-payment-db.sql` hoặc seed script tương ứng.
-2. Start các service cần thiết:
+1. Nếu chạy Docker init DB từ đầu, schema chính nằm ở `backend/seed-db/payment_service.sql`.
+2. Nếu chạy riêng payment-service local, có thể apply script manual `backend/payment-service/scripts/init-payment-db.sql`.
+3. Start các service cần thiết:
    - `service-discovery`
    - `api-gateway`
    - `rabbitmq`
@@ -280,7 +292,7 @@ Chuẩn bị:
    - `restaurant-service`
    - `order-service`
    - `payment-service`
-3. Giữ env payout an toàn:
+4. Giữ env payout an toàn:
 
 ```env
 PAYOUT_DRY_RUN=true
@@ -450,9 +462,14 @@ Các điểm nên làm tiếp nếu muốn production-ready hơn:
   - thêm filter merchant/date
   - polish responsive UI
 - DevOps/member phụ trách env:
-  - thêm PayOS payout env vào `.env.example` nếu project có file example
+  - thêm PayOS payout env vào file `.env` dùng chung trên Drive
   - đảm bảo DB init script được apply khi chạy local/docker
 - QA/member test:
   - test dry-run E2E trước
   - chỉ test live PayOS với amount nhỏ và tài khoản nhóm
 
+## 10. Ghi Chú Scope Review PR #121
+
+- Các fix trong lượt review này tập trung vào `payment-service`: explicit `InternalFilter`, refactor DTO `request/response`, giữ pagination response không vỡ frontend, cập nhật env example, seed-db note và payment docs.
+- Comment liên quan `order-service` như `merchantId` trong order model, logic phát revenue event, hoặc ảnh model order trong báo cáo nên để owner của `order-service` kiểm tra và cập nhật.
+- Nếu nhóm cần ảnh DB model trong báo cáo, có thể dựng lại từ bảng quan hệ ở mục 2.2; repo hiện lưu ảnh dạng binary nên phần đó nên được cập nhật bởi người phụ trách báo cáo/tài liệu.
