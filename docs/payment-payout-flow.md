@@ -57,7 +57,6 @@ Các file chính:
 - `backend/payment-service/src/main/java/com/CNTTK18/paymentservice/service/MerchantRevenueConsumer.java`
 - `backend/payment-service/src/main/java/com/CNTTK18/paymentservice/model/*`
 - `backend/payment-service/src/main/java/com/CNTTK18/paymentservice/repository/*`
-- `backend/payment-service/scripts/init-payment-db.sql`
 - `backend/seed-db/payment_service.sql`
 
 Các bảng mới:
@@ -78,7 +77,7 @@ Quan hệ dữ liệu chính trong `payment-service`:
 | `payout_requests` | Request rút tiền do merchant tạo | Thuộc `wallet_id`, snapshot bank info, link `wallet_transaction_id` |
 | `payout_batches` | Batch admin dùng để process PayOS payout | Một batch có nhiều `payout_requests` qua `payout_batch_id` |
 
-Schema Docker đang dùng file `backend/seed-db/payment_service.sql`. File `backend/payment-service/scripts/init-payment-db.sql` chỉ là script local/manual và cần giữ đồng bộ với seed-db khi payment schema thay đổi.
+Schema chính cho Docker và local DB init nằm ở `backend/seed-db/payment_service.sql`; không giữ thêm script schema riêng trong `payment-service` để tránh lệch schema.
 
 Luồng credit doanh thu:
 
@@ -282,7 +281,7 @@ npm run build
 Chuẩn bị:
 
 1. Nếu chạy Docker init DB từ đầu, schema chính nằm ở `backend/seed-db/payment_service.sql`.
-2. Nếu chạy riêng payment-service local, có thể apply script manual `backend/payment-service/scripts/init-payment-db.sql`.
+2. Nếu chạy riêng payment-service local, apply schema từ `backend/seed-db/payment_service.sql`.
 3. Start các service cần thiết:
    - `service-discovery`
    - `api-gateway`
