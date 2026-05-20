@@ -13,12 +13,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.CNTTK18.paymentservice.dto.UserRole;
 
-@Component
+/**
+ * Converts gateway-authenticated identity headers into a Spring principal for wallet/admin endpoints.
+ * This service should only trust these headers when traffic comes through the API Gateway/internal network.
+ */
 public class InternalFilter extends OncePerRequestFilter {
     private static final Set<String> ALLOWED_ROLES = Set.of("USER", "MERCHANT", "ADMIN");
 

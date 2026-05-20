@@ -8,6 +8,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,19 +24,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.CNTTK18.paymentservice.dto.AdminPayoutRequestsResponse;
-import com.CNTTK18.paymentservice.dto.ApiResponse;
-import com.CNTTK18.paymentservice.dto.BankAccountRequest;
-import com.CNTTK18.paymentservice.dto.BankAccountResponse;
-import com.CNTTK18.paymentservice.dto.CreatePayoutBatchRequest;
-import com.CNTTK18.paymentservice.dto.PayoutAccountBalanceResponse;
-import com.CNTTK18.paymentservice.dto.PayoutBatchResponse;
-import com.CNTTK18.paymentservice.dto.PayoutRequestResponse;
-import com.CNTTK18.paymentservice.dto.RejectPayoutRequest;
 import com.CNTTK18.paymentservice.dto.UserRole;
-import com.CNTTK18.paymentservice.dto.WalletSummaryResponse;
-import com.CNTTK18.paymentservice.dto.WalletTransactionsResponse;
-import com.CNTTK18.paymentservice.dto.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.request.BankAccountRequest;
+import com.CNTTK18.paymentservice.dto.request.CreatePayoutBatchRequest;
+import com.CNTTK18.paymentservice.dto.request.RejectPayoutRequest;
+import com.CNTTK18.paymentservice.dto.request.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.response.AdminPayoutRequestsResponse;
+import com.CNTTK18.paymentservice.dto.response.ApiResponse;
+import com.CNTTK18.paymentservice.dto.response.BankAccountResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutAccountBalanceResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutBatchResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutRequestResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletSummaryResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletTransactionsResponse;
 import com.CNTTK18.paymentservice.exception.ForbiddenException;
 import com.CNTTK18.paymentservice.model.data.PayoutRequestStatus;
 import com.CNTTK18.paymentservice.service.WalletService;
@@ -60,7 +63,8 @@ public class WalletController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(MAX_PAGE_SIZE) int limit) {
         requireRole(userRole, "MERCHANT");
-        return ResponseEntity.ok(ApiResponse.success(walletService.getTransactions(userRole.getId(), page, limit)));
+        return ResponseEntity.ok(
+                ApiResponse.success(walletService.getTransactions(userRole.getId(), toPageable(page, limit))));
     }
 
     @GetMapping("/api/wallets/bank-accounts")
@@ -111,8 +115,8 @@ public class WalletController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(MAX_PAGE_SIZE) int limit) {
         requireRole(userRole, "ADMIN");
-        return ResponseEntity.ok(
-                ApiResponse.success(walletService.getPayoutRequests(status, merchantId, from, to, page, limit)));
+        return ResponseEntity.ok(ApiResponse.success(
+                walletService.getPayoutRequests(status, merchantId, from, to, toPageable(page, limit))));
     }
 
     @PostMapping("/api/admin/wallets/payout-requests/{id}/approve")
@@ -157,5 +161,11 @@ public class WalletController {
         if (userRole == null || !role.equalsIgnoreCase(userRole.getRole())) {
             throw new ForbiddenException("You are not authorized to access this resource");
         }
+    }
+
+    private Pageable toPageable(int page, int limit) {
+        int pageIndex = Math.max(page, 1) - 1;
+        int pageSize = Math.max(1, Math.min(limit, MAX_PAGE_SIZE));
+        return PageRequest.of(pageIndex, pageSize, Sort.by("createdAt").descending());
     }
 }

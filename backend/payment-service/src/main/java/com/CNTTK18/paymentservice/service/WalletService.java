@@ -4,23 +4,25 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
+
 import com.CNTTK18.Common.Event.MerchantRevenueEvent;
-import com.CNTTK18.paymentservice.dto.AdminPayoutRequestsResponse;
-import com.CNTTK18.paymentservice.dto.BankAccountRequest;
-import com.CNTTK18.paymentservice.dto.BankAccountResponse;
-import com.CNTTK18.paymentservice.dto.CreatePayoutBatchRequest;
-import com.CNTTK18.paymentservice.dto.PayoutAccountBalanceResponse;
-import com.CNTTK18.paymentservice.dto.PayoutBatchResponse;
-import com.CNTTK18.paymentservice.dto.PayoutRequestResponse;
-import com.CNTTK18.paymentservice.dto.WalletSummaryResponse;
-import com.CNTTK18.paymentservice.dto.WalletTransactionsResponse;
-import com.CNTTK18.paymentservice.dto.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.request.BankAccountRequest;
+import com.CNTTK18.paymentservice.dto.request.CreatePayoutBatchRequest;
+import com.CNTTK18.paymentservice.dto.request.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.response.AdminPayoutRequestsResponse;
+import com.CNTTK18.paymentservice.dto.response.BankAccountResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutAccountBalanceResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutBatchResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutRequestResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletSummaryResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletTransactionsResponse;
 import com.CNTTK18.paymentservice.model.data.PayoutRequestStatus;
 
 public interface WalletService {
     WalletSummaryResponse getWallet(UUID merchantId);
 
-    WalletTransactionsResponse getTransactions(UUID merchantId, int page, int limit);
+    WalletTransactionsResponse getTransactions(UUID merchantId, Pageable pageable);
 
     List<BankAccountResponse> getBankAccounts(UUID merchantId);
 
@@ -33,7 +35,7 @@ public interface WalletService {
     PayoutRequestResponse requestWithdraw(UUID merchantId, WithdrawRequest request);
 
     AdminPayoutRequestsResponse getPayoutRequests(
-            PayoutRequestStatus status, UUID merchantId, Instant from, Instant to, int page, int limit);
+            PayoutRequestStatus status, UUID merchantId, Instant from, Instant to, Pageable pageable);
 
     PayoutRequestResponse approvePayoutRequest(UUID adminId, UUID requestId);
 

@@ -1,4 +1,4 @@
-package com.CNTTK18.paymentservice.dto;
+package com.CNTTK18.paymentservice.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

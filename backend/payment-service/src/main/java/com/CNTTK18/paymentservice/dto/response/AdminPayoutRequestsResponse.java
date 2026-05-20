@@ -1,4 +1,4 @@
-package com.CNTTK18.paymentservice.dto;
+package com.CNTTK18.paymentservice.dto.response;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletTransactionsResponse {
-    private List<WalletTransactionResponse> transactions;
+public class AdminPayoutRequestsResponse {
+    private List<PayoutRequestResponse> requests;
     private PaginationResponse pagination;
 }

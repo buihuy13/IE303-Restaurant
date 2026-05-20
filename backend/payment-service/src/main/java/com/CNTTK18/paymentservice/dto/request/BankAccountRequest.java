@@ -1,4 +1,4 @@
-package com.CNTTK18.paymentservice.dto;
+package com.CNTTK18.paymentservice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

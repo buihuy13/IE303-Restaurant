@@ -1,4 +1,4 @@
-package com.CNTTK18.paymentservice.dto;
+package com.CNTTK18.paymentservice.dto.request;
 
 import java.util.List;
 import java.util.UUID;

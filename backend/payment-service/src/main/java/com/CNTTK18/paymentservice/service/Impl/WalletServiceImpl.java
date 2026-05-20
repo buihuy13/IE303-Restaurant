@@ -12,27 +12,26 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.CNTTK18.Common.Event.MerchantRevenueEvent;
 import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
-import com.CNTTK18.paymentservice.dto.AdminPayoutRequestsResponse;
-import com.CNTTK18.paymentservice.dto.BankAccountRequest;
-import com.CNTTK18.paymentservice.dto.BankAccountResponse;
-import com.CNTTK18.paymentservice.dto.BankInfoResponse;
-import com.CNTTK18.paymentservice.dto.CreatePayoutBatchRequest;
-import com.CNTTK18.paymentservice.dto.PaginationResponse;
-import com.CNTTK18.paymentservice.dto.PayoutAccountBalanceResponse;
-import com.CNTTK18.paymentservice.dto.PayoutBatchResponse;
-import com.CNTTK18.paymentservice.dto.PayoutRequestResponse;
-import com.CNTTK18.paymentservice.dto.WalletSummaryResponse;
-import com.CNTTK18.paymentservice.dto.WalletTransactionResponse;
-import com.CNTTK18.paymentservice.dto.WalletTransactionsResponse;
-import com.CNTTK18.paymentservice.dto.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.request.BankAccountRequest;
+import com.CNTTK18.paymentservice.dto.request.CreatePayoutBatchRequest;
+import com.CNTTK18.paymentservice.dto.request.WithdrawRequest;
+import com.CNTTK18.paymentservice.dto.response.AdminPayoutRequestsResponse;
+import com.CNTTK18.paymentservice.dto.response.BankAccountResponse;
+import com.CNTTK18.paymentservice.dto.response.BankInfoResponse;
+import com.CNTTK18.paymentservice.dto.response.PaginationResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutAccountBalanceResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutBatchResponse;
+import com.CNTTK18.paymentservice.dto.response.PayoutRequestResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletSummaryResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletTransactionResponse;
+import com.CNTTK18.paymentservice.dto.response.WalletTransactionsResponse;
 import com.CNTTK18.paymentservice.exception.BadRequestException;
 import com.CNTTK18.paymentservice.exception.NotFoundException;
 import com.CNTTK18.paymentservice.model.MerchantBankAccount;
@@ -99,18 +98,14 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional(readOnly = true)
-    public WalletTransactionsResponse getTransactions(UUID merchantId, int page, int limit) {
-        Page<WalletTransaction> txPage = transactionRepository.findByMerchantIdOrderByCreatedAtDesc(
-                merchantId,
-                PageRequest.of(
-                        toPageIndex(page),
-                        normalizeLimit(limit),
-                        Sort.by("createdAt").descending()));
+    public WalletTransactionsResponse getTransactions(UUID merchantId, Pageable pageable) {
+        Page<WalletTransaction> txPage =
+                transactionRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, pageable);
         return WalletTransactionsResponse.builder()
                 .transactions(txPage.getContent().stream()
                         .map(this::toWalletTransactionResponse)
                         .toList())
-                .pagination(toPagination(txPage, page, limit))
+                .pagination(toPagination(txPage))
                 .build();
     }
 
@@ -226,7 +221,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     @Transactional(readOnly = true)
     public AdminPayoutRequestsResponse getPayoutRequests(
-            PayoutRequestStatus status, UUID merchantId, Instant from, Instant to, int page, int limit) {
+            PayoutRequestStatus status, UUID merchantId, Instant from, Instant to, Pageable pageable) {
         Specification<PayoutRequest> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (status != null) {
@@ -244,17 +239,12 @@ public class WalletServiceImpl implements WalletService {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
 
-        Page<PayoutRequest> requestPage = payoutRequestRepository.findAll(
-                spec,
-                PageRequest.of(
-                        toPageIndex(page),
-                        normalizeLimit(limit),
-                        Sort.by("createdAt").descending()));
+        Page<PayoutRequest> requestPage = payoutRequestRepository.findAll(spec, pageable);
         return AdminPayoutRequestsResponse.builder()
                 .requests(requestPage.getContent().stream()
                         .map(this::toPayoutRequestResponse)
                         .toList())
-                .pagination(toPagination(requestPage, page, limit))
+                .pagination(toPagination(requestPage))
                 .build();
     }
 
@@ -546,18 +536,10 @@ public class WalletServiceImpl implements WalletService {
                 .orElseThrow(() -> new NotFoundException("Payout request not found"));
     }
 
-    private int toPageIndex(int page) {
-        return Math.max(page, 1) - 1;
-    }
-
-    private int normalizeLimit(int limit) {
-        return Math.max(1, Math.min(limit, 100));
-    }
-
-    private PaginationResponse toPagination(Page<?> page, int requestedPage, int requestedLimit) {
+    private PaginationResponse toPagination(Page<?> page) {
         return PaginationResponse.builder()
-                .page(Math.max(requestedPage, 1))
-                .limit(normalizeLimit(requestedLimit))
+                .page(page.getNumber() + 1)
+                .limit(page.getSize())
                 .total(page.getTotalElements())
                 .totalPages(page.getTotalPages())
                 .build();
