@@ -10,6 +10,7 @@ import {
     Settings,
     Users,
     Utensils,
+    Wallet,
     X
 } from "lucide-react";
 import Image from "next/image";
@@ -49,6 +50,11 @@ const menuItems: MenuItem[] = [
         label: "Sizes",
         icon: Ruler,
         href: "/admin/sizes",
+    },
+    {
+        label: "Wallet Payouts",
+        icon: Wallet,
+        href: "/admin/wallet",
     },
     {
         label: "Settings",

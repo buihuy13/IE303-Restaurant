@@ -172,6 +172,14 @@ spring:
                   uri: lb://payment-service
                   predicates:
                       - Path=/api/payments/**
+                - id: payment-service-wallet
+                  uri: lb://payment-service
+                  predicates:
+                      - Path=/api/wallets/**
+                - id: payment-service-admin-wallet
+                  uri: lb://payment-service
+                  predicates:
+                      - Path=/api/admin/wallets/**
                 - id: payment-service-webhook
                   uri: lb://payment-service
                   predicates:

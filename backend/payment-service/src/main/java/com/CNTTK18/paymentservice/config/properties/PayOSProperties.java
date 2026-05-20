@@ -12,4 +12,17 @@ public class PayOSProperties {
     private String clientId;
     private String apiKey;
     private String checksumKey;
+    private String payoutClientId;
+    private String payoutApiKey;
+    private String payoutChecksumKey;
+    private boolean payoutEnabled;
+    private boolean payoutDryRun = true;
+
+    public boolean hasPayoutCredentials() {
+        return isPresent(payoutClientId) && isPresent(payoutApiKey) && isPresent(payoutChecksumKey);
+    }
+
+    private boolean isPresent(String value) {
+        return value != null && !value.isBlank();
+    }
 }

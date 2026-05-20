@@ -38,6 +38,9 @@ public class Order {
     @Indexed
     private UUID restaurantId;
 
+    @Indexed
+    private UUID merchantId;
+
     private String restaurantName;
 
     @Builder.Default
