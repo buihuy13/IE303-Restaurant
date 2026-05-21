@@ -229,7 +229,11 @@ Các sơ đồ database dưới đây mô tả cấu trúc dữ liệu của t�
 
 ![Query DB Schema](docs/db-diagrams/query.png)
 
-### 5.9. Blog Service Database
+### 5.9. Order Service Database
+
+![Order DB Schema](docs/db-diagrams/order.jpg)
+
+### 5.10. Blog Service Database
 
 ![Blog DB Schema](docs/db-diagrams/blog.png)
 
@@ -348,6 +352,14 @@ Theo docker-compose.dev.yml:
 - Prometheus: http://localhost:9000
 - Grafana: http://localhost:3030
 - Ngrok Inspector: http://localhost:4040
+
+Swagger/OpenAPI:
+
+- Swagger UI: http://localhost:8443/api-docs/swagger-ui/index.html
+- Khi chạy bằng Docker/Caddy, host hiện tại là `localhost:8443` là đúng.
+- Khi chạy local bằng `./start.sh` hoặc chạy service trực tiếp, cần đổi base host về `localhost:8080`.
+- Cách đọc api-docs: mở Swagger UI, chọn endpoint cần xem để đọc request/response schema, rồi bấm `Authorize` nếu endpoint yêu cầu JWT.
+- Nếu đang chạy local thì dùng `http://localhost:8080/api-docs/swagger-ui/index.html`, còn chạy Docker thì dùng `http://localhost:8443/api-docs/swagger-ui/index.html`.
 
 Theo docker-compose.yml (full stack):
 
