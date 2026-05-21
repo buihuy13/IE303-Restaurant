@@ -327,6 +327,9 @@ services:
             args:
                 NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
                 NEXT_PUBLIC_BACKEND_ORIGIN: ${NEXT_PUBLIC_BACKEND_ORIGIN}
+                NEXT_PUBLIC_KEYCLOAK_BASE_URL: ${NEXT_PUBLIC_KEYCLOAK_BASE_URL}
+                NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM}
+                NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}
         container_name: frontend
         env_file:
             - ./.env
