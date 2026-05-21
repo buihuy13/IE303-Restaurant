@@ -3,6 +3,7 @@
 import { Logo } from "@/constants";
 import {
     ChevronDown,
+    ClipboardList,
     Grid3x3,
     Home,
     LayoutDashboard,
@@ -34,6 +35,11 @@ const menuItems: MenuItem[] = [
         label: "Manage Users",
         icon: Users,
         href: "/admin/users",
+    },
+    {
+        label: "Merchant Applications",
+        icon: ClipboardList,
+        href: "/admin/merchant-applications",
     },
     {
         label: "Manage Restaurants",
