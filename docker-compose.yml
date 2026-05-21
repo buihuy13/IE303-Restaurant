@@ -42,6 +42,7 @@ services:
             - KC_HOSTNAME=${KC_HOSTNAME}
             - KC_HOSTNAME_PATH=/auth
             - KC_PROXY=edge
+            - KC_HOSTNAME_STRICT=false
             - KC_HTTP_RELATIVE_PATH=/auth
         expose:
             - "9091"
