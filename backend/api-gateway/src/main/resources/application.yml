@@ -67,6 +67,10 @@ spring:
                   uri: lb://dashboard-service
                   predicates:
                       - Path=/api/dashboard/restaurants/admin/stats
+                - id: dashboard-service-docs
+                  uri: lb://dashboard-service
+                  predicates:
+                      - Path=/v3/api-docs/dashboard-service
                 #user-service
                 - id: user-service
                   uri: lb://user-service

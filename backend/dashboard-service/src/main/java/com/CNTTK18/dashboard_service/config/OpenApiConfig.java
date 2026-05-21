@@ -1,4 +1,4 @@
-package com.CNTTK18.chat_service.config;
+package com.CNTTK18.dashboard_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +15,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Chat Service API")
+                        .title("Dashboard Service API")
                         .version("1.0.0")
-                        .description("API documentation for Chat Service"))
+                        .description("API documentation for Dashboard Service"))
                 .components(new Components()
                         .addSecuritySchemes(
                                 "bearerAuth",
