@@ -101,7 +101,7 @@ services:
             - keycloak
             - grafana
     postgres:
-        image: postgis/postgis:16-3.4 # PostgreSQL + PostGIS
+        image: imresamu/postgis:16-3.4 # PostgreSQL + PostGIS
         restart: unless-stopped
         environment:
             POSTGRES_USER: postgres
