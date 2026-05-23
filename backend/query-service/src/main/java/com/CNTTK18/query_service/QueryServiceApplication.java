@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.servers.Server;
 
-@SpringBootApplication(scanBasePackages = { "com.CNTTK18.query_service", "com.CNTTK18.Common" })
+@SpringBootApplication(scanBasePackages = {"com.CNTTK18.query_service", "com.CNTTK18.Common"})
 @EnableJpaAuditing
 @OpenAPIDefinition(servers = @Server(url = "${gateway.url}"))
 public class QueryServiceApplication {
