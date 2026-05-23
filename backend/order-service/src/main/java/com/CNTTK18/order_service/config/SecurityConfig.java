@@ -22,8 +22,6 @@ public class SecurityConfig {
         return http.csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
-                        .requestMatchers("/actuator/**", "/v3/api-docs/**")
-                        .permitAll()
                         .anyRequest()
                         .permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

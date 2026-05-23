@@ -34,8 +34,16 @@ REVIEW_ID_2="00000000-0000-0000-3000-000000000002"
 REVIEW_ID_3="00000000-0000-0000-3000-000000000003"
 REVIEW_ID_4="00000000-0000-0000-3000-000000000004"
 
+ORDER_ID_1="00000000-0000-0000-5000-000000000001"
+ORDER_ID_2="00000000-0000-0000-5000-000000000002"
+ORDER_ID_3="00000000-0000-0000-5000-000000000003"
+
+MONGO_USER="${MONGO_USER:-admin}"
+MONGO_PASSWORD="${MONGO_PASSWORD:-admin}"
+
 # PSQL command
 PSQL="docker compose exec -T -u postgres postgres psql -U postgres"
+MONGOSH=(docker compose exec -T mongodb mongosh --username "$MONGO_USER" --password "$MONGO_PASSWORD" --authenticationDatabase admin order_db --quiet)
 
 wait_for_postgres() {
     echo "Waiting for postgres..."
@@ -54,6 +62,14 @@ wait_for_databases() {
         done
     done
     echo "✓ All databases ready"
+}
+
+wait_for_mongo() {
+    echo "Waiting for MongoDB..."
+    until docker compose exec -T mongodb mongosh --username "$MONGO_USER" --password "$MONGO_PASSWORD" --authenticationDatabase admin --quiet --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+        sleep 2
+    done
+    echo "✓ MongoDB ready"
 }
 
 fetch_reference_ids() {
@@ -166,6 +182,185 @@ SQL
     echo "✓ 4 reviews seeded"
 }
 
+seed_order_service() {
+        echo "Seeding order service (cart + orders)..."
+        "${MONGOSH[@]}" <<'MONGO'
+const customerId = UUID('00000000-0000-0000-0000-000000000001');
+const merchantId = UUID('00000000-0000-0000-0000-000000000003');
+const adminId = UUID('00000000-0000-0000-0000-000000000002');
+
+const restaurant1Id = UUID('00000000-0000-0000-1000-000000000001');
+const restaurant2Id = UUID('00000000-0000-0000-1000-000000000002');
+const restaurant3Id = UUID('00000000-0000-0000-1000-000000000003');
+
+const product1Id = UUID('00000000-0000-0000-2000-000000000001');
+const product2Id = UUID('00000000-0000-0000-2000-000000000002');
+const product3Id = UUID('00000000-0000-0000-2000-000000000003');
+const product4Id = UUID('00000000-0000-0000-2000-000000000004');
+
+const product1SizeM = UUID('00000000-0000-0000-4000-000000000002');
+const product2SizeM = UUID('00000000-0000-0000-4000-000000000005');
+const product3SizeL = UUID('00000000-0000-0000-4000-000000000008');
+const product4SizeS = UUID('00000000-0000-0000-4000-000000000009');
+
+const now = new Date('2026-05-22T08:00:00Z');
+const later = new Date('2026-05-22T09:00:00Z');
+
+db.carts.updateOne(
+    { _id: customerId.toString() },
+    {
+        $set: {
+            userId: customerId,
+            restaurants: [
+                {
+                    restaurantId: restaurant1Id,
+                    restaurantName: 'Merchant Bistro',
+                    items: [
+                        {
+                            productId: product1Id,
+                            productSizeId: product1SizeM,
+                            productName: 'Gà Chiên Mắm',
+                            sizeName: 'M',
+                            price: NumberDecimal('55000'),
+                            quantity: 2,
+                            imageUrl: null
+                        },
+                        {
+                            productId: product4Id,
+                            productSizeId: product4SizeS,
+                            productName: 'Cơm Tấm Sườn Bì',
+                            sizeName: 'S',
+                            price: NumberDecimal('40000'),
+                            quantity: 1,
+                            imageUrl: null
+                        }
+                    ]
+                },
+                {
+                    restaurantId: restaurant2Id,
+                    restaurantName: 'Tra Sua Ngon',
+                    items: [
+                        {
+                            productId: product2Id,
+                            productSizeId: product2SizeM,
+                            productName: 'Trà Sữa Trân Châu',
+                            sizeName: 'M',
+                            price: NumberDecimal('35000'),
+                            quantity: 1,
+                            imageUrl: null
+                        }
+                    ]
+                }
+            ],
+            updatedAt: later
+        }
+    },
+    { upsert: true }
+);
+
+db.orders.deleteMany({
+    _id: {
+        $in: [UUID('00000000-0000-0000-5000-000000000001'), UUID('00000000-0000-0000-5000-000000000002'), UUID('00000000-0000-0000-5000-000000000003')]
+    }
+});
+
+db.orders.insertMany([
+    {
+        _id: UUID('00000000-0000-0000-5000-000000000001'),
+        userId: customerId,
+        restaurantId: restaurant1Id,
+        merchantId: merchantId,
+        restaurantName: 'Merchant Bistro',
+        items: [
+            {
+                productId: product1Id,
+                productSizeId: product1SizeM,
+                productName: 'Gà Chiên Mắm',
+                sizeName: 'M',
+                price: NumberDecimal('55000'),
+                quantity: 1
+            },
+            {
+                productId: product4Id,
+                productSizeId: product4SizeS,
+                productName: 'Cơm Tấm Sườn Bì',
+                sizeName: 'S',
+                price: NumberDecimal('40000'),
+                quantity: 1
+            }
+        ],
+        totalPrice: NumberDecimal('95000'),
+        deliveryAddress: '123 Nguyen Trai, Quan 1, HCMC',
+        note: 'Giao buổi tối',
+        cancelReason: null,
+        status: 'COMPLETED',
+        paymentStatus: 'PAID',
+        orderCode: NumberLong('100000000001'),
+        paymentLinkId: 'pay_100000000001',
+        createdAt: now,
+        updatedAt: later
+    },
+    {
+        _id: UUID('00000000-0000-0000-5000-000000000002'),
+        userId: customerId,
+        restaurantId: restaurant2Id,
+        merchantId: merchantId,
+        restaurantName: 'Tra Sua Ngon',
+        items: [
+            {
+                productId: product2Id,
+                productSizeId: product2SizeM,
+                productName: 'Trà Sữa Trân Châu',
+                sizeName: 'M',
+                price: NumberDecimal('35000'),
+                quantity: 2
+            }
+        ],
+        totalPrice: NumberDecimal('70000'),
+        deliveryAddress: '456 Hai Ba Trung, Quan 1, HCMC',
+        note: 'Không đá',
+        cancelReason: null,
+        status: 'PENDING',
+        paymentStatus: 'UNPAID',
+        orderCode: NumberLong('100000000002'),
+        paymentLinkId: null,
+        createdAt: now,
+        updatedAt: now
+    },
+    {
+        _id: UUID('00000000-0000-0000-5000-000000000003'),
+        userId: adminId,
+        restaurantId: restaurant3Id,
+        merchantId: merchantId,
+        restaurantName: 'Pizza Corner',
+        items: [
+            {
+                productId: product3Id,
+                productSizeId: product3SizeL,
+                productName: 'Pizza Hải Sản',
+                sizeName: 'L',
+                price: NumberDecimal('180000'),
+                quantity: 1
+            }
+        ],
+        totalPrice: NumberDecimal('180000'),
+        deliveryAddress: '789 Le Loi, Quan 1, HCMC',
+        note: 'Gọi trước khi giao',
+        cancelReason: null,
+        status: 'DELIVERING',
+        paymentStatus: 'PAID',
+        orderCode: NumberLong('100000000003'),
+        paymentLinkId: 'pay_100000000003',
+        createdAt: now,
+        updatedAt: later
+    }
+]);
+
+print('✓ 1 cart and 3 orders seeded');
+MONGO
+        echo "✓ Order service seeded"
+}
+
 main() {
     echo "=========================================="
     echo "Database Seeding"
@@ -174,6 +369,7 @@ main() {
 
     wait_for_postgres
     wait_for_databases
+    wait_for_mongo
     fetch_reference_ids
     seed_user_service
     seed_restaurants
@@ -181,6 +377,7 @@ main() {
     seed_product_sizes
     seed_query_service
     seed_reviews
+    seed_order_service
 
     echo ""
     echo "=========================================="
