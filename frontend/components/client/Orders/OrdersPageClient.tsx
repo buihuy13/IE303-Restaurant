@@ -2,6 +2,8 @@
 
 import OrdersPageContainer, { type OrdersPageOrder } from "@/components/client/Orders/OrdersPageContainer";
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrdersNotificationHydrate } from "@/lib/hooks/useOrdersNotificationHydrate";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
@@ -22,6 +24,8 @@ export default function OrdersPageClient() {
     const userId = user?.id;
     const pathname = usePathname();
     const { markAllAsRead, markOrderNotificationsAsRead, notifications } = useNotificationStore();
+
+    useOrdersNotificationHydrate(pathname === "/orders" || pathname.startsWith("/account/orders"));
 
     const profileRequestedRef = useRef(false);
     const redirectRef = useRef(false);
@@ -255,34 +259,7 @@ export default function OrdersPageClient() {
         },
     });
 
-    useEffect(() => {
-        if (!userId || isLoading) return;
-
-        const intervalId = setInterval(() => {
-            orderApi
-                .getOrdersByUser(userId)
-                .then(({ orders: apiOrders }) => {
-                    const normalized = mapOrders(apiOrders ?? []);
-
-                    setOrders((prevOrders) => {
-                        const hasChanges = prevOrders.some((prevOrder, index) => {
-                            const newOrder = normalized[index];
-                            return newOrder && prevOrder.status !== newOrder.status;
-                        });
-
-                        if (hasChanges || prevOrders.length !== normalized.length) {
-                            return normalized;
-                        }
-                        return prevOrders;
-                    });
-                })
-                .catch((error) => {
-                    console.debug("[Orders Page] Polling update failed:", error);
-                });
-        }, 10000);
-
-        return () => clearInterval(intervalId);
-    }, [userId, isLoading, mapOrders]);
+    useOrdersVisibilityRefresh(!!userId && !isLoading, fetchOrders);
 
     const handleRetry = useCallback(() => {
         if (!userId) {

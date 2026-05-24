@@ -34,7 +34,7 @@ export interface Restaurant {
     distance: number;
     duration: number;
     products: Product[];
-    cate: Category[];
+    cate?: Category[];
     createdAt?: string;
     updatedAt?: string;
 }

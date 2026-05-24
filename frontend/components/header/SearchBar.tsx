@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/Input";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { productApi } from "@/lib/api/productApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
+import { getProductDetailHref } from "@/lib/utils/productNavigation";
+import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { Product, Restaurant } from "@/types";
 import { Search, Store, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +20,7 @@ interface SearchSuggestion {
     image?: string | null;
     restaurantName?: string;
     restaurantSlug?: string;
+    restaurantId?: string;
 }
 
 export default function SearchBar() {
@@ -105,6 +108,7 @@ export default function SearchBar() {
                     image: typeof p.imageURL === "string" ? p.imageURL : null,
                     restaurantName: p.restaurant?.resName,
                     restaurantSlug: p.restaurant?.slug,
+                    restaurantId: p.restaurant?.id,
                 }));
 
                 // Combine and limit to 8 total suggestions (4 restaurants + 4 products)
@@ -171,15 +175,19 @@ export default function SearchBar() {
     };
 
     const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-        if (suggestion.type === "restaurant" && suggestion.slug) {
-            router.push(`/restaurants/${suggestion.slug}`);
+        if (suggestion.type === "restaurant") {
+            const href = getRestaurantDetailHref({ slug: suggestion.slug });
+            if (href) router.push(href);
         } else if (suggestion.type === "product") {
-            // Flow mong muốn: từ search → vào nhà hàng → trong nhà hàng mới vào food detail
-            if (suggestion.restaurantSlug) {
-                router.push(`/restaurants/${suggestion.restaurantSlug}`);
-            } else if (suggestion.slug) {
-                // Fallback an toàn nếu thiếu restaurantSlug
-                router.push(`/food/${suggestion.slug}`);
+            const href = getProductDetailHref({ slug: suggestion.slug });
+            if (href) {
+                router.push(href);
+            } else {
+                const restaurantHref = getRestaurantDetailHref({
+                    id: suggestion.restaurantId,
+                    slug: suggestion.restaurantSlug,
+                });
+                if (restaurantHref) router.push(restaurantHref);
             }
         }
         setShowSuggestions(false);

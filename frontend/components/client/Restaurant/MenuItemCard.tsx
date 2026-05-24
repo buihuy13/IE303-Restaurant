@@ -2,6 +2,7 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { getProductDetailHref } from "@/lib/utils/productNavigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Button } from "@/components/ui/Button";
@@ -116,9 +117,11 @@ export const MenuItemCard = memo(
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
 
+        const productHref = getProductDetailHref(item) ?? "/search?type=foods";
+
         return (
             <Link
-                href={`/food/${item.slug}`}
+                href={productHref}
                 className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 hover:-translate-y-1 hover:border-brand-orange/30"
             >
                 {/* Image Section - Improved design */}

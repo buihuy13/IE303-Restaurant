@@ -19,8 +19,8 @@ export const CLIENT_RESTAURANT = {
 } as const;
 
 export const CLIENT_PRODUCT = {
-    byId: "GET /products/{id}",
-    bySlug: "GET /products/slug/{slug}",
+    byId: "GET /products/{id}", // admin / legacy
+    bySlug: "GET /products/slug/{slug}", // public detail
     byRestaurant: "GET /products/restaurant/{restaurantId}",
     sizes: "GET /products/productsize/{productId}",
     restaurantByProduct: "GET /products/res/{productId}",
@@ -44,9 +44,4 @@ export const CLIENT_CART_ORDER = {
 export const CLIENT_AUTH_REQUIRED = {
     imagesUpload: "POST /images/upload",
     reviewCreate: "POST /review",
-} as const;
-
-/** Not implemented in this monorepo — UI must not call until backend exists. */
-export const NOT_IN_BACKEND = {
-    groupOrders: "/group-orders/**",
 } as const;

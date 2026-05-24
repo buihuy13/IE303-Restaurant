@@ -5,14 +5,16 @@ import toast from "react-hot-toast";
 import { AccountAddressesPageView } from "@/components/client/account/addresses/AccountAddressesPageView";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { authApi } from "@/lib/api/authApi";
+import { useAddressStore } from "@/stores/addressStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Address, AddressRequest } from "@/types";
+import { AddressRequest } from "@/types";
 
 export default function AccountAddressesPageClient() {
     const { user, loading: authLoading } = useAuthStore();
     const confirmAction = useConfirm();
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [loading, setLoading] = useState(true);
+    const addresses = useAddressStore((state) => state.addresses);
+    const loading = useAddressStore((state) => state.loading);
+    const refreshAddresses = useAddressStore((state) => state.fetchAddresses);
     const [isAdding, setIsAdding] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
@@ -27,43 +29,11 @@ export default function AccountAddressesPageClient() {
         setMounted(true);
     }, []);
 
-    const fetchAddresses = async () => {
-        if (!user?.id) return;
-
-        setLoading(true);
-        try {
-            const data = await authApi.getUserAddresses(user.id);
-            if (Array.isArray(data)) {
-                setAddresses(data);
-            } else {
-                console.warn("Addresses data is not an array:", data);
-                setAddresses([]);
-            }
-        } catch (error) {
-            console.error("Error fetching addresses:", error);
-            let errorMessage = "Failed to load addresses";
-            if (error && typeof error === "object" && "response" in error) {
-                const axiosError = error as {
-                    response?: { data?: { message?: string } };
-                    message?: string;
-                };
-                errorMessage = axiosError.response?.data?.message || axiosError.message || errorMessage;
-            } else if (error instanceof Error) {
-                errorMessage = error.message;
-            }
-            toast.error(errorMessage);
-            setAddresses([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
         if (mounted && user?.id && !authLoading) {
-            fetchAddresses();
+            void refreshAddresses(user.id, { force: true });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mounted, user?.id, authLoading]);
+    }, [mounted, user?.id, authLoading, refreshAddresses]);
 
     const handleAddAddress = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,7 +60,7 @@ export default function AccountAddressesPageClient() {
             toast.success("Address added successfully!");
             setNewAddress({ location: "", longitude: 0, latitude: 0 });
             setIsAdding(false);
-            fetchAddresses();
+            await refreshAddresses(user.id, { force: true });
         } catch (error) {
             let errorMessage = "Failed to add address";
             if (error && typeof error === "object" && "response" in error) {
@@ -210,6 +180,10 @@ export default function AccountAddressesPageClient() {
     };
 
     const handleDeleteAddress = async (addressId: string) => {
+        if (!user?.id) {
+            toast.error("User information not available");
+            return;
+        }
         const ok = await confirmAction({
             title: "Delete address?",
             description: "This address will be removed from your account.",
@@ -224,7 +198,7 @@ export default function AccountAddressesPageClient() {
         try {
             await authApi.deleteAddress(addressId);
             toast.success("Address deleted successfully!");
-            fetchAddresses();
+            await refreshAddresses(user.id, { force: true });
         } catch (error) {
             let errorMessage = "Failed to delete address";
             if (error && typeof error === "object" && "response" in error) {

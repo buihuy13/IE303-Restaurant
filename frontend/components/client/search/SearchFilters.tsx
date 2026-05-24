@@ -15,6 +15,12 @@ interface SearchFiltersProps {
     onClose?: () => void;
     initialCategories?: Category[];
     searchType?: "foods" | "restaurants";
+    capabilities?: {
+        hasRating: boolean;
+        hasDeliveryTime: boolean;
+        hasOpenNow: boolean;
+        hasFreeShip: boolean;
+    };
 }
 
 export default function SearchFilters({
@@ -22,6 +28,7 @@ export default function SearchFilters({
     onClose,
     initialCategories = [],
     searchType = "foods",
+    capabilities = { hasRating: false, hasDeliveryTime: false, hasOpenNow: false, hasFreeShip: false },
 }: SearchFiltersProps) {
     const { theme } = useClientTheme();
     const router = useRouter();
@@ -32,6 +39,12 @@ export default function SearchFilters({
     const [minPriceVnd, setMinPriceVnd] = useState<string>("");
     const [maxPriceVnd, setMaxPriceVnd] = useState<string>("");
     const [nearbyMeters, setNearbyMeters] = useState<string>("");
+    const [ratingMin, setRatingMin] = useState<string>("");
+    const [deliveryMaxMinutes, setDeliveryMaxMinutes] = useState<string>("");
+    const [openNowOnly, setOpenNowOnly] = useState(false);
+    const [freeShipOnly, setFreeShipOnly] = useState(false);
+    const sliderMin = 500;
+    const sliderMax = 20000;
 
     useEffect(() => {
         const hasStoreCategories = !!(categories && categories.length > 0);
@@ -71,6 +84,10 @@ export default function SearchFilters({
         }
 
         setNearbyMeters(searchParams.get("nearby") || "");
+        setRatingMin(searchParams.get("ratingMin") || "");
+        setDeliveryMaxMinutes(searchParams.get("deliveryMaxMinutes") || "");
+        setOpenNowOnly(searchParams.get("openNow") === "1");
+        setFreeShipOnly(searchParams.get("freeShip") === "1");
     }, [searchParams]);
 
     const updateURL = (updates: Record<string, string | string[] | null>) => {
@@ -104,24 +121,45 @@ export default function SearchFilters({
         setMinPriceVnd("");
         setMaxPriceVnd("");
         setNearbyMeters("");
+        setRatingMin("");
+        setDeliveryMaxMinutes("");
+        setOpenNowOnly(false);
+        setFreeShipOnly(false);
         const type = searchParams.get("type");
         router.push(type ? `/search?type=${type}` : "/search", { scroll: false });
         if (onClose) onClose();
     };
 
+    const hasAdvancedActiveFilters =
+        (capabilities.hasRating && !!ratingMin) ||
+        (capabilities.hasDeliveryTime && !!deliveryMaxMinutes) ||
+        (capabilities.hasOpenNow && openNowOnly) ||
+        (capabilities.hasFreeShip && freeShipOnly);
+
     const hasActiveFilters =
         (searchType === "foods" && selectedCategories.length > 0) ||
         (searchType === "foods" && !!(minPriceVnd || maxPriceVnd)) ||
-        !!nearbyMeters;
+        !!nearbyMeters ||
+        hasAdvancedActiveFilters;
 
     const activeFilterCount =
         (searchType === "foods" ? selectedCategories.length : 0) +
         (searchType === "foods" && (minPriceVnd || maxPriceVnd) ? 1 : 0) +
-        (nearbyMeters ? 1 : 0);
+        (nearbyMeters ? 1 : 0) +
+        (capabilities.hasRating && ratingMin ? 1 : 0) +
+        (capabilities.hasDeliveryTime && deliveryMaxMinutes ? 1 : 0) +
+        (capabilities.hasOpenNow && openNowOnly ? 1 : 0) +
+        (capabilities.hasFreeShip && freeShipOnly ? 1 : 0);
 
     const handleApplyFilters = () => {
+        // These keys are UI-only URL params for client-side refinement.
+        // Backend query builders ignore them and keep API contract unchanged.
         const updates: Record<string, string | string[] | null> = {
             nearby: nearbyMeters.trim() ? nearbyMeters.trim() : null,
+            ratingMin: capabilities.hasRating && ratingMin ? ratingMin : null,
+            deliveryMaxMinutes: capabilities.hasDeliveryTime && deliveryMaxMinutes ? deliveryMaxMinutes : null,
+            openNow: capabilities.hasOpenNow && openNowOnly ? "1" : null,
+            freeShip: capabilities.hasFreeShip && freeShipOnly ? "1" : null,
         };
 
         if (searchType === "foods") {
@@ -146,13 +184,35 @@ export default function SearchFilters({
         updateURL(updates);
     };
 
-    const panelClass = `p-4 rounded-xl border shadow-sm ${
+    const sliderValue = (() => {
+        const parsed = Number(nearbyMeters || "5000");
+        if (!Number.isFinite(parsed)) return 5000;
+        return Math.max(sliderMin, Math.min(sliderMax, parsed));
+    })();
+    const sliderPercent = ((sliderValue - sliderMin) / (sliderMax - sliderMin)) * 100;
+    const sliderTrackColor = theme === "dark" ? "#f97316" : "#ea580c";
+    const sliderRestColor = theme === "dark" ? "rgba(255,255,255,0.16)" : "#e5e7eb";
+
+    const panelClass = `flex flex-col p-4 rounded-xl border shadow-sm ${
         theme === "dark" ? "border-white/12 bg-[#11172a]" : "border-gray-200 bg-white"
-    } ${isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"}`;
+    } ${isMobile ? "h-full" : "sticky top-24 max-h-[calc(100vh-120px)]"}`;
+
+    const filterActions = (
+        <div className={`sticky bottom-0 z-10 mt-4 flex-shrink-0 border-t px-1 pt-3 pb-1 ${theme === "dark" ? "border-white/10 bg-[#11172a]" : "border-gray-200 bg-white"}`}>
+            <div className="flex gap-2">
+            <Button type="button" onClick={handleClearAll} variant="brandOutline" className="flex-1 h-11 rounded-full" disabled={!hasActiveFilters}>
+                Clear
+            </Button>
+            <Button type="button" onClick={handleApplyFilters} variant="brand" className="flex-1 h-11 rounded-full">
+                Apply filters
+            </Button>
+            </div>
+        </div>
+    );
 
     const content = (
         <div className={panelClass}>
-            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
+            <div className={`flex-shrink-0 flex items-center justify-between mb-4 pb-3 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
                 <div className="flex items-center gap-2">
                     <h3 className={`text-lg font-bold ${theme === "dark" ? "text-white/95" : "text-gray-900"}`}>Filters</h3>
                     {activeFilterCount > 0 && (
@@ -175,16 +235,51 @@ export default function SearchFilters({
                 )}
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
             <FilterSection title="Radius (meters)">
-                <Input
-                    type="number"
-                    min={1}
-                    max={20000}
-                    placeholder="e.g. 5000"
-                    value={nearbyMeters}
-                    onChange={(e) => setNearbyMeters(e.target.value)}
-                    className="h-10"
-                />
+                <div className="space-y-3">
+                    <Input
+                        type="range"
+                        min={sliderMin}
+                        max={sliderMax}
+                        step={100}
+                        value={sliderValue}
+                        onChange={(e) => setNearbyMeters(e.target.value)}
+                        className="h-2 cursor-pointer appearance-none rounded-lg border-0 px-0 py-0 shadow-none focus-visible:ring-0 focus-visible:border-transparent
+                            [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full
+                            [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-brand-orange [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:-mt-1.5
+                            [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-brand-orange [&::-moz-range-thumb]:shadow-md"
+                        style={{
+                            background: `linear-gradient(to right, ${sliderTrackColor} 0%, ${sliderTrackColor} ${sliderPercent}%, ${sliderRestColor} ${sliderPercent}%, ${sliderRestColor} 100%)`,
+                        }}
+                    />
+                    <div className="flex items-center justify-between text-xs">
+                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMin}m</span>
+                        <span className="font-semibold text-brand-orange">
+                            {sliderValue.toLocaleString("vi-VN")}m
+                        </span>
+                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMax / 1000}km</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {[500, 1000, 3000, 5000, 10000].map((preset) => (
+                            <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setNearbyMeters(String(preset))}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                    Number(nearbyMeters || 5000) === preset
+                                        ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                        : theme === "dark"
+                                          ? "border-white/16 bg-white/6 text-white/80"
+                                          : "border-gray-200 bg-white text-gray-700"
+                                }`}
+                            >
+                                {preset >= 1000 ? `${preset / 1000}km` : `${preset}m`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </FilterSection>
 
             {searchType === "foods" && (
@@ -231,20 +326,99 @@ export default function SearchFilters({
                 </>
             )}
 
-            {searchType === "restaurants" && (
-                <p className={`text-sm ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>
-                    Restaurant filters: `search`, `nearby`, sort `rating=desc` via sort bar only.
-                </p>
+            {(capabilities.hasRating || capabilities.hasDeliveryTime || capabilities.hasOpenNow || capabilities.hasFreeShip) && (
+                <div className={`py-4 border-b ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
+                    <h5 className={`font-semibold text-sm mb-3 ${theme === "dark" ? "text-white/90" : "text-gray-900"}`}>Quick filters</h5>
+
+                    {capabilities.hasRating && (
+                        <div className="mb-3">
+                            <p className={`text-xs font-medium mb-1.5 ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Min rating</p>
+                            <div className="flex flex-wrap gap-2">
+                                {["4.0", "4.5"].map((value) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        onClick={() => setRatingMin((prev) => (prev === value ? "" : value))}
+                                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                            ratingMin === value
+                                                ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                                : theme === "dark"
+                                                  ? "border-white/16 bg-white/6 text-white/80"
+                                                  : "border-gray-200 bg-white text-gray-700"
+                                        }`}
+                                    >
+                                        {"\u2265"} {value}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {capabilities.hasDeliveryTime && (
+                        <div className="mb-3">
+                            <p className={`text-xs font-medium mb-1.5 ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Delivery time</p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { label: "< 20 min", value: "20" },
+                                    { label: "< 30 min", value: "30" },
+                                    { label: "< 45 min", value: "45" },
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => setDeliveryMaxMinutes((prev) => (prev === option.value ? "" : option.value))}
+                                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                            deliveryMaxMinutes === option.value
+                                                ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                                : theme === "dark"
+                                                  ? "border-white/16 bg-white/6 text-white/80"
+                                                  : "border-gray-200 bg-white text-gray-700"
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                        {capabilities.hasOpenNow && (
+                            <button
+                                type="button"
+                                onClick={() => setOpenNowOnly((v) => !v)}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                    openNowOnly
+                                        ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                        : theme === "dark"
+                                          ? "border-white/16 bg-white/6 text-white/80"
+                                          : "border-gray-200 bg-white text-gray-700"
+                                }`}
+                            >
+                                Open now
+                            </button>
+                        )}
+                        {capabilities.hasFreeShip && (
+                            <button
+                                type="button"
+                                onClick={() => setFreeShipOnly((v) => !v)}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                    freeShipOnly
+                                        ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                        : theme === "dark"
+                                          ? "border-white/16 bg-white/6 text-white/80"
+                                          : "border-gray-200 bg-white text-gray-700"
+                                }`}
+                            >
+                                Free ship
+                            </button>
+                        )}
+                    </div>
+                </div>
             )}
 
-            <div className={`pt-4 mt-4 border-t ${theme === "dark" ? "border-white/10" : "border-gray-200"} flex gap-2`}>
-                <Button type="button" onClick={handleClearAll} variant="brandOutline" className="flex-1 h-11 rounded-full" disabled={!hasActiveFilters}>
-                    Clear
-                </Button>
-                <Button type="button" onClick={handleApplyFilters} variant="brand" className="flex-1 h-11 rounded-full">
-                    Apply filters
-                </Button>
             </div>
+            {filterActions}
         </div>
     );
 
@@ -252,7 +426,7 @@ export default function SearchFilters({
         return (
             <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
                 <div
-                    className={`fixed top-0 left-0 h-full w-[85%] max-w-sm shadow-2xl overflow-y-auto ${
+                    className={`fixed top-0 left-0 flex h-full w-[85%] max-w-sm flex-col shadow-2xl ${
                         theme === "dark" ? "bg-[#11172a]" : "bg-white"
                     }`}
                     onClick={(e) => e.stopPropagation()}

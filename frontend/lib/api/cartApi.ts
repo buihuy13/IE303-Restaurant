@@ -1,9 +1,6 @@
 import api from "../axios";
+import { isCanonicalUuid } from "@/lib/utils/uuid";
 import { withOrderServiceBase } from "./serviceBaseConfig";
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const isUuid = (value: string): boolean => UUID_REGEX.test(value.trim());
 
 export interface CartItem {
     productId: string;
@@ -73,11 +70,11 @@ export const cartApi = {
         const baseProductId = data.item.productId.split("--")[0].trim();
         const sizeId = data.item.sizeId?.trim();
 
-        if (!isUuid(restaurantId)) {
+        if (!isCanonicalUuid(restaurantId)) {
             throw new Error("Invalid restaurant identifier. Please refresh and try again.");
         }
 
-        if (!isUuid(baseProductId)) {
+        if (!isCanonicalUuid(baseProductId)) {
             throw new Error("Invalid product identifier. Please re-open the item and try again.");
         }
 
@@ -85,7 +82,7 @@ export const cartApi = {
             throw new Error("Please select a size before adding to cart.");
         }
 
-        if (!isUuid(sizeId)) {
+        if (!isCanonicalUuid(sizeId)) {
             throw new Error("Invalid size identifier. Please select the size again.");
         }
 
@@ -117,7 +114,7 @@ export const cartApi = {
             throw new Error("Missing product size identifier for cart update.");
         }
 
-        if (!isUuid(sizeId)) {
+        if (!isCanonicalUuid(sizeId)) {
             throw new Error("Invalid size identifier. Please reload the cart and try again.");
         }
 

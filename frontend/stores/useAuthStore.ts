@@ -133,13 +133,32 @@ const extractUserFromAccessToken = (accessToken: string | null): User | null => 
     }
 };
 
+const buildUserFromAccessToken = (
+    accessToken: string | null,
+    roleOverride?: "USER" | "MERCHANT" | "ADMIN" | null,
+): User | null => {
+    const minimalUser = extractUserFromAccessToken(accessToken);
+    if (!minimalUser) return null;
+
+    const resolvedRole = roleOverride ?? extractRoleFromAccessToken(accessToken) ?? minimalUser.role ?? "USER";
+    return {
+        ...minimalUser,
+        role: resolvedRole,
+    };
+};
+
+const initialTokens = getInitialTokens();
+const initialAccessToken = initialTokens.accessToken;
+const initialAuthRole = extractRoleFromAccessToken(initialAccessToken);
+const initialUser = buildUserFromAccessToken(initialAccessToken, initialAuthRole);
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-    user: null,
-    accessToken: getInitialTokens().accessToken,
-    refreshToken: getInitialTokens().refreshToken,
-    idToken: getInitialTokens().idToken,
-    authRole: extractRoleFromAccessToken(getInitialTokens().accessToken),
-    isAuthenticated: !!getInitialTokens().accessToken,
+    user: initialUser,
+    accessToken: initialAccessToken,
+    refreshToken: initialTokens.refreshToken,
+    idToken: initialTokens.idToken,
+    authRole: initialAuthRole,
+    isAuthenticated: !!initialAccessToken,
     loading: false,
     error: null,
     isLoggingOut: false,
@@ -153,6 +172,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             idToken,
             authRole: resolvedRole,
             isAuthenticated: !!access,
+            user: access ? buildUserFromAccessToken(access, resolvedRole) : null,
         });
         if (typeof window !== "undefined") {
             if (access) {
@@ -404,7 +424,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         // Set tokens + role immediately for faster UI response
         const resolvedRole = extractRoleFromAccessToken(accessToken);
-        set({ accessToken, refreshToken, idToken, authRole: resolvedRole, isAuthenticated: true, loading: true });
+        set({
+            accessToken,
+            refreshToken,
+            idToken,
+            authRole: resolvedRole,
+            isAuthenticated: true,
+            loading: true,
+            user: buildUserFromAccessToken(accessToken, resolvedRole),
+        });
 
         try {
             // Fetch user profile in background - don't block if it fails

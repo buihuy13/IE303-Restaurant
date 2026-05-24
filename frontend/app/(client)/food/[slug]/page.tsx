@@ -4,8 +4,9 @@ import FoodDetail from "@/components/client/Food/FoodDetail";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
 import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
+import { looksLikeProductUuid } from "@/lib/utils/productNavigation";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { Product, Restaurant } from "@/types";
+import type { Product, Restaurant, Review } from "@/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -35,7 +36,7 @@ type RestaurantByProductDto = {
 type LoadState =
     | { status: "loading" }
     | { status: "error"; message: string; code?: number }
-    | { status: "ready"; foodItem: Product; reviewStats: ReviewStatsResponse | null };
+    | { status: "ready"; foodItem: Product; reviewStats: ReviewStatsResponse | null; reviews: Review[] };
 
 export default function FoodDetailPage() {
     const router = useRouter();
@@ -52,14 +53,39 @@ export default function FoodDetailPage() {
         const run = async () => {
             setState({ status: "loading" });
             try {
-                const res = await productApi.getProductBySlug(slug);
-                const foodItem = res.data as Product | null;
+                let foodItem: Product | null = null;
+                let canonicalSlug = slug;
+
+                if (looksLikeProductUuid(slug)) {
+                    try {
+                        const legacy = await productApi.getProductById(slug);
+                        const data = legacy.data as Product | null;
+                        if (data?.slug?.trim()) {
+                            foodItem = data;
+                            canonicalSlug = data.slug.trim();
+                        }
+                    } catch {
+                        // handled below
+                    }
+                } else {
+                    try {
+                        const res = await productApi.getProductBySlug(slug);
+                        foodItem = (res.data as Product | null) ?? null;
+                    } catch {
+                        // handled below
+                    }
+                }
+
                 if (!foodItem) {
-                    setState({ status: "error", message: "Food item not found." });
+                    if (!cancelled) setState({ status: "error", message: "Food item not found." });
                     return;
                 }
 
-                // Backend GET /products/{slug} doesn't include restaurant in the product response.
+                if (!cancelled && canonicalSlug !== slug) {
+                    router.replace(`/food/${encodeURIComponent(canonicalSlug)}`, { scroll: false });
+                }
+
+                // Backend GET /products/slug/{slug} doesn't include restaurant in the product response.
                 // If `restaurant` is missing, fetch it separately.
                 if (!foodItem.restaurant) {
                     const restaurantRes = await productApi.getRestaurantByProductId(foodItem.id);
@@ -101,9 +127,13 @@ export default function FoodDetailPage() {
                     foodItem.restaurant = restaurant;
                 }
 
-                const reviewStats = await reviewApi.getProductReviewStats(foodItem.id).catch(() => null);
+                const [reviewStats, reviewSummary] = await Promise.all([
+                    reviewApi.getProductReviewStats(foodItem.id).catch(() => null),
+                    reviewApi.getProductReviewSummary(foodItem.id).catch(() => ({ reviews: [], total: 0 })),
+                ]);
+                const reviews = Array.isArray(reviewSummary?.reviews) ? reviewSummary.reviews : [];
 
-                if (!cancelled) setState({ status: "ready", foodItem, reviewStats });
+                if (!cancelled) setState({ status: "ready", foodItem, reviewStats, reviews });
             } catch (err: unknown) {
                 const e = err as { response?: { status?: number } };
                 const code = e?.response?.status;
@@ -124,7 +154,7 @@ export default function FoodDetailPage() {
         return () => {
             cancelled = true;
         };
-    }, [slug]);
+    }, [slug, router]);
 
     if (state.status === "loading") {
         return (
@@ -190,6 +220,7 @@ export default function FoodDetailPage() {
                     foodItem={state.foodItem}
                     restaurant={state.foodItem.restaurant!}
                     reviewStats={state.reviewStats}
+                    reviews={state.reviews}
                 />
             </div>
         </main>

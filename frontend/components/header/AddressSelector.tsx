@@ -2,9 +2,9 @@
 
 import { authApi } from "@/lib/api/authApi";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
+import { useAddressStore } from "@/stores/addressStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DEFAULT_ADDRESSES, LocationAddress, useLocationStore } from "@/stores/useLocationStore";
-import { Address } from "@/types";
 import { ChevronDown, MapPin, Navigation } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -14,35 +14,22 @@ export default function AddressSelector() {
     const { user, isAuthenticated } = useAuthStore();
     const { currentAddress, setCurrentAddress, setCurrentLocation, setLoading } = useLocationStore();
     const [isOpen, setIsOpen] = useState(false);
-    const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+    const userAddresses = useAddressStore((state) => state.addresses);
+    const fetchAddresses = useAddressStore((state) => state.fetchAddresses);
     const [isGettingLocation, setIsGettingLocation] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Fetch user addresses when authenticated
     useEffect(() => {
-        if (isAuthenticated && user?.id) {
-            authApi
-                .getUserAddresses(user.id)
-                .then((addresses) => {
-                    if (Array.isArray(addresses) && addresses.length > 0) {
-                        setUserAddresses(addresses);
-                        // If no current address is set, use first user address
-                        if (!currentAddress) {
-                            const firstAddress = addresses[0];
-                            setCurrentAddress({
-                                id: firstAddress.id,
-                                address: firstAddress.location,
-                                lat: firstAddress.latitude,
-                                lng: firstAddress.longitude,
-                            });
-                        }
-                    }
-                })
-                .catch((error) => {
-                    console.warn("Failed to fetch user addresses:", error);
-                });
+        if (userAddresses.length > 0 && !currentAddress) {
+            const firstAddress = userAddresses[0];
+            setCurrentAddress({
+                id: firstAddress.id,
+                address: firstAddress.location,
+                lat: firstAddress.latitude,
+                lng: firstAddress.longitude,
+            });
         }
-    }, [isAuthenticated, user?.id, currentAddress, setCurrentAddress]);
+    }, [userAddresses, currentAddress, setCurrentAddress]);
 
     // Initialize with default if no location is set
     useEffect(() => {
@@ -92,9 +79,7 @@ export default function AddressSelector() {
                             longitude: address.lng,
                         });
 
-                        // Update user addresses list
-                        const updatedAddresses = await authApi.getUserAddresses(user.id);
-                        setUserAddresses(updatedAddresses);
+                        await fetchAddresses(user.id, { force: true });
 
                         // Update current address with saved ID
                         setCurrentAddress({
@@ -199,9 +184,7 @@ export default function AddressSelector() {
                             longitude,
                         });
 
-                        // Update user addresses list
-                        const updatedAddresses = await authApi.getUserAddresses(user.id);
-                        setUserAddresses(updatedAddresses);
+                        await fetchAddresses(user.id, { force: true });
 
                         // Set as current location in store
                         const locationAddress: LocationAddress = {

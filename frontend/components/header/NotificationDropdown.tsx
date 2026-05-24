@@ -1,6 +1,5 @@
 "use client";
 
-import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
@@ -69,7 +68,6 @@ const getNotificationImage = (type: string): string => {
 export default function NotificationDropdown() {
     const { theme } = useClientTheme();
     const { isAuthenticated, user, loading } = useAuthStore();
-    useNotifications(); // Track order status changes and create notifications
     const { notifications: allNotifications, markAsRead, markAllAsRead } = useNotificationStore();
     const [isOpen, setIsOpen] = useState(false);
     const [isHovering, setIsHovering] = useState(false);

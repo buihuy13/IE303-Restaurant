@@ -1,10 +1,11 @@
 "use client";
 
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import OrderDetailClient from "./OrderDetailClient";
 
@@ -60,27 +61,17 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
         },
     });
 
-    // Poll for order updates as fallback (every 10 seconds)
-    useEffect(() => {
+    useOrdersVisibilityRefresh(!!order.slug, async () => {
         if (!order.slug) return;
-
-        const intervalId = setInterval(() => {
-            orderApi
-                .getOrderBySlug(order.slug)
-                .then((updatedOrder) => {
-                    // Only update if status changed
-                    if (updatedOrder.status !== order.status) {
-                        setOrder(updatedOrder);
-                    }
-                })
-                .catch((error) => {
-                    // Silently fail - socket will handle updates
-                    console.debug("Polling order update failed:", error);
-                });
-        }, 10000); // Poll every 10 seconds
-
-        return () => clearInterval(intervalId);
-    }, [order.slug, order.status]);
+        try {
+            const updatedOrder = await orderApi.getOrderBySlug(order.slug, { cacheBust: true });
+            if (updatedOrder.status !== order.status) {
+                setOrder(updatedOrder);
+            }
+        } catch {
+            // SSE handles live updates; visibility refresh is best-effort
+        }
+    });
 
     return <OrderDetailClient order={order} />;
 }

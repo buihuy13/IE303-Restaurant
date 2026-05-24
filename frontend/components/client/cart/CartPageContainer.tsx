@@ -22,51 +22,18 @@ const formatPriceUSD = (priceUSD: number): string => {
 export default function CartPageContainer() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    const { items, fetchCart, userId, isLoading: cartLoading, setUserId } = useCartStore();
-    const [cartFetched, setCartFetched] = useState(false);
+    const { items, userId, isLoading: cartLoading, setUserId } = useCartStore();
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-    // Ensure userId is set and fetch cart when component mounts
+    // Cart hydration is owned by useCartSync in ClientLayout — only align userId here.
     useEffect(() => {
         if (!isAuthenticated || !user?.id) {
             return;
         }
-
-        // Ensure userId is set in cart store first
         if (userId !== user.id) {
             setUserId(user.id);
-            // Reset cartFetched when userId changes to ensure we fetch again
-            setCartFetched(false);
-            return; // Wait for userId to be set before fetching
         }
-
-        // Fetch cart when userId matches and hasn't been fetched yet
-        if (userId === user.id && !cartFetched && !cartLoading) {
-            fetchCart()
-                .then(() => {
-                    // Mark as fetched after successful fetch
-                    setCartFetched(true);
-                    // Select all items by default
-                    const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
-                    setSelectedItems(new Set(allItemKeys));
-                })
-                .catch((error) => {
-                    // Silently handle errors - cart might not exist yet or service unavailable
-                    const status = (error as { response?: { status?: number } })?.response?.status;
-                    if (status !== 404 && status !== 503) {
-                        console.warn("Failed to fetch cart:", error);
-                    }
-                    // Still mark as fetched even on error (404/503 are expected for new users)
-                    setCartFetched(true);
-                });
-        }
-
-        // Mark as fetched when cart loading is complete (for cases where fetch was already in progress)
-        // This handles the case where fetchCart was called elsewhere (e.g., from addItem)
-        if (userId === user.id && !cartLoading && !cartFetched) {
-            setCartFetched(true);
-        }
-    }, [isAuthenticated, user?.id, userId, cartFetched, cartLoading, fetchCart, setUserId, items]);
+    }, [isAuthenticated, user?.id, userId, setUserId]);
 
     // Select all items when items change
     useEffect(() => {
@@ -80,7 +47,7 @@ export default function CartPageContainer() {
     // Add a small delay to handle race conditions when user just added an item
     const [showLoading, setShowLoading] = useState(true);
     useEffect(() => {
-        if (cartLoading || !cartFetched) {
+        if (cartLoading) {
             setShowLoading(true);
             return;
         }
@@ -102,7 +69,7 @@ export default function CartPageContainer() {
         }, delay);
 
         return () => clearTimeout(timer);
-    }, [cartLoading, cartFetched]);
+    }, [cartLoading]);
 
     const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
@@ -154,7 +121,7 @@ export default function CartPageContainer() {
     }, [selectedItemsList]);
 
     // Show loading while fetching cart or waiting for state to update
-    if (showLoading || cartLoading || !cartFetched) {
+    if (showLoading || cartLoading) {
         return <GlobalLoader label="Loading cart" sublabel="Please wait..." />;
     }
 

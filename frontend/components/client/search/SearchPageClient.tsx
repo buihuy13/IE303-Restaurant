@@ -18,10 +18,13 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const { currentAddress, isLocationSet } = useSearchLocation();
-    const searchType = (searchParams.get("type") || "foods") as "foods" | "restaurants";
+    const typeParam = searchParams.get("type");
+    const searchType = (typeParam === "restaurants" ? "restaurants" : "foods") as "foods" | "restaurants";
+    const fetchProducts = typeParam === null || typeParam === "foods";
+    const fetchRestaurants = typeParam === null || typeParam === "restaurants";
 
-    const productsState = useSearchProducts(currentAddress, isLocationSet);
-    const restaurantsState = useSearchRestaurants(currentAddress, isLocationSet);
+    const productsState = useSearchProducts(currentAddress, isLocationSet, fetchProducts);
+    const restaurantsState = useSearchRestaurants(currentAddress, isLocationSet, fetchRestaurants);
     const query = searchParams.get("q") || "";
     const filteredProducts = productsState.products;
     const productsLoading = searchType === "restaurants" ? restaurantsState.restaurantsLoading : productsState.productsLoading;
@@ -32,7 +35,7 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
     const PAGE_SIZE = searchType === "restaurants" ? restaurantsState.PAGE_SIZE : productsState.PAGE_SIZE;
 
     const hasActiveFilters = (() => {
-        const allowed = ["category", "priceRange", "nearby", "q", "search"];
+        const allowed = ["category", "priceRange", "nearby", "q", "search", "ratingMin", "deliveryMaxMinutes", "openNow", "freeShip"];
         for (const key of allowed) {
             if (searchType === "restaurants" && (key === "category" || key === "priceRange")) continue;
             if (searchParams.get(key) || searchParams.getAll(key).length > 0) return true;
