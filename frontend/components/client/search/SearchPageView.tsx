@@ -13,6 +13,7 @@ import { SearchResultsHeader } from "@/components/client/search/SearchResultsHea
 import SearchSortBar from "@/components/client/search/SearchSortBar";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
+import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import type { Category, Product, Restaurant } from "@/types";
 import { Filter, Flame, LayoutGrid, List } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -86,12 +87,34 @@ export function SearchPageView({
         let count = 0;
         if (searchParams.get("nearby")) count += 1;
         if (searchParams.get("q") || searchParams.get("search")) count += 1;
+        if (searchParams.get("ratingMin")) count += 1;
+        if (searchParams.get("deliveryMaxMinutes")) count += 1;
+        if (searchParams.get("openNow") === "1") count += 1;
+        if (searchParams.get("freeShip") === "1") count += 1;
         if (searchType === "foods") {
             count += searchParams.getAll("category").length;
             if (searchParams.get("priceRange")) count += 1;
         }
         return count;
     }, [searchParams]);
+
+    const filterCapabilities = useMemo(() => {
+        const list = searchType === "foods" ? filteredProducts : restaurants;
+        const hasRating = list.some((item) => typeof item?.rating === "number" && item.rating > 0);
+        const hasDeliveryTime = searchType === "foods"
+            ? filteredProducts.some((p) => typeof p?.restaurant?.duration === "number" && p.restaurant.duration > 0)
+            : restaurants.some((r) => typeof r?.duration === "number" && r.duration > 0);
+        const hasOpenNow = searchType === "foods"
+            ? filteredProducts.some((p) => !!p?.restaurant?.openingTime && !!p?.restaurant?.closingTime)
+            : restaurants.some((r) => !!r?.openingTime && !!r?.closingTime);
+        const hasFreeShip =
+            list.some(
+                (item) =>
+                    typeof (item as { freeShip?: unknown }).freeShip === "boolean" ||
+                    typeof (item as { shippingFee?: unknown }).shippingFee === "number",
+            );
+        return { hasRating, hasDeliveryTime, hasOpenNow, hasFreeShip };
+    }, [filteredProducts, restaurants, searchType]);
 
     const handleSwitchTab = (nextType: "foods" | "restaurants") => {
         const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -113,6 +136,82 @@ export function SearchPageView({
         router.push(`/search?${restored.toString()}`, { scroll: false });
     };
 
+    const isWithinOpenHours = (openingTime?: string | null, closingTime?: string | null) => {
+        if (!openingTime || !closingTime) return false;
+        const [openHour, openMinute] = openingTime.split(":").map((v) => Number(v));
+        const [closeHour, closeMinute] = closingTime.split(":").map((v) => Number(v));
+        if ([openHour, openMinute, closeHour, closeMinute].some((v) => Number.isNaN(v))) return false;
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        const openMinutes = openHour * 60 + openMinute;
+        const closeMinutes = closeHour * 60 + closeMinute;
+        if (closeMinutes <= openMinutes) {
+            return nowMinutes >= openMinutes || nowMinutes <= closeMinutes;
+        }
+        return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+    };
+
+    const ratingMin = Number(searchParams.get("ratingMin") || "");
+    const deliveryMaxMinutes = Number(searchParams.get("deliveryMaxMinutes") || "");
+    const openNowOnly = searchParams.get("openNow") === "1";
+    const freeShipOnly = searchParams.get("freeShip") === "1";
+    const hasClientOnlyFilters = !!(ratingMin || deliveryMaxMinutes || openNowOnly || freeShipOnly);
+
+    const filteredFoodsWithQuickFilters = useMemo(() => {
+        if (searchType !== "foods") return filteredProducts;
+        return filteredProducts.filter((product) => {
+            if (ratingMin && (typeof product.rating !== "number" || product.rating < ratingMin)) return false;
+            if (
+                deliveryMaxMinutes &&
+                (typeof product.restaurant?.duration !== "number" || product.restaurant.duration > deliveryMaxMinutes)
+            ) {
+                return false;
+            }
+            if (
+                openNowOnly &&
+                !isWithinOpenHours(product.restaurant?.openingTime, product.restaurant?.closingTime)
+            ) {
+                return false;
+            }
+            if (freeShipOnly) {
+                const row = product as Product & { freeShip?: boolean; shippingFee?: number };
+                const rest = product.restaurant as (Restaurant & { freeShip?: boolean; shippingFee?: number }) | null;
+                const hasFreeShip = row.freeShip === true || row.shippingFee === 0 || rest?.freeShip === true || rest?.shippingFee === 0;
+                if (!hasFreeShip) return false;
+            }
+            return true;
+        });
+    }, [filteredProducts, searchType, ratingMin, deliveryMaxMinutes, openNowOnly, freeShipOnly]);
+
+    const filteredRestaurantsWithQuickFilters = useMemo(() => {
+        if (searchType !== "restaurants") return restaurants;
+        return restaurants.filter((restaurant) => {
+            if (ratingMin && (typeof restaurant.rating !== "number" || restaurant.rating < ratingMin)) return false;
+            if (
+                deliveryMaxMinutes &&
+                (typeof restaurant.duration !== "number" || restaurant.duration > deliveryMaxMinutes)
+            ) {
+                return false;
+            }
+            if (openNowOnly && !isWithinOpenHours(restaurant.openingTime, restaurant.closingTime)) return false;
+            if (freeShipOnly) {
+                const row = restaurant as Restaurant & { freeShip?: boolean; shippingFee?: number };
+                const hasFreeShip = row.freeShip === true || row.shippingFee === 0;
+                if (!hasFreeShip) return false;
+            }
+            return true;
+        });
+    }, [restaurants, searchType, ratingMin, deliveryMaxMinutes, openNowOnly, freeShipOnly]);
+
+    const displayProducts = searchType === "foods" ? filteredFoodsWithQuickFilters : filteredProducts;
+    const displayRestaurants = searchType === "restaurants" ? filteredRestaurantsWithQuickFilters : restaurants;
+    const displayTotalElements = hasClientOnlyFilters
+        ? searchType === "foods"
+            ? displayProducts.length
+            : displayRestaurants.length
+        : totalElements;
+    const displayTotalPages = hasClientOnlyFilters ? 1 : totalPages;
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white">
             <div className="custom-container py-6 lg:py-10">
@@ -133,12 +232,13 @@ export function SearchPageView({
                         onClose={onCloseFilters}
                         initialCategories={initialCategories}
                         searchType={searchType}
+                        capabilities={filterCapabilities}
                     />
                 )}
 
                 <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
                     <div className="hidden lg:block w-full lg:w-[300px] flex-shrink-0">
-                        <SearchFilters initialCategories={initialCategories} searchType={searchType} />
+                        <SearchFilters initialCategories={initialCategories} searchType={searchType} capabilities={filterCapabilities} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] p-4 sm:p-6">
@@ -195,7 +295,7 @@ export function SearchPageView({
                                 searchType={searchType}
                                 query={query}
                                 productsLoading={productsLoading}
-                                totalElements={totalElements}
+                                totalElements={displayTotalElements}
                                 currentPageNumber={currentPageNumber}
                                 pageSize={pageSize}
                                 hasActiveFilters={hasActiveFilters}
@@ -273,7 +373,10 @@ export function SearchPageView({
                                                                     ? "border-white/16 bg-white/10 text-white/92 hover:bg-white/16"
                                                                     : "border-gray-200/70 bg-white hover:bg-gray-100"
                                                             }`}
-                                                            onClick={() => router.push(`/restaurants/${r.slug}`)}
+                                                            onClick={() => {
+                                                                const href = getRestaurantDetailHref(r);
+                                                                if (href) router.push(href);
+                                                            }}
                                                         >
                                                             {r.resName}
                                                         </Button>
@@ -358,18 +461,18 @@ export function SearchPageView({
                                     )}
                                 </div>
                             ) : searchType === "restaurants" ? (
-                                restaurants.length > 0 ? (
+                                displayRestaurants.length > 0 ? (
                                     <>
                                         <div className="grid grid-cols-1 gap-4 md:gap-6">
-                                            {restaurants.map((restaurant) => (
+                                            {displayRestaurants.map((restaurant) => (
                                                 <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                                             ))}
                                         </div>
-                                        {totalPages > 1 && (
+                                        {displayTotalPages > 1 && (
                                             <div className="mt-10 flex justify-center">
                                                 <Pagination
                                                     currentPage={currentPageNumber}
-                                                    totalPages={totalPages}
+                                                    totalPages={displayTotalPages}
                                                     onPageChange={onPageChange}
                                                     showInfo={true}
                                                     scrollToTop={false}
@@ -380,10 +483,10 @@ export function SearchPageView({
                                 ) : (
                                     <SearchEmptyState query={query} />
                                 )
-                            ) : filteredProducts.length > 0 ? (
+                            ) : displayProducts.length > 0 ? (
                                 <>
                                     <div className={viewMode === "list" ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-6"}>
-                                        {filteredProducts.map((product) => (
+                                        {displayProducts.map((product) => (
                                             viewMode === "list" ? (
                                                 <FoodCard key={product.id} product={product} layout="flex" />
                                             ) : (
@@ -391,11 +494,11 @@ export function SearchPageView({
                                             )
                                         ))}
                                     </div>
-                                    {totalPages > 1 && (
+                                    {displayTotalPages > 1 && (
                                         <div className="mt-10 flex justify-center">
                                             <Pagination
                                                 currentPage={currentPageNumber}
-                                                totalPages={totalPages}
+                                                totalPages={displayTotalPages}
                                                 onPageChange={onPageChange}
                                                 showInfo={true}
                                                 scrollToTop={false}

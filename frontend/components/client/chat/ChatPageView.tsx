@@ -9,6 +9,7 @@ export interface ChatPageViewProps {
     userId: string | null;
     rooms: ChatRoom[];
     isLoading: boolean;
+    loadError?: string | null;
     initialRoomId: string | null;
     initialPartnerId: string | null;
 }
@@ -18,6 +19,7 @@ export function ChatPageView({
     userId,
     rooms,
     isLoading,
+    loadError,
     initialRoomId,
     initialPartnerId,
 }: ChatPageViewProps) {
@@ -29,6 +31,27 @@ export function ChatPageView({
                         <div className="text-5xl mb-3">💬</div>
                         <p className="text-gray-900 font-semibold">Please log in to use chat</p>
                         <p className="text-sm text-gray-600 mt-1">Sign in to view your conversations with restaurants.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-white">
+                <div className="custom-container py-8 flex items-center justify-center h-[600px]">
+                    <div className="rounded-3xl border border-red-200/90 bg-white p-8 text-center shadow-[0_12px_35px_rgba(15,23,42,0.07)] max-w-md">
+                        <div className="text-5xl mb-3">⚠️</div>
+                        <p className="text-gray-900 font-semibold">Could not load conversations</p>
+                        <p className="text-sm text-gray-600 mt-2">{loadError}</p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="mt-5 inline-flex items-center rounded-xl bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                        >
+                            Try again
+                        </button>
                     </div>
                 </div>
             </div>
@@ -67,4 +90,3 @@ export function ChatPageView({
         </div>
     );
 }
-

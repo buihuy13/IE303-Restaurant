@@ -1,5 +1,7 @@
 "use client";
 
+import { restaurantApi } from "@/lib/api/restaurantApi";
+import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { Message } from "@/types";
 import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
 import Link from "next/link";
@@ -140,6 +142,7 @@ export default function ChatWindow({
     onBack,
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
+    const [shopHref, setShopHref] = useState("/search?type=restaurants");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +150,27 @@ export default function ChatWindow({
     const lastMessageCountRef = useRef(0);
     const shouldAutoScrollRef = useRef(true);
     const hasMarkedAsReadRef = useRef(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (!partnerId?.trim()) return;
+
+        restaurantApi
+            .getRestaurantByMerchantId(partnerId.trim())
+            .then((res) => {
+                const slug = typeof res.data?.slug === "string" ? res.data.slug.trim() : "";
+                if (cancelled || !slug) return;
+                const href = getRestaurantDetailHref({ slug });
+                if (href) setShopHref(href);
+            })
+            .catch(() => {
+                // Partner may not be a merchant — keep search fallback.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [partnerId]);
 
     // Check if user is near bottom of scroll container
     const isNearBottom = () => {
@@ -325,7 +349,7 @@ export default function ChatWindow({
 
                     {/* Visit Shop Button */}
                     <Link
-                        href={`/restaurants?merchantId=${partnerId}`}
+                        href={shopHref}
                         className="whitespace-nowrap rounded-full border border-brand-orange/40 px-3 py-1.5 text-xs font-semibold text-brand-orange transition-colors hover:bg-brand-orange/10"
                     >
                         Visit Shop

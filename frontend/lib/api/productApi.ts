@@ -16,6 +16,34 @@ export interface PageResponse<T> {
     empty: boolean;
 }
 
+function decodeProductSegment(segment: string): string {
+    let clean = segment.trim();
+    const maxAttempts = 5;
+    let attempts = 0;
+
+    while (clean.includes("%25") && attempts < maxAttempts) {
+        try {
+            const decoded = decodeURIComponent(clean);
+            if (decoded === clean) break;
+            clean = decoded;
+            attempts += 1;
+        } catch {
+            break;
+        }
+    }
+
+    if (clean.includes("%")) {
+        try {
+            const decoded = decodeURIComponent(clean);
+            if (decoded !== clean) clean = decoded;
+        } catch {
+            // keep original segment
+        }
+    }
+
+    return clean;
+}
+
 export const productApi = {
     getAllProducts: async (params: URLSearchParams, sort: ProductSearchSort = "relevance") => {
         const sortValue = (params.get("sort") as ProductSearchSort | null) ?? sort;
@@ -34,40 +62,14 @@ export const productApi = {
     getRestaurantByProductId: (productId: string) => {
         return api.get(`/products/res/${productId}`);
     },
+    /** Public detail — `GET /products/slug/{slug}` (slug only). */
     getProductBySlug: (slug: string) => {
-        let cleanSlug = slug;
-        const maxAttempts = 5;
-        let attempts = 0;
-
-        while (cleanSlug.includes("%25") && attempts < maxAttempts) {
-            try {
-                const decoded = decodeURIComponent(cleanSlug);
-                if (decoded === cleanSlug) {
-                    break;
-                }
-                cleanSlug = decoded;
-                attempts++;
-            } catch {
-                break;
-            }
-        }
-
-        if (cleanSlug.includes("%") && !cleanSlug.includes("%25")) {
-            try {
-                const decoded = decodeURIComponent(cleanSlug);
-                if (decoded !== cleanSlug) {
-                    cleanSlug = decoded;
-                }
-            } catch {
-                // Ignore decode errors
-            }
-        }
-
-        const encodedSlug = encodeURIComponent(cleanSlug);
-        return api.get<Product>(`/products/slug/${encodedSlug}`);
+        const cleanSlug = decodeProductSegment(slug);
+        return api.get<Product>(`/products/slug/${encodeURIComponent(cleanSlug)}`);
     },
+    /** Admin / legacy — `GET /products/{id}` */
     getProductById: (productId: string) => {
-        return api.get<Product>(`/products/${productId}`);
+        return api.get<Product>(`/products/${encodeURIComponent(productId.trim())}`);
     },
     createProduct: (productData: ProductCreateData, imageFile?: File) => {
         const formData = new FormData();

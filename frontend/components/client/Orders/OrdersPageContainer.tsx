@@ -1,6 +1,7 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { isCanonicalUuid } from "@/lib/utils/uuid";
 import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -15,8 +16,10 @@ import OrderHistorySidebar from "./OrderHistorySidebar";
 import { type OrderListItem } from "./OrderItemRow";
 import { OrderSkeleton } from "./OrderSkeleton";
 
-// Helper function to parse productId and extract imageURL from encoded options
-const parseProductIdForImage = (productId: string): string | null => {
+// Helper function to parse encoded options from productId (image/size/customizations)
+const parseProductIdOptions = (
+    productId: string,
+): { imageURL?: string; sizeId?: string; sizeName?: string; customizations?: string } | null => {
     try {
         const separatorIndex = productId.indexOf("--");
         if (separatorIndex === -1) {
@@ -34,12 +37,17 @@ const parseProductIdForImage = (productId: string): string | null => {
         }
         const json = new TextDecoder().decode(bytes);
         const parsed = JSON.parse(json);
-        
-        if (parsed && typeof parsed === "object" && parsed.imageURL) {
-            return parsed.imageURL;
+        if (parsed && typeof parsed === "object") {
+            const record = parsed as Record<string, unknown>;
+            return {
+                imageURL: typeof record.imageURL === "string" ? record.imageURL : undefined,
+                sizeId: typeof record.sizeId === "string" ? record.sizeId : undefined,
+                sizeName: typeof record.sizeName === "string" ? record.sizeName : undefined,
+                customizations: typeof record.customizations === "string" ? record.customizations : undefined,
+            };
         }
     } catch (error) {
-        console.debug("[Reorder] Failed to parse productId for image:", error);
+        console.debug("[Reorder] Failed to parse productId options:", error);
     }
     return null;
 };
@@ -107,9 +115,23 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
 
             setReorderingOrderId(order.id);
             try {
+                let successCount = 0;
+                let skippedMissingSize = 0;
+
                 // Add all items from order to cart
                 for (const item of order.items) {
                     try {
+                        const parsedOptions = parseProductIdOptions(item.productId);
+
+                        const resolvedSizeId = item.sizeId || parsedOptions?.sizeId;
+                        const resolvedSizeName = item.sizeName || parsedOptions?.sizeName;
+                        const resolvedCustomizations = item.customizations || parsedOptions?.customizations;
+
+                        if (!resolvedSizeId || !isCanonicalUuid(resolvedSizeId)) {
+                            skippedMissingSize += 1;
+                            continue;
+                        }
+
                         // Get image from item - check imageURL, cartItemImage, and productId encoded options
                         // Priority: imageURL > cartItemImage > productId encoded options > placeholder
                         const itemWithImage = item as OrderListItem & { cartItemImage?: string | null };
@@ -127,7 +149,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                         }
                         // 3. Try to extract imageURL from productId encoded options
                         else {
-                            const imageFromProductId = parseProductIdForImage(item.productId);
+                            const imageFromProductId = parsedOptions?.imageURL || null;
                             if (imageFromProductId && imageFromProductId.trim() !== "") {
                                 imageSource = imageFromProductId.trim();
                             }
@@ -154,22 +176,32 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 image: imageUrl, // Pass the processed image URL
                                 restaurantId: item.restaurantId || firstItem.restaurantId,
                                 restaurantName: item.restaurantName,
-                                sizeId: item.sizeId,
-                                sizeName: item.sizeName,
-                                customizations: item.customizations,
+                                sizeId: resolvedSizeId,
+                                sizeName: resolvedSizeName,
+                                customizations: resolvedCustomizations,
                             },
                             item.quantity,
                         );
+                        successCount += 1;
                     } catch (itemError) {
                         console.error(`Failed to add item ${item.productName}:`, itemError);
                         // Continue with other items even if one fails
                     }
                 }
 
+                if (successCount === 0) {
+                    toast.error("Không thể reorder vì các món cũ thiếu size hợp lệ.");
+                    return;
+                }
+
                 // Wait a bit for cart to sync with backend
                 await new Promise((resolve) => setTimeout(resolve, 500));
 
-                toast.success(`Added ${order.items.length} item(s) to your cart.`);
+                if (skippedMissingSize > 0) {
+                    toast.success(`Đã thêm ${successCount} món. Bỏ qua ${skippedMissingSize} món thiếu size.`);
+                } else {
+                    toast.success(`Added ${successCount} item(s) to your cart.`);
+                }
 
                 // Navigate to checkout page
                 router.push(`/payment?restaurantId=${firstItem.restaurantId}`);

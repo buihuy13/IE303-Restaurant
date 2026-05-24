@@ -10,7 +10,11 @@ import { WS_BASE_URL, toWebSocketOrigin } from "../config/publicRuntime";
 interface UseChatSocketOptions {
     userId: string | null;
     isAuthenticated: boolean;
+    /** When false, no WebSocket connection or one-time-token requests are made. */
+    enabled?: boolean;
 }
+
+const MAX_RECONNECT_ATTEMPTS = 8;
 
 interface Subscription {
     roomId: string;
@@ -18,12 +22,9 @@ interface Subscription {
 }
 
 /**
- * Global WebSocket connection hook
- * - Connect when user logs in
- * - Disconnect when user logs out
- * - Manage room subscriptions separately
+ * Chat WebSocket hook — only connects when `enabled` is true (chat screens).
  */
-export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions) {
+export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseChatSocketOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const clientRef = useRef<Client | null>(null);
     const subscriptionsRef = useRef<Map<string, Subscription>>(new Map());
@@ -32,14 +33,67 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const reconnectAttemptRef = useRef<number>(0);
     const messageHandlersRef = useRef<Map<string, (message: MessageDTO) => void>>(new Map());
+    const isMountedRef = useRef<boolean>(false);
+    const connectionSessionRef = useRef<number>(0);
+    const tokenAbortRef = useRef<AbortController | null>(null);
 
-    // Connect WebSocket when user is authenticated
-    const connect = useCallback(async (): Promise<boolean> => {
-        if (!userId || !isAuthenticated || isConnectingRef.current) {
+    const enabledRef = useRef(enabled);
+    const userIdRef = useRef(userId);
+    const isAuthenticatedRef = useRef(isAuthenticated);
+    enabledRef.current = enabled;
+    userIdRef.current = userId;
+    isAuthenticatedRef.current = isAuthenticated;
+
+    const isConnectionAllowed = (sessionId: number) =>
+        isMountedRef.current &&
+        enabledRef.current &&
+        shouldReconnectRef.current &&
+        sessionId === connectionSessionRef.current &&
+        !!userIdRef.current &&
+        isAuthenticatedRef.current;
+
+    const disconnect = useCallback(() => {
+        shouldReconnectRef.current = false;
+
+        tokenAbortRef.current?.abort();
+        tokenAbortRef.current = null;
+
+        setIsConnected(false);
+        isConnectingRef.current = false;
+        reconnectAttemptRef.current = 0;
+
+        if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+        }
+
+        const client = clientRef.current;
+        clientRef.current = null;
+
+        if (client) {
+            subscriptionsRef.current.forEach((sub) => {
+                try {
+                    sub.unsubscribe();
+                } catch {
+                    // Silent error handling
+                }
+            });
+            subscriptionsRef.current.clear();
+            messageHandlersRef.current.clear();
+
+            try {
+                client.deactivate();
+            } catch {
+                // Silent error handling
+            }
+        }
+    }, []);
+
+    const connectInternal = useCallback(async (sessionId: number): Promise<boolean> => {
+        if (!isConnectionAllowed(sessionId) || isConnectingRef.current) {
             return false;
         }
 
-        // Don't reconnect if already connected
         if (clientRef.current?.connected) {
             setIsConnected(true);
             return true;
@@ -47,58 +101,76 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
         isConnectingRef.current = true;
 
+        const clearReconnectTimer = () => {
+            if (reconnectTimerRef.current) {
+                clearTimeout(reconnectTimerRef.current);
+                reconnectTimerRef.current = null;
+            }
+        };
+
+        const scheduleReconnect = () => {
+            if (!isConnectionAllowed(sessionId) || reconnectTimerRef.current) {
+                return;
+            }
+            if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+                console.warn("[chat-socket] max reconnect attempts reached, giving up");
+                return;
+            }
+            const delayMs = Math.min(1000 * 2 ** reconnectAttemptRef.current, 30000);
+            reconnectAttemptRef.current += 1;
+            reconnectTimerRef.current = setTimeout(() => {
+                reconnectTimerRef.current = null;
+                void connectInternal(sessionId);
+            }, delayMs);
+        };
+
+        tokenAbortRef.current?.abort();
+        const abortController = new AbortController();
+        tokenAbortRef.current = abortController;
+
         try {
-            const clearReconnectTimer = () => {
-                if (reconnectTimerRef.current) {
-                    clearTimeout(reconnectTimerRef.current);
-                    reconnectTimerRef.current = null;
-                }
-            };
-            const scheduleReconnect = () => {
-                if (!shouldReconnectRef.current || reconnectTimerRef.current) {
-                    return;
-                }
-                const delayMs = Math.min(1000 * 2 ** reconnectAttemptRef.current, 30000);
-                reconnectAttemptRef.current += 1;
-                reconnectTimerRef.current = setTimeout(() => {
-                    reconnectTimerRef.current = null;
-                    void connect();
-                }, delayMs);
-            };
             const wsOrigin = toWebSocketOrigin(WS_BASE_URL);
-            // Chat-service handshake requires a one-time token query param.
-            const tokenResponse = await chatApi.getOneTimeToken(userId ?? "");
+            const tokenResponse = await chatApi.getOneTimeToken(userIdRef.current ?? "", {
+                signal: abortController.signal,
+            });
+
+            if (abortController.signal.aborted || !isConnectionAllowed(sessionId)) {
+                isConnectingRef.current = false;
+                return false;
+            }
+
             const oneTimeToken = tokenResponse.data?.message?.trim();
             if (!oneTimeToken) {
                 throw new Error("Missing one-time token for chat WebSocket handshake");
             }
+
+            if (!isConnectionAllowed(sessionId)) {
+                isConnectingRef.current = false;
+                return false;
+            }
+
             const wsUrl = `${wsOrigin}/ws?token=${encodeURIComponent(oneTimeToken)}`;
 
             const client = new Client({
-                webSocketFactory: () => {
-                    return new WebSocket(wsUrl);
-                },
+                webSocketFactory: () => new WebSocket(wsUrl),
                 reconnectDelay: 0,
-                // Server sends heartbeat every 20s, expects client response within 30s
-                // Client will automatically send heartbeat every 25s to keep connection alive
-                heartbeatIncoming: 20000, // Expect heartbeat from server every 20s
-                heartbeatOutgoing: 25000, // Send heartbeat to server every 25s (automatic)
-                // Disable automatic reconnect on error (we handle it manually)
-                // But keep it for network issues
+                heartbeatIncoming: 20000,
+                heartbeatOutgoing: 25000,
                 connectionTimeout: 5000,
                 onConnect: () => {
+                    if (!isConnectionAllowed(sessionId)) {
+                        return;
+                    }
                     setIsConnected(true);
                     isConnectingRef.current = false;
                     reconnectAttemptRef.current = 0;
                     clearReconnectTimer();
 
-                    // Re-subscribe to all rooms that were subscribed before
                     const roomsToResubscribe = Array.from(subscriptionsRef.current.keys());
                     roomsToResubscribe.forEach((roomId) => {
                         if (!clientRef.current?.connected) return;
 
                         const destination = `/topic/room/${roomId}`;
-
                         const handler = messageHandlersRef.current.get(roomId);
                         if (handler) {
                             try {
@@ -126,10 +198,12 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                     isConnectingRef.current = false;
                     scheduleReconnect();
                 },
-                onWebSocketClose: (event) => {
-                    void event;
+                onWebSocketClose: () => {
                     setIsConnected(false);
                     isConnectingRef.current = false;
+                    if (!clientRef.current) {
+                        return;
+                    }
                     scheduleReconnect();
                 },
                 onDisconnect: () => {
@@ -138,10 +212,19 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                 },
             });
 
+            if (!isConnectionAllowed(sessionId)) {
+                isConnectingRef.current = false;
+                return false;
+            }
+
             clientRef.current = client;
             client.activate();
             return true;
         } catch (error) {
+            if (axios.isCancel(error)) {
+                isConnectingRef.current = false;
+                return false;
+            }
             if (axios.isAxiosError(error) && error.response?.status === 503) {
                 console.warn("[chat-socket] chat service unavailable, retrying connection");
             } else {
@@ -149,64 +232,40 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
             }
             setIsConnected(false);
             isConnectingRef.current = false;
-            if (shouldReconnectRef.current && !reconnectTimerRef.current) {
+            if (isConnectionAllowed(sessionId) && !reconnectTimerRef.current && reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
                 const delayMs = Math.min(1000 * 2 ** reconnectAttemptRef.current, 30000);
                 reconnectAttemptRef.current += 1;
                 reconnectTimerRef.current = setTimeout(() => {
                     reconnectTimerRef.current = null;
-                    void connect();
+                    void connectInternal(sessionId);
                 }, delayMs);
             }
             return false;
-        }
-    }, [userId, isAuthenticated]);
-
-    // Disconnect WebSocket when user logs out
-    const disconnect = useCallback(() => {
-        setIsConnected(false); // Set to false immediately
-        isConnectingRef.current = false;
-        shouldReconnectRef.current = false;
-        reconnectAttemptRef.current = 0;
-        if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current);
-            reconnectTimerRef.current = null;
-        }
-
-        if (clientRef.current) {
-            // Unsubscribe from all rooms first
-            subscriptionsRef.current.forEach((sub) => {
-                try {
-                    sub.unsubscribe();
-                } catch {
-                    // Silent error handling
-                }
-            });
-            subscriptionsRef.current.clear();
-            messageHandlersRef.current.clear();
-
-            // Disconnect client
-            try {
-                clientRef.current.deactivate();
-            } catch {
-                // Silent error handling
+        } finally {
+            if (tokenAbortRef.current === abortController) {
+                tokenAbortRef.current = null;
             }
-            clientRef.current = null;
         }
     }, []);
 
-    // Subscribe to a specific room
+    const connect = useCallback(async (): Promise<boolean> => {
+        if (!enabledRef.current || !userIdRef.current || !isAuthenticatedRef.current || !isMountedRef.current) {
+            return false;
+        }
+        shouldReconnectRef.current = true;
+        return connectInternal(connectionSessionRef.current);
+    }, [connectInternal]);
+
     const subscribeRoom = useCallback((roomId: string, onMessageReceived: (message: MessageDTO) => void) => {
         if (!roomId) {
-            return () => {}; // Return empty unsubscribe function
+            return () => {};
         }
 
-        // If already subscribed, just update handler
         if (subscriptionsRef.current.has(roomId)) {
             messageHandlersRef.current.set(roomId, onMessageReceived);
             return subscriptionsRef.current.get(roomId)!.unsubscribe;
         }
 
-        // If not connected yet, store handler and subscribe when connected
         messageHandlersRef.current.set(roomId, onMessageReceived);
 
         if (!clientRef.current?.connected) {
@@ -222,13 +281,10 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
             const subscription = clientRef.current.subscribe(destination, (message: IMessage) => {
                 try {
                     const messageData: MessageDTO = JSON.parse(message.body);
-
-                    // Call the stored handler for this room
                     const storedHandler = messageHandlersRef.current.get(roomId);
                     if (storedHandler) {
                         storedHandler(messageData);
                     } else {
-                        // Fallback: call the passed handler if stored handler not found
                         onMessageReceived(messageData);
                     }
                 } catch {
@@ -247,7 +303,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         }
     }, []);
 
-    // Unsubscribe from a specific room
     const unsubscribeRoom = useCallback((roomId: string) => {
         const subscription = subscriptionsRef.current.get(roomId);
         if (subscription) {
@@ -261,16 +316,15 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         }
     }, []);
 
-    // Send message to a room
     const sendMessage = useCallback(
         (roomId: string, content: string, receiverId: string): boolean => {
-            if (!clientRef.current?.connected || !userId) {
+            if (!clientRef.current?.connected || !userIdRef.current) {
                 return false;
             }
 
             const message: MessageDTO = {
                 roomId,
-                senderId: userId,
+                senderId: userIdRef.current,
                 receiverId,
                 content,
             };
@@ -283,34 +337,35 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                 void content;
                 return true;
             } catch {
-                // Silent error handling
                 return false;
             }
         },
-        [userId],
+        [],
     );
 
-    // Connect when user is authenticated, disconnect when logged out
     useEffect(() => {
-        if (isAuthenticated && userId) {
-            shouldReconnectRef.current = true;
-            void connect();
-        } else {
-            // Immediately set to false if not authenticated
-            setIsConnected(false);
+        isMountedRef.current = true;
+
+        if (!enabled || !isAuthenticated || !userId) {
+            connectionSessionRef.current += 1;
             disconnect();
+            return () => {
+                isMountedRef.current = false;
+                connectionSessionRef.current += 1;
+                disconnect();
+            };
         }
 
+        const sessionId = ++connectionSessionRef.current;
+        shouldReconnectRef.current = true;
+        void connectInternal(sessionId);
+
         return () => {
-            // Cleanup on unmount - only disconnect if not authenticated
-            if (!isAuthenticated) {
-                setIsConnected(false);
-                disconnect();
-            }
+            isMountedRef.current = false;
+            connectionSessionRef.current += 1;
+            disconnect();
         };
-        // Only depend on isAuthenticated and userId, not on connect/disconnect functions
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthenticated, userId]);
+    }, [enabled, isAuthenticated, userId, connectInternal, disconnect]);
 
     return {
         isConnected,

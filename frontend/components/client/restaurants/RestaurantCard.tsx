@@ -1,4 +1,5 @@
 import { getImageUrl } from "@/lib/utils";
+import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Restaurant } from "@/types";
 import { ArrowRight, Clock, MapPin, Phone, Star } from "lucide-react";
@@ -13,12 +14,13 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
     const imageUrl = getImageUrl(restaurant.imageURL);
     const isPlaceholder = imageUrl === "/placeholder.png" || !restaurant.imageURL;
     const categoryName = Array.isArray(restaurant.cate) ? restaurant.cate[0]?.cateName : null;
+    const restaurantHref = getRestaurantDetailHref(restaurant) ?? "/search?type=restaurants";
     const hasPhone = typeof restaurant.phone === "string" && restaurant.phone.trim().length > 0;
     const { theme } = useClientTheme();
     
     return (
         <Link
-            href={`/restaurants/${restaurant.slug}`}
+            href={restaurantHref}
             className={`group w-full overflow-hidden rounded-3xl border transition-all duration-300 hover:-translate-y-0.5 focus-within:ring-2 ${
                 theme === "dark"
                     ? "surface-glass border-white/10 hover:border-white/20 hover:shadow-[0_20px_55px_rgba(2,6,25,0.45)] focus-within:ring-[color:var(--ring)]"

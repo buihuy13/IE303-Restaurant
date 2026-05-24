@@ -89,33 +89,27 @@ function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: Fil
     return formData;
 }
 
+function decodeRestaurantSegment(segment: string): string {
+    let clean = segment.trim();
+    if (!clean.includes("%")) return clean;
+    try {
+        const decoded = decodeURIComponent(clean);
+        if (decoded !== clean) clean = decoded;
+    } catch {
+        // keep original segment
+    }
+    return clean;
+}
+
 export const restaurantApi = {
+    /** Public detail — `GET /restaurant/{slug}` (slug only; UUID returns 404 from restaurant-service). */
     getByRestaurantSlug: (slug: string) => {
-        // Next.js params.slug might still be encoded or partially encoded
-        // Decode it first to ensure we have the clean slug
-        let cleanSlug = slug;
-
-        // Check if slug contains encoded characters (%XX pattern)
-        if (slug.includes("%")) {
-            try {
-                // Try to decode - this handles cases where slug is still encoded
-                const decoded = decodeURIComponent(slug);
-                // Only use decoded if it's different (meaning it was encoded)
-                if (decoded !== slug) {
-                    cleanSlug = decoded;
-                }
-            } catch {
-                // Decode failed, slug might be malformed, use as is
-                cleanSlug = slug;
-            }
-        }
-
-        // Now encode it once for the API call
-        const encodedSlug = encodeURIComponent(cleanSlug);
-        return api.get<Restaurant>(`/restaurant/${encodedSlug}`);
+        const cleanSlug = decodeRestaurantSegment(slug);
+        return api.get<Restaurant>(`/restaurant/${encodeURIComponent(cleanSlug)}`);
     },
+    /** Admin / internal — `GET /restaurant/admin/{id}` */
     getByRestaurantId: (restaurantId: string) => {
-        return api.get<Restaurant>(`/restaurant/admin/${restaurantId}`);
+        return api.get<Restaurant>(`/restaurant/admin/${encodeURIComponent(restaurantId.trim())}`);
     },
     /** Single restaurant for this merchant (backend: `ResController#getRestaurantByMerchantId`). */
     getRestaurantByMerchantId: (merchantId: string) => {

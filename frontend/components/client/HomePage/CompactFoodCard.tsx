@@ -1,24 +1,24 @@
 "use client";
 
+import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
+import { QuickAddSizeDialog } from "@/components/client/Food/QuickAddSizeDialog";
+import { useProductQuickAdd } from "@/hooks/client/useProductQuickAdd";
 import { getImageUrl } from "@/lib/utils";
+import {
+    getProductCardPriceDisplay,
+} from "@/lib/utils/productListDisplay";
+import { getProductDetailHref } from "@/lib/utils/productNavigation";
+import { getRestaurantCartMeta, getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { productApi } from "@/lib/api/productApi";
-import {
-    fetchProductSizesForCart,
-    getListPriceDisplay,
-    hasListPriceRange,
-    pickDefaultProductSize,
-} from "@/lib/utils/productListDisplay";
 import { Product } from "@/types";
 import { Check, CheckCircle2, Clock, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 
 type CompactFoodCardProps = {
     product: Product;
@@ -31,14 +31,12 @@ type CompactFoodCardProps = {
 };
 
 export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }: CompactFoodCardProps) => {
-    const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { theme } = useClientTheme();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
     const { user, loginWithKeycloak } = useAuthStore();
-    const [isAdding, setIsAdding] = useState(false);
     const [justAdded, setJustAdded] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -78,15 +76,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         }
     }, [searchParams]);
 
-    const displayPriceLabel = useMemo(() => {
-        if (product.productSizes.length > 0) {
-            const defaultFromSizes = pickDefaultProductSize(product.productSizes, minPriceFilter);
-            if (defaultFromSizes) {
-                return `${defaultFromSizes.price.toLocaleString("vi-VN")} ₫`;
-            }
-        }
-        return getListPriceDisplay(product);
-    }, [product, minPriceFilter]);
+    const priceInfo = useMemo(() => getProductCardPriceDisplay(product, minPriceFilter), [product, minPriceFilter]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
     useEffect(() => {
@@ -97,114 +87,47 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
 
-    const restaurantSlug = useMemo(() => {
-        const fromRestaurant = restaurant?.slug;
-        if (typeof fromRestaurant === "string" && fromRestaurant.trim()) return fromRestaurant.trim();
-
-        const fromProduct = (product as unknown as { restaurantSlug?: unknown }).restaurantSlug;
-        if (typeof fromProduct === "string" && fromProduct.trim()) return fromProduct.trim();
-
-        return "";
-    }, [restaurant?.slug, product]);
-
-    const restaurantId = useMemo(() => {
-        const fromRestaurant = (restaurant as unknown as { id?: unknown })?.id;
-        if (typeof fromRestaurant === "string" && fromRestaurant.trim()) return fromRestaurant.trim();
-
-        const fromProduct = (product as unknown as { restaurantId?: unknown }).restaurantId;
-        if (typeof fromProduct === "string" && fromProduct.trim()) return fromProduct.trim();
-
-        return "";
-    }, [restaurant, product]);
-
-    const resolveRestaurantForCart = useCallback(async (): Promise<{ id: string; name: string } | null> => {
-        const directId = restaurantId.trim();
-        const directName = typeof restaurant?.resName === "string" ? restaurant.resName.trim() : "";
-        if (directId) {
-            return { id: directId, name: directName || "Unknown Restaurant" };
-        }
-
-        try {
-            const response = await productApi.getRestaurantByProductId(product.id);
-            const payload = response.data as {
-                id?: unknown;
-                resId?: unknown;
-                restaurantId?: unknown;
-                resName?: unknown;
-                name?: unknown;
-            } | null;
-
-            if (!payload || typeof payload !== "object") {
-                return null;
-            }
-
-            const fallbackIdRaw = payload.id ?? payload.resId ?? payload.restaurantId;
-            const fallbackId =
-                typeof fallbackIdRaw === "string"
-                    ? fallbackIdRaw.trim()
-                    : fallbackIdRaw != null &&
-                        (typeof fallbackIdRaw === "number" || typeof fallbackIdRaw === "bigint")
-                      ? String(fallbackIdRaw)
-                      : "";
-
-            if (!fallbackId) {
-                return null;
-            }
-
-            const fallbackName =
-                typeof payload.resName === "string"
-                    ? payload.resName.trim()
-                    : typeof payload.name === "string"
-                      ? payload.name.trim()
-                      : "";
-
-            return { id: fallbackId, name: fallbackName || "Unknown Restaurant" };
-        } catch {
-            return null;
-        }
-    }, [restaurantId, restaurant?.resName, product.id]);
-
     const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
-    const isFoodSearchPage = pathname?.startsWith("/search") && searchParams?.get("type") === "foods";
-    const restaurantTarget = restaurantSlug || restaurantId;
-    const needsRestaurantLookup = !isOnRestaurantPage && isFoodSearchPage && !restaurantTarget;
 
-    // Determine link based on current location
-    // If already on restaurant page, link to food detail page
-    // Otherwise, link to restaurant page
     const productLink = useMemo(() => {
+        const foodHref = getProductDetailHref(product);
         if (isOnRestaurantPage) {
-            // On restaurant page, go to food detail
-            return `/food/${product.slug}`;
-        } else {
-            // Outside restaurant page, go to restaurant page (search/home should land on restaurant detail)
-            // If we don't have enough restaurant info in the product response,
-            // we'll still fallback to /food/[slug], then we can optionally lookup restaurant on click.
-            return restaurantTarget ? `/restaurants/${restaurantTarget}` : `/food/${product.slug}`;
+            return foodHref ?? "/search?type=foods";
         }
-    }, [isOnRestaurantPage, product.slug, restaurantTarget]);
+        return getRestaurantDetailHref(restaurant) ?? foodHref ?? "/search?type=foods";
+    }, [isOnRestaurantPage, product, restaurant]);
 
-    const handleCardNavigate = useCallback(
-        async (e: React.MouseEvent) => {
-            if (!needsRestaurantLookup) return;
-            e.preventDefault();
-            e.stopPropagation();
+    const restaurantForCart = useMemo(() => getRestaurantCartMeta(restaurant), [restaurant]);
 
-            try {
-                const res = await productApi.getRestaurantByProductId(product.id);
-                const restaurant = res.data as { slug?: string } | null;
-                if (restaurant?.slug) {
-                    router.push(`/restaurants/${restaurant.slug}`);
-                    return;
-                }
-            } catch {
-                // ignore and fallback to food detail
-            }
+    const requireAuth = useCallback(() => {
+        if (user) return true;
+        toast.error("Please sign in to add items to cart");
+        void loginWithKeycloak({
+            redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+        });
+        return false;
+    }, [user, loginWithKeycloak]);
 
-            router.push(`/food/${product.slug}`);
+    const {
+        isAdding,
+        sizePickerOpen,
+        setSizePickerOpen,
+        pickerSizes,
+        handleQuickAdd,
+        handleConfirmSize,
+    } = useProductQuickAdd({
+        product,
+        cardImageUrl,
+        restaurantForCart,
+        minPriceFilter,
+        addItem,
+        onAdded: () => {
+            setJustAdded(true);
+            if (justAddedTimerRef.current) window.clearTimeout(justAddedTimerRef.current);
+            justAddedTimerRef.current = window.setTimeout(() => setJustAdded(false), 900);
         },
-        [needsRestaurantLookup, product.id, product.slug, router],
-    );
+        requireAuth,
+    });
 
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
@@ -224,7 +147,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     }, [restaurant?.duration]);
 
     // Format price to VND
-    const formatPrice = displayPriceLabel;
+    const formatPrice = priceInfo.label;
 
     // Format review count
     const formatReviewCount = useMemo(() => {
@@ -235,80 +158,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return `${product.totalReview}+`;
     }, [product.totalReview]);
 
-    const handleAddToCart = useCallback(
-        async (e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (isAdding || !isMounted) {
-                return;
-            }
-
-            if (typeof addItem !== "function") {
-                console.warn("[CompactFoodCard] addItem is not available yet");
-                return;
-            }
-
-            if (!user) {
-                toast.error("Please sign in to add items to cart");
-                void loginWithKeycloak({
-                    redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
-                });
-                return;
-            }
-
-            setIsAdding(true);
-            try {
-                let sizes = product.productSizes;
-                if (sizes.length === 0) {
-                    if (!hasListPriceRange(product)) {
-                        toast.error("This product has no available sizes");
-                        return;
-                    }
-                    sizes = await fetchProductSizesForCart(product.id);
-                }
-                const defaultSize = pickDefaultProductSize(sizes, minPriceFilter);
-                if (!defaultSize) {
-                    toast.error("This product has no available sizes");
-                    return;
-                }
-
-                const restaurantForCart = await resolveRestaurantForCart();
-                if (!restaurantForCart) {
-                    toast.error("Restaurant information not found");
-                    return;
-                }
-
-                await addItem(
-                    {
-                        id: product.id,
-                        name: product.productName,
-                        price: defaultSize.price,
-                        image: cardImageUrl,
-                        restaurantId: restaurantForCart.id,
-                        restaurantName: restaurantForCart.name,
-                        categoryId: product.categoryId,
-                        categoryName: product.categoryName,
-                        sizeId: defaultSize.id,
-                        sizeName: defaultSize.sizeName,
-                    },
-                    1,
-                );
-                // Toast is handled by cartStore.addItem
-                setJustAdded(true);
-                if (justAddedTimerRef.current) window.clearTimeout(justAddedTimerRef.current);
-                justAddedTimerRef.current = window.setTimeout(() => setJustAdded(false), 900);
-            } catch (error) {
-                console.error("Failed to add to cart:", error);
-                // Error toast is handled by cartStore.addItem
-            } finally {
-                setTimeout(() => {
-                    setIsAdding(false);
-                }, 300);
-            }
-        },
-        [isAdding, isMounted, user, product, minPriceFilter, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
-    );
+    const handleAddToCart = handleQuickAdd;
 
     const cardShellClass =
         theme === "dark"
@@ -327,7 +177,6 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             <Link
                 href={productLink}
                 className="block relative w-full aspect-[3/2] overflow-hidden"
-                onClick={handleCardNavigate}
             >
                 <div className={`relative w-full h-full overflow-hidden ${theme === "dark" ? "bg-[#1b2140]" : "bg-gradient-to-br from-gray-100 to-gray-200"}`}>
                     <Image
@@ -400,7 +249,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             <div className={`p-4 ${theme === "dark" ? "bg-[#0f172a]" : ""}`}>
                 {/* Name + restaurant */}
                 <div className="min-h-[52px]">
-                    <Link href={productLink} onClick={handleCardNavigate}>
+                    <Link href={productLink}>
                         <h3
                             className={`text-sm font-semibold line-clamp-2 leading-snug transition-colors ${titleClass}`}
                             title={product.productName}
@@ -416,44 +265,54 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                     </div>
                 </div>
 
-                {/* Meta row */}
-                <div className="mt-3 flex items-center justify-between gap-3 min-h-[20px]">
-                    {product.rating > 0 ? (
-                        <div className="flex items-center gap-1.5 text-xs">
-                            <span className="text-yellow-500">⭐</span>
-                            <span className={`font-semibold ${ratingTextClass}`}>{product.rating.toFixed(1)}</span>
-                            {formatReviewCount && <span className={reviewCountClass}>({formatReviewCount})</span>}
-                        </div>
-                    ) : (
-                        <div className={`text-xs ${theme === "dark" ? "text-white/40" : "text-gray-400"}`}>No ratings yet</div>
-                    )}
-                    <div className="text-xs text-gray-400 whitespace-nowrap" aria-hidden="true">
-                        &nbsp;
-                    </div>
-                </div>
-
-                {/* Price + CTA */}
-                <div className={`mt-3 pt-3 border-t flex items-center justify-between gap-3 ${dividerClass}`}>
+                {/* Price row */}
+                <div className="mt-3 min-h-[32px]">
                     <div className="min-w-0">
                         {formatPrice ? (
-                            <p className={`text-base font-bold ${theme === "dark" ? "text-brand-orange" : "text-brand-orange"}`}>{formatPrice}</p>
+                            <>
+                                <p
+                                    className={`whitespace-nowrap font-bold leading-tight ${
+                                        priceInfo.hasMultipleSizes ? "text-[1.02rem]" : "text-base"
+                                    } ${theme === "dark" ? "text-brand-orange" : "text-brand-orange"}`}
+                                >
+                                    {formatPrice}
+                                </p>
+                                {priceInfo.hint && (
+                                    <p className={`text-[11px] mt-0.5 truncate ${theme === "dark" ? "text-white/50" : "text-gray-500"}`}>
+                                        {priceInfo.hint}
+                                    </p>
+                                )}
+                            </>
                         ) : (
                             <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>Price not available</p>
                         )}
                     </div>
+                </div>
+
+                {/* Rating + CTA */}
+                <div className={`mt-3 pt-3 border-t flex items-center justify-between gap-2.5 xl:gap-3 ${dividerClass}`}>
+                    {product.rating > 0 ? (
+                        <div className="flex min-w-0 items-center gap-1.5 text-xs">
+                            <span className="text-yellow-500">⭐</span>
+                            <span className={`font-semibold ${ratingTextClass}`}>{product.rating.toFixed(1)}</span>
+                            {formatReviewCount && <span className={`${reviewCountClass} truncate`}>({formatReviewCount})</span>}
+                        </div>
+                    ) : (
+                        <div className={`text-xs ${theme === "dark" ? "text-white/40" : "text-gray-400"}`}>No ratings yet</div>
+                    )}
 
                     <Button
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
                         variant="brandSoft"
                         size="sm"
-                        className={`h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`h-9 min-w-[108px] shrink-0 whitespace-nowrap rounded-full px-3 xl:min-w-[114px] shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                             theme === "dark"
                                 ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90 hover:text-white"
                                 : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
                         }`}
-                        title="Add to cart"
-                        aria-label="Add to cart"
+                        title={priceInfo.hasMultipleSizes ? "Choose size to add" : "Add to cart"}
+                        aria-label={priceInfo.hasMultipleSizes ? "Choose size to add" : "Add to cart"}
                     >
                         {isAdding ? (
                             <div
@@ -466,6 +325,11 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                                 <Check className="w-4 h-4" />
                                 <span className="ml-1.5 text-sm font-semibold">Added</span>
                             </>
+                        ) : priceInfo.hasMultipleSizes ? (
+                            <>
+                                <Plus className="w-4 h-4" />
+                                <span className="ml-1 text-[13px] font-semibold">Chọn size</span>
+                            </>
                         ) : (
                             <>
                                 <Plus className="w-4 h-4" />
@@ -475,6 +339,15 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                     </Button>
                 </div>
             </div>
+
+            <QuickAddSizeDialog
+                open={sizePickerOpen}
+                onOpenChange={setSizePickerOpen}
+                productName={product.productName}
+                sizes={pickerSizes}
+                isAdding={isAdding}
+                onConfirm={handleConfirmSize}
+            />
         </div>
     );
 });

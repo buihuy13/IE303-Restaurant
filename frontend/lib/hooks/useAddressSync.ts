@@ -1,30 +1,26 @@
 "use client";
 
 import { useCustomerRouteScope } from "@/lib/hooks/useCustomerRouteScope";
-import { useCartStore } from "@/stores/cartStore";
+import { useAddressStore } from "@/stores/addressStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect } from "react";
 
-/**
- * Sync cart with user authentication — customer routes only (USER role, not admin/merchant).
- */
-export function useCartSync() {
+/** Single fetch of saved addresses for customer routes (header, cart, account). */
+export function useAddressSync() {
     const { user, isAuthenticated, accessToken, loading, isLoggingOut } = useAuthStore();
     const { enableCustomerDataSync } = useCustomerRouteScope();
-    const { setUserId, fetchCart } = useCartStore();
+    const fetchAddresses = useAddressStore((state) => state.fetchAddresses);
+    const clear = useAddressStore((state) => state.clear);
 
     useEffect(() => {
         if (enableCustomerDataSync && isAuthenticated && user?.id) {
-            setUserId(user.id);
-            fetchCart().catch(() => {
-                // Cart may not exist yet or service may be unavailable.
-            });
+            void fetchAddresses(user.id);
             return;
         }
 
         const hasToken = !!accessToken;
         if (isLoggingOut || (!isAuthenticated && !hasToken && !loading)) {
-            setUserId(null);
+            clear();
         }
     }, [
         enableCustomerDataSync,
@@ -33,7 +29,7 @@ export function useCartSync() {
         accessToken,
         loading,
         isLoggingOut,
-        fetchCart,
-        setUserId,
+        fetchAddresses,
+        clear,
     ]);
 }

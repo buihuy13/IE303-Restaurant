@@ -26,7 +26,7 @@ set -a
 source "$(dirname "$0")/../.env"
 set +a
 
-KEYCLOAK_URL="http://localhost:8443/auth"
+KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8443/auth}"
 ADMIN_USER="${KEYCLOAK_ADMIN}"
 ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD}"
 REALM="restaurant-realm"

@@ -1,12 +1,10 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
 import { saveCheckoutSelection } from "@/lib/checkoutSelection";
+import { useAddressStore } from "@/stores/addressStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CartItem } from "@/stores/cartStore";
-import { useAuthStore } from "@/stores/useAuthStore";
-import type { Address } from "@/types";
 import { Edit2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,32 +28,16 @@ interface OrderSummaryProps {
 
 export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems }: OrderSummaryProps) => {
     const router = useRouter();
-    const { user, isAuthenticated } = useAuthStore();
     const [voucherCode, setVoucherCode] = useState("");
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [loadingAddresses, setLoadingAddresses] = useState(false);
+    const addresses = useAddressStore((state) => state.addresses);
+    const loadingAddresses = useAddressStore((state) => state.loading);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-    // Fetch user addresses
     useEffect(() => {
-        if (user?.id && isAuthenticated) {
-            setLoadingAddresses(true);
-            authApi
-                .getUserAddresses(user.id)
-                .then((data) => {
-                    if (Array.isArray(data) && data.length > 0) {
-                        setAddresses(data);
-                        setSelectedAddressId(data[0].id);
-                    }
-                })
-                .catch((error) => {
-                    console.warn("Failed to fetch addresses:", error);
-                })
-                .finally(() => {
-                    setLoadingAddresses(false);
-                });
+        if (addresses.length > 0 && !selectedAddressId) {
+            setSelectedAddressId(addresses[0].id);
         }
-    }, [user?.id, isAuthenticated]);
+    }, [addresses, selectedAddressId]);
 
     const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
     const deliveryAddress =

@@ -52,7 +52,7 @@ public class RestaurantClient {
         return webClientBuilder
                 .build()
                 .get()
-                .uri("http://restaurant-service/api/products/res/{id}", productId)
+                .uri("http://product-service/api/products/res/{id}", productId)
                 .retrieve()
                 .bodyToMono(ResClientResponse.class);
     }

@@ -13,7 +13,7 @@ export default function CartDropdown() {
     const { theme } = useClientTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { items: cartItems, removeItem, fetchCart, userId } = useCartStore();
+    const { items: cartItems, removeItem } = useCartStore();
 
     const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
     const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -34,16 +34,6 @@ export default function CartDropdown() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isOpen]);
-
-    // Refresh cart when opening to avoid stale/empty first render
-    useEffect(() => {
-        if (!isOpen) return;
-        if (!userId) return;
-
-        fetchCart().catch(() => {
-            // Ignore refresh failures; optimistic state still shows items
-        });
-    }, [isOpen, userId, fetchCart]);
 
     return (
         <div className="relative" ref={dropdownRef}>

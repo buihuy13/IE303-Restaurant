@@ -13,7 +13,7 @@ const Subscribe = () => {
                                 placeholder="Enter your email..."
                         />
                         <Link
-                                href={"restaurants"}
+                                href="/search?type=restaurants"
                                 className="btn cursor-pointer bg-brand-purple text-p1 font-manrope font-semibold leading-[30px] text-brand-white hover:bg-brand-purple/90 hover:shadow-sm hover:shadow-brand-purple/90 transition-all duration-300"
                         >
                                 Subscribe

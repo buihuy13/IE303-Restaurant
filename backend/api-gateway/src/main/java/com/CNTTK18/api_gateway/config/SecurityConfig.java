@@ -28,6 +28,7 @@ public class SecurityConfig {
         "/api-docs/**",
         "/v3/api-docs/**",
         "/ws",
+        "/ws/**",
         "/api/users/register",
         "/api/payments/webhook",
         "/api/sse/**"

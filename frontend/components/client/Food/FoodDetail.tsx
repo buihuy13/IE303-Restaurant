@@ -3,11 +3,12 @@
 // 1. Import ProductSize
 import { productApi } from "@/lib/api/productApi";
 import { getImageUrl } from "@/lib/utils";
+import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ReviewStatsResponse } from "@/lib/api/reviewApi";
-import { Product, ProductSize, Restaurant } from "@/types";
-import { Check, ChevronRight, Home, Minus, Plus, Star, Store } from "lucide-react";
+import { Product, ProductSize, Restaurant, Review } from "@/types";
+import { Check, ChevronRight, Home, MessageSquare, Minus, Plus, Star, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -17,15 +18,17 @@ type FoodDetailClientProps = {
     foodItem: Product;
     restaurant: Restaurant;
     reviewStats?: ReviewStatsResponse | null;
+    reviews?: Review[];
 };
 
-export default function FoodDetail({ foodItem, restaurant, reviewStats }: FoodDetailClientProps) {
+export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews = [] }: FoodDetailClientProps) {
     const { addItem } = useCartStore();
     const { user, loginWithKeycloak } = useAuthStore();
     const [quantity, setQuantity] = useState(1);
     const [specialInstructions, setSpecialInstructions] = useState("");
     const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [showAllReviews, setShowAllReviews] = useState(false);
 
     const [selectedSize, setSelectedSize] = useState<ProductSize | undefined>(foodItem.productSizes?.[0]);
 
@@ -156,7 +159,7 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats }: FoodDe
             maximumFractionDigits: 2,
         });
     };
-    const restaurantHref = restaurant?.slug ? `/restaurants/${restaurant.slug}` : "/search?type=restaurants";
+    const restaurantHref = getRestaurantDetailHref(restaurant) ?? "/search?type=restaurants";
     const displayRating =
         reviewStats?.averageRating != null && Number.isFinite(reviewStats.averageRating)
             ? reviewStats.averageRating
@@ -165,6 +168,7 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats }: FoodDe
         reviewStats?.totalReviews != null && reviewStats.totalReviews >= 0
             ? reviewStats.totalReviews
             : foodItem.totalReview ?? 0;
+    const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 3);
 
     return (
         <div>
@@ -381,6 +385,49 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats }: FoodDe
                     </div>
                 </div>
             </div>
+
+            <section className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className="mb-5 flex items-center gap-2 text-xl font-bold tracking-tight text-gray-900">
+                    <MessageSquare className="h-5 w-5 text-brand-orange" />
+                    Product Reviews
+                </h2>
+
+                {reviews.length === 0 ? (
+                    <div className="rounded-xl border border-gray-200/80 bg-gray-50 px-4 py-8 text-center">
+                        <p className="text-sm font-medium text-gray-700">No detailed reviews yet</p>
+                        <p className="mt-1 text-xs text-gray-500">This item already shows rating summary above.</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="space-y-3">
+                            {visibleReviews.map((review) => (
+                                <article key={review.id} className="rounded-xl border border-gray-200/80 bg-white p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="truncate text-sm font-semibold text-gray-900">{review.title || "Customer review"}</p>
+                                        <div className="flex items-center gap-1 text-sm font-semibold text-yellow-600">
+                                            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                            <span>{Number(review.rating || 0).toFixed(1)}</span>
+                                        </div>
+                                    </div>
+                                    {review.content && (
+                                        <p className="mt-2 text-sm leading-relaxed text-gray-600">{review.content}</p>
+                                    )}
+                                </article>
+                            ))}
+                        </div>
+
+                        {reviews.length > 3 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllReviews((v) => !v)}
+                                className="mt-4 w-full rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:border-brand-orange/50 hover:text-brand-orange"
+                            >
+                                {showAllReviews ? "Thu gọn" : `Xem thêm ${reviews.length - 3} review`}
+                            </button>
+                        )}
+                    </>
+                )}
+            </section>
         </div>
     );
 }

@@ -22,7 +22,7 @@ export default function RestaurantHero({
             reviewStats?.totalReviews != null && reviewStats.totalReviews >= 0
                 ? reviewStats.totalReviews
                 : restaurant.totalReview;
-        const mainCategory = restaurant.cate[0]?.cateName || "Restaurant";
+        const mainCategory = Array.isArray(restaurant.cate) ? restaurant.cate[0]?.cateName || "Restaurant" : "Restaurant";
         const bannerUrl = restaurant.imageURL || "/placeholder-banner.png";
 
         return (

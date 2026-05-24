@@ -92,7 +92,7 @@ spring:
                 - id: chat-service-websocket
                   uri: lb:ws://chat-service
                   predicates:
-                      - Path=/ws/**
+                      - Path=/ws,/ws/**
                 # SSE connection (notification-service)
                 - id: sse-connection
                   uri: lb://notification-service
