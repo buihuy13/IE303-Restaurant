@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 
-@FeignClient(name = "product-service")
+@FeignClient(name = "query-service")
 public interface ProductServiceFeignClient {
 
-    @GetMapping("/api/products")
+    @GetMapping("/api/query/products")
     @CircuitBreaker(name = "productService")
     @Retry(name = "productService")
     Map<String, Object> getProducts(
