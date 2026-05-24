@@ -40,7 +40,8 @@ public class AddressServiceImpl implements AddressService {
                 .user(user)
                 .build();
 
-        return addressMapper.toAddressResponse(addressRepository.save(newAddress));
+        addressRepository.save(newAddress);
+        return addressMapper.toAddressResponse(newAddress);
     }
 
     @Override
