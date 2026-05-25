@@ -63,6 +63,8 @@ type DisplayOrderItem = {
     imageURL?: string | null;
 };
 
+const formatPriceVND = (amount: number): string => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
+
 interface DeliveryStatusPageClientWrapperProps {
     initialOrder: Order;
 }
@@ -452,7 +454,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                                <p className="font-bold text-brand-orange">${(item.price * item.quantity).toFixed(2)}</p>
+                                                <p className="font-bold text-brand-orange">{formatPriceVND(item.price * item.quantity)}</p>
                                             </div>
                                         </div>
                                         );

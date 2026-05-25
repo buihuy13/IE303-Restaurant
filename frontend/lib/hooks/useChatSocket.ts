@@ -16,9 +16,30 @@ interface UseChatSocketOptions {
 
 const MAX_RECONNECT_ATTEMPTS = 8;
 
+const normalizeRoomId = (roomId: string) => String(roomId).trim();
+
+const parseMessagePayload = (body: string): MessageDTO | null => {
+    try {
+        const raw = JSON.parse(body) as MessageDTO;
+        if (!raw?.roomId || !raw?.senderId || !raw?.receiverId) {
+            return null;
+        }
+        return {
+            ...raw,
+            roomId: normalizeRoomId(raw.roomId),
+            senderId: String(raw.senderId).trim(),
+            receiverId: String(raw.receiverId).trim(),
+            content: String(raw.content ?? ""),
+        };
+    } catch {
+        return null;
+    }
+};
+
 interface Subscription {
     roomId: string;
     unsubscribe: () => void;
+    isActive?: boolean;
 }
 
 /**
@@ -52,6 +73,67 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
         !!userIdRef.current &&
         isAuthenticatedRef.current;
 
+    const deactivateClient = useCallback((clearHandlers: boolean) => {
+        subscriptionsRef.current.forEach((sub) => {
+            try {
+                sub.unsubscribe();
+            } catch {
+                // Silent error handling
+            }
+        });
+        subscriptionsRef.current.clear();
+
+        if (clearHandlers) {
+            messageHandlersRef.current.clear();
+        }
+
+        const client = clientRef.current;
+        clientRef.current = null;
+
+        if (client) {
+            try {
+                client.deactivate();
+            } catch {
+                // Silent error handling
+            }
+        }
+    }, []);
+
+    const activateRoomSubscriptions = useCallback(() => {
+        if (!clientRef.current?.connected) {
+            return;
+        }
+
+        messageHandlersRef.current.forEach((handler, roomId) => {
+            const normalizedRoomId = normalizeRoomId(roomId);
+            const destination = `/topic/room/${normalizedRoomId}`;
+
+            try {
+                const existing = subscriptionsRef.current.get(normalizedRoomId);
+                if (existing?.isActive) {
+                    return;
+                }
+
+                const subscription = clientRef.current!.subscribe(destination, (message: IMessage) => {
+                    const messageData = parseMessagePayload(message.body);
+                    if (!messageData) {
+                        return;
+                    }
+                    const storedHandler = messageHandlersRef.current.get(normalizedRoomId);
+                    storedHandler?.(messageData);
+                });
+
+                subscriptionsRef.current.set(normalizedRoomId, {
+                    roomId: normalizedRoomId,
+                    unsubscribe: subscription.unsubscribe,
+                    isActive: true,
+                });
+            } catch {
+                // Silent error handling
+            }
+        });
+    }, []);
+
     const disconnect = useCallback(() => {
         shouldReconnectRef.current = false;
 
@@ -67,27 +149,8 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
             reconnectTimerRef.current = null;
         }
 
-        const client = clientRef.current;
-        clientRef.current = null;
-
-        if (client) {
-            subscriptionsRef.current.forEach((sub) => {
-                try {
-                    sub.unsubscribe();
-                } catch {
-                    // Silent error handling
-                }
-            });
-            subscriptionsRef.current.clear();
-            messageHandlersRef.current.clear();
-
-            try {
-                client.deactivate();
-            } catch {
-                // Silent error handling
-            }
-        }
-    }, []);
+        deactivateClient(true);
+    }, [deactivateClient]);
 
     const connectInternal = useCallback(async (sessionId: number): Promise<boolean> => {
         if (!isConnectionAllowed(sessionId) || isConnectingRef.current) {
@@ -166,31 +229,7 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
                     reconnectAttemptRef.current = 0;
                     clearReconnectTimer();
 
-                    const roomsToResubscribe = Array.from(subscriptionsRef.current.keys());
-                    roomsToResubscribe.forEach((roomId) => {
-                        if (!clientRef.current?.connected) return;
-
-                        const destination = `/topic/room/${roomId}`;
-                        const handler = messageHandlersRef.current.get(roomId);
-                        if (handler) {
-                            try {
-                                const newSub = clientRef.current.subscribe(destination, (message: IMessage) => {
-                                    try {
-                                        const messageData: MessageDTO = JSON.parse(message.body);
-                                        handler(messageData);
-                                    } catch {
-                                        // Silent error handling
-                                    }
-                                });
-                                subscriptionsRef.current.set(roomId, {
-                                    roomId,
-                                    unsubscribe: newSub.unsubscribe,
-                                });
-                            } catch {
-                                // Silent error handling
-                            }
-                        }
-                    });
+                    activateRoomSubscriptions();
                 },
                 onStompError: (frame) => {
                     console.error("❌ STOMP error:", frame);
@@ -201,6 +240,14 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
                 onWebSocketClose: () => {
                     setIsConnected(false);
                     isConnectingRef.current = false;
+                    subscriptionsRef.current.forEach((sub) => {
+                        try {
+                            sub.unsubscribe();
+                        } catch {
+                            // Silent error handling
+                        }
+                    });
+                    subscriptionsRef.current.clear();
                     if (!clientRef.current) {
                         return;
                     }
@@ -215,6 +262,14 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
             if (!isConnectionAllowed(sessionId)) {
                 isConnectingRef.current = false;
                 return false;
+            }
+
+            if (clientRef.current && clientRef.current !== client) {
+                try {
+                    await clientRef.current.deactivate();
+                } catch {
+                    // Silent error handling
+                }
             }
 
             clientRef.current = client;
@@ -246,7 +301,7 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
                 tokenAbortRef.current = null;
             }
         }
-    }, []);
+    }, [activateRoomSubscriptions]);
 
     const connect = useCallback(async (): Promise<boolean> => {
         if (!enabledRef.current || !userIdRef.current || !isAuthenticatedRef.current || !isMountedRef.current) {
@@ -256,52 +311,45 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
         return connectInternal(connectionSessionRef.current);
     }, [connectInternal]);
 
-    const subscribeRoom = useCallback((roomId: string, onMessageReceived: (message: MessageDTO) => void) => {
-        if (!roomId) {
-            return () => {};
-        }
+    const subscribeRoom = useCallback(
+        (roomId: string, onMessageReceived: (message: MessageDTO) => void) => {
+            if (!roomId) {
+                return () => {};
+            }
 
-        if (subscriptionsRef.current.has(roomId)) {
-            messageHandlersRef.current.set(roomId, onMessageReceived);
-            return subscriptionsRef.current.get(roomId)!.unsubscribe;
-        }
+            const normalizedRoomId = normalizeRoomId(roomId);
 
-        messageHandlersRef.current.set(roomId, onMessageReceived);
-
-        if (!clientRef.current?.connected) {
-            return () => {
-                subscriptionsRef.current.delete(roomId);
-                messageHandlersRef.current.delete(roomId);
-            };
-        }
-
-        const destination = `/topic/room/${roomId}`;
-
-        try {
-            const subscription = clientRef.current.subscribe(destination, (message: IMessage) => {
-                try {
-                    const messageData: MessageDTO = JSON.parse(message.body);
-                    const storedHandler = messageHandlersRef.current.get(roomId);
-                    if (storedHandler) {
-                        storedHandler(messageData);
-                    } else {
-                        onMessageReceived(messageData);
+            const removeSubscription = () => {
+                const activeSubscription = subscriptionsRef.current.get(normalizedRoomId);
+                if (activeSubscription?.isActive) {
+                    try {
+                        activeSubscription.unsubscribe();
+                    } catch {
+                        // Silent error handling
                     }
-                } catch {
-                    // Silent error handling
                 }
-            });
+                subscriptionsRef.current.delete(normalizedRoomId);
+                messageHandlersRef.current.delete(normalizedRoomId);
+            };
 
-            subscriptionsRef.current.set(roomId, {
-                roomId,
-                unsubscribe: subscription.unsubscribe,
-            });
+            messageHandlersRef.current.set(normalizedRoomId, onMessageReceived);
 
-            return subscription.unsubscribe;
-        } catch {
-            return () => {};
-        }
-    }, []);
+            if (!clientRef.current?.connected) {
+                subscriptionsRef.current.set(normalizedRoomId, {
+                    roomId: normalizedRoomId,
+                    unsubscribe: () => {
+                        subscriptionsRef.current.delete(normalizedRoomId);
+                    },
+                    isActive: false,
+                });
+                return removeSubscription;
+            }
+
+            activateRoomSubscriptions();
+            return removeSubscription;
+        },
+        [activateRoomSubscriptions],
+    );
 
     const unsubscribeRoom = useCallback((roomId: string) => {
         const subscription = subscriptionsRef.current.get(roomId);
@@ -323,7 +371,7 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
             }
 
             const message: MessageDTO = {
-                roomId,
+                roomId: normalizeRoomId(roomId),
                 senderId: userIdRef.current,
                 receiverId,
                 content,
@@ -374,5 +422,6 @@ export function useChatSocket({ userId, isAuthenticated, enabled = false }: UseC
         sendMessage,
         connect,
         disconnect,
+        resubscribeAllRooms: activateRoomSubscriptions,
     };
 }

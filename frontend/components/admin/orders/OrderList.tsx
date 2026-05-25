@@ -33,7 +33,8 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
 
     const formatMoney = (amount: unknown) => {
         const n = typeof amount === "number" ? amount : Number(amount);
-        return `$${Number.isFinite(n) ? n.toFixed(2) : "0.00"}`;
+        const safe = Number.isFinite(n) ? n : 0;
+        return `${Math.round(safe).toLocaleString("vi-VN")} ₫`;
     };
 
     const shortId = (value: unknown, keep: number = 8) => {

@@ -24,6 +24,10 @@ export default function RestaurantHero({
                 : restaurant.totalReview;
         const mainCategory = Array.isArray(restaurant.cate) ? restaurant.cate[0]?.cateName || "Restaurant" : "Restaurant";
         const bannerUrl = restaurant.imageURL || "/placeholder-banner.png";
+        const distanceMeters =
+            typeof restaurant.distance === "number" && Number.isFinite(restaurant.distance) && restaurant.distance >= 0
+                ? Math.round(restaurant.distance * 1000)
+                : null;
 
         return (
                 <>
@@ -88,7 +92,7 @@ export default function RestaurantHero({
                                                                 </div>
 
                                                                 {/* Duration & Distance */}
-                                                                {restaurant.duration != null && restaurant.distance != null && (
+                                                                {restaurant.duration != null && distanceMeters != null && (
                                                                         <>
                                                                                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-gray-200">
                                                                                         <Clock className="h-4 w-4 flex-shrink-0 text-gray-300" />
@@ -96,7 +100,7 @@ export default function RestaurantHero({
                                                                                 </div>
                                                                                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-gray-200">
                                                                                         <MapPin className="h-4 w-4 flex-shrink-0 text-gray-300" />
-                                                                                        <span className="font-medium">{restaurant.distance.toFixed(1)} km</span>
+                                                                                        <span className="font-medium">{distanceMeters.toLocaleString()} m</span>
                                                                                 </div>
                                                                         </>
                                                                 )}

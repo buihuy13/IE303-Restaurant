@@ -3,7 +3,7 @@
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
-import { Bell, CheckCircle, Clock, Package, Truck, X, XCircle } from "lucide-react";
+import { Bell, CheckCircle, Clock, MessageCircle, Package, Truck, X, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -43,6 +43,8 @@ const getNotificationIcon = (type: string) => {
             return <XCircle className="w-5 h-5 text-red-600" />;
         case "ORDER_ACCEPTED":
             return <Package className="w-5 h-5 text-orange-600" />;
+        case "MESSAGE_RECEIVED":
+            return <MessageCircle className="w-5 h-5 text-blue-600" />;
         default:
             return <Bell className="w-5 h-5 text-gray-600" />;
     }
@@ -75,14 +77,14 @@ export default function NotificationDropdown() {
     const triggerRef = useRef<HTMLButtonElement>(null);
     const router = useRouter();
 
-    // Only show order-related notifications (exclude messages, merchant orders, admin requests)
-    const orderNotifications = allNotifications.filter(
+    // Client bell: orders only — chat unread lives on the Messages icon (useChatStore).
+    const visibleNotifications = allNotifications.filter(
         (n) =>
             n.type !== "MERCHANT_NEW_ORDER" &&
             n.type !== "ADMIN_MERCHANT_REQUEST" &&
-            n.type !== "MESSAGE_RECEIVED"
+            n.type !== "MESSAGE_RECEIVED",
     );
-    const unread = orderNotifications.filter((n) => !n.read).length;
+    const unread = visibleNotifications.filter((n) => !n.read).length;
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -108,13 +110,18 @@ export default function NotificationDropdown() {
     }, [isOpen, isHovering]);
 
     // Handle notification click
-    const handleNotificationClick = (notificationId: string, orderId?: string) => {
-        markAsRead(notificationId);
+    const handleNotificationClick = (notification: (typeof visibleNotifications)[number]) => {
+        markAsRead(notification.id);
         setIsOpen(false);
         setIsHovering(false);
 
-        if (orderId) {
-            router.push(`/orders/${orderId}`);
+        if (notification.type === "MESSAGE_RECEIVED" && notification.roomId) {
+            router.push(`/chat?roomId=${notification.roomId}`);
+            return;
+        }
+
+        if (notification.orderId) {
+            router.push(`/orders/${notification.orderId}`);
         } else {
             router.push("/account/orders");
         }
@@ -193,14 +200,14 @@ export default function NotificationDropdown() {
 
                     {/* Notifications List */}
                     <div className="overflow-y-auto flex-1">
-                        {orderNotifications.length === 0 ? (
+                        {visibleNotifications.length === 0 ? (
                             <div className="p-8 text-center">
                                 <Bell className={`w-12 h-12 mx-auto mb-3 ${theme === "dark" ? "text-white/30" : "text-gray-300"}`} />
                                 <p className={`text-sm ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>No notifications</p>
                             </div>
                         ) : (
                             <div className={`divide-y ${theme === "dark" ? "divide-white/10" : "divide-gray-100"}`}>
-                                {orderNotifications.slice(0, 10).map((notif) => (
+                                {visibleNotifications.slice(0, 10).map((notif) => (
                                     <div
                                         key={notif.id}
                                         className={`group relative w-full text-left p-4 transition-colors ${
@@ -214,7 +221,7 @@ export default function NotificationDropdown() {
                                         }`}
                                     >
                                         <button
-                                            onClick={() => handleNotificationClick(notif.id, notif.orderId)}
+                                            onClick={() => handleNotificationClick(notif)}
                                             className="w-full text-left"
                                         >
                                             <div className="flex items-start gap-3 pr-8">
@@ -293,7 +300,7 @@ export default function NotificationDropdown() {
                     </div>
 
                     {/* Footer */}
-                    {orderNotifications.length > 0 && (
+                    {visibleNotifications.length > 0 && (
                         <div className={`border-t px-4 py-3 ${theme === "dark" ? "border-white/10" : "border-gray-200"}`}>
                             <Link
                                 href="/account/orders"

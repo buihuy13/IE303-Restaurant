@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { Category } from "@/types";
 import { Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FilterSection from "./FilterSection";
 
 interface SearchFiltersProps {
@@ -36,13 +36,18 @@ export default function SearchFilters({
     const { categories, fetchAllCategories } = useCategoryStore();
 
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [minPriceVnd, setMinPriceVnd] = useState<string>("");
-    const [maxPriceVnd, setMaxPriceVnd] = useState<string>("");
     const [nearbyMeters, setNearbyMeters] = useState<string>("");
     const [ratingMin, setRatingMin] = useState<string>("");
     const [deliveryMaxMinutes, setDeliveryMaxMinutes] = useState<string>("");
     const [openNowOnly, setOpenNowOnly] = useState(false);
     const [freeShipOnly, setFreeShipOnly] = useState(false);
+    const PRICE_SLIDER_MIN = 0;
+    const PRICE_SLIDER_MAX = 500000;
+    const PRICE_SLIDER_STEP = 5000;
+    const [priceMinVnd, setPriceMinVnd] = useState<number>(PRICE_SLIDER_MIN);
+    const [priceMaxVnd, setPriceMaxVnd] = useState<number>(PRICE_SLIDER_MAX);
+    const priceMinTooltipRef = useRef<HTMLDivElement | null>(null);
+    const priceMaxTooltipRef = useRef<HTMLDivElement | null>(null);
     const sliderMin = 500;
     const sliderMax = 20000;
 
@@ -68,19 +73,24 @@ export default function SearchFilters({
             if (priceRange.endsWith("+")) {
                 const min = parseFloat(priceRange.replace("+", ""));
                 if (!isNaN(min) && min > 0) {
-                    setMinPriceVnd(String(Math.round(min)));
-                    setMaxPriceVnd("");
+                    setPriceMinVnd(Math.max(PRICE_SLIDER_MIN, Math.min(PRICE_SLIDER_MAX, Math.round(min))));
+                    setPriceMaxVnd(PRICE_SLIDER_MAX);
+                } else {
+                    setPriceMinVnd(PRICE_SLIDER_MIN);
+                    setPriceMaxVnd(PRICE_SLIDER_MAX);
                 }
             } else {
                 const [minStr, maxStr] = priceRange.split("-");
                 const min = minStr ? parseFloat(minStr) : null;
                 const max = maxStr ? parseFloat(maxStr) : null;
-                setMinPriceVnd(min !== null && !isNaN(min) && min > 0 ? String(Math.round(min)) : "");
-                setMaxPriceVnd(max !== null && !isNaN(max) && max > 0 ? String(Math.round(max)) : "");
+                const nextMin = min !== null && !isNaN(min) && min >= 0 ? Math.round(min) : PRICE_SLIDER_MIN;
+                const nextMax = max !== null && !isNaN(max) && max > 0 ? Math.round(max) : PRICE_SLIDER_MAX;
+                setPriceMinVnd(Math.max(PRICE_SLIDER_MIN, Math.min(PRICE_SLIDER_MAX, nextMin)));
+                setPriceMaxVnd(Math.max(PRICE_SLIDER_MIN, Math.min(PRICE_SLIDER_MAX, nextMax)));
             }
         } else {
-            setMinPriceVnd("");
-            setMaxPriceVnd("");
+            setPriceMinVnd(PRICE_SLIDER_MIN);
+            setPriceMaxVnd(PRICE_SLIDER_MAX);
         }
 
         setNearbyMeters(searchParams.get("nearby") || "");
@@ -89,6 +99,23 @@ export default function SearchFilters({
         setOpenNowOnly(searchParams.get("openNow") === "1");
         setFreeShipOnly(searchParams.get("freeShip") === "1");
     }, [searchParams]);
+
+    useEffect(() => {
+        if (priceMinVnd > priceMaxVnd) {
+            setPriceMaxVnd(priceMinVnd);
+        }
+    }, [priceMinVnd, priceMaxVnd]);
+
+    useEffect(() => {
+        const minPercent = ((priceMinVnd - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * 100;
+        const maxPercent = ((priceMaxVnd - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * 100;
+        if (priceMinTooltipRef.current) {
+            priceMinTooltipRef.current.style.left = `calc(${minPercent}% + 0px)`;
+        }
+        if (priceMaxTooltipRef.current) {
+            priceMaxTooltipRef.current.style.left = `calc(${maxPercent}% + 0px)`;
+        }
+    }, [priceMinVnd, priceMaxVnd]);
 
     const updateURL = (updates: Record<string, string | string[] | null>) => {
         const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
@@ -118,8 +145,8 @@ export default function SearchFilters({
 
     const handleClearAll = () => {
         setSelectedCategories([]);
-        setMinPriceVnd("");
-        setMaxPriceVnd("");
+        setPriceMinVnd(PRICE_SLIDER_MIN);
+        setPriceMaxVnd(PRICE_SLIDER_MAX);
         setNearbyMeters("");
         setRatingMin("");
         setDeliveryMaxMinutes("");
@@ -135,16 +162,17 @@ export default function SearchFilters({
         (capabilities.hasDeliveryTime && !!deliveryMaxMinutes) ||
         (capabilities.hasOpenNow && openNowOnly) ||
         (capabilities.hasFreeShip && freeShipOnly);
+    const isPriceRangeActive = priceMinVnd > PRICE_SLIDER_MIN || priceMaxVnd < PRICE_SLIDER_MAX;
 
     const hasActiveFilters =
         (searchType === "foods" && selectedCategories.length > 0) ||
-        (searchType === "foods" && !!(minPriceVnd || maxPriceVnd)) ||
+        (searchType === "foods" && isPriceRangeActive) ||
         !!nearbyMeters ||
         hasAdvancedActiveFilters;
 
     const activeFilterCount =
         (searchType === "foods" ? selectedCategories.length : 0) +
-        (searchType === "foods" && (minPriceVnd || maxPriceVnd) ? 1 : 0) +
+        (searchType === "foods" && isPriceRangeActive ? 1 : 0) +
         (nearbyMeters ? 1 : 0) +
         (capabilities.hasRating && ratingMin ? 1 : 0) +
         (capabilities.hasDeliveryTime && deliveryMaxMinutes ? 1 : 0) +
@@ -164,19 +192,13 @@ export default function SearchFilters({
 
         if (searchType === "foods") {
             updates.category = selectedCategories.length > 0 ? selectedCategories : null;
-
-            const min = parseFloat(minPriceVnd);
-            const max = parseFloat(maxPriceVnd);
             let priceRangeValue: string | null = null;
-            const hasMin = !isNaN(min) && min > 0;
-            const hasMax = !isNaN(max) && max > 0;
-
-            if (hasMin && hasMax && min <= max) {
-                priceRangeValue = `${Math.round(min)}-${Math.round(max)}`;
-            } else if (hasMin) {
-                priceRangeValue = `${Math.round(min)}+`;
-            } else if (hasMax) {
-                priceRangeValue = `0-${Math.round(max)}`;
+            if (isPriceRangeActive) {
+                if (priceMinVnd > PRICE_SLIDER_MIN && priceMaxVnd >= PRICE_SLIDER_MAX) {
+                    priceRangeValue = `${priceMinVnd}+`;
+                } else {
+                    priceRangeValue = `${priceMinVnd}-${priceMaxVnd}`;
+                }
             }
             updates.priceRange = priceRangeValue;
         }
@@ -255,11 +277,11 @@ export default function SearchFilters({
                         }}
                     />
                     <div className="flex items-center justify-between text-xs">
-                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMin}m</span>
+                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMin.toLocaleString("vi-VN")}m</span>
                         <span className="font-semibold text-brand-orange">
                             {sliderValue.toLocaleString("vi-VN")}m
                         </span>
-                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMax / 1000}km</span>
+                        <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>{sliderMax.toLocaleString("vi-VN")}m</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {[500, 1000, 3000, 5000, 10000].map((preset) => (
@@ -275,7 +297,7 @@ export default function SearchFilters({
                                           : "border-gray-200 bg-white text-gray-700"
                                 }`}
                             >
-                                {preset >= 1000 ? `${preset / 1000}km` : `${preset}m`}
+                                {`${preset.toLocaleString("vi-VN")}m`}
                             </button>
                         ))}
                     </div>
@@ -312,14 +334,83 @@ export default function SearchFilters({
                     </div>
 
                     <FilterSection title="Price Range">
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className={`block text-xs font-medium mb-1 ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Min (VND)</label>
-                                <Input type="number" min={0} value={minPriceVnd} onChange={(e) => setMinPriceVnd(e.target.value)} className="h-10" />
+                        <div className="space-y-3">
+                            <div className="px-6">
+                                <div className="relative h-12 pt-4">
+                                    <div
+                                        ref={priceMinTooltipRef}
+                                        className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 rounded-md bg-brand-orange px-1.5 py-0.5 text-[9px] font-semibold leading-none text-white shadow-sm sm:px-2 sm:text-[10px]"
+                                    >
+                                        {priceMinVnd.toLocaleString("vi-VN")}₫
+                                        <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-3 border-x-transparent border-t-3 border-t-brand-orange sm:border-x-4 sm:border-t-4" />
+                                    </div>
+                                    <div
+                                        ref={priceMaxTooltipRef}
+                                        className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 rounded-md bg-brand-orange px-1.5 py-0.5 text-[9px] font-semibold leading-none text-white shadow-sm sm:px-2 sm:text-[10px]"
+                                    >
+                                        {priceMaxVnd.toLocaleString("vi-VN")}₫
+                                        <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-3 border-x-transparent border-t-3 border-t-brand-orange sm:border-x-4 sm:border-t-4" />
+                                    </div>
+                                    <div className={`absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full ${theme === "dark" ? "bg-white/15" : "bg-gray-200"}`} />
+                                    <input
+                                        type="range"
+                                        min={PRICE_SLIDER_MIN}
+                                        max={PRICE_SLIDER_MAX}
+                                        step={PRICE_SLIDER_STEP}
+                                        value={priceMinVnd}
+                                        onChange={(e) => {
+                                            const next = Number(e.target.value);
+                                            setPriceMinVnd(Math.min(next, priceMaxVnd - PRICE_SLIDER_STEP));
+                                        }}
+                                        className="pointer-events-none absolute inset-0 h-8 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-brand-orange [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-brand-orange [&::-moz-range-thumb]:shadow-md"
+                                        aria-label="Minimum price"
+                                    />
+                                    <input
+                                        type="range"
+                                        min={PRICE_SLIDER_MIN}
+                                        max={PRICE_SLIDER_MAX}
+                                        step={PRICE_SLIDER_STEP}
+                                        value={priceMaxVnd}
+                                        onChange={(e) => {
+                                            const next = Number(e.target.value);
+                                            setPriceMaxVnd(Math.max(next, priceMinVnd + PRICE_SLIDER_STEP));
+                                        }}
+                                        className="pointer-events-none absolute inset-0 h-8 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-brand-orange [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-brand-orange [&::-moz-range-thumb]:shadow-md"
+                                        aria-label="Maximum price"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className={`block text-xs font-medium mb-1 ${theme === "dark" ? "text-white/65" : "text-gray-600"}`}>Max (VND)</label>
-                                <Input type="number" min={0} value={maxPriceVnd} onChange={(e) => setMaxPriceVnd(e.target.value)} className="h-10" />
+                            <div className="flex items-center justify-between text-xs">
+                                <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>
+                                    {PRICE_SLIDER_MIN.toLocaleString("vi-VN")}₫
+                                </span>
+                                <span className="font-semibold text-brand-orange">
+                                    {priceMinVnd.toLocaleString("vi-VN")}₫ - {priceMaxVnd.toLocaleString("vi-VN")}₫
+                                </span>
+                                <span className={theme === "dark" ? "text-white/65" : "text-gray-600"}>
+                                    {PRICE_SLIDER_MAX.toLocaleString("vi-VN")}₫
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {[50000, 100000, 200000, 300000, 400000].map((presetMax) => (
+                                    <button
+                                        key={presetMax}
+                                        type="button"
+                                        onClick={() => {
+                                            setPriceMinVnd(PRICE_SLIDER_MIN);
+                                            setPriceMaxVnd(presetMax);
+                                        }}
+                                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                            priceMinVnd === PRICE_SLIDER_MIN && priceMaxVnd === presetMax
+                                                ? "border-brand-orange/60 bg-brand-orange/15 text-brand-orange"
+                                                : theme === "dark"
+                                                  ? "border-white/16 bg-white/6 text-white/80"
+                                                  : "border-gray-200 bg-white text-gray-700"
+                                        }`}
+                                    >
+                                        {`<= ${presetMax.toLocaleString("vi-VN")}₫`}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </FilterSection>

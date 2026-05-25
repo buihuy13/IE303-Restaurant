@@ -20,6 +20,7 @@ export type OrderListItem = {
 };
 
 export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: string }) => {
+    const formatPriceVND = (amount: number): string => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
     // Get image for display - check both imageURL and cartItemImage
     const displayImageSource = (item.imageURL && item.imageURL.trim() !== "") 
         ? item.imageURL 
@@ -67,12 +68,9 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                     )}
                 </div>
 
-                {/* Item Price - USD format */}
+                {/* Item Price - VND format */}
                 <p className="font-semibold text-sm text-gray-600">
-                    ${((item.price * item.quantity)).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    })}
+                    {formatPriceVND(item.price * item.quantity)}
                 </p>
             </div>
 

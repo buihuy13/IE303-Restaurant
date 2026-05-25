@@ -7,16 +7,13 @@ import { CartItem, useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CartItemRow } from "./CartItemRow";
 import { OrderSummary } from "./OrderSummary";
 
-// Format price to USD
-const formatPriceUSD = (priceUSD: number): string => {
-    return priceUSD.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+// Format price to VND
+const formatPriceVND = (amount: number): string => {
+    return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 };
 
 export default function CartPageContainer() {
@@ -24,6 +21,7 @@ export default function CartPageContainer() {
     const { user, isAuthenticated } = useAuthStore();
     const { items, userId, isLoading: cartLoading, setUserId } = useCartStore();
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const prevItemKeysRef = useRef<Set<string>>(new Set());
 
     // Cart hydration is owned by useCartSync in ClientLayout — only align userId here.
     useEffect(() => {
@@ -35,13 +33,33 @@ export default function CartPageContainer() {
         }
     }, [isAuthenticated, user?.id, userId, setUserId]);
 
-    // Select all items when items change
+    // Keep current selections when cart changes.
+    // - First load: select all items by default.
+    // - Next updates (e.g. +/- quantity): preserve checked items.
+    // - New items are auto-selected; removed items are pruned.
     useEffect(() => {
-        if (items.length > 0) {
-            const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
-            setSelectedItems(new Set(allItemKeys));
-        }
-    }, [items]); // When items change
+        const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
+        const allKeysSet = new Set(allItemKeys);
+        const prevItemKeys = prevItemKeysRef.current;
+
+        setSelectedItems((prev) => {
+            if (items.length === 0) return new Set();
+            if (prevItemKeys.size === 0 && prev.size === 0) return new Set(allItemKeys);
+
+            const next = new Set<string>();
+            prev.forEach((key) => {
+                if (allKeysSet.has(key)) next.add(key);
+            });
+
+            allItemKeys.forEach((key) => {
+                if (!prevItemKeys.has(key)) next.add(key);
+            });
+
+            return next;
+        });
+
+        prevItemKeysRef.current = allKeysSet;
+    }, [items]);
 
     // Show loading state while fetching cart (especially important when coming from "add to cart")
     // Add a small delay to handle race conditions when user just added an item
@@ -320,7 +338,7 @@ export default function CartPageContainer() {
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>
                                 <span className="text-lg font-bold text-brand-orange">
-                                    ${formatPriceUSD(selectedSubtotal)}
+                                    {formatPriceVND(selectedSubtotal)}
                                 </span>
                             </div>
                             <Button

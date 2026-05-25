@@ -21,12 +21,13 @@ export function toRateNumber(value: unknown, fallback = 0): number {
 export function formatCurrency(amount: unknown): string {
     const value = toNumber(amount, 0);
     try {
-        return new Intl.NumberFormat("en-US", {
+        return new Intl.NumberFormat("vi-VN", {
             style: "currency",
-            currency: "USD",
+            currency: "VND",
+            maximumFractionDigits: 0,
         }).format(value);
     } catch {
-        return `$${value.toLocaleString("en-US")}`;
+        return `${Math.round(value).toLocaleString("vi-VN")} ₫`;
     }
 }
 
