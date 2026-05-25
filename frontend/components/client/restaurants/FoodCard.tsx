@@ -5,13 +5,13 @@ import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
-import { productApi } from "@/lib/api/productApi";
 import {
-    fetchProductSizesForCart,
-    getListPriceDisplay,
-    hasListPriceRange,
-    pickDefaultProductSize,
+    getProductCardPriceDisplay,
 } from "@/lib/utils/productListDisplay";
+import { getProductDetailHref } from "@/lib/utils/productNavigation";
+import { getRestaurantCartMeta, getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
+import { QuickAddSizeDialog } from "@/components/client/Food/QuickAddSizeDialog";
+import { useProductQuickAdd } from "@/hooks/client/useProductQuickAdd";
 import { Product } from "@/types";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
@@ -37,7 +37,6 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
     const { user, loginWithKeycloak } = useAuthStore();
-    const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [imageError, setImageError] = useState(false);
 
@@ -53,16 +52,10 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         }
     }, [isMounted, user?.id, setUserId]);
 
-    const displayPriceLabel = useMemo(() => {
-        if (product.productSizes.length > 0) {
-            const min = Math.min(...product.productSizes.map((size) => size.price));
-            return `${min.toLocaleString("vi-VN")} ₫`;
-        }
-        return getListPriceDisplay(product);
-    }, [product]);
+    const priceInfo = useMemo(() => getProductCardPriceDisplay(product), [product]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
-    const formattedPrice = displayPriceLabel;
+    const formattedPrice = priceInfo.label;
 
     const reviewCountText = useMemo(() => {
         const count = typeof product.totalReview === "number" ? product.totalReview : 0;
@@ -80,66 +73,42 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
 
-    const resolveRestaurantForCart = useCallback(async (): Promise<{ id: string; name: string } | null> => {
-        const directId = typeof restaurant?.id === "string" ? restaurant.id.trim() : "";
-        const directName = typeof restaurant?.resName === "string" ? restaurant.resName.trim() : "";
-        if (directId) {
-            return { id: directId, name: directName || "Unknown Restaurant" };
-        }
+    const restaurantForCart = useMemo(() => getRestaurantCartMeta(restaurant), [restaurant]);
 
-        try {
-            const response = await productApi.getRestaurantByProductId(product.id);
-            const payload = response.data as {
-                id?: unknown;
-                resId?: unknown;
-                restaurantId?: unknown;
-                resName?: unknown;
-                name?: unknown;
-            } | null;
+    const requireAuth = useCallback(() => {
+        if (user) return true;
+        toast.error("Please sign in to add items to cart");
+        void loginWithKeycloak({
+            redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
+        });
+        return false;
+    }, [user, loginWithKeycloak]);
 
-            if (!payload || typeof payload !== "object") {
-                return null;
-            }
+    const {
+        isAdding,
+        sizePickerOpen,
+        setSizePickerOpen,
+        pickerSizes,
+        handleQuickAdd,
+        handleConfirmSize,
+    } = useProductQuickAdd({
+        product,
+        cardImageUrl,
+        restaurantForCart,
+        addItem,
+        requireAuth,
+    });
 
-            const fallbackIdRaw = payload.id ?? payload.resId ?? payload.restaurantId;
-            const fallbackId =
-                typeof fallbackIdRaw === "string"
-                    ? fallbackIdRaw.trim()
-                    : fallbackIdRaw != null &&
-                        (typeof fallbackIdRaw === "number" || typeof fallbackIdRaw === "bigint")
-                      ? String(fallbackIdRaw)
-                      : "";
+    const handleAddToCart = handleQuickAdd;
 
-            if (!fallbackId) {
-                return null;
-            }
-
-            const fallbackName =
-                typeof payload.resName === "string"
-                    ? payload.resName.trim()
-                    : typeof payload.name === "string"
-                      ? payload.name.trim()
-                      : "";
-
-            return { id: fallbackId, name: fallbackName || "Unknown Restaurant" };
-        } catch {
-            return null;
-        }
-    }, [restaurant?.id, restaurant?.resName, product.id]);
-
-    // Determine link based on current location
-    // If already on restaurant page, link to food detail page
-    // Otherwise, link to restaurant page
     const productLink = useMemo(() => {
         const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
+        const foodHref = getProductDetailHref(product);
         if (isOnRestaurantPage) {
-            // On restaurant page, go to food detail
-            return `/food/${product.slug}`;
-        } else {
-            // Outside restaurant page, go to restaurant page
-            return restaurant?.slug ? `/restaurants/${restaurant.slug}` : `/food/${product.slug}`;
+            return foodHref ?? "/search?type=foods";
         }
-    }, [pathname, product.slug, restaurant?.slug]);
+        return getRestaurantDetailHref(restaurant) ?? foodHref ?? "/search?type=foods";
+    }, [pathname, product, restaurant]);
 
     // Determine if product is best seller or popular (you can adjust logic based on your data)
     const isBestSeller = useMemo(() => {
@@ -163,76 +132,90 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         return Math.round(duration).toString();
     }, [restaurant?.duration]);
 
-    const handleAddToCart = useCallback(
-        async (e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
+    const addToCartButton = (compact?: boolean) => (
+        <Button
+            onClick={handleAddToCart}
+            disabled={isAdding || !isMounted}
+            variant="brandSoft"
+            size="sm"
+            className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 ${
+                compact ? "min-w-[102px] xl:min-w-[108px]" : "min-w-[108px] xl:min-w-[114px]"
+            } ${
+                theme === "dark"
+                    ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90"
+                    : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
+            }`}
+            title={priceInfo.hasMultipleSizes ? "Choose size to add" : "Add to Cart"}
+            aria-label={priceInfo.hasMultipleSizes ? "Choose size to add" : "Add to Cart"}
+        >
+            {isAdding ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : priceInfo.hasMultipleSizes ? (
+                <>
+                    <Plus className="w-4 h-4" />
+                    <span className={`${compact ? "ml-1" : "ml-1.5"} text-[13px] font-semibold`}>Chọn size</span>
+                </>
+            ) : (
+                <>
+                    <Plus className="w-4 h-4" />
+                    <span className="ml-1.5 text-sm font-semibold">Add</span>
+                </>
+            )}
+        </Button>
+    );
 
-            if (isAdding || !isMounted) {
-                return;
-            }
+    const priceBlock = (
+        <div className={`min-w-0 flex-1 ${layout === "grid" ? "xl:max-w-[52%]" : "sm:max-w-[58%]"}`}>
+            {formattedPrice ? (
+                <>
+                    <p
+                        className={`whitespace-nowrap font-bold text-brand-orange ${
+                            layout === "flex"
+                                ? priceInfo.hasMultipleSizes
+                                    ? "text-base sm:text-lg leading-tight"
+                                    : "text-lg sm:text-xl leading-none"
+                                : priceInfo.hasMultipleSizes
+                                    ? "text-[1.02rem] leading-tight"
+                                    : "text-base"
+                        }`}
+                    >
+                        {formattedPrice}
+                    </p>
+                    {priceInfo.hint && (
+                        <p className={`text-[11px] mt-0.5 truncate ${theme === "dark" ? "text-white/50" : "text-gray-500"}`}>
+                            {priceInfo.hint}
+                        </p>
+                    )}
+                </>
+            ) : (
+                <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No price</p>
+            )}
+        </div>
+    );
 
-            if (typeof addItem !== "function") {
-                console.warn("[FoodCard] addItem is not available yet");
-                return;
-            }
+    const ratingBlock = product.rating > 0 ? (
+        <div className="flex min-w-0 items-center gap-1.5 text-xs">
+            <span className="text-yellow-500">⭐</span>
+            <span className={`font-semibold ${theme === "dark" ? "text-white/88" : "text-gray-700"}`}>
+                {product.rating.toFixed(1)}
+            </span>
+            {reviewCountText && (
+                <span className={`truncate ${theme === "dark" ? "text-white/58" : "text-gray-500"}`}>• {reviewCountText} reviews</span>
+            )}
+        </div>
+    ) : (
+        <span className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No ratings yet</span>
+    );
 
-            if (!user) {
-                toast.error("Please sign in to add items to cart");
-                void loginWithKeycloak({
-                    redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/",
-                });
-                return;
-            }
-
-            setIsAdding(true);
-            try {
-                let sizes = product.productSizes;
-                if (sizes.length === 0) {
-                    if (!hasListPriceRange(product)) {
-                        toast.error("This product has no available sizes");
-                        return;
-                    }
-                    sizes = await fetchProductSizesForCart(product.id);
-                }
-                const defaultSize = pickDefaultProductSize(sizes);
-                if (!defaultSize) {
-                    toast.error("This product has no available sizes");
-                    return;
-                }
-
-                const restaurantForCart = await resolveRestaurantForCart();
-                if (!restaurantForCart) {
-                    toast.error("Restaurant information not found");
-                    return;
-                }
-
-                await addItem(
-                    {
-                        id: product.id,
-                        name: product.productName,
-                        price: defaultSize.price,
-                        image: cardImageUrl,
-                        restaurantId: restaurantForCart.id,
-                        restaurantName: restaurantForCart.name,
-                        categoryId: product.categoryId,
-                        categoryName: product.categoryName,
-                        sizeId: defaultSize.id,
-                        sizeName: defaultSize.sizeName,
-                    },
-                    1,
-                );
-                // Toast is handled by cartStore.addItem
-            } catch (error) {
-                console.error("Failed to add to cart:", error);
-                // Error toast is handled by cartStore.addItem
-            } finally {
-                setTimeout(() => {
-                    setIsAdding(false);
-                }, 300);
-            }
-        },
-        [isAdding, isMounted, user, product, cardImageUrl, addItem, resolveRestaurantForCart, loginWithKeycloak],
+    const sizePicker = (
+        <QuickAddSizeDialog
+            open={sizePickerOpen}
+            onOpenChange={setSizePickerOpen}
+            productName={product.productName}
+            sizes={pickerSizes}
+            isAdding={isAdding}
+            onConfirm={handleConfirmSize}
+        />
     );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
@@ -367,23 +350,6 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                             {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
                         </h3>
 
-                        {/* Rating & Sold Count - Trust Information */}
-                        <div className="flex items-center gap-2 mb-2 min-h-[18px]">
-                            {product.rating > 0 && (
-                                <div className="flex items-center gap-1">
-                                    <span className="text-yellow-500 text-xs">⭐</span>
-                                    <span className={`text-xs font-semibold ${theme === "dark" ? "text-white/85" : "text-gray-700"}`}>
-                                        {product.rating.toFixed(1)}
-                                    </span>
-                                </div>
-                            )}
-                            {reviewCountText && (
-                                <span className={`text-xs ${theme === "dark" ? "text-white/55" : "text-gray-500"}`}>
-                                    • {reviewCountText} reviews
-                                </span>
-                            )}
-                        </div>
-
                         {/* Restaurant Name with Verified Icon */}
                         <div className="flex items-center gap-1.5 mb-1">
                             <p className={`text-sm line-clamp-1 flex-1 ${theme === "dark" ? "text-white/72" : "text-gray-500"}`}>
@@ -391,41 +357,17 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                             </p>
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                         </div>
+
+                        <div className="mt-2 mb-1">{priceBlock}</div>
                     </Link>
 
-                    {/* Price + CTA (unified with Home card) */}
-                    <div className={`mt-3 pt-3 border-t flex items-center justify-between gap-3 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
-                        <div className="min-w-0">
-                            {formattedPrice ? (
-                                <p className="text-base font-bold text-brand-orange">{formattedPrice}</p>
-                            ) : (
-                                <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No price</p>
-                            )}
-                        </div>
-                        <Button
-                            onClick={handleAddToCart}
-                            disabled={isAdding || !isMounted}
-                            variant="brandSoft"
-                            size="sm"
-                            className={`h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 ${
-                                theme === "dark"
-                                    ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90"
-                                    : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
-                            }`}
-                            title="Add to Cart"
-                            aria-label="Add to Cart"
-                        >
-                            {isAdding ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Plus className="w-4 h-4" />
-                                    <span className="ml-1.5 text-sm font-semibold">Add</span>
-                                </>
-                            )}
-                        </Button>
+                    {/* Rating + CTA */}
+                    <div className={`mt-3 pt-3 border-t flex items-end justify-between gap-2.5 xl:gap-3 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                        {ratingBlock}
+                        {addToCartButton()}
                     </div>
                 </div>
+                {sizePicker}
             </div>
         );
     }
@@ -563,53 +505,15 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3 min-h-[18px]">
-                        {product.rating > 0 ? (
-                            <div className="flex items-center gap-1">
-                                <span className="text-yellow-500 text-xs">⭐</span>
-                                <span className={`text-xs font-semibold ${theme === "dark" ? "text-white/88" : "text-gray-700"}`}>
-                                    {product.rating.toFixed(1)}
-                                </span>
-                            </div>
-                        ) : (
-                            <span className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No ratings yet</span>
-                        )}
-                        {reviewCountText && (
-                            <span className={`text-xs ${theme === "dark" ? "text-white/58" : "text-gray-500"}`}>• {reviewCountText} reviews</span>
-                        )}
-                    </div>
+                    <div className="mt-2 mb-1">{priceBlock}</div>
                 </Link>
 
-                <div className={`mt-auto pt-3 border-t flex items-center justify-between gap-2 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
-                    {formattedPrice ? (
-                        <p className="text-lg sm:text-xl font-bold text-brand-orange leading-none">{formattedPrice}</p>
-                    ) : (
-                        <p className={`text-xs ${theme === "dark" ? "text-white/45" : "text-gray-400"}`}>No price</p>
-                    )}
-                    <Button
-                        onClick={handleAddToCart}
-                        disabled={isAdding || !isMounted}
-                        variant="brandSoft"
-                        size="sm"
-                        className={`h-9 rounded-full px-3 shadow-sm hover:shadow-md active:scale-95 ${
-                            theme === "dark"
-                                ? "bg-brand-orange text-white border border-brand-orange/70 hover:bg-brand-orange/90"
-                                : "hover:bg-brand-orange hover:text-white focus-visible:bg-brand-orange focus-visible:text-white"
-                        }`}
-                        title="Add to cart"
-                        aria-label="Add to cart"
-                    >
-                        {isAdding ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <Plus className="w-4 h-4" />
-                                <span className="ml-1.5 text-sm font-semibold">Add</span>
-                            </>
-                        )}
-                    </Button>
+                <div className={`mt-auto pt-3 border-t flex items-end justify-between gap-2 xl:gap-2.5 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
+                    {ratingBlock}
+                    {addToCartButton(true)}
                 </div>
             </div>
+            {sizePicker}
         </div>
     );
 });

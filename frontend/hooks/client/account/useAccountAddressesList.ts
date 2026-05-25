@@ -1,20 +1,20 @@
-import { authApi } from "@/lib/api/authApi";
+import { useAddressStore } from "@/stores/addressStore";
 import type { Address } from "@/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
 
 export function useAccountAddressesList(params: { userId: string | null; enabled: boolean }) {
     const { userId, enabled } = params;
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [loading, setLoading] = useState(true);
+    const addresses = useAddressStore((state) => state.addresses);
+    const loading = useAddressStore((state) => state.loading);
+    const hydrated = useAddressStore((state) => state.hydrated);
+    const fetchAddresses = useAddressStore((state) => state.fetchAddresses);
 
     const refresh = useCallback(async () => {
         if (!userId) return;
 
-        setLoading(true);
         try {
-            const data = await authApi.getUserAddresses(userId);
-            setAddresses(Array.isArray(data) ? data : []);
+            await fetchAddresses(userId, { force: true });
         } catch (error) {
             console.error("Error fetching addresses:", error);
             let errorMessage = "Failed to load addresses";
@@ -28,17 +28,19 @@ export function useAccountAddressesList(params: { userId: string | null; enabled
                 errorMessage = error.message;
             }
             toast.error(errorMessage);
-            setAddresses([]);
-        } finally {
-            setLoading(false);
         }
-    }, [userId]);
+    }, [userId, fetchAddresses]);
 
     useEffect(() => {
-        if (!enabled) return;
-        refresh();
-    }, [enabled, refresh]);
+        if (!enabled || !userId) return;
+        if (!hydrated) {
+            void fetchAddresses(userId);
+        }
+    }, [enabled, userId, hydrated, fetchAddresses]);
 
-    return { addresses, loading, refresh };
+    return {
+        addresses: addresses as Address[],
+        loading: loading || (enabled && !hydrated),
+        refresh,
+    };
 }
-

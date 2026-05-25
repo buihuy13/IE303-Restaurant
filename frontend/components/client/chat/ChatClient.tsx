@@ -228,36 +228,12 @@ export default function ChatClient({
         }
     }, [initialPartnerId, partnerId, getPartnerInfo]);
 
-    const roomsReloadedRef = useRef(false);
-
     useEffect(() => {
-        const reloadRoomsIfNeeded = async () => {
-            if (initialRoomId && !roomsReloadedRef.current && !rooms.find((r) => r.id === initialRoomId)) {
-                roomsReloadedRef.current = true;
-                try {
-                    const response = await chatApi.getAllRoomsByUserId(currentUserId);
-                    const updatedRooms = response.data?.content || [];
-                    useChatStore.getState().setRooms(updatedRooms);
-
-                    if (!updatedRooms.find((r) => r.id === initialRoomId) && initialPartnerId) {
-                        if (initialPartnerId !== partnerId) {
-                            setPartnerId(initialPartnerId);
-                            const info = await getPartnerInfo(initialPartnerId);
-                            setPartnerName(info.name);
-                        }
-                    }
-                } catch {
-                    if (initialRoomId && !partnerId && initialPartnerId) {
-                        setPartnerId(initialPartnerId);
-                        getPartnerInfo(initialPartnerId).then((info) => setPartnerName(info.name));
-                    }
-                }
-            }
-        };
-
-        reloadRoomsIfNeeded();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialRoomId, currentUserId, initialPartnerId]);
+        if (initialRoomId && !rooms.find((r) => r.id === initialRoomId) && initialPartnerId && !partnerId) {
+            setPartnerId(initialPartnerId);
+            getPartnerInfo(initialPartnerId).then((info) => setPartnerName(info.name));
+        }
+    }, [initialRoomId, initialPartnerId, rooms, partnerId, getPartnerInfo]);
 
     const { isConnected, sendMessage: sendMessageToSocket, connect: connectChatSocket } = useChatSocketContext();
 

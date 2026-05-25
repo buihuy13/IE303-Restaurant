@@ -1,5 +1,5 @@
 "use client";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
+import NotificationDropdown from "@/components/header/NotificationDropdown";
 import { Button } from "@/components/ui/Button";
 import {
     DropdownMenu,
@@ -167,7 +167,7 @@ export default function Header() {
 
                     {/* Auth Buttons */}
                     <div className="hidden md:flex items-center space-x-3">
-                        {mounted && isAuthenticated && user && <NotificationBell />}
+                        {mounted && isAuthenticated && user && <NotificationDropdown />}
                         {mounted && isAuthenticated && user ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger className="flex items-center space-x-2 cursor-pointer">

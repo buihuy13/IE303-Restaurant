@@ -94,11 +94,33 @@ export async function enrichProductSizesWithCatalogNames(sizes: ProductSize[]): 
     });
 }
 
-/** Loads sizes from product-service and enriches names from catalog-service. */
-export async function fetchProductSizesForCart(productId: string): Promise<ProductSize[]> {
-    const res = await productApi.getProductSizesByProductId(productId);
-    const normalized = normalizeProductSizesPayload(res.data);
-    return enrichProductSizesWithCatalogNames(normalized);
+/** Loads sizes from product detail (slug preferred) and enriches names from catalog-service. */
+export async function fetchProductSizesForCart(
+    productId: string,
+    options?: { slug?: string | null },
+): Promise<ProductSize[]> {
+    const slug = typeof options?.slug === "string" ? options.slug.trim() : "";
+
+    try {
+        const res = slug
+            ? await productApi.getProductBySlug(slug)
+            : await productApi.getProductById(productId);
+        const fromDetail = normalizeProductSizesPayload(res.data?.productSizes);
+        if (fromDetail.length > 0) {
+            return enrichProductSizesWithCatalogNames(fromDetail);
+        }
+    } catch (error) {
+        console.warn("[fetchProductSizesForCart] product detail lookup failed:", error);
+    }
+
+    try {
+        const res = await productApi.getProductSizesByProductId(productId);
+        const normalized = normalizeProductSizesPayload(res.data);
+        return enrichProductSizesWithCatalogNames(normalized);
+    } catch (error) {
+        console.warn("[fetchProductSizesForCart] productsize lookup failed:", error);
+        return [];
+    }
 }
 
 export function pickDefaultProductSize(
@@ -111,4 +133,73 @@ export function pickDefaultProductSize(
         return sorted.find((s) => s.price >= minPriceFilter) ?? sorted[0];
     }
     return sorted[0];
+}
+
+export function productHasMultipleSizes(product: Product): boolean {
+    const sizes = product.productSizes ?? [];
+    if (sizes.length > 1) {
+        const prices = sizes.map((s) => s.price);
+        return Math.min(...prices) !== Math.max(...prices);
+    }
+    const min = product.listMinPrice != null ? Number(product.listMinPrice) : NaN;
+    const max = product.listMaxPrice != null ? Number(product.listMaxPrice) : NaN;
+    return Number.isFinite(min) && Number.isFinite(max) && max > min;
+}
+
+/** Price line for list/grid cards (range when multiple sizes, exact when single). */
+export function getProductCardPriceDisplay(
+    product: Product,
+    minPriceFilter: number | null = null,
+): { label: string | null; hasMultipleSizes: boolean; hint: string | null } {
+    const sizes = product.productSizes ?? [];
+
+    if (sizes.length === 1) {
+        const only = sizes[0];
+        return {
+            label: `${only.price.toLocaleString("vi-VN")} ₫`,
+            hasMultipleSizes: false,
+            hint: only.sizeName?.trim() || null,
+        };
+    }
+
+    if (sizes.length > 1) {
+        const sorted = [...sizes].sort((a, b) => a.price - b.price);
+        const min = sorted[0].price;
+        const max = sorted[sorted.length - 1].price;
+        if (min === max) {
+            return {
+                label: `${min.toLocaleString("vi-VN")} ₫`,
+                hasMultipleSizes: false,
+                hint: `${sizes.length} sizes`,
+            };
+        }
+        return {
+            label: `${min.toLocaleString("vi-VN")} – ${max.toLocaleString("vi-VN")} ₫`,
+            hasMultipleSizes: true,
+            hint: `${sizes.length} sizes`,
+        };
+    }
+
+    const listLabel = getListPriceDisplay(product);
+    const hasMultipleSizes = productHasMultipleSizes(product);
+    if (hasMultipleSizes && minPriceFilter != null && Number.isFinite(minPriceFilter)) {
+        const min = Number(product.listMinPrice);
+        const max = Number(product.listMaxPrice ?? product.listMinPrice);
+        if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
+            const from = Math.max(min, minPriceFilter);
+            if (from <= max) {
+                return {
+                    label: `${from.toLocaleString("vi-VN")} – ${max.toLocaleString("vi-VN")} ₫`,
+                    hasMultipleSizes: true,
+                    hint: "Choose size",
+                };
+            }
+        }
+    }
+
+    return {
+        label: listLabel,
+        hasMultipleSizes,
+        hint: hasMultipleSizes ? "Choose size" : null,
+    };
 }

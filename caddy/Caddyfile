@@ -34,7 +34,7 @@ http://localhost:8443 {
     }
 
     handle @ws_routes {
-        reverse_proxy api-gateway {
+        reverse_proxy api-gateway:8080 {
             transport http {
                 versions 1.1
             }

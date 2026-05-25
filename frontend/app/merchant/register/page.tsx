@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import MerchantRegisterPageClient from "@/components/merchant/register/MerchantRegisterPageClient";
 

@@ -43,9 +43,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const chatSocket = useChatSocket({
         userId: user?.id || null,
         isAuthenticated,
+        enabled: isChatRoute,
     });
-    const { subscribeRoom, isConnected } = chatSocket;
-    const { setRooms, updateRoomLastMessage, incrementUnreadCount, setLastMessage, updateUnreadCount } = useChatStore();
+    const { subscribeRoom } = chatSocket;
+    const { setRooms, setRoomsHydrated, setRoomsLoadError, updateRoomLastMessage, incrementUnreadCount, setLastMessage } =
+        useChatStore();
     const subscribedRoomsRef = useRef<Set<string>>(new Set());
     const roomsLoadedRef = useRef(false);
     const reloadingRoomsRef = useRef(false); // Prevent multiple simultaneous reloads
@@ -54,9 +56,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
     const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const syncIntervalMsRef = useRef<number>(30000);
 
-    // Load rooms and subscribe to all when user is authenticated and connected
+    // Load rooms via REST as soon as user opens chat; WebSocket is only for realtime updates.
     useEffect(() => {
-        if (!user?.id || !isAuthenticated || !isConnected || !isChatRoute || roomsLoadedRef.current) {
+        if (!user?.id || !isAuthenticated || !isChatRoute || roomsLoadedRef.current) {
             return;
         }
 
@@ -162,6 +164,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                     const response = await chatApi.getAllRoomsByUserId(user.id);
                     const rooms: ChatRoom[] = response.data?.content || [];
                     setRooms(rooms);
+                    setRoomsLoadError(null);
+                    setRoomsHydrated(true);
                     roomsLoadedRef.current = true;
 
                     // If user has no rooms yet, keep fast polling so first incoming room appears quickly.
@@ -176,20 +180,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         }, syncIntervalMsRef.current);
                     }
 
-                    // Fetch unread count for each room from backend
-                    await Promise.all(
-                        rooms.map(async (room) => {
-                            try {
-                                const unreadResponse = await chatApi.getUnreadCountByRoom(room.id, user.id);
-                                const unreadCount = unreadResponse.data?.data || 0;
-                                if (unreadCount > 0) {
-                                    updateUnreadCount(room.id, unreadCount);
-                                }
-                            } catch {
-                                // Silent error handling
-                            }
-                        }),
-                    );
+                    // Unread counts are updated via WebSocket (incrementUnreadCount), not N+1 per-room API calls.
 
                     // Subscribe to all rooms to receive messages
                     rooms.forEach((room) => {
@@ -199,10 +190,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         }
                     });
                 } catch (error) {
-                    const axiosError = error as { response?: { status?: number } };
+                    const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
                     if (axiosError?.response?.status === 404) {
                         // User has no chat rooms yet; keep syncing to catch newly created rooms.
                         setRooms([]);
+                        setRoomsLoadError(null);
+                        setRoomsHydrated(true);
                         roomsLoadedRef.current = true;
                         if (syncIntervalMsRef.current !== 3000) {
                             syncIntervalMsRef.current = 3000;
@@ -215,7 +208,15 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         }
                         return;
                     }
-                    // Silent error handling
+
+                    const message =
+                        axiosError?.response?.data?.message ||
+                        (axiosError?.response?.status === 503
+                            ? "Chat service is temporarily unavailable."
+                            : "Could not load conversations. Please try again.");
+                    setRoomsLoadError(message);
+                    setRoomsHydrated(true);
+                    roomsLoadedRef.current = true;
                 }
             };
 
@@ -239,29 +240,37 @@ export default function ChatProvider({ children }: ChatProviderProps) {
         user?.id,
         isAuthenticated,
         isChatRoute,
-        isConnected,
         subscribeRoom,
         setRooms,
         updateRoomLastMessage,
         incrementUnreadCount,
         setLastMessage,
-        updateUnreadCount,
+        setRoomsHydrated,
+        setRoomsLoadError,
     ]);
 
-    // Stop chat-room polling when user is outside chat screens.
+    // Stop chat-room polling and allow a fresh sync when user leaves chat screens.
     useEffect(() => {
-        if (!isChatRoute && syncIntervalRef.current) {
-            clearInterval(syncIntervalRef.current);
-            syncIntervalRef.current = null;
+        if (!isChatRoute) {
+            if (syncIntervalRef.current) {
+                clearInterval(syncIntervalRef.current);
+                syncIntervalRef.current = null;
+            }
             syncIntervalMsRef.current = 30000;
+            roomsLoadedRef.current = false;
+            setRoomsHydrated(false);
+            setRoomsLoadError(null);
+            subscribedRoomsRef.current.clear();
         }
-    }, [isChatRoute]);
+    }, [isChatRoute, setRoomsHydrated, setRoomsLoadError]);
 
     // Reset when user logs out
     useEffect(() => {
         if (!isAuthenticated) {
             subscribedRoomsRef.current.clear();
             roomsLoadedRef.current = false;
+            setRoomsHydrated(false);
+            setRoomsLoadError(null);
             processedMessagesRef.current.clear(); // Clear processed messages on logout
             if (syncIntervalRef.current) {
                 clearInterval(syncIntervalRef.current);
@@ -269,7 +278,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
             }
             syncIntervalMsRef.current = 30000;
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, setRoomsHydrated, setRoomsLoadError]);
 
     return <ChatSocketContext.Provider value={chatSocket}>{children}</ChatSocketContext.Provider>;
 }

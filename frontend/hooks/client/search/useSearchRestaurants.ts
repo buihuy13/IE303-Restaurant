@@ -14,6 +14,7 @@ const DEFAULT_LIST_LON = 106.7750317;
 export function useSearchRestaurants(
     currentAddress: { lat: number; lng: number } | null,
     _isLocationSet: boolean,
+    enabled = true,
 ) {
     const searchParams = useSearchParams();
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -27,6 +28,8 @@ export function useSearchRestaurants(
     const currentPageNumber = pageParam ? parseInt(pageParam, 10) : 1;
 
     useEffect(() => {
+        if (!enabled) return;
+
         const run = async () => {
             setRestaurantsLoading(true);
             try {
@@ -50,11 +53,11 @@ export function useSearchRestaurants(
         };
 
         run();
-    }, [searchParams, sort, query, currentAddress]);
+    }, [enabled, searchParams, sort, query, currentAddress]);
 
     return {
         restaurants,
-        restaurantsLoading,
+        restaurantsLoading: enabled ? restaurantsLoading : false,
         totalPages,
         totalElements,
         query,

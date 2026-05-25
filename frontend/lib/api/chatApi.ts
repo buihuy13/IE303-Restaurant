@@ -3,7 +3,8 @@ import api from "../axios";
 
 export const chatApi = {
     // Get one-time WebSocket token for handshake
-    getOneTimeToken: (userId: string) => api.get<ResponseMessage>(`/chat/one-time-token/${encodeURIComponent(userId)}`),
+    getOneTimeToken: (userId: string, config?: { signal?: AbortSignal }) =>
+        api.get<ResponseMessage>(`/chat/one-time-token/${encodeURIComponent(userId)}`, config),
 
     // Get roomId from two userIds
     // Encode userIds to handle special characters in URLs

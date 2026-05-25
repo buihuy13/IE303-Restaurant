@@ -1,4 +1,5 @@
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { OrderStatus, type Order } from "@/types/order.type";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -146,32 +147,7 @@ export function useAccountOrdersList(params: { userId: string | null; enabled: b
         },
     });
 
-    useEffect(() => {
-        if (!enabled || !userId || loading) return;
-
-        const intervalId = setInterval(() => {
-            orderApi
-                .getOrdersByUser(userId)
-                .then(({ orders: apiOrders }) => {
-                    const mapped = mapOrdersToDisplay(apiOrders);
-                    setOrders((prev) => {
-                        const hasChanges = prev.some((prevOrder, index) => {
-                            const newOrder = mapped[index];
-                            return newOrder && prevOrder.status !== newOrder.status;
-                        });
-                        if (hasChanges || prev.length !== mapped.length) {
-                            return mapped;
-                        }
-                        return prev;
-                    });
-                })
-                .catch((error) => {
-                    console.debug("[Order History Page] Polling update failed:", error);
-                });
-        }, 10000);
-
-        return () => clearInterval(intervalId);
-    }, [enabled, userId, loading]);
+    useOrdersVisibilityRefresh(enabled && !!userId && !loading, refresh);
 
     return { orders, loading, refresh };
 }
