@@ -134,16 +134,16 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         return product.rating >= 4.5 || product.totalReview > 50;
     }, [product.rating, product.totalReview]);
 
-    // Delivery time
+    // Show duration exactly from backend (no frontend fallback range).
     const deliveryTime = useMemo(() => {
         const duration = restaurant?.duration;
-        if (!duration || typeof duration !== "number") {
-            return "20-30";
+        if (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0) {
+            return null;
         }
-        if (duration > 60 || duration <= 0) {
-            return "20-30";
+        if (Number.isInteger(duration)) {
+            return duration.toString();
         }
-        return Math.round(duration).toString();
+        return duration.toFixed(1).replace(/\.0$/, "");
     }, [restaurant?.duration]);
 
     // Format price to VND

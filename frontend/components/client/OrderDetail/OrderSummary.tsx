@@ -16,12 +16,9 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     const [isAdding, setIsAdding] = useState(false);
     const isProcessingRef = useRef(false);
 
-    // Format price to USD
-    const formatPrice = (priceUSD: number): string => {
-        return priceUSD.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+    // Format price to VND
+    const formatPrice = (amount: number): string => {
+        return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
     };
 
     const originalPrice = Number(order.totalAmount ?? 0);
@@ -172,24 +169,24 @@ export const OrderSummary = ({ order }: { order: Order }) => {
             <div className="space-y-3 text-gray-600">
                 <div className="flex justify-between">
                     <span>Original Price</span>
-                    <span className="text-right">${formatPrice(originalPrice)}</span>
+                    <span className="text-right">{formatPrice(originalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Savings</span>
-                    <span className="text-right text-green-600">-${formatPrice(savings)}</span>
+                    <span className="text-right text-green-600">- {formatPrice(savings)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span className="text-right">{shipping === 0 ? "FREE" : `$${formatPrice(shipping)}`}</span>
+                    <span className="text-right">{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Estimated Sales Tax</span>
-                    <span className="text-right">${formatPrice(tax)}</span>
+                    <span className="text-right">{formatPrice(tax)}</span>
                 </div>
             </div>
             <div className="flex justify-between font-bold text-2xl mt-4 pt-4 border-t border-gray-200">
                 <span className="text-gray-900">Total</span>
-                <span className="text-brand-orange text-right">${formatPrice(total)}</span>
+                <span className="text-brand-orange text-right">{formatPrice(total)}</span>
             </div>
             <button
                 onClick={handleBuyAgain}

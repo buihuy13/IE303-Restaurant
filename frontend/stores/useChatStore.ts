@@ -9,6 +9,8 @@ interface ChatState {
         roomsLoadError: string | null;
         unreadCountMap: Record<string, number>; // roomId -> unread count
         lastMessageMap: Record<string, MessageDTO>; // roomId -> last message
+        activeViewingRoomId: string | null;
+        setActiveViewingRoomId: (roomId: string | null) => void;
         setRooms: (rooms: ChatRoom[]) => void;
         setRoomsHydrated: (hydrated: boolean) => void;
         setRoomsLoadError: (error: string | null) => void;
@@ -28,6 +30,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         roomsLoadError: null,
         unreadCountMap: {},
         lastMessageMap: {},
+        activeViewingRoomId: null,
+
+        setActiveViewingRoomId: (roomId) => set({ activeViewingRoomId: roomId }),
 
         setRooms: (rooms) => {
                 set({ rooms });

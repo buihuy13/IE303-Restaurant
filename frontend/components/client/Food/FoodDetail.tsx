@@ -150,14 +150,11 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
     }, [isAdding, isMounted, addItem, user, selectedSize, foodItem, restaurant, quantity, specialInstructions, loginWithKeycloak]);
 
     const currentPrice = selectedSize?.price ?? 0;
-    const totalPrice = (currentPrice * quantity).toFixed(2);
+    const totalPrice = currentPrice * quantity;
     
-    // Format price to USD
+    // Format price to VND
     const formatPrice = (price: number) => {
-        return price.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+        return `${Math.round(price).toLocaleString("vi-VN")} ₫`;
     };
     const restaurantHref = getRestaurantDetailHref(restaurant) ?? "/search?type=restaurants";
     const displayRating =
@@ -256,10 +253,10 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                                 </span>
                             </div>
                         )}
-                        {/* Price - Prominent in USD */}
+                        {/* Price - Prominent in VND */}
                         {selectedSize ? (
                             <p className="text-3xl md:text-4xl font-bold text-[#EE4D2D]">
-                                ${formatPrice(selectedSize.price)}
+                                {formatPrice(selectedSize.price)}
                             </p>
                         ) : (
                             <p className="text-lg font-semibold text-[#EE4D2D]">Please select a size</p>
@@ -308,11 +305,11 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-[#EE4D2D]">
-                                                            {formatPrice(size.price)} $
+                                                            {formatPrice(size.price)}
                                                         </span>
                                                         {index > 0 && priceDiff > 0 && (
                                                             <span className="text-sm text-gray-500">
-                                                                (+{formatPrice(priceDiff)} $)
+                                                                (+{formatPrice(priceDiff)})
                                                             </span>
                                                         )}
                                                     </div>
@@ -373,7 +370,7 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                                     className="flex-1 bg-[#EE4D2D] text-white font-bold py-4 px-8 rounded-lg hover:bg-[#EE4D2D]/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
                                     disabled={!selectedSize || isAdding || !isMounted}
                                 >
-                                    {isAdding ? "Adding..." : `Add to Cart • ${formatPrice(parseFloat(totalPrice))} $`}
+                                    {isAdding ? "Adding..." : `Add to Cart • ${formatPrice(totalPrice)}`}
                                 </button>
                             )}
                             {!isMounted && (

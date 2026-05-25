@@ -17,6 +17,10 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
     const restaurantHref = getRestaurantDetailHref(restaurant) ?? "/search?type=restaurants";
     const hasPhone = typeof restaurant.phone === "string" && restaurant.phone.trim().length > 0;
     const { theme } = useClientTheme();
+    const distanceMeters =
+        typeof restaurant.distance === "number" && Number.isFinite(restaurant.distance) && restaurant.distance >= 0
+            ? Math.round(restaurant.distance * 1000)
+            : null;
     
     return (
         <Link
@@ -94,14 +98,14 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
                     </p>
 
                     <div className={`mt-3 flex flex-wrap items-center gap-2 text-[12px] ${theme === "dark" ? "text-white/70" : "text-gray-600"}`}>
-                        {restaurant.distance != null ? (
+                        {distanceMeters != null ? (
                             <span
                                 className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-1 ${
                                     theme === "dark" ? "border-white/15 bg-white/5" : "border-gray-200 bg-gray-50"
                                 }`}
                             >
                                 <MapPin className={`h-3.5 w-3.5 ${theme === "dark" ? "text-white/60" : "text-gray-500"}`} />
-                                <span>{restaurant.distance.toFixed(1)} km</span>
+                                <span>{distanceMeters.toLocaleString()} m</span>
                             </span>
                         ) : null}
 
@@ -143,7 +147,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
 
                     <div className="mt-auto pt-4 flex items-center justify-between gap-3">
                         <span className={`whitespace-nowrap text-xs font-semibold ${theme === "dark" ? "text-white/60" : "text-gray-500"}`}>
-                            {restaurant.distance != null ? `${restaurant.distance.toFixed(1)} km away` : "Distance unavailable"}
+                            {distanceMeters != null ? `${distanceMeters.toLocaleString()} m away` : "Distance unavailable"}
                         </span>
 
                         <span

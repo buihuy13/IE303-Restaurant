@@ -11,12 +11,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-// Format price to USD
-const formatPriceUSD = (priceUSD: number): string => {
-    return priceUSD.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+// Format price to VND
+const formatPriceVND = (amount: number): string => {
+    return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 };
 
 interface OrderSummaryProps {
@@ -122,17 +119,17 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems
             <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
+                    <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping Fee</span>
                     <span className="text-gray-900 font-medium">
-                        {shippingFee === 0 ? "FREE" : `${formatPriceUSD(shippingFee)} $`}
+                        {shippingFee === 0 ? "FREE" : formatPriceVND(shippingFee)}
                     </span>
                 </div>
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
+                    <span className="text-gray-900 font-medium">{formatPriceVND(tax)}</span>
                 </div>
             </div>
 
@@ -166,7 +163,7 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems
             <div className="mb-6">
                 <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
+                    <span className="text-2xl font-bold text-brand-orange">{formatPriceVND(total)}</span>
                 </div>
             </div>
 

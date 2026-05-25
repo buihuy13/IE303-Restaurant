@@ -52,6 +52,7 @@ export const OrderStatusSidebar = ({
     const isUnpaid = paymentStatus === "pending";
     const needsPayment = isUnpaid && !isPaid; // Only show if explicitly pending and not paid
     const finalAmount = order?.finalAmount || 0;
+    const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
     const handleCancel = async () => {
         if (!canCancel || isCancelled) return;
@@ -197,7 +198,7 @@ export const OrderStatusSidebar = ({
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">Total Amount</span>
                             <span className="text-2xl font-bold text-brand-orange">
-                                ${finalAmount.toFixed(2)}
+                                {formatPriceVND(finalAmount)}
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-2">

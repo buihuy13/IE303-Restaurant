@@ -36,11 +36,8 @@ function getStatusTextClass(status: string): string {
     return "text-[#EE4D2D]";
 }
 
-function formatPriceUSD(amount: number): string {
-    return amount.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+function formatPriceVND(amount: number): string {
+    return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 }
 
 function mapOrdersToDisplay(apiOrders: Order[]): AccountOrderDisplay[] {
@@ -69,7 +66,7 @@ function mapOrdersToDisplay(apiOrders: Order[]): AccountOrderDisplay[] {
             uniqueKey,
             displayId: order.orderId || `#${index + 1}`,
             date: orderDate,
-            total: `$${formatPriceUSD(Number(order.finalAmount || 0))}`,
+            total: formatPriceVND(Number(order.finalAmount || 0)),
             status,
             statusClass: getStatusTextClass(status),
             orderCode: order.orderId,

@@ -116,6 +116,7 @@ export const MenuItemCard = memo(
         );
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+        const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
         const productHref = getProductDetailHref(item) ?? "/search?type=foods";
 
@@ -162,7 +163,7 @@ export const MenuItemCard = memo(
                     <div className="flex justify-between items-center mt-auto pt-2">
                         <p className="font-bold text-lg md:text-xl text-brand-orange">
                             {hasMultipleSizes && displayPrice ? "From " : ""}
-                            {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
+                            {displayPrice ? formatPriceVND(displayPrice) : "N/A"}
                         </p>
                         <Button
                             onClick={handleAddToCart}

@@ -54,10 +54,27 @@ export const useNotificationStore = create<NotificationStore>()(
                 };
 
                 set((state) => {
-                    // Check if notification already exists (prevent duplicates)
-                    const exists = state.notifications.some(
-                        (n) => n.orderId === newNotification.orderId && n.type === newNotification.type
-                    );
+                    // Check if notification already exists (prevent duplicates).
+                    // MESSAGE_RECEIVED must not be deduped by orderId because orderId is undefined for chat events.
+                    const exists = state.notifications.some((n) => {
+                        if (n.type !== newNotification.type) {
+                            return false;
+                        }
+
+                        if (newNotification.type === "MESSAGE_RECEIVED") {
+                            const createdAtMs =
+                                n.createdAt instanceof Date ? n.createdAt.getTime() : new Date(n.createdAt).getTime();
+                            const isNearInTime = Math.abs(createdAtMs - newNotification.createdAt.getTime()) < 3000;
+                            return (
+                                n.roomId === newNotification.roomId &&
+                                n.senderId === newNotification.senderId &&
+                                n.message === newNotification.message &&
+                                isNearInTime
+                            );
+                        }
+
+                        return n.orderId === newNotification.orderId;
+                    });
                     if (exists) {
                         return state;
                     }
@@ -134,7 +151,9 @@ export const useNotificationStore = create<NotificationStore>()(
             },
 
             unreadCount: () => {
-                return get().notifications.filter((notif) => !notif.read).length;
+                return get().notifications.filter(
+                    (notif) => !notif.read && notif.type !== "MESSAGE_RECEIVED",
+                ).length;
             },
 
             orderUnreadCount: () => {

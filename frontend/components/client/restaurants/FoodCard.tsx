@@ -119,17 +119,16 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         return product.totalReview > 20 && product.rating >= 4.0;
     }, [product.totalReview, product.rating]);
 
-    // Validate and format delivery time
+    // Show duration exactly from backend (no frontend fallback range).
     const deliveryTime = useMemo(() => {
         const duration = restaurant?.duration;
-        if (!duration || typeof duration !== "number") {
+        if (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0) {
             return null;
         }
-        // If duration is unreasonable (> 60 minutes), show default range
-        if (duration > 60 || duration <= 0) {
-            return "20-30"; // Default reasonable range
+        if (Number.isInteger(duration)) {
+            return duration.toString();
         }
-        return Math.round(duration).toString();
+        return duration.toFixed(1).replace(/\.0$/, "");
     }, [restaurant?.duration]);
 
     const addToCartButton = (compact?: boolean) => (

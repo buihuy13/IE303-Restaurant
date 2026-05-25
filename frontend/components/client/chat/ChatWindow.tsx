@@ -1,13 +1,14 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { sortChatMessages, toTimestampMs } from "@/lib/chat/messageSort";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import { Message } from "@/types";
 import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const normalizeId = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 const isSameId = (left: string | null | undefined, right: string | null | undefined) =>
@@ -24,98 +25,6 @@ const normalizeMessageParticipantIds = (message: Message, currentUserId: string,
         return { ...message, senderId: partnerId, receiverId: currentUserId };
     }
     return message;
-};
-const toTimestampMs = (value: unknown) => {
-    if (value == null) return 0;
-    if (value instanceof Date) {
-        const ms = value.getTime();
-        return Number.isFinite(ms) ? ms : 0;
-    }
-    if (typeof value === "number") {
-        return Number.isFinite(value) ? value : 0;
-    }
-    const raw = typeof value === "string" ? value.trim() : String(value).trim();
-    if (!raw) return 0;
-    if (/^\d+$/.test(raw)) {
-        const numeric = Number(raw);
-        if (Number.isFinite(numeric)) {
-            return raw.length <= 10 ? numeric * 1000 : numeric;
-        }
-    }
-    const normalized = raw.replace(" ", "T").replace(/\.(\d{3})\d+/, ".$1");
-    const needsTimezone = !/[zZ]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized);
-    const withTimezone = needsTimezone ? `${normalized}Z` : normalized;
-    const parsed = new Date(withTimezone).getTime();
-    if (!Number.isNaN(parsed)) {
-        return parsed;
-    }
-
-    if (typeof value === "object") {
-        const candidate = value as {
-            epochMilli?: number;
-            epochSecond?: number;
-            nano?: number;
-            seconds?: number;
-            nanos?: number;
-            year?: number;
-            monthValue?: number;
-            month?: number;
-            dayOfMonth?: number;
-            day?: number;
-            hour?: number;
-            minute?: number;
-            second?: number;
-        };
-        if (typeof candidate.epochMilli === "number" && Number.isFinite(candidate.epochMilli)) {
-            return candidate.epochMilli;
-        }
-        const secondPart =
-            typeof candidate.epochSecond === "number"
-                ? candidate.epochSecond
-                : typeof candidate.seconds === "number"
-                  ? candidate.seconds
-                  : null;
-        if (secondPart != null && Number.isFinite(secondPart)) {
-            const nanoPart =
-                typeof candidate.nano === "number"
-                    ? candidate.nano
-                    : typeof candidate.nanos === "number"
-                      ? candidate.nanos
-                      : 0;
-            return secondPart * 1000 + Math.floor(nanoPart / 1_000_000);
-        }
-
-        const year = typeof candidate.year === "number" ? candidate.year : null;
-        const monthRaw =
-            typeof candidate.monthValue === "number"
-                ? candidate.monthValue
-                : typeof candidate.month === "number"
-                  ? candidate.month
-                  : null;
-        const day =
-            typeof candidate.dayOfMonth === "number"
-                ? candidate.dayOfMonth
-                : typeof candidate.day === "number"
-                  ? candidate.day
-                  : null;
-        if (year != null && monthRaw != null && day != null) {
-            const hour = typeof candidate.hour === "number" ? candidate.hour : 0;
-            const minute = typeof candidate.minute === "number" ? candidate.minute : 0;
-            const second = typeof candidate.second === "number" ? candidate.second : 0;
-            const nano =
-                typeof candidate.nano === "number"
-                    ? candidate.nano
-                    : typeof candidate.nanos === "number"
-                      ? candidate.nanos
-                      : 0;
-            const utcMs = Date.UTC(year, monthRaw - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
-            if (Number.isFinite(utcMs)) {
-                return utcMs;
-            }
-        }
-    }
-
-    return 0;
 };
 
 interface ChatWindowProps {
@@ -147,7 +56,7 @@ export default function ChatWindow({
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const isInitialLoadRef = useRef(true);
-    const lastMessageCountRef = useRef(0);
+    const lastScrollAnchorRef = useRef("");
     const shouldAutoScrollRef = useRef(true);
     const hasMarkedAsReadRef = useRef(false);
 
@@ -172,63 +81,26 @@ export default function ChatWindow({
         };
     }, [partnerId]);
 
-    // Check if user is near bottom of scroll container
     const isNearBottom = () => {
         if (!messagesContainerRef.current) return true;
         const container = messagesContainerRef.current;
-        const threshold = 100;
-        return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+        const threshold = 120;
+        return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
     };
 
-    // Scroll to bottom helper
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-        if (messagesContainerRef.current) {
-            const container = messagesContainerRef.current;
-            container.scrollTo({
-                top: container.scrollHeight,
-                behavior,
-            });
-        }
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        messagesEndRef.current?.scrollIntoView({ behavior, block: "end", inline: "nearest" });
+        container.scrollTop = container.scrollHeight;
     };
 
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        if (isLoading) {
-            isInitialLoadRef.current = true;
-            return;
-        }
-
-        // Use filtered and sorted messages for scroll detection
-        const filteredMessages = messages.filter((message) => {
-            const isFromCurrentUser = isSameId(message.senderId, currentUserId);
-            const isToCurrentUser = isSameId(message.receiverId, currentUserId);
-            const isFromPartner = isSameId(message.senderId, partnerId);
-            const isToPartner = isSameId(message.receiverId, partnerId);
-            return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
-        });
-
-        const messageCount = filteredMessages.length;
-        const isNewMessage = messageCount > lastMessageCountRef.current;
-        lastMessageCountRef.current = messageCount;
-
-        if (isInitialLoadRef.current && !isLoading && filteredMessages.length > 0) {
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    scrollToBottom("auto");
-                    isInitialLoadRef.current = false;
-                    shouldAutoScrollRef.current = true;
-                }, 50);
-            });
-        } else if (!isLoading && filteredMessages.length > 0 && isNewMessage) {
-            if (shouldAutoScrollRef.current || isNearBottom()) {
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        scrollToBottom("smooth");
-                    }, 30);
-                });
-            }
-        }
-    }, [messages, isLoading, currentUserId, partnerId]);
+    const getScrollAnchor = (list: Message[]) => {
+        if (list.length === 0) return "";
+        const last = list[list.length - 1];
+        return `${last.id}|${last.content}|${toTimestampMs(last.timestamp)}`;
+    };
 
     // Mark messages as read
     useEffect(() => {
@@ -241,9 +113,11 @@ export default function ChatWindow({
         }
     }, [isLoading, onMarkAsRead]);
 
-    // Reset hasMarkedAsReadRef when room changes
     useEffect(() => {
         hasMarkedAsReadRef.current = false;
+        isInitialLoadRef.current = true;
+        lastScrollAnchorRef.current = "";
+        shouldAutoScrollRef.current = true;
     }, [partnerId]);
 
     // Track scroll position
@@ -303,7 +177,7 @@ export default function ChatWindow({
             const sameSender = isSameId(m.senderId, message.senderId);
             const sameReceiver = isSameId(m.receiverId, message.receiverId);
             const timeDiff = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(message.timestamp));
-            const sameTime = timeDiff < 1000; // Within 1 second
+            const sameTime = timeDiff < 250; // Tight window to avoid collapsing legit quick messages
             
             return sameId || (sameContent && sameSender && sameReceiver && sameTime);
         });
@@ -315,10 +189,54 @@ export default function ChatWindow({
         return acc;
     }, [] as Message[]);
 
-    // Sort messages by timestamp
-    const sortedMessages = [...uniqueMessages].sort(
-        (a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp)
-    );
+    const sortedMessages = sortChatMessages(uniqueMessages);
+
+    useLayoutEffect(() => {
+        if (isLoading) {
+            return;
+        }
+
+        const anchor = getScrollAnchor(sortedMessages);
+        if (!anchor) {
+            return;
+        }
+
+        const anchorChanged = anchor !== lastScrollAnchorRef.current;
+        const isInitial = isInitialLoadRef.current;
+        if (!anchorChanged && !isInitial) {
+            return;
+        }
+
+        lastScrollAnchorRef.current = anchor;
+
+        const shouldScroll = isInitial || shouldAutoScrollRef.current || isNearBottom();
+        if (!shouldScroll) {
+            if (isInitial) {
+                isInitialLoadRef.current = false;
+            }
+            return;
+        }
+
+        const behavior: ScrollBehavior = isInitial ? "auto" : "smooth";
+
+        const runScroll = () => {
+            scrollToBottom(behavior);
+            if (messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            }
+        };
+
+        runScroll();
+        requestAnimationFrame(runScroll);
+        const timeoutId = window.setTimeout(runScroll, 100);
+
+        if (isInitial) {
+            isInitialLoadRef.current = false;
+            shouldAutoScrollRef.current = true;
+        }
+
+        return () => window.clearTimeout(timeoutId);
+    }, [sortedMessages, isLoading]);
 
     return (
         <div className="flex h-full flex-col bg-white">
@@ -411,7 +329,7 @@ export default function ChatWindow({
                                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                             </div>
                         )}
-                        <div ref={messagesEndRef} />
+                        <div ref={messagesEndRef} className="h-px w-full shrink-0" aria-hidden />
                     </>
                 )}
             </div>

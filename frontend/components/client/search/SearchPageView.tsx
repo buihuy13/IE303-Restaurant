@@ -7,6 +7,7 @@ import { FoodCard } from "@/components/client/restaurants/FoodCard";
 import { RestaurantCard } from "@/components/client/restaurants/RestaurantCard";
 import { RestaurantCardSkeleton } from "@/components/client/restaurants/RestaurantCardSkeleton";
 import { ActiveFilterPills } from "@/components/client/search/ActiveFilterPills";
+import { MoodRecommendationModal } from "@/components/client/search/MoodRecommendationModal";
 import { SearchEmptyState } from "@/components/client/search/SearchEmptyState";
 import SearchFilters from "@/components/client/search/SearchFilters";
 import { SearchResultsHeader } from "@/components/client/search/SearchResultsHeader";
@@ -15,7 +16,7 @@ import { useClientTheme } from "@/components/providers/ClientThemeProvider";
 import { Button } from "@/components/ui/Button";
 import { getRestaurantDetailHref } from "@/lib/utils/restaurantNavigation";
 import type { Category, Product, Restaurant } from "@/types";
-import { Filter, Flame, LayoutGrid, List } from "lucide-react";
+import { Filter, Flame, LayoutGrid, List, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -58,6 +59,18 @@ export interface SearchPageViewProps {
     totalPages: number;
     onPageChange: (page: number) => void;
     onReset: () => void;
+    moodModalOpen: boolean;
+    onOpenMoodModal: () => void;
+    onCloseMoodModal: () => void;
+    moodOptions: string[];
+    moodOptionsLoading: boolean;
+    selectedMood: string | null;
+    moodSummary: string | null;
+    moodProducts: Product[];
+    moodError: string | null;
+    moodLoading: boolean;
+    onSelectMood: (mood: string) => void | Promise<void>;
+    onClearMoodRecommendation: () => void;
 }
 
 export function SearchPageView({
@@ -77,6 +90,18 @@ export function SearchPageView({
     totalPages,
     onPageChange,
     onReset,
+    moodModalOpen,
+    onOpenMoodModal,
+    onCloseMoodModal,
+    moodOptions,
+    moodOptionsLoading,
+    selectedMood,
+    moodSummary,
+    moodProducts,
+    moodError,
+    moodLoading,
+    onSelectMood,
+    onClearMoodRecommendation,
 }: SearchPageViewProps) {
     const { theme } = useClientTheme();
     const router = useRouter();
@@ -205,6 +230,8 @@ export function SearchPageView({
 
     const displayProducts = searchType === "foods" ? filteredFoodsWithQuickFilters : filteredProducts;
     const displayRestaurants = searchType === "restaurants" ? filteredRestaurantsWithQuickFilters : restaurants;
+    const isMoodRecommendationActive = searchType === "foods" && !!selectedMood;
+    const moodDisplayProducts = isMoodRecommendationActive ? moodProducts : displayProducts;
     const displayTotalElements = hasClientOnlyFilters
         ? searchType === "foods"
             ? displayProducts.length
@@ -304,39 +331,81 @@ export function SearchPageView({
                             <ActiveFilterPills />
                             <div className="mb-4 flex items-center justify-between gap-3">
                                 <SearchSortBar searchType={searchType} />
-                                {searchType === "foods" && (
-                                    <div className={`inline-flex shrink-0 rounded-full border p-1 ${theme === "dark" ? "border-white/14 bg-white/6" : "border-gray-200 bg-white"}`}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setViewMode("grid")}
-                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
-                                                viewMode === "grid"
-                                                    ? "bg-brand-orange text-white"
-                                                    : theme === "dark"
-                                                      ? "text-white/70"
-                                                      : "text-gray-700"
-                                            }`}
-                                        >
-                                            <LayoutGrid className="h-3.5 w-3.5" />
-                                            Grid
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setViewMode("list")}
-                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
-                                                viewMode === "list"
-                                                    ? "bg-brand-orange text-white"
-                                                    : theme === "dark"
-                                                      ? "text-white/70"
-                                                      : "text-gray-700"
-                                            }`}
-                                        >
-                                            <List className="h-3.5 w-3.5" />
-                                            List
-                                        </button>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="brandOutline"
+                                        size="sm"
+                                        className="rounded-full"
+                                        onClick={onOpenMoodModal}
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Gợi ý theo tâm trạng
+                                    </Button>
+                                    {searchType === "foods" && (
+                                        <div className={`inline-flex shrink-0 rounded-full border p-1 ${theme === "dark" ? "border-white/14 bg-white/6" : "border-gray-200 bg-white"}`}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewMode("grid")}
+                                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
+                                                    viewMode === "grid"
+                                                        ? "bg-brand-orange text-white"
+                                                        : theme === "dark"
+                                                          ? "text-white/70"
+                                                          : "text-gray-700"
+                                                }`}
+                                            >
+                                                <LayoutGrid className="h-3.5 w-3.5" />
+                                                Grid
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewMode("list")}
+                                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
+                                                    viewMode === "list"
+                                                        ? "bg-brand-orange text-white"
+                                                        : theme === "dark"
+                                                          ? "text-white/70"
+                                                          : "text-gray-700"
+                                                }`}
+                                            >
+                                                <List className="h-3.5 w-3.5" />
+                                                List
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+
+                            {isMoodRecommendationActive && (
+                                <div
+                                    className={`mb-4 rounded-2xl border px-4 py-3 ${
+                                        theme === "dark"
+                                            ? "border-white/15 bg-white/6 text-white/85"
+                                            : "border-brand-orange/20 bg-brand-orange/5 text-gray-800"
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-semibold">
+                                                Gợi ý theo tâm trạng: <span className="text-brand-orange">{selectedMood}</span>
+                                            </p>
+                                            {moodSummary && <p className="mt-1 text-sm">{moodSummary}</p>}
+                                            {moodLoading && <p className="mt-1 text-sm">Đang lấy gợi ý món ăn...</p>}
+                                            {moodError && <p className="mt-1 text-sm text-red-500">{moodError}</p>}
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="brandGhost"
+                                            size="sm"
+                                            className="whitespace-nowrap"
+                                            onClick={onClearMoodRecommendation}
+                                        >
+                                            Xóa gợi ý
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
 
                             {!hasActiveFilters && (
                                 <div className="mb-4">
@@ -442,7 +511,7 @@ export function SearchPageView({
                                 </div>
                             )}
 
-                            {productsLoading ? (
+                            {productsLoading || (searchType === "foods" && moodLoading && isMoodRecommendationActive) ? (
                                 <div
                                     className={
                                         searchType === "restaurants"
@@ -483,10 +552,10 @@ export function SearchPageView({
                                 ) : (
                                     <SearchEmptyState query={query} />
                                 )
-                            ) : displayProducts.length > 0 ? (
+                            ) : moodDisplayProducts.length > 0 ? (
                                 <>
                                     <div className={viewMode === "list" ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-6"}>
-                                        {displayProducts.map((product) => (
+                                        {moodDisplayProducts.map((product) => (
                                             viewMode === "list" ? (
                                                 <FoodCard key={product.id} product={product} layout="flex" />
                                             ) : (
@@ -494,7 +563,7 @@ export function SearchPageView({
                                             )
                                         ))}
                                     </div>
-                                    {displayTotalPages > 1 && (
+                                    {!isMoodRecommendationActive && displayTotalPages > 1 && (
                                         <div className="mt-10 flex justify-center">
                                             <Pagination
                                                 currentPage={currentPageNumber}
@@ -513,6 +582,16 @@ export function SearchPageView({
                     </div>
                 </div>
             </div>
+            <MoodRecommendationModal
+                open={moodModalOpen}
+                moods={moodOptions}
+                loading={moodOptionsLoading}
+                submitting={moodLoading}
+                selectedMood={selectedMood}
+                errorMessage={moodError}
+                onClose={onCloseMoodModal}
+                onSelectMood={onSelectMood}
+            />
         </div>
     );
 }
