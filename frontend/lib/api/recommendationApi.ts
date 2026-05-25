@@ -128,15 +128,14 @@ export const parseMoodRecommendationResponse = (
             ? parsed.recommendations
                   .map((item) => {
                       if (!item || typeof item !== "object") return null;
-                      const record = item as Record<string, unknown>;
+                      const record = item as unknown as Record<string, unknown>;
                       const productId = typeof record.productId === "string" ? record.productId.trim() : "";
                       if (!productId) return null;
-                      return {
-                          productId,
-                          productName: typeof record.productName === "string" ? record.productName : undefined,
-                          score: typeof record.score === "number" ? record.score : undefined,
-                          reason: typeof record.reason === "string" ? record.reason : undefined,
-                      } satisfies MoodFoodRecommendationItem;
+                      const result: MoodFoodRecommendationItem = { productId };
+                      if (typeof record.productName === "string") result.productName = record.productName;
+                      if (typeof record.score === "number") result.score = record.score;
+                      if (typeof record.reason === "string") result.reason = record.reason;
+                      return result;
                   })
                   .filter((item): item is MoodFoodRecommendationItem => item !== null)
             : [];
