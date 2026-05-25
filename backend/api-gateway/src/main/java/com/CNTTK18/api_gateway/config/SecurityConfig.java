@@ -31,6 +31,7 @@ public class SecurityConfig {
         "/ws/**",
         "/api/users/register",
         "/api/payments/webhook",
+        "/payment/payos-webhook",
         "/api/sse/**"
     };
 

@@ -1,5 +1,6 @@
 package com.CNTTK18.paymentservice.service.Impl;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -12,7 +13,6 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.CNTTK18.Common.Event.PaymentStatusSyncContract;
 import com.CNTTK18.Common.Event.PaymentStatusSyncEvent;
-import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
 import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
 import com.CNTTK18.paymentservice.exception.PaymentCreationException;
@@ -20,13 +20,13 @@ import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
 import com.CNTTK18.paymentservice.service.PaymentService;
-import com.CNTTK18.paymentservice.utils.WebhookUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.webhooks.WebhookData;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +36,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PayOS payOS;
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final WebhookUtils webhookUtils;
-    private final PayOSProperties payOSProperties;
     private final RabbitTemplate rabbitTemplate;
 
     @Override
@@ -91,24 +89,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public boolean processWebhook(Map<String, Object> webhookBody, String inputSignature) {
-        // 1. Dùng Utils để tính toán Signature
-        boolean isValid = webhookUtils.isValidData(webhookBody, inputSignature, payOSProperties.getChecksumKey());
-
-        if (!isValid) {
-            log.warn("Lỗi Xác Thực Webhook: Chữ ký không khớp!");
+        WebhookData webhookData = verifyWebhook(webhookBody, inputSignature);
+        if (webhookData == null) {
             return false;
         }
 
-        Map<?, ?> dataMap = extractWebhookData(webhookBody);
-        if (dataMap == null) {
-            log.warn("Webhook thiếu object data, bỏ qua xử lý");
-            return false;
-        }
-
-        // 2. Lấy thông tin orderCode từ payload webhook, ép kiểu theo chuẩn
-        Long orderCode = parseLong(dataMap.get("orderCode"));
+        // 2. Lấy thông tin orderCode từ payload webhook đã được PayOS SDK xác thực.
+        Long orderCode = webhookData.getOrderCode();
         if (orderCode == null) {
-            log.warn("Webhook thiếu orderCode hoặc sai định dạng: {}", dataMap.get("orderCode"));
+            log.warn("Webhook thiếu orderCode, bỏ qua xử lý");
             return false;
         }
 
@@ -125,14 +114,14 @@ public class PaymentServiceImpl implements PaymentService {
             return false;
         }
 
-        Boolean paymentSuccess = resolvePaymentSuccess(webhookBody, dataMap);
+        Boolean paymentSuccess = resolvePaymentSuccess(webhookBody, webhookData);
         if (paymentSuccess == null) {
             log.warn("Webhook không xác định rõ trạng thái thanh toán cho orderCode={}, bỏ qua cập nhật", orderCode);
             return false;
         }
         PaymentStatus nextStatus = paymentSuccess ? PaymentStatus.PAID : PaymentStatus.CANCELLED;
 
-        String webhookPaymentLinkId = asString(dataMap.get("paymentLinkId"));
+        String webhookPaymentLinkId = webhookData.getPaymentLinkId();
         if (webhookPaymentLinkId != null && !webhookPaymentLinkId.isBlank()) {
             transaction.setPaymentLinkId(webhookPaymentLinkId);
         }
@@ -152,16 +141,27 @@ public class PaymentServiceImpl implements PaymentService {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<?, ?> extractWebhookData(Map<String, Object> webhookBody) {
-        Object dataObj = webhookBody.get("data");
-        if (dataObj instanceof Map<?, ?>) {
-            return (Map<?, ?>) dataObj;
+    private WebhookData verifyWebhook(Map<String, Object> webhookBody, String inputSignature) {
+        if (webhookBody == null) {
+            log.warn("Webhook body rỗng, bỏ qua xử lý");
+            return null;
         }
-        return null;
+
+        Map<String, Object> normalizedBody = webhookBody;
+        if (asString(webhookBody.get("signature")) == null && inputSignature != null && !inputSignature.isBlank()) {
+            normalizedBody = new LinkedHashMap<>(webhookBody);
+            normalizedBody.put("signature", inputSignature);
+        }
+
+        try {
+            return payOS.webhooks().verify(normalizedBody);
+        } catch (Exception ex) {
+            log.warn("Lỗi xác thực webhook PayOS: {}", ex.getMessage());
+            return null;
+        }
     }
 
-    private Boolean resolvePaymentSuccess(Map<String, Object> webhookBody, Map<?, ?> dataMap) {
+    private Boolean resolvePaymentSuccess(Map<String, Object> webhookBody, WebhookData webhookData) {
         Object successObj = webhookBody.get("success");
         if (successObj instanceof Boolean) {
             return (Boolean) successObj;
@@ -172,23 +172,12 @@ public class PaymentServiceImpl implements PaymentService {
             return true;
         }
 
-        String dataCode = asString(dataMap.get("code"));
+        String dataCode = webhookData.getCode();
         if ("00".equals(dataCode) || "0".equals(dataCode)) {
             return true;
         }
 
-        String status = asString(dataMap.get("status"));
-        if (status != null) {
-            String normalized = status.trim().toUpperCase(Locale.ROOT);
-            if (normalized.contains("PAID") || normalized.contains("SUCCESS")) {
-                return true;
-            }
-            if (normalized.contains("CANCEL") || normalized.contains("FAIL") || normalized.contains("EXPIRED")) {
-                return false;
-            }
-        }
-
-        String desc = asString(webhookBody.get("desc"));
+        String desc = webhookData.getDesc() != null ? webhookData.getDesc() : asString(webhookBody.get("desc"));
         if (desc != null) {
             String normalized = desc.trim().toUpperCase(Locale.ROOT);
             if (normalized.contains("SUCCESS")) {
@@ -231,17 +220,6 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
         return false;
-    }
-
-    private Long parseLong(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return Long.valueOf(value.toString());
-        } catch (NumberFormatException ex) {
-            return null;
-        }
     }
 
     private String asString(Object value) {
