@@ -11,6 +11,8 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
+const normalizeMatchKey = (value: unknown): string => String(value ?? "").trim().toLowerCase().replace(/-/g, "");
+
 export default function OrdersPageClient() {
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -75,6 +77,9 @@ export default function OrdersPageClient() {
                 typedOrder.id?.toString() ||
                 typedOrder._id?.toString() ||
                 `order-${orderIndex + 1}`;
+            const rawSlug = typedOrder.slug?.toString().trim() || "";
+            const safeSlug =
+                rawSlug && normalizeMatchKey(rawSlug) === normalizeMatchKey(orderId) ? rawSlug : undefined;
 
             const restaurantName = typedOrder.restaurant?.name || typedOrder.restaurantName || "Restaurant";
             const restaurantId =
@@ -115,7 +120,7 @@ export default function OrdersPageClient() {
 
             return {
                 id: orderId,
-                slug: typedOrder.slug || undefined,
+                slug: safeSlug,
                 createdAt: typedOrder.createdAt || typedOrder.updatedAt || new Date().toISOString(),
                 totalAmount,
                 items,
