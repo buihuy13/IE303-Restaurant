@@ -18,7 +18,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
                 <span className={`text-sm font-semibold ${order.statusClass}`}>{order.status}</span>
                 {order.status && !order.status.toLowerCase().includes("cancelled") && (
                     <Link
-                        href={`/delivery/${order.slug || order.orderCode || order.id}`}
+                        href={`/delivery/${order.id || order.slug || order.orderCode}`}
                         className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-100"
                     >
                         <Truck className="w-3 h-3" />
@@ -26,7 +26,7 @@ export function OrderListItem(props: { order: AccountOrderDisplay }) {
                     </Link>
                 )}
                 <Link
-                    href={`/orders/${order.slug || order.orderCode || order.id}`}
+                    href={`/orders/${order.id || order.slug || order.orderCode}`}
                     className="text-sm font-semibold text-brand-orange hover:underline"
                 >
                     View Details

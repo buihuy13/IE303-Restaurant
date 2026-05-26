@@ -374,7 +374,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                             {order.status && order.status !== OrderStatus.CANCELLED && (
                                                 <div className="mt-3">
                                                     <Link
-                                                        href={`/delivery/${order.slug || order.id}`}
+                                                        href={`/delivery/${order.id || order.slug}`}
                                                         className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-100"
                                                     >
                                                         <Truck className="w-4 h-4" />
@@ -419,7 +419,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                             </p>
                                             <div className="flex items-center gap-3">
                                                 <Link
-                                                    href={`/orders/${order.slug || order.id}`}
+                                                    href={`/orders/${order.id || order.slug}`}
                                                     className="rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-50"
                                                 >
                                                     View Details
