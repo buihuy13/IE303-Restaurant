@@ -1,4 +1,5 @@
 import type { CreatePaymentRequest, PayOSPaymentLinkResponse } from "@/types/payment.type";
+import { isCanonicalUuid } from "@/lib/utils/uuid";
 import api from "../axios";
 import { APP_ORIGIN } from "../config/publicRuntime";
 
@@ -20,8 +21,6 @@ function defaultPaymentOrigin(): string {
     }
     return APP_ORIGIN || "http://localhost:3000";
 }
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** PayOS API rejects `description` longer than 25 characters. */
 const PAYOS_DESCRIPTION_MAX_LEN = 25;
@@ -53,10 +52,10 @@ export const paymentApi = {
     createPayment: async (paymentData: CreatePaymentRequest): Promise<PayOSPaymentLinkResponse> => {
         const orderId = String(paymentData.orderId ?? "").trim();
         const userId = String(paymentData.userId ?? "").trim();
-        if (!orderId || !UUID_REGEX.test(orderId)) {
+        if (!orderId || !isCanonicalUuid(orderId)) {
             throw new Error("Missing or invalid order id for payment. Please place the order again.");
         }
-        if (!userId || !UUID_REGEX.test(userId)) {
+        if (!userId || !isCanonicalUuid(userId)) {
             throw new Error("Missing or invalid user id for payment. Please sign in again.");
         }
 

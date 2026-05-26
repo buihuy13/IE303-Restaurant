@@ -15,4 +15,6 @@ public interface RecommendationService {
     public List<MessageResponse> generateFoodDescription(String foodName);
 
     public ReviewSummarizeResponse summarizeReviews(ReviewRequest reviewRequest);
+
+    public List<String> recommendEmotions();
 }

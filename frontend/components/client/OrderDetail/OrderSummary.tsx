@@ -2,6 +2,8 @@
 
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { getImageUrl } from "@/lib/utils";
+import { isCanonicalUuid } from "@/lib/utils/uuid";
 import { Order } from "@/types/order.type";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
@@ -14,12 +16,9 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     const [isAdding, setIsAdding] = useState(false);
     const isProcessingRef = useRef(false);
 
-    // Format price to USD
-    const formatPrice = (priceUSD: number): string => {
-        return priceUSD.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+    // Format price to VND
+    const formatPrice = (amount: number): string => {
+        return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
     };
 
     const originalPrice = Number(order.totalAmount ?? 0);
@@ -27,6 +26,35 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     const shipping = Number(order.deliveryFee ?? 0);
     const tax = Number(order.tax ?? 0);
     const total = Number(order.finalAmount ?? originalPrice - savings + shipping + tax);
+
+    const parseProductIdOptions = (
+        productId: string,
+    ): { imageURL?: string; sizeId?: string; sizeName?: string; customizations?: string } | null => {
+        try {
+            const separatorIndex = productId.indexOf("--");
+            if (separatorIndex === -1) return null;
+            const encoded = productId.slice(separatorIndex + 2);
+            const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = base64 + "===".slice((base64.length + 3) % 4);
+            const binary = atob(padded);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const json = new TextDecoder().decode(bytes);
+            const parsed = JSON.parse(json);
+            if (!parsed || typeof parsed !== "object") return null;
+            const row = parsed as Record<string, unknown>;
+            return {
+                imageURL: typeof row.imageURL === "string" ? row.imageURL : undefined,
+                sizeId: typeof row.sizeId === "string" ? row.sizeId : undefined,
+                sizeName: typeof row.sizeName === "string" ? row.sizeName : undefined,
+                customizations: typeof row.customizations === "string" ? row.customizations : undefined,
+            };
+        } catch {
+            return null;
+        }
+    };
 
     const handleBuyAgain = useCallback(async () => {
         // Prevent double clicks using both state and ref
@@ -67,31 +95,62 @@ export const OrderSummary = ({ order }: { order: Order }) => {
         }
 
         try {
+            let successCount = 0;
+            let skippedMissingSize = 0;
+
             // Add all items from order to cart
             for (const item of order.items) {
                 try {
+                    const parsedOptions = parseProductIdOptions(item.productId);
+                    const resolvedSizeId = item.sizeId || parsedOptions?.sizeId;
+                    const resolvedSizeName = item.sizeName || parsedOptions?.sizeName;
+                    const resolvedCustomizations = item.customizations || parsedOptions?.customizations;
+
+                    if (!resolvedSizeId || !isCanonicalUuid(resolvedSizeId)) {
+                        skippedMissingSize += 1;
+                        continue;
+                    }
+
+                    const imageSource =
+                        item.imageURL ||
+                        item.cartItemImage ||
+                        parsedOptions?.imageURL ||
+                        "/placeholder.png";
+
                     await addItem(
                         {
                             id: item.productId,
                             name: item.productName,
                             price: item.price,
-                            image: "/placeholder.png", // Order items may not have imageURL
+                            image: getImageUrl(imageSource),
                             restaurantId: restaurantId,
                             restaurantName: order.restaurant?.name || "Restaurant",
-                            customizations: item.customizations,
+                            sizeId: resolvedSizeId,
+                            sizeName: resolvedSizeName,
+                            customizations: resolvedCustomizations,
                         },
                         item.quantity
                     );
+                    successCount += 1;
                 } catch (itemError) {
                     console.error(`Failed to add item ${item.productName}:`, itemError);
                     // Continue with other items even if one fails
                 }
             }
 
+            if (successCount === 0) {
+                toast.error("Unable to reorder because items are missing valid size.");
+                return;
+            }
+
             // Wait a bit for cart to sync with backend
             await new Promise((resolve) => setTimeout(resolve, 500));
 
-            toast.success(`Added ${order.items.length} item(s) to your cart.`);
+            if (skippedMissingSize > 0) {
+                toast.success(`Added ${successCount} item(s). Skipped ${skippedMissingSize} item(s) missing size.`);
+            } else {
+                toast.success(`Added ${successCount} item(s) to your cart.`);
+            }
 
             // Navigate to checkout page
             router.push(`/payment?restaurantId=${restaurantId}`);
@@ -110,24 +169,24 @@ export const OrderSummary = ({ order }: { order: Order }) => {
             <div className="space-y-3 text-gray-600">
                 <div className="flex justify-between">
                     <span>Original Price</span>
-                    <span className="text-right">${formatPrice(originalPrice)}</span>
+                    <span className="text-right">{formatPrice(originalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Savings</span>
-                    <span className="text-right text-green-600">-${formatPrice(savings)}</span>
+                    <span className="text-right text-green-600">- {formatPrice(savings)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span className="text-right">{shipping === 0 ? "FREE" : `$${formatPrice(shipping)}`}</span>
+                    <span className="text-right">{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Estimated Sales Tax</span>
-                    <span className="text-right">${formatPrice(tax)}</span>
+                    <span className="text-right">{formatPrice(tax)}</span>
                 </div>
             </div>
             <div className="flex justify-between font-bold text-2xl mt-4 pt-4 border-t border-gray-200">
                 <span className="text-gray-900">Total</span>
-                <span className="text-brand-orange text-right">${formatPrice(total)}</span>
+                <span className="text-brand-orange text-right">{formatPrice(total)}</span>
             </div>
             <button
                 onClick={handleBuyAgain}

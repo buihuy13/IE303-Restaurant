@@ -3,6 +3,12 @@
 import { useChatSocketContext } from "@/components/providers/ChatProvider";
 import { authApi } from "@/lib/api/authApi";
 import { chatApi } from "@/lib/api/chatApi";
+import {
+    mergeChatMessages,
+    reconcileSentMessageTimestamp,
+    sortChatMessages,
+    toTimestampMs,
+} from "@/lib/chat/messageSort";
 import { useChatStore } from "@/stores/useChatStore";
 import { ChatRoom, Message, MessageDTO } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,104 +20,6 @@ const normalizeId = (value: string | null | undefined) => (value ?? "").trim().t
 const isSameId = (left: string | null | undefined, right: string | null | undefined) =>
     normalizeId(left) === normalizeId(right);
 const normalizeText = (value: string | null | undefined) => (value ?? "").trim();
-const toTimestampMs = (value: unknown) => {
-    if (value == null) return 0;
-    if (value instanceof Date) {
-        const ms = value.getTime();
-        return Number.isFinite(ms) ? ms : 0;
-    }
-    if (typeof value === "number") {
-        return Number.isFinite(value) ? value : 0;
-    }
-    const raw = typeof value === "string" ? value.trim() : String(value).trim();
-    if (!raw) return 0;
-    // Accept unix epoch as string (seconds or milliseconds).
-    if (/^\d+$/.test(raw)) {
-        const numeric = Number(raw);
-        if (Number.isFinite(numeric)) {
-            return raw.length <= 10 ? numeric * 1000 : numeric;
-        }
-    }
-    const normalized = raw
-        .replace(" ", "T")
-        // Keep at most millisecond precision so Date parsing is stable in browsers.
-        .replace(/\.(\d{3})\d+/, ".$1");
-    const needsTimezone = !/[zZ]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized);
-    const withTimezone = needsTimezone ? `${normalized}Z` : normalized;
-    const parsed = new Date(withTimezone).getTime();
-    if (!Number.isNaN(parsed)) {
-        return parsed;
-    }
-
-    // Handle object-like timestamps from some websocket serializers.
-    if (typeof value === "object") {
-        const candidate = value as {
-            epochMilli?: number;
-            epochSecond?: number;
-            nano?: number;
-            seconds?: number;
-            nanos?: number;
-            year?: number;
-            monthValue?: number;
-            month?: number;
-            dayOfMonth?: number;
-            day?: number;
-            hour?: number;
-            minute?: number;
-            second?: number;
-        };
-        if (typeof candidate.epochMilli === "number" && Number.isFinite(candidate.epochMilli)) {
-            return candidate.epochMilli;
-        }
-        const secondPart =
-            typeof candidate.epochSecond === "number"
-                ? candidate.epochSecond
-                : typeof candidate.seconds === "number"
-                  ? candidate.seconds
-                  : null;
-        if (secondPart != null && Number.isFinite(secondPart)) {
-            const nanoPart =
-                typeof candidate.nano === "number"
-                    ? candidate.nano
-                    : typeof candidate.nanos === "number"
-                      ? candidate.nanos
-                      : 0;
-            return secondPart * 1000 + Math.floor(nanoPart / 1_000_000);
-        }
-
-        // Handle LocalDateTime-like object payloads (year/month/day/hour/minute/second/nano).
-        const year = typeof candidate.year === "number" ? candidate.year : null;
-        const monthRaw =
-            typeof candidate.monthValue === "number"
-                ? candidate.monthValue
-                : typeof candidate.month === "number"
-                  ? candidate.month
-                  : null;
-        const day =
-            typeof candidate.dayOfMonth === "number"
-                ? candidate.dayOfMonth
-                : typeof candidate.day === "number"
-                  ? candidate.day
-                  : null;
-        if (year != null && monthRaw != null && day != null) {
-            const hour = typeof candidate.hour === "number" ? candidate.hour : 0;
-            const minute = typeof candidate.minute === "number" ? candidate.minute : 0;
-            const second = typeof candidate.second === "number" ? candidate.second : 0;
-            const nano =
-                typeof candidate.nano === "number"
-                    ? candidate.nano
-                    : typeof candidate.nanos === "number"
-                      ? candidate.nanos
-                      : 0;
-            const utcMs = Date.UTC(year, monthRaw - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
-            if (Number.isFinite(utcMs)) {
-                return utcMs;
-            }
-        }
-    }
-
-    return 0;
-};
 const messageFingerprint = (message: {
     id?: string;
     roomId: string;
@@ -124,14 +32,14 @@ const messageFingerprint = (message: {
     if (trimmedId && !trimmedId.startsWith("temp-")) {
         return `id:${trimmedId}`;
     }
-    const secondBucket = Math.floor(toTimestampMs(message.timestamp) / 1000);
-    const stableSecond = Number.isFinite(secondBucket) && secondBucket > 0 ? secondBucket : "no-ts";
+    const timestampMs = toTimestampMs(message.timestamp);
+    const stableTimestamp = Number.isFinite(timestampMs) && timestampMs > 0 ? timestampMs : "no-ts";
     return [
         "sig",
         normalizeId(message.roomId),
         normalizeId(message.senderId),
         normalizeId(message.receiverId),
-        stableSecond,
+        stableTimestamp,
         normalizeText(message.content),
     ].join("|");
 };
@@ -228,38 +136,21 @@ export default function ChatClient({
         }
     }, [initialPartnerId, partnerId, getPartnerInfo]);
 
-    const roomsReloadedRef = useRef(false);
-
     useEffect(() => {
-        const reloadRoomsIfNeeded = async () => {
-            if (initialRoomId && !roomsReloadedRef.current && !rooms.find((r) => r.id === initialRoomId)) {
-                roomsReloadedRef.current = true;
-                try {
-                    const response = await chatApi.getAllRoomsByUserId(currentUserId);
-                    const updatedRooms = response.data?.content || [];
-                    useChatStore.getState().setRooms(updatedRooms);
-
-                    if (!updatedRooms.find((r) => r.id === initialRoomId) && initialPartnerId) {
-                        if (initialPartnerId !== partnerId) {
-                            setPartnerId(initialPartnerId);
-                            const info = await getPartnerInfo(initialPartnerId);
-                            setPartnerName(info.name);
-                        }
-                    }
-                } catch {
-                    if (initialRoomId && !partnerId && initialPartnerId) {
-                        setPartnerId(initialPartnerId);
-                        getPartnerInfo(initialPartnerId).then((info) => setPartnerName(info.name));
-                    }
-                }
-            }
-        };
-
-        reloadRoomsIfNeeded();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialRoomId, currentUserId, initialPartnerId]);
+        if (initialRoomId && !rooms.find((r) => r.id === initialRoomId) && initialPartnerId && !partnerId) {
+            setPartnerId(initialPartnerId);
+            getPartnerInfo(initialPartnerId).then((info) => setPartnerName(info.name));
+        }
+    }, [initialRoomId, initialPartnerId, rooms, partnerId, getPartnerInfo]);
 
     const { isConnected, sendMessage: sendMessageToSocket, connect: connectChatSocket } = useChatSocketContext();
+
+    useEffect(() => {
+        useChatStore.getState().setActiveViewingRoomId(selectedRoomId);
+        return () => {
+            useChatStore.getState().setActiveViewingRoomId(null);
+        };
+    }, [selectedRoomId]);
 
     const selectedRoomIdRef = useRef<string | null>(selectedRoomId);
     const partnerIdRef = useRef<string | null>(partnerId);
@@ -302,13 +193,6 @@ export default function ChatClient({
                 return;
             }
 
-            // Prevent duplicate rendering on sender side:
-            // own message can arrive from websocket and then again from backend sync/history.
-            // For current user, trust backend sync as source of truth.
-            if (isFromCurrentUser) {
-                return;
-            }
-
             const messageKey = messageFingerprint(normalizedMessage);
 
             if (processedMessagesRef.current.has(messageKey)) {
@@ -346,7 +230,7 @@ export default function ChatClient({
                         isSameId(m.senderId, normalizedMessage.senderId) &&
                         isSameId(m.receiverId, normalizedMessage.receiverId) &&
                         m.content === normalizedMessage.content &&
-                        timeDiff < 1000
+                        timeDiff < 250
                     );
                 });
 
@@ -367,9 +251,12 @@ export default function ChatClient({
                         const updated = [...filteredPrev];
                         updated[optimisticIndex] = {
                             ...updated[optimisticIndex],
-                            timestamp: messageTimestamp,
+                            timestamp: reconcileSentMessageTimestamp(
+                                updated[optimisticIndex].timestamp,
+                                messageTimestamp,
+                            ),
                         };
-                        return updated.sort((a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp));
+                        return sortChatMessages(updated);
                     }
                 }
 
@@ -383,8 +270,7 @@ export default function ChatClient({
                     read: false,
                 };
 
-                const updated = [...filteredPrev, newMessage];
-                return updated.sort((a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp));
+                return sortChatMessages([...filteredPrev, newMessage]);
             });
         },
         [currentUserId, normalizeMessageForCurrentRoom],
@@ -522,7 +408,7 @@ export default function ChatClient({
                         const sameSender = isSameId(m.senderId, msg.senderId);
                         const sameReceiver = isSameId(m.receiverId, msg.receiverId);
                         const timeDiff = Math.abs(toTimestampMs(m.timestamp) - toTimestampMs(msg.timestamp));
-                        const sameTime = timeDiff < 1000;
+                        const sameTime = timeDiff < 250;
                         return sameId || (sameContent && sameSender && sameReceiver && sameTime);
                     });
 
@@ -533,9 +419,7 @@ export default function ChatClient({
                     return acc;
                 }, [] as Message[]);
 
-                const sortedMessages = [...uniqueMessages].sort(
-                    (a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp),
-                );
+                const sortedMessages = sortChatMessages(uniqueMessages);
 
                 sortedMessages.forEach((msg) => {
                     const messageKey = messageFingerprint(msg);
@@ -582,8 +466,8 @@ export default function ChatClient({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRoomId, currentUserId, normalizeMessageForCurrentRoom]);
 
-    // Fallback near-realtime sync for the currently opened room.
-    // This prevents "must refresh to see new message" when websocket delivery is delayed/missed.
+    // Consistency sync for the currently opened room.
+    // Keeps two clients in sync even if websocket delivery is briefly missed.
     useEffect(() => {
         if (!selectedRoomId) {
             return;
@@ -643,13 +527,54 @@ export default function ChatClient({
                     return acc;
                 }, [] as Message[]);
 
-                const sortedMessages = uniqueMessages.sort((a, b) => toTimestampMs(a.timestamp) - toTimestampMs(b.timestamp));
-                setMessages(sortedMessages);
+                const sortedMessages = sortChatMessages(uniqueMessages);
+
+                setMessages((prev) => {
+                    const merged = mergeChatMessages(prev, sortedMessages);
+                    const prevFingerprints = new Set(prev.map((message) => messageFingerprint(message)));
+
+                    for (const msg of merged) {
+                        const isFromPartner = currentPartner
+                            ? isSameId(msg.senderId, currentPartner) && isSameId(msg.receiverId, currentUserId)
+                            : false;
+                        if (!isFromPartner || prevFingerprints.has(messageFingerprint(msg))) {
+                            continue;
+                        }
+
+                        const dto: MessageDTO = {
+                            roomId: msg.roomId,
+                            senderId: msg.senderId,
+                            receiverId: msg.receiverId,
+                            content: msg.content,
+                            timestamp:
+                                typeof msg.timestamp === "string"
+                                    ? msg.timestamp
+                                    : msg.timestamp != null
+                                      ? String(msg.timestamp)
+                                      : undefined,
+                        };
+
+                        if (typeof window !== "undefined") {
+                            window.dispatchEvent(new CustomEvent("chat-message-received", { detail: dto }));
+                        }
+                    }
+
+                    if (prev.length === merged.length) {
+                        const unchanged = prev.every(
+                            (message, index) => messageFingerprint(message) === messageFingerprint(merged[index]),
+                        );
+                        if (unchanged) {
+                            return prev;
+                        }
+                    }
+                    return merged;
+                });
             } catch {
                 // Silent fallback sync failure; websocket still handles primary realtime updates.
             }
         };
 
+        void syncLatestMessages();
         const intervalId = setInterval(() => {
             void syncLatestMessages();
         }, 2000);
@@ -722,14 +647,25 @@ export default function ChatClient({
                 return;
             }
 
-            // Always try to reconnect once if socket is down, so sending does not get blocked
-            // before room API calls complete.
+            const waitForSocketReady = async (timeoutMs: number = 4000, checkIntervalMs: number = 100) => {
+                const start = Date.now();
+                while (Date.now() - start < timeoutMs) {
+                    if (isConnectedRef.current) {
+                        return true;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, checkIntervalMs));
+                }
+                return isConnectedRef.current;
+            };
+
+            // Always try to reconnect once if socket is down.
             let isSocketReady = isConnectedRef.current;
             if (!isSocketReady) {
                 try {
                     const connected = await connectChatSocket();
                     log("reconnect result", { connected });
-                    isSocketReady = connected;
+                    // connectChatSocket can resolve before STOMP fully reaches connected state.
+                    isSocketReady = connected && (await waitForSocketReady());
                 } catch {
                     // Silent: we'll show a single user-facing error below.
                     log("reconnect threw exception");
@@ -741,19 +677,44 @@ export default function ChatClient({
                 return;
             }
 
-            const sent = sendMessageToSocket(actualRoomId, content, receiverId);
+            let sent = sendMessageToSocket(actualRoomId, content, receiverId);
+            if (!sent) {
+                // Retry once in case websocket just connected between checks.
+                await new Promise((resolve) => setTimeout(resolve, 150));
+                sent = sendMessageToSocket(actualRoomId, content, receiverId);
+            }
             log("send result", { sent, actualRoomId, receiverId });
             if (!sent) {
                 toast.error("Failed to send message. Please try again.");
                 return;
             }
 
-            // Do not append optimistic message here.
-            // Rely on websocket + fallback sync to avoid duplicate visual copies.
+            // Show message immediately on sender side (monotonic timestamp avoids sort jitter on echo/sync).
+            const optimisticTimestamp = new Date(Date.now()).toISOString();
+            const optimisticMessage: Message = {
+                id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                roomId: actualRoomId,
+                senderId: currentUserId,
+                receiverId,
+                content,
+                timestamp: optimisticTimestamp,
+                read: false,
+            };
+
+            processedMessagesRef.current.add(messageFingerprint(optimisticMessage));
+            if (actualRoomId === selectedRoomIdRef.current) {
+                setMessages((prev) => {
+                    const exists = prev.some((m) => messageFingerprint(m) === messageFingerprint(optimisticMessage));
+                    if (exists) {
+                        return prev;
+                    }
+                    return sortChatMessages([...prev, optimisticMessage]);
+                });
+            }
 
             useChatStore.getState().updateRoomLastMessage(actualRoomId, content, new Date().toISOString());
 
-            // Keep optimistic message and let websocket/history sync reconcile naturally.
+            // WebSocket echo (if any) will reconcile temp message metadata.
         },
         [selectedRoomId, sendMessageToSocket, currentUserId, connectChatSocket],
     );

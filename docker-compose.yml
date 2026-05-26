@@ -407,6 +407,18 @@ services:
         depends_on:
             service-discovery:
                 condition: service_started
+    ngrok:
+        image: ngrok/ngrok:latest
+        restart: unless-stopped
+        environment:
+            - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+        command:
+            - "http"
+            - "payment-service:8087"
+        ports:
+            - "4040:4040"
+        depends_on:
+            - payment-service
 
 volumes:
     rabbitmq-data:

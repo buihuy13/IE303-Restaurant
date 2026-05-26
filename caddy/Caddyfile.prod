@@ -16,6 +16,10 @@ SERVER_IP {
         path /api/*
     }
 
+    @payment_webhook_route {
+        path /payment/payos-webhook
+    }
+
     @protected_routes {
         path /v3/api-docs/*
         path /api-docs/*
@@ -35,7 +39,7 @@ SERVER_IP {
     }
 
     handle @ws_routes {
-        reverse_proxy api-gateway {
+        reverse_proxy api-gateway:8080 {
             transport http {
                 versions 1.1
             }
@@ -50,6 +54,10 @@ SERVER_IP {
     }
 
     handle @api_routes {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle @payment_webhook_route {
         reverse_proxy api-gateway:8080
     }
     

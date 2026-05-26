@@ -8,6 +8,7 @@ import ChatProvider from "@/components/providers/ChatProvider";
 import { ClientThemeProvider } from "@/components/providers/ClientThemeProvider";
 import SSEProvider from "@/components/providers/SSEProvider";
 import ConfirmProvider from "@/components/ui/ConfirmModal";
+import { useAddressSync } from "@/lib/hooks/useAddressSync";
 import { useCartSync } from "@/lib/hooks/useCartSync";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -21,8 +22,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const authPaths = ["/login", "/register", "/login-success"];
     const isAuthPage = authPaths.includes(pathname);
 
-    // Sync cart with user authentication
     useCartSync();
+    useAddressSync();
 
     // REMOVED: Allow Merchant/Admin to access client pages (home, search, restaurants, etc.)
     // They can freely switch between buying view and dashboard view

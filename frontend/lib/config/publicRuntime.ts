@@ -9,9 +9,9 @@ const getEnv = (value: PublicEnvValue): string | undefined => {
     return undefined;
 };
 
-const DEFAULT_API_URL = "http://localhost:8080/api";
+const DEFAULT_API_URL = "http://localhost:8443/api";
 const DEFAULT_APP_ORIGIN = "http://localhost:3000";
-const DEFAULT_KEYCLOAK_BASE_URL = "http://localhost:9090/auth";
+const DEFAULT_KEYCLOAK_BASE_URL = "http://localhost:8443/auth";
 const DEFAULT_KEYCLOAK_REALM = "restaurant-realm";
 const DEFAULT_KEYCLOAK_CLIENT_ID = "restaurant-frontend";
 

@@ -13,10 +13,11 @@ export default function CartDropdown() {
     const { theme } = useClientTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { items: cartItems, removeItem, fetchCart, userId } = useCartStore();
+    const { items: cartItems, removeItem } = useCartStore();
 
     const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
     const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -34,16 +35,6 @@ export default function CartDropdown() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isOpen]);
-
-    // Refresh cart when opening to avoid stale/empty first render
-    useEffect(() => {
-        if (!isOpen) return;
-        if (!userId) return;
-
-        fetchCart().catch(() => {
-            // Ignore refresh failures; optimistic state still shows items
-        });
-    }, [isOpen, userId, fetchCart]);
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -159,10 +150,10 @@ export default function CartDropdown() {
                                                         )}
                                                         <div className="flex items-center justify-between mt-1">
                                                             <span className={`text-sm font-semibold ${theme === "dark" ? "text-white/85" : ""}`}>
-                                                                ${item.price.toFixed(2)} x {item.quantity}
+                                                                {formatPriceVND(item.price)} x {item.quantity}
                                                             </span>
                                                             <span className="text-sm font-bold text-brand-orange">
-                                                                ${(item.price * item.quantity).toFixed(2)}
+                                                                {formatPriceVND(item.price * item.quantity)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -184,7 +175,7 @@ export default function CartDropdown() {
                             <div className={`p-4 border-t ${theme === "dark" ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <span className={`font-semibold text-lg ${theme === "dark" ? "text-white/92" : ""}`}>Total</span>
-                                    <span className="font-bold text-xl text-brand-orange">${cartTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-xl text-brand-orange">{formatPriceVND(cartTotal)}</span>
                                 </div>
                                 {(() => {
                                     // Group items by restaurant to determine checkout behavior

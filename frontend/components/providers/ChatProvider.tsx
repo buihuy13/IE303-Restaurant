@@ -1,15 +1,13 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
 import { chatApi } from "@/lib/api/chatApi";
+import { getChatAlertDedupKey, normalizeChatId, processIncomingChatAlert } from "@/lib/chat/chatNotifications";
 import { useChatSocket } from "@/lib/hooks/useChatSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { useNotificationStore } from "@/stores/useNotificationStore";
 import { ChatRoom, MessageDTO } from "@/types";
 import { usePathname } from "next/navigation";
-import { ReactNode, createContext, useContext, useEffect, useRef } from "react";
-import toast from "react-hot-toast";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useRef } from "react";
 
 interface ChatSocketContextType {
     isConnected: boolean;
@@ -18,11 +16,14 @@ interface ChatSocketContextType {
     sendMessage: (roomId: string, content: string, receiverId: string) => boolean;
     connect: () => Promise<boolean>;
     disconnect: () => void;
-    // Event emitter for real-time message updates
     onMessage?: (message: MessageDTO) => void;
 }
 
 const ChatSocketContext = createContext<ChatSocketContextType | null>(null);
+const EMPTY_ROOMS_SYNC_INTERVAL_MS = 5000;
+const HAS_ROOMS_SYNC_INTERVAL_MS = 5000;
+
+const roomActivitySignature = (room: ChatRoom) => `${room.lastMessageTime ?? ""}|${room.lastMessage ?? ""}`;
 
 export function useChatSocketContext() {
     const context = useContext(ChatSocketContext);
@@ -37,135 +38,184 @@ interface ChatProviderProps {
 }
 
 export default function ChatProvider({ children }: ChatProviderProps) {
-    const { user, isAuthenticated } = useAuthStore();
     const pathname = usePathname();
-    const isChatRoute = pathname === "/chat" || pathname.startsWith("/merchant/messages");
+    const { user, isAuthenticated } = useAuthStore();
+    const rooms = useChatStore((state) => state.rooms);
     const chatSocket = useChatSocket({
         userId: user?.id || null,
         isAuthenticated,
+        enabled: isAuthenticated,
     });
-    const { subscribeRoom, isConnected } = chatSocket;
-    const { setRooms, updateRoomLastMessage, incrementUnreadCount, setLastMessage, updateUnreadCount } = useChatStore();
+    const { isConnected, subscribeRoom, resubscribeAllRooms } = chatSocket;
+    const { setRooms, setRoomsHydrated, setRoomsLoadError, updateRoomLastMessage, incrementUnreadCount, setLastMessage } =
+        useChatStore();
     const subscribedRoomsRef = useRef<Set<string>>(new Set());
-    const roomsLoadedRef = useRef(false);
-    const reloadingRoomsRef = useRef(false); // Prevent multiple simultaneous reloads
-    // Track processed messages to prevent duplicates from WebSocket (shared across all rooms)
+    const reloadingRoomsRef = useRef(false);
     const processedMessagesRef = useRef<Set<string>>(new Set());
     const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const syncIntervalMsRef = useRef<number>(30000);
+    const syncIntervalMsRef = useRef<number>(EMPTY_ROOMS_SYNC_INTERVAL_MS);
+    const roomActivitySnapshotRef = useRef<Map<string, string>>(new Map());
+    const userIdRef = useRef(user?.id);
+    userIdRef.current = user?.id;
 
-    // Load rooms and subscribe to all when user is authenticated and connected
+    // Leaving chat clears "viewing room" so alerts work on Orders and other pages.
     useEffect(() => {
-        if (!user?.id || !isAuthenticated || !isConnected || !isChatRoute || roomsLoadedRef.current) {
+        const onChatScreen = pathname === "/chat" || pathname.startsWith("/merchant/messages");
+        if (!onChatScreen) {
+            useChatStore.getState().setActiveViewingRoomId(null);
+        }
+    }, [pathname]);
+
+    const processIncomingMessage = useCallback(
+        async (message: MessageDTO) => {
+            const currentUserId = userIdRef.current;
+            if (!currentUserId) {
+                return;
+            }
+
+            const normalizedRoomId = String(message.roomId).trim();
+            const currentRooms = useChatStore.getState().rooms;
+            const incomingMessage = { ...message, roomId: normalizedRoomId };
+            const messageKey = getChatAlertDedupKey(incomingMessage, currentUserId, currentRooms);
+
+            if (processedMessagesRef.current.has(messageKey)) {
+                return;
+            }
+            processedMessagesRef.current.add(messageKey);
+
+            if (processedMessagesRef.current.size > 200) {
+                const keysArray = Array.from(processedMessagesRef.current);
+                processedMessagesRef.current = new Set(keysArray.slice(-100));
+            }
+
+            const roomExists = currentRooms.some((room) => normalizeChatId(room.id) === normalizeChatId(normalizedRoomId));
+
+            if (!roomExists && !reloadingRoomsRef.current) {
+                reloadingRoomsRef.current = true;
+                try {
+                    const response = await chatApi.getAllRoomsByUserId(currentUserId);
+                    const updatedRooms: ChatRoom[] = response.data?.content || [];
+                    setRooms(updatedRooms);
+                } catch {
+                    // Silent error handling
+                } finally {
+                    reloadingRoomsRef.current = false;
+                }
+            }
+
+            updateRoomLastMessage(
+                normalizedRoomId,
+                message.content,
+                message.timestamp || new Date().toISOString(),
+            );
+            setLastMessage(normalizedRoomId, { ...message, roomId: normalizedRoomId });
+
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                    new CustomEvent("chat-message-received", {
+                        detail: { ...message, roomId: normalizedRoomId },
+                    }),
+                );
+            }
+
+            const roomsForUnread = useChatStore.getState().rooms;
+            if (await processIncomingChatAlert(incomingMessage, currentUserId, roomsForUnread, messageKey)) {
+                incrementUnreadCount(normalizedRoomId);
+            }
+
+        },
+        [incrementUnreadCount, setLastMessage, setRooms, updateRoomLastMessage],
+    );
+
+    const processIncomingMessageRef = useRef(processIncomingMessage);
+    processIncomingMessageRef.current = processIncomingMessage;
+
+    const subscribeAllRooms = useCallback(() => {
+        if (!userIdRef.current) {
             return;
         }
 
-        const loadRoomsAndSubscribe = async () => {
-            // Message handler for all rooms
-            // This handler is called when a message is received from WebSocket for any subscribed room
-            const handleRoomMessage = async (message: MessageDTO) => {
-                // Create a unique key for this message to prevent duplicates
-                const messageKey = `${message.roomId}-${message.content}-${message.senderId}-${message.receiverId}-${message.timestamp ? Math.floor(new Date(message.timestamp).getTime() / 1000) : Date.now()}`;
+        const handler = (message: MessageDTO) => {
+            void processIncomingMessageRef.current(message);
+        };
 
-                // Check if this message was already processed (from WebSocket duplicate or previous processing)
-                if (processedMessagesRef.current.has(messageKey)) {
-                    return;
+        useChatStore.getState().rooms.forEach((room) => {
+            const roomId = String(room.id).trim();
+            subscribeRoom(roomId, handler);
+            subscribedRoomsRef.current.add(roomId);
+        });
+
+        if (isConnected) {
+            resubscribeAllRooms();
+        }
+    }, [isConnected, subscribeRoom, resubscribeAllRooms]);
+
+    // Poll rooms and subscribe; detect new activity via room list when websocket misses an event.
+    useEffect(() => {
+        if (!user?.id || !isAuthenticated) {
+            return;
+        }
+
+        const syncRoomsAndSubscriptions = async () => {
+            try {
+                const response = await chatApi.getAllRoomsByUserId(user.id);
+                const fetchedRooms: ChatRoom[] = response.data?.content || [];
+                setRooms(fetchedRooms);
+                setRoomsLoadError(null);
+                setRoomsHydrated(true);
+
+                const changedRoomIds: string[] = [];
+                for (const room of fetchedRooms) {
+                    const signature = roomActivitySignature(room);
+                    const previous = roomActivitySnapshotRef.current.get(room.id);
+                    if (previous !== undefined && previous !== signature && room.lastMessage) {
+                        changedRoomIds.push(room.id);
+                    }
+                    roomActivitySnapshotRef.current.set(room.id, signature);
                 }
 
-                // Mark this message as processed IMMEDIATELY to prevent duplicates
-                processedMessagesRef.current.add(messageKey);
-
-                // Clean up old processed messages (keep only last 200 keys to prevent memory leak)
-                if (processedMessagesRef.current.size > 200) {
-                    const keysArray = Array.from(processedMessagesRef.current);
-                    const recentKeys = keysArray.slice(-100); // Keep last 100 keys
-                    processedMessagesRef.current = new Set(recentKeys);
-                }
-
-                // Check if room exists in current rooms list
-                const currentRooms = useChatStore.getState().rooms;
-                const roomExists = currentRooms.some((r) => r.id === message.roomId);
-
-                // If room doesn't exist (new room created by another user), reload rooms from backend
-                // Backend filters rooms with lastMessage IS NOT NULL, so new room will appear after first message
-                if (!roomExists && !reloadingRoomsRef.current) {
-                    reloadingRoomsRef.current = true;
+                for (const roomId of changedRoomIds) {
                     try {
-                        const response = await chatApi.getAllRoomsByUserId(user.id);
-                        const updatedRooms: ChatRoom[] = response.data?.content || [];
-                        setRooms(updatedRooms);
-
-                        // Subscribe to the new room if not already subscribed
-                        const newRoom = updatedRooms.find((r) => r.id === message.roomId);
-                        if (newRoom && !subscribedRoomsRef.current.has(message.roomId)) {
-                            subscribedRoomsRef.current.add(message.roomId);
-                            subscribeRoom(message.roomId, handleRoomMessage);
+                        const messagesResponse = await chatApi.getMessagesByRoomId(roomId, 0, 1);
+                        const latest = messagesResponse.data?.content?.[0];
+                        if (!latest) {
+                            continue;
                         }
+                        await processIncomingMessageRef.current({
+                            roomId: latest.roomId || latest.room?.id || roomId,
+                            senderId: latest.senderId,
+                            receiverId: latest.receiverId,
+                            content: latest.content,
+                            timestamp: latest.timestamp,
+                        });
                     } catch {
                         // Silent error handling
-                    } finally {
-                        reloadingRoomsRef.current = false;
                     }
                 }
 
-                // Update last message in room (if room exists or was just added) - THIS TRIGGERS UI UPDATE
-                // This will automatically sort rooms by lastMessageTime, so room with latest message moves to top
-                updateRoomLastMessage(message.roomId, message.content, message.timestamp || new Date().toISOString());
+                subscribeAllRooms();
 
-                // Store last message
-                setLastMessage(message.roomId, message);
-
-                // Trigger a custom event so ChatClient can listen and update messages in ChatWindow
-                // This ensures real-time updates for the selected room without duplicate subscriptions
-                // This is critical for real-time message updates - messages will appear immediately without refresh
-                if (typeof window !== "undefined") {
-                    window.dispatchEvent(new CustomEvent("chat-message-received", { detail: message }));
+                const nextIntervalMs =
+                    fetchedRooms.length === 0 ? EMPTY_ROOMS_SYNC_INTERVAL_MS : HAS_ROOMS_SYNC_INTERVAL_MS;
+                if (syncIntervalMsRef.current !== nextIntervalMs) {
+                    syncIntervalMsRef.current = nextIntervalMs;
+                    if (syncIntervalRef.current) {
+                        clearInterval(syncIntervalRef.current);
+                    }
+                    syncIntervalRef.current = setInterval(() => {
+                        void syncRoomsAndSubscriptions();
+                    }, syncIntervalMsRef.current);
                 }
+            } catch (error) {
+                const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+                if (axiosError?.response?.status === 404) {
+                    setRooms([]);
+                    setRoomsLoadError(null);
+                    setRoomsHydrated(true);
+                    roomActivitySnapshotRef.current.clear();
+                    subscribeAllRooms();
 
-                // Increment unread count if message is for current user
-                if (message.receiverId === user.id) {
-                    incrementUnreadCount(message.roomId);
-
-                    // Create notification for new message
-                    const getSenderName = async () => {
-                        try {
-                            const sender = await authApi.getUserById(message.senderId);
-                            return sender?.username || message.senderId;
-                        } catch {
-                            return message.senderId;
-                        }
-                    };
-
-                    // Add notification and show toast with sender name
-                    getSenderName().then((senderName) => {
-                        useNotificationStore.getState().addNotification({
-                            type: "MESSAGE_RECEIVED",
-                            title: "New Message",
-                            message: `${senderName}: ${message.content.substring(0, 50)}${message.content.length > 50 ? "..." : ""}`,
-                            roomId: message.roomId,
-                            senderId: message.senderId,
-                            senderName: senderName,
-                        });
-
-                        toast.success(`New message from ${senderName}`, {
-                            duration: 4000,
-                            icon: "💬",
-                        });
-                    });
-                }
-            };
-
-            const syncRoomsAndSubscriptions = async () => {
-                if (!user?.id) return;
-
-                try {
-                    const response = await chatApi.getAllRoomsByUserId(user.id);
-                    const rooms: ChatRoom[] = response.data?.content || [];
-                    setRooms(rooms);
-                    roomsLoadedRef.current = true;
-
-                    // If user has no rooms yet, keep fast polling so first incoming room appears quickly.
-                    const nextIntervalMs = rooms.length === 0 ? 3000 : 30000;
+                    const nextIntervalMs = EMPTY_ROOMS_SYNC_INTERVAL_MS;
                     if (syncIntervalMsRef.current !== nextIntervalMs) {
                         syncIntervalMsRef.current = nextIntervalMs;
                         if (syncIntervalRef.current) {
@@ -175,101 +225,58 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                             void syncRoomsAndSubscriptions();
                         }, syncIntervalMsRef.current);
                     }
-
-                    // Fetch unread count for each room from backend
-                    await Promise.all(
-                        rooms.map(async (room) => {
-                            try {
-                                const unreadResponse = await chatApi.getUnreadCountByRoom(room.id, user.id);
-                                const unreadCount = unreadResponse.data?.data || 0;
-                                if (unreadCount > 0) {
-                                    updateUnreadCount(room.id, unreadCount);
-                                }
-                            } catch {
-                                // Silent error handling
-                            }
-                        }),
-                    );
-
-                    // Subscribe to all rooms to receive messages
-                    rooms.forEach((room) => {
-                        if (!subscribedRoomsRef.current.has(room.id)) {
-                            subscribedRoomsRef.current.add(room.id);
-                            subscribeRoom(room.id, handleRoomMessage);
-                        }
-                    });
-                } catch (error) {
-                    const axiosError = error as { response?: { status?: number } };
-                    if (axiosError?.response?.status === 404) {
-                        // User has no chat rooms yet; keep syncing to catch newly created rooms.
-                        setRooms([]);
-                        roomsLoadedRef.current = true;
-                        if (syncIntervalMsRef.current !== 3000) {
-                            syncIntervalMsRef.current = 3000;
-                            if (syncIntervalRef.current) {
-                                clearInterval(syncIntervalRef.current);
-                            }
-                            syncIntervalRef.current = setInterval(() => {
-                                void syncRoomsAndSubscriptions();
-                            }, syncIntervalMsRef.current);
-                        }
-                        return;
-                    }
-                    // Silent error handling
+                    return;
                 }
-            };
 
-            try {
-                await syncRoomsAndSubscriptions();
-            } catch {
-                // Silent error handling
+                const message =
+                    axiosError?.response?.data?.message ||
+                    (axiosError?.response?.status === 503
+                        ? "Chat service is temporarily unavailable."
+                        : "Could not load conversations. Please try again.");
+                setRoomsLoadError(message);
+                setRoomsHydrated(true);
             }
         };
 
-        loadRoomsAndSubscribe();
+        void syncRoomsAndSubscriptions();
+
+        if (!syncIntervalRef.current) {
+            syncIntervalRef.current = setInterval(() => {
+                void syncRoomsAndSubscriptions();
+            }, syncIntervalMsRef.current);
+        }
 
         return () => {
             if (syncIntervalRef.current) {
                 clearInterval(syncIntervalRef.current);
                 syncIntervalRef.current = null;
             }
-            syncIntervalMsRef.current = 30000;
+            syncIntervalMsRef.current = EMPTY_ROOMS_SYNC_INTERVAL_MS;
         };
-    }, [
-        user?.id,
-        isAuthenticated,
-        isChatRoute,
-        isConnected,
-        subscribeRoom,
-        setRooms,
-        updateRoomLastMessage,
-        incrementUnreadCount,
-        setLastMessage,
-        updateUnreadCount,
-    ]);
+    }, [user?.id, isAuthenticated, setRooms, setRoomsHydrated, setRoomsLoadError, subscribeAllRooms]);
 
-    // Stop chat-room polling when user is outside chat screens.
+    // Re-attach websocket handlers whenever socket connects or room list changes.
     useEffect(() => {
-        if (!isChatRoute && syncIntervalRef.current) {
-            clearInterval(syncIntervalRef.current);
-            syncIntervalRef.current = null;
-            syncIntervalMsRef.current = 30000;
+        if (!isConnected || !user?.id || rooms.length === 0) {
+            return;
         }
-    }, [isChatRoute]);
+        subscribeAllRooms();
+    }, [isConnected, user?.id, rooms, subscribeAllRooms]);
 
-    // Reset when user logs out
     useEffect(() => {
         if (!isAuthenticated) {
             subscribedRoomsRef.current.clear();
-            roomsLoadedRef.current = false;
-            processedMessagesRef.current.clear(); // Clear processed messages on logout
+            roomActivitySnapshotRef.current.clear();
+            setRoomsHydrated(false);
+            setRoomsLoadError(null);
+            processedMessagesRef.current.clear();
             if (syncIntervalRef.current) {
                 clearInterval(syncIntervalRef.current);
                 syncIntervalRef.current = null;
             }
-            syncIntervalMsRef.current = 30000;
+            syncIntervalMsRef.current = EMPTY_ROOMS_SYNC_INTERVAL_MS;
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, setRoomsHydrated, setRoomsLoadError]);
 
     return <ChatSocketContext.Provider value={chatSocket}>{children}</ChatSocketContext.Provider>;
 }

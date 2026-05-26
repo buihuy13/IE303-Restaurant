@@ -7,80 +7,65 @@ import { CartItem, useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CartItemRow } from "./CartItemRow";
 import { OrderSummary } from "./OrderSummary";
 
-// Format price to USD
-const formatPriceUSD = (priceUSD: number): string => {
-    return priceUSD.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+// Format price to VND
+const formatPriceVND = (amount: number): string => {
+    return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 };
 
 export default function CartPageContainer() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    const { items, fetchCart, userId, isLoading: cartLoading, setUserId } = useCartStore();
-    const [cartFetched, setCartFetched] = useState(false);
+    const { items, userId, isLoading: cartLoading, setUserId } = useCartStore();
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const prevItemKeysRef = useRef<Set<string>>(new Set());
 
-    // Ensure userId is set and fetch cart when component mounts
+    // Cart hydration is owned by useCartSync in ClientLayout — only align userId here.
     useEffect(() => {
         if (!isAuthenticated || !user?.id) {
             return;
         }
-
-        // Ensure userId is set in cart store first
         if (userId !== user.id) {
             setUserId(user.id);
-            // Reset cartFetched when userId changes to ensure we fetch again
-            setCartFetched(false);
-            return; // Wait for userId to be set before fetching
         }
+    }, [isAuthenticated, user?.id, userId, setUserId]);
 
-        // Fetch cart when userId matches and hasn't been fetched yet
-        if (userId === user.id && !cartFetched && !cartLoading) {
-            fetchCart()
-                .then(() => {
-                    // Mark as fetched after successful fetch
-                    setCartFetched(true);
-                    // Select all items by default
-                    const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
-                    setSelectedItems(new Set(allItemKeys));
-                })
-                .catch((error) => {
-                    // Silently handle errors - cart might not exist yet or service unavailable
-                    const status = (error as { response?: { status?: number } })?.response?.status;
-                    if (status !== 404 && status !== 503) {
-                        console.warn("Failed to fetch cart:", error);
-                    }
-                    // Still mark as fetched even on error (404/503 are expected for new users)
-                    setCartFetched(true);
-                });
-        }
-
-        // Mark as fetched when cart loading is complete (for cases where fetch was already in progress)
-        // This handles the case where fetchCart was called elsewhere (e.g., from addItem)
-        if (userId === user.id && !cartLoading && !cartFetched) {
-            setCartFetched(true);
-        }
-    }, [isAuthenticated, user?.id, userId, cartFetched, cartLoading, fetchCart, setUserId, items]);
-
-    // Select all items when items change
+    // Keep current selections when cart changes.
+    // - First load: select all items by default.
+    // - Next updates (e.g. +/- quantity): preserve checked items.
+    // - New items are auto-selected; removed items are pruned.
     useEffect(() => {
-        if (items.length > 0) {
-            const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
-            setSelectedItems(new Set(allItemKeys));
-        }
-    }, [items]); // When items change
+        const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
+        const allKeysSet = new Set(allItemKeys);
+        const prevItemKeys = prevItemKeysRef.current;
+
+        setSelectedItems((prev) => {
+            if (items.length === 0) return new Set();
+            if (prevItemKeys.size === 0 && prev.size === 0) return new Set(allItemKeys);
+
+            const next = new Set<string>();
+            prev.forEach((key) => {
+                if (allKeysSet.has(key)) next.add(key);
+            });
+
+            allItemKeys.forEach((key) => {
+                if (!prevItemKeys.has(key)) next.add(key);
+            });
+
+            return next;
+        });
+
+        prevItemKeysRef.current = allKeysSet;
+    }, [items]);
 
     // Show loading state while fetching cart (especially important when coming from "add to cart")
     // Add a small delay to handle race conditions when user just added an item
     const [showLoading, setShowLoading] = useState(true);
     useEffect(() => {
-        if (cartLoading || !cartFetched) {
+        if (cartLoading) {
             setShowLoading(true);
             return;
         }
@@ -102,7 +87,7 @@ export default function CartPageContainer() {
         }, delay);
 
         return () => clearTimeout(timer);
-    }, [cartLoading, cartFetched]);
+    }, [cartLoading]);
 
     const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
@@ -154,7 +139,7 @@ export default function CartPageContainer() {
     }, [selectedItemsList]);
 
     // Show loading while fetching cart or waiting for state to update
-    if (showLoading || cartLoading || !cartFetched) {
+    if (showLoading || cartLoading) {
         return <GlobalLoader label="Loading cart" sublabel="Please wait..." />;
     }
 
@@ -353,7 +338,7 @@ export default function CartPageContainer() {
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>
                                 <span className="text-lg font-bold text-brand-orange">
-                                    ${formatPriceUSD(selectedSubtotal)}
+                                    {formatPriceVND(selectedSubtotal)}
                                 </span>
                             </div>
                             <Button

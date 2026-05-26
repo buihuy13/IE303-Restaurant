@@ -10,6 +10,7 @@ import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs"
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 import { queryApi } from "@/lib/api/queryApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
+import { looksLikeRestaurantUuid } from "@/lib/utils/restaurantNavigation";
 import { productApi } from "@/lib/api/productApi";
 import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -43,12 +44,37 @@ export default function RestaurantDetailPage() {
         const run = async () => {
             setState({ status: "loading" });
             try {
-                const restaurantResponse = await restaurantApi.getByRestaurantSlug(slug);
-                let restaurant = restaurantResponse.data as Restaurant | null;
+                let restaurant: Restaurant | null = null;
+                let canonicalSlug = slug;
+
+                // Legacy bookmark: /restaurants/{uuid} → resolve admin id once, then use slug everywhere.
+                if (looksLikeRestaurantUuid(slug)) {
+                    try {
+                        const legacy = await restaurantApi.getByRestaurantId(slug);
+                        const data = legacy.data as Restaurant | null;
+                        if (data?.slug?.trim()) {
+                            restaurant = data;
+                            canonicalSlug = data.slug.trim();
+                        }
+                    } catch {
+                        // handled below
+                    }
+                } else {
+                    try {
+                        const bySlug = await restaurantApi.getByRestaurantSlug(slug);
+                        restaurant = (bySlug.data as Restaurant | null) ?? null;
+                    } catch {
+                        // handled below
+                    }
+                }
 
                 if (!restaurant) {
                     if (!cancelled) setState({ status: "error", message: "Restaurant not found." });
                     return;
+                }
+
+                if (!cancelled && canonicalSlug !== slug) {
+                    router.replace(`/restaurants/${encodeURIComponent(canonicalSlug)}`, { scroll: false });
                 }
 
                 // Optional: distance/duration from query-service when user location is available.
@@ -113,7 +139,7 @@ export default function RestaurantDetailPage() {
         return () => {
             cancelled = true;
         };
-    }, [slug]);
+    }, [slug, router]);
 
     if (state.status === "loading") {
         return (
@@ -153,7 +179,7 @@ export default function RestaurantDetailPage() {
                                             redirectPath:
                                                 typeof window !== "undefined"
                                                     ? `${window.location.pathname}${window.location.search}`
-                                                    : `/restaurants/${slug}`,
+                                                    : `/restaurants/${encodeURIComponent(slug)}`,
                                         })
                                     }
                                 >
@@ -195,7 +221,7 @@ export default function RestaurantDetailPage() {
                                 restaurantSlug={restaurant.slug}
                                 restaurantDuration={restaurant.duration}
                                 products={products}
-                                categories={restaurant.cate}
+                                categories={Array.isArray(restaurant.cate) ? restaurant.cate : []}
                             />
                         </section>
 

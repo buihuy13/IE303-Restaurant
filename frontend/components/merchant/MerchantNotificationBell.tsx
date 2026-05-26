@@ -21,12 +21,13 @@ import { useEffect, useRef, useState } from "react";
 
 export function MerchantNotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
-    const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+    const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
     const { incrementPendingOrdersCount, setPendingOrdersCount } = useMerchantOrderStore();
     const { currentRestaurant } = useMerchantRestaurant();
     const [isOpen, setIsOpen] = useState(false);
     const initializedRef = useRef(false);
     const pendingCountInitializedRef = useRef(false);
+    const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
     // Get restaurant ID from current restaurant
     const restaurantId = currentRestaurant?.id || null;
@@ -47,13 +48,7 @@ export function MerchantNotificationBell() {
             useNotificationStore.getState().addNotification({
                 type: "MERCHANT_NEW_ORDER",
                 title: "New Order",
-                message: `You have a new order #${orderId} with ${itemCount} item(s), total: $${totalAmount?.toLocaleString(
-                    "en-US",
-                    {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    },
-                )}`,
+                message: `You have a new order #${orderId} with ${itemCount} item(s), total: ${formatPriceVND(Number(totalAmount ?? 0))}`,
                 orderId,
                 restaurantName: data.restaurantName,
             });
@@ -110,8 +105,8 @@ export function MerchantNotificationBell() {
 
     if (!isAuthenticated || !restaurantId) return null;
 
-    const unread = unreadCount();
     const merchantNotifications = notifications.filter((n) => n.type === "MERCHANT_NEW_ORDER");
+    const unread = merchantNotifications.filter((n) => !n.read).length;
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -125,7 +120,7 @@ export function MerchantNotificationBell() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold text-sm">Order Notifications</h3>
+                    <h3 className="font-semibold text-sm">Notifications</h3>
                     {unread > 0 && (
                         <button
                             onClick={markAllAsRead}

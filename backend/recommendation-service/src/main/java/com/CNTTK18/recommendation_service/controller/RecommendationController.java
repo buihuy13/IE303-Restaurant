@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,15 @@ public class RecommendationController {
     @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
     public ResponseEntity<MessageResponse> getFoodRecommendations(@Valid @RequestBody UserContext userContext) {
         MessageResponse response = recommendationService.recommendFood(userContext.getContext());
+        return ResponseEntity.ok(response);
+    }
+
+    @Tag(name = "GET")
+    @Operation(summary = "Get food recommendations")
+    @GetMapping("/emotions")
+    @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
+    public ResponseEntity<List<String>> getEmotions() {
+        List<String> response = recommendationService.recommendEmotions();
         return ResponseEntity.ok(response);
     }
 

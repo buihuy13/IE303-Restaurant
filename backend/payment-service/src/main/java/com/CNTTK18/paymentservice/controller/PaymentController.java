@@ -15,14 +15,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/create")
+    @PostMapping("/api/payments/create")
     public ResponseEntity<PaymentResponseDTO> createPaymentLink(@Valid @RequestBody PaymentRequestDTO request) {
         log.info(
                 "Nhận yêu cầu tạo payment link cho user: {} với số tiền: {}", request.getUserId(), request.getAmount());
@@ -30,7 +29,7 @@ public class PaymentController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @PostMapping("/webhook")
+    @PostMapping({"/api/payments/webhook", "/payment/payos-webhook"})
     public ResponseEntity<String> handleWebhook(
             @RequestBody Map<String, Object> webhookBody,
             @RequestHeader(value = "signature", required = false) String headerSignature) {

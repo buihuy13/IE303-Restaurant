@@ -89,6 +89,40 @@ export function ActiveFilterPills({ className }: { className?: string }) {
             });
         }
 
+        const ratingMin = searchParams.get("ratingMin");
+        if (ratingMin) {
+            out.push({
+                key: `ratingMin:${ratingMin}`,
+                label: `Rating: ≥ ${ratingMin}`,
+                onRemove: () => removeParam("ratingMin"),
+            });
+        }
+
+        const deliveryMaxMinutes = searchParams.get("deliveryMaxMinutes");
+        if (deliveryMaxMinutes) {
+            out.push({
+                key: `delivery:${deliveryMaxMinutes}`,
+                label: `Delivery: < ${deliveryMaxMinutes} min`,
+                onRemove: () => removeParam("deliveryMaxMinutes"),
+            });
+        }
+
+        if (searchParams.get("openNow") === "1") {
+            out.push({
+                key: "openNow",
+                label: "Open now",
+                onRemove: () => removeParam("openNow"),
+            });
+        }
+
+        if (searchParams.get("freeShip") === "1") {
+            out.push({
+                key: "freeShip",
+                label: "Free ship",
+                onRemove: () => removeParam("freeShip"),
+            });
+        }
+
         const sort = formatSort(searchParams.get("sort") || "");
         if (sort) {
             out.push({

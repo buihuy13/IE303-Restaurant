@@ -22,6 +22,7 @@ export default function MerchantOrdersPageClient() {
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [restaurantLoading, setRestaurantLoading] = useState(true);
+    const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
     const knownOrderIdsRef = useRef<Set<string>>(new Set());
 
@@ -659,7 +660,7 @@ export default function MerchantOrdersPageClient() {
                                             <div className="flex items-center justify-between gap-3">
                                                 <span className="text-gray-500 dark:text-gray-400">Total</span>
                                                 <span className="font-semibold text-gray-900 dark:text-white">
-                                                    ${Number(order.finalAmount).toFixed(2)}
+                                                    {formatPriceVND(Number(order.finalAmount))}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between gap-3">
@@ -785,7 +786,7 @@ export default function MerchantOrdersPageClient() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        ${Number(order.finalAmount).toFixed(2)}
+                                                        {formatPriceVND(Number(order.finalAmount))}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">

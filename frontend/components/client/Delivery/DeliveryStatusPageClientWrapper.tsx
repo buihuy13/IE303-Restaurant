@@ -1,6 +1,7 @@
 "use client";
 
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
@@ -61,6 +62,8 @@ type DisplayOrderItem = {
     note?: string;
     imageURL?: string | null;
 };
+
+const formatPriceVND = (amount: number): string => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
 interface DeliveryStatusPageClientWrapperProps {
     initialOrder: Order;
@@ -209,62 +212,32 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         },
     });
 
-    // Poll for order updates as fallback (every 5 seconds for faster sync)
-    // This ensures we catch status updates even if socket fails
-    useEffect(() => {
+    const normalizedStatusForPoll = (order.status || "").toLowerCase();
+    const canRefreshOrder =
+        !!order.orderId &&
+        normalizedStatusForPoll !== OrderStatus.COMPLETED &&
+        normalizedStatusForPoll !== OrderStatus.CANCELLED;
+
+    useOrdersVisibilityRefresh(canRefreshOrder, async () => {
         if (!order.orderId) return;
+        try {
+            const updatedOrder = await orderApi.getOrderById(order.orderId, { cacheBust: true });
+            const normalizedUpdatedStatus = (updatedOrder.status || "").toLowerCase();
+            const normalizedCurrentStatus = (order.status || "").toLowerCase();
 
-        // Don't poll if order is completed or cancelled (no more updates expected)
-        const normalizedStatus = (order.status || "").toLowerCase();
-        if (normalizedStatus === OrderStatus.COMPLETED || normalizedStatus === OrderStatus.CANCELLED) {
-            return;
-        }
-
-        const intervalId = setInterval(() => {
-            console.log("[DeliveryStatusPage] Polling for order updates...");
-            orderApi
-                .getOrderById(order.orderId, { cacheBust: true })
-                .then((updatedOrder) => {
-                    // Normalize status for comparison
-                    const normalizedUpdatedStatus = (updatedOrder.status || "").toLowerCase();
-                    const normalizedCurrentStatus = (order.status || "").toLowerCase();
-                    
-                    console.log("[DeliveryStatusPage] Polling result - Current:", normalizedCurrentStatus, "Fetched:", normalizedUpdatedStatus);
-                    
-                    // Update if status changed or estimated time might have changed
-                    if (
-                        normalizedUpdatedStatus !== normalizedCurrentStatus ||
-                        updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime
-                    ) {
-                        console.log("[DeliveryStatusPage] Polling detected change! Updating order status:", normalizedCurrentStatus, "->", normalizedUpdatedStatus);
-                        const normalizedOrder = {
-                            ...updatedOrder,
-                            status: normalizedUpdatedStatus as OrderStatus,
-                        };
-                        setOrder(normalizedOrder);
-                        
-                        // Show toast if status changed
-                        if (normalizedUpdatedStatus !== normalizedCurrentStatus) {
-                            const statusMessages: Record<string, string> = {
-                                confirmed: "Order confirmed! Restaurant is preparing your order.",
-                                preparing: "Restaurant is preparing your order.",
-                                ready: "Your order is ready! Delivery is on the way.",
-                                completed: "Order completed! Thank you for your order.",
-                                cancelled: "Order has been cancelled.",
-                            };
-                            const message = statusMessages[normalizedUpdatedStatus] || `Order status updated: ${normalizedUpdatedStatus}`;
-                            toast.success(message, { duration: 5000 });
-                        }
-                    }
-                })
-                .catch((error) => {
-                    // Silently fail - socket will handle updates
-                    console.debug("[DeliveryStatusPage] Polling order update failed:", error);
+            if (
+                normalizedUpdatedStatus !== normalizedCurrentStatus ||
+                updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime
+            ) {
+                setOrder({
+                    ...updatedOrder,
+                    status: normalizedUpdatedStatus as OrderStatus,
                 });
-        }, 5000); // Poll every 5 seconds for faster sync
-
-        return () => clearInterval(intervalId);
-    }, [order.orderId, order.slug, order.status, order.estimatedDeliveryTime]);
+            }
+        } catch {
+            // SSE handles live updates
+        }
+    });
 
     // Update estimated time every minute for real-time countdown
     useEffect(() => {
@@ -481,7 +454,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                                <p className="font-bold text-brand-orange">${(item.price * item.quantity).toFixed(2)}</p>
+                                                <p className="font-bold text-brand-orange">{formatPriceVND(item.price * item.quantity)}</p>
                                             </div>
                                         </div>
                                         );

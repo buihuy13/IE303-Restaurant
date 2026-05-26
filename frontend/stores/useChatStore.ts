@@ -5,9 +5,15 @@ import { create } from "zustand";
 
 interface ChatState {
         rooms: ChatRoom[];
+        roomsHydrated: boolean;
+        roomsLoadError: string | null;
         unreadCountMap: Record<string, number>; // roomId -> unread count
         lastMessageMap: Record<string, MessageDTO>; // roomId -> last message
+        activeViewingRoomId: string | null;
+        setActiveViewingRoomId: (roomId: string | null) => void;
         setRooms: (rooms: ChatRoom[]) => void;
+        setRoomsHydrated: (hydrated: boolean) => void;
+        setRoomsLoadError: (error: string | null) => void;
         addRoomIfNotExists: (room: ChatRoom) => void;
         updateUnreadCount: (roomId: string, count: number) => void;
         incrementUnreadCount: (roomId: string) => void;
@@ -20,12 +26,21 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
         rooms: [],
+        roomsHydrated: false,
+        roomsLoadError: null,
         unreadCountMap: {},
         lastMessageMap: {},
+        activeViewingRoomId: null,
+
+        setActiveViewingRoomId: (roomId) => set({ activeViewingRoomId: roomId }),
 
         setRooms: (rooms) => {
                 set({ rooms });
         },
+
+        setRoomsHydrated: (hydrated) => set({ roomsHydrated: hydrated }),
+
+        setRoomsLoadError: (error) => set({ roomsLoadError: error }),
         
         addRoomIfNotExists: (newRoom: ChatRoom) => {
                 set((state) => {

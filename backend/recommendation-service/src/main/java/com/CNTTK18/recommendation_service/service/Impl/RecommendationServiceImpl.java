@@ -137,6 +137,12 @@ public class RecommendationServiceImpl implements RecommendationService {
         return response;
     }
 
+    @Override
+    public List<String> recommendEmotions() {
+        return new ArrayList<>(
+                List.of("Vui vẻ", "Buồn bã", "Căng thẳng", "Hạnh phúc", "Mệt mỏi", "Tò mò", "Thèm ăn", "Nhớ nhà"));
+    }
+
     private List<Map<String, Object>> normalizeCandidates(List<?> rawContent) {
         List<Map<String, Object>> result = new ArrayList<>();
 

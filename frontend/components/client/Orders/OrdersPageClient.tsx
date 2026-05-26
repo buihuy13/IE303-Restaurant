@@ -2,12 +2,16 @@
 
 import OrdersPageContainer, { type OrdersPageOrder } from "@/components/client/Orders/OrdersPageContainer";
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrdersNotificationHydrate } from "@/lib/hooks/useOrdersNotificationHydrate";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+
+const normalizeMatchKey = (value: unknown): string => String(value ?? "").trim().toLowerCase().replace(/-/g, "");
 
 export default function OrdersPageClient() {
     const user = useAuthStore((state) => state.user);
@@ -22,6 +26,8 @@ export default function OrdersPageClient() {
     const userId = user?.id;
     const pathname = usePathname();
     const { markAllAsRead, markOrderNotificationsAsRead, notifications } = useNotificationStore();
+
+    useOrdersNotificationHydrate(pathname === "/orders" || pathname.startsWith("/account/orders"));
 
     const profileRequestedRef = useRef(false);
     const redirectRef = useRef(false);
@@ -71,6 +77,9 @@ export default function OrdersPageClient() {
                 typedOrder.id?.toString() ||
                 typedOrder._id?.toString() ||
                 `order-${orderIndex + 1}`;
+            const rawSlug = typedOrder.slug?.toString().trim() || "";
+            const safeSlug =
+                rawSlug && normalizeMatchKey(rawSlug) === normalizeMatchKey(orderId) ? rawSlug : undefined;
 
             const restaurantName = typedOrder.restaurant?.name || typedOrder.restaurantName || "Restaurant";
             const restaurantId =
@@ -111,7 +120,7 @@ export default function OrdersPageClient() {
 
             return {
                 id: orderId,
-                slug: typedOrder.slug || undefined,
+                slug: safeSlug,
                 createdAt: typedOrder.createdAt || typedOrder.updatedAt || new Date().toISOString(),
                 totalAmount,
                 items,
@@ -255,34 +264,7 @@ export default function OrdersPageClient() {
         },
     });
 
-    useEffect(() => {
-        if (!userId || isLoading) return;
-
-        const intervalId = setInterval(() => {
-            orderApi
-                .getOrdersByUser(userId)
-                .then(({ orders: apiOrders }) => {
-                    const normalized = mapOrders(apiOrders ?? []);
-
-                    setOrders((prevOrders) => {
-                        const hasChanges = prevOrders.some((prevOrder, index) => {
-                            const newOrder = normalized[index];
-                            return newOrder && prevOrder.status !== newOrder.status;
-                        });
-
-                        if (hasChanges || prevOrders.length !== normalized.length) {
-                            return normalized;
-                        }
-                        return prevOrders;
-                    });
-                })
-                .catch((error) => {
-                    console.debug("[Orders Page] Polling update failed:", error);
-                });
-        }, 10000);
-
-        return () => clearInterval(intervalId);
-    }, [userId, isLoading, mapOrders]);
+    useOrdersVisibilityRefresh(!!userId && !isLoading, fetchOrders);
 
     const handleRetry = useCallback(() => {
         if (!userId) {

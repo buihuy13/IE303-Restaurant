@@ -132,8 +132,6 @@ frontend/
 | `(client)/blog/create/page.tsx` | Tạo blog |
 | `(client)/blog/edit/[id]/page.tsx` | Sửa blog |
 | `(client)/blog/my-blogs/page.tsx` | Blog của tôi |
-| `(client)/group-orders/[shareToken]/page.tsx` | Trang group order (theo token) |
-| `(client)/group-orders/[shareToken]/join/page.tsx` | Tham gia group order |
 | `(client)/chat/page.tsx` | Chat |
 | `(client)/under-development/page.tsx` | Trang “đang phát triển” |
 
@@ -197,11 +195,10 @@ Components được tổ chức theo **domain** (admin, client, merchant) và **
 - **Delivery**: DeliveryStatusPageClientWrapper, PageContainer, OrderStatusSidebar, StatusBadge
 - **FAQ**: FaqAccordion
 - **Food**: FoodDetail
-- **group-orders**: (các component cho group order)
 - **OrderDetail**: OrderDetailClientWrapper, OrderDetailContainer, OrderSummary, ReviewForm
 - **Orders**: OrdersPageClient/Container, OrderHistorySidebar, OrderItemRow, OrderTrackingTimeline, OrderSkeleton, PeopleAlsoBought, ProductSugestionCard
 - **Payment**: PaymentPageContainer, PaymentProgress, PaymentMethodSelector, StripeCardElement, FormInput, InputField, RadioField, SelectField
-- **Restaurant**: RestaurantHero, RestaurantInfo, RestaurantMenu/MenuWrapper, RestaurantNavTabs, RestaurantReviews, ReviewCard, MenuItemCard, RestaurantActions, RestaurantBreadcrumb, ChatWithRestaurantButton, CreateGroupOrderModal
+- **Restaurant**: RestaurantHero, RestaurantInfo, RestaurantMenu/MenuWrapper, RestaurantNavTabs, RestaurantReviews, ReviewCard, MenuItemCard, RestaurantActions, RestaurantBreadcrumb, ChatWithRestaurantButton, CreateGroupOrderModal (hiển thị trạng thái chưa hỗ trợ backend)
 - **restaurants**: RestaurantsContainer, RestaurantList, RestaurantCard/CardSkeleton, FoodCard/FoodCardSkeleton, FilterSection, FilterSidebar
 - **search**: SearchPageClient/View, SearchFilters, SearchResultsHeader, SearchSortBar, SearchEmptyState, FilterSection
 - **Pagination.tsx**, **Button.tsx**
@@ -280,9 +277,8 @@ Custom hooks được nhóm theo **domain**, tách logic khỏi component.
 
 - **account**: useAccountProfile, useAccountOrdersList, useAccountOrdersAndStats, useAccountAddressesList, useAccountAddressForm, useAccountAddressDelete, useAccountPasswordUpdate
 - **blog**: useBlogListData, useBlogListFeatured, useBlogListFilters, useBlogDetailData, useBlogDetailLike, useBlogDetailShare, useBlogDetailTags, useBlogCreateForm, useBlogEditForm, useMyBlogsData, useMyBlogsFilters, useMyBlogsActions, useEditorToolbarImageOverride
-- **chat**: useChatRooms
+- **chat**: trạng thái chat chủ yếu nằm trong `ChatProvider` + `useChatStore` + `lib/hooks/useChatSocket`
 - **contact**: useContactForm
-- **group-orders**: useGroupOrderData, useGroupOrderActions, useGroupOrderPermissions, useGroupOrderProductImage, useJoinGroupOrderPage
 - **search**: useSearchProducts, useSearchFilteredProducts, useSearchLocation
 
 ### 5.3. `hooks/common/`
@@ -307,7 +303,6 @@ Chứa **API client**, **cấu hình**, **utils**, **adapters**.
 - **categoryApi.ts**
 - **chatApi.ts**
 - **dashboardApi.ts**
-- **groupOrderApi.ts**
 - **merchantApi.ts**
 - **orderApi.ts**
 - **paymentApi.ts**
@@ -382,7 +377,7 @@ Chứa **API client**, **cấu hình**, **utils**, **adapters**.
 Định nghĩa TypeScript theo từng domain. File **index.ts** thường re-export để import gọn.
 
 - **blog.type.ts**, **category.type.ts**, **chat.type.ts**, **contact.type.ts**
-- **dashboard.type.ts**, **groupOrder.type.ts**, **order.type.ts**
+- **dashboard.type.ts**, **order.type.ts**
 - **payment.type.ts**, **product.type.ts**, **restaurant.type.ts**
 - **review.type.ts**, **size.type.ts**, **user.type.ts**, **wallet.type.ts**
 - **index.ts**

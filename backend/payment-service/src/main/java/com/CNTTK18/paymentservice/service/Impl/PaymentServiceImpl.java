@@ -1,18 +1,24 @@
 package com.CNTTK18.paymentservice.service.Impl;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.CNTTK18.Common.Event.PaymentStatusSyncContract;
 import com.CNTTK18.Common.Event.PaymentStatusSyncEvent;
-import com.CNTTK18.paymentservice.config.properties.PayOSProperties;
 import com.CNTTK18.paymentservice.dto.PaymentRequestDTO;
 import com.CNTTK18.paymentservice.dto.PaymentResponseDTO;
 import com.CNTTK18.paymentservice.exception.PaymentCreationException;
@@ -20,25 +26,35 @@ import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
 import com.CNTTK18.paymentservice.service.PaymentService;
-import com.CNTTK18.paymentservice.utils.WebhookUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.webhooks.WebhookData;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentServiceImpl implements PaymentService {
+    private static final String DEFAULT_WEBHOOK_PATH = "/payment/payos-webhook";
     private static final int PAYMENT_EVENT_MAX_RETRIES = 3;
 
     private final PayOS payOS;
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final WebhookUtils webhookUtils;
-    private final PayOSProperties payOSProperties;
     private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
+
+    @Value("${gateway.url}")
+    private String gatewayUrl;
+
+    @Value("${payos.webhook-url:}")
+    private String configuredWebhookUrl;
+
+    private static final String NGROK_INSPECTOR_URL = "http://ngrok:4040/api/tunnels";
 
     @Override
     @Transactional
@@ -54,9 +70,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .orderCode(orderCode)
                 .status(PaymentStatus.PENDING)
                 .build();
-        paymentTransactionRepository.save(transaction);
+        paymentTransactionRepository.save(Objects.requireNonNull(transaction));
 
         try {
+            ensureWebhookConfirmed();
+
             // 3. Khởi tạo PaymentData theo chuẩn PayOS SDK và gọi API tạo Link
             String description = request.getDescription() != null ? request.getDescription() : "Thanh toan don hang";
             String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : "http://localhost:3000";
@@ -91,24 +109,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public boolean processWebhook(Map<String, Object> webhookBody, String inputSignature) {
-        // 1. Dùng Utils để tính toán Signature
-        boolean isValid = webhookUtils.isValidData(webhookBody, inputSignature, payOSProperties.getChecksumKey());
-
-        if (!isValid) {
-            log.warn("Lỗi Xác Thực Webhook: Chữ ký không khớp!");
+        WebhookData webhookData = verifyWebhook(webhookBody, inputSignature);
+        if (webhookData == null) {
             return false;
         }
 
-        Map<?, ?> dataMap = extractWebhookData(webhookBody);
-        if (dataMap == null) {
-            log.warn("Webhook thiếu object data, bỏ qua xử lý");
-            return false;
-        }
-
-        // 2. Lấy thông tin orderCode từ payload webhook, ép kiểu theo chuẩn
-        Long orderCode = parseLong(dataMap.get("orderCode"));
+        // 2. Lấy thông tin orderCode từ payload webhook đã được PayOS SDK xác thực.
+        Long orderCode = webhookData.getOrderCode();
         if (orderCode == null) {
-            log.warn("Webhook thiếu orderCode hoặc sai định dạng: {}", dataMap.get("orderCode"));
+            log.warn("Webhook thiếu orderCode, bỏ qua xử lý");
             return false;
         }
 
@@ -125,14 +134,14 @@ public class PaymentServiceImpl implements PaymentService {
             return false;
         }
 
-        Boolean paymentSuccess = resolvePaymentSuccess(webhookBody, dataMap);
+        Boolean paymentSuccess = resolvePaymentSuccess(webhookBody, webhookData);
         if (paymentSuccess == null) {
             log.warn("Webhook không xác định rõ trạng thái thanh toán cho orderCode={}, bỏ qua cập nhật", orderCode);
             return false;
         }
         PaymentStatus nextStatus = paymentSuccess ? PaymentStatus.PAID : PaymentStatus.CANCELLED;
 
-        String webhookPaymentLinkId = asString(dataMap.get("paymentLinkId"));
+        String webhookPaymentLinkId = webhookData.getPaymentLinkId();
         if (webhookPaymentLinkId != null && !webhookPaymentLinkId.isBlank()) {
             transaction.setPaymentLinkId(webhookPaymentLinkId);
         }
@@ -152,16 +161,123 @@ public class PaymentServiceImpl implements PaymentService {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<?, ?> extractWebhookData(Map<String, Object> webhookBody) {
-        Object dataObj = webhookBody.get("data");
-        if (dataObj instanceof Map<?, ?>) {
-            return (Map<?, ?>) dataObj;
+    private void ensureWebhookConfirmed() {
+        String webhookUrl = resolveWebhookUrl();
+        try {
+            payOS.webhooks().confirm(webhookUrl);
+            log.info("Đã confirm webhook PayOS: {}", webhookUrl);
+        } catch (Exception ex) {
+            // Không chặn tạo link thanh toán chỉ vì webhook chưa confirm được.
+            // Payment link vẫn cần tạo được để người dùng thanh toán; webhook có thể
+            // được cấu hình lại sau bằng PAYOS_WEBHOOK_URL public.
+            log.warn("Không thể confirm webhook PayOS: {}. Link vẫn sẽ được tạo.", webhookUrl, ex);
         }
-        return null;
     }
 
-    private Boolean resolvePaymentSuccess(Map<String, Object> webhookBody, Map<?, ?> dataMap) {
+    private String resolveWebhookUrl() {
+        String configured = configuredWebhookUrl != null ? configuredWebhookUrl.trim() : "";
+        if (!configured.isBlank() && !isLocalWebhookUrl(configured)) {
+            return configured;
+        }
+
+        String ngrokWebhookUrl = resolveNgrokWebhookUrl();
+        if (!ngrokWebhookUrl.isBlank()) {
+            return ngrokWebhookUrl;
+        }
+
+        String baseUrl = gatewayUrl != null ? gatewayUrl.trim() : "";
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + DEFAULT_WEBHOOK_PATH;
+    }
+
+    private String resolveNgrokWebhookUrl() {
+        try {
+            String inspectorResponse = readHttpResponse(NGROK_INSPECTOR_URL);
+            JsonNode rootNode = objectMapper.readTree(inspectorResponse);
+            JsonNode tunnelsNode = rootNode.path("tunnels");
+            if (!tunnelsNode.isArray()) {
+                return "";
+            }
+
+            String fallbackPublicUrl = "";
+            for (JsonNode tunnelNode : tunnelsNode) {
+                String publicUrl = asString(tunnelNode.get("public_url"));
+                if (publicUrl == null || publicUrl.isBlank()) {
+                    continue;
+                }
+
+                String proto = asString(tunnelNode.get("proto"));
+                if ("https".equalsIgnoreCase(proto)) {
+                    return appendWebhookPath(publicUrl);
+                }
+
+                if (fallbackPublicUrl.isBlank()) {
+                    fallbackPublicUrl = publicUrl;
+                }
+            }
+
+            return fallbackPublicUrl.isBlank() ? "" : appendWebhookPath(fallbackPublicUrl);
+        } catch (Exception ex) {
+            log.debug("Không lấy được public URL từ ngrok inspector: {}", ex.getMessage());
+            return "";
+        }
+    }
+
+    private String appendWebhookPath(String publicUrl) {
+        String normalized = publicUrl.endsWith("/") ? publicUrl.substring(0, publicUrl.length() - 1) : publicUrl;
+        return normalized + DEFAULT_WEBHOOK_PATH;
+    }
+
+    private boolean isLocalWebhookUrl(String webhookUrl) {
+        String normalized = webhookUrl.toLowerCase(Locale.ROOT);
+        return normalized.contains("localhost")
+                || normalized.contains("127.0.0.1")
+                || normalized.contains("host.docker.internal");
+    }
+
+    private String readHttpResponse(String requestUrl) throws Exception {
+        HttpURLConnection connection =
+                (HttpURLConnection) URI.create(requestUrl).toURL().openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(2000);
+        connection.setReadTimeout(2000);
+
+        int responseCode = connection.getResponseCode();
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream()));
+        try (reader) {
+            StringBuilder body = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                body.append(line);
+            }
+            return body.toString();
+        }
+    }
+
+    private WebhookData verifyWebhook(Map<String, Object> webhookBody, String inputSignature) {
+        if (webhookBody == null) {
+            log.warn("Webhook body rỗng, bỏ qua xử lý");
+            return null;
+        }
+
+        Map<String, Object> normalizedBody = webhookBody;
+        if (asString(webhookBody.get("signature")) == null && inputSignature != null && !inputSignature.isBlank()) {
+            normalizedBody = new LinkedHashMap<>(webhookBody);
+            normalizedBody.put("signature", inputSignature);
+        }
+
+        try {
+            return payOS.webhooks().verify(normalizedBody);
+        } catch (Exception ex) {
+            log.warn("Lỗi xác thực webhook PayOS: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    private Boolean resolvePaymentSuccess(Map<String, Object> webhookBody, WebhookData webhookData) {
         Object successObj = webhookBody.get("success");
         if (successObj instanceof Boolean) {
             return (Boolean) successObj;
@@ -172,23 +288,12 @@ public class PaymentServiceImpl implements PaymentService {
             return true;
         }
 
-        String dataCode = asString(dataMap.get("code"));
+        String dataCode = webhookData.getCode();
         if ("00".equals(dataCode) || "0".equals(dataCode)) {
             return true;
         }
 
-        String status = asString(dataMap.get("status"));
-        if (status != null) {
-            String normalized = status.trim().toUpperCase(Locale.ROOT);
-            if (normalized.contains("PAID") || normalized.contains("SUCCESS")) {
-                return true;
-            }
-            if (normalized.contains("CANCEL") || normalized.contains("FAIL") || normalized.contains("EXPIRED")) {
-                return false;
-            }
-        }
-
-        String desc = asString(webhookBody.get("desc"));
+        String desc = webhookData.getDesc() != null ? webhookData.getDesc() : asString(webhookBody.get("desc"));
         if (desc != null) {
             String normalized = desc.trim().toUpperCase(Locale.ROOT);
             if (normalized.contains("SUCCESS")) {
@@ -233,18 +338,15 @@ public class PaymentServiceImpl implements PaymentService {
         return false;
     }
 
-    private Long parseLong(Object value) {
+    private String asString(Object value) {
         if (value == null) {
             return null;
         }
-        try {
-            return Long.valueOf(value.toString());
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
 
-    private String asString(Object value) {
-        return value == null ? null : value.toString();
+        if (value instanceof JsonNode jsonNode) {
+            return jsonNode.isNull() ? null : jsonNode.asText();
+        }
+
+        return value.toString();
     }
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { getApiBaseUrl } from "@/lib/axios";
+import { subscribeNewOrders, subscribeOrderStatusUpdates } from "@/lib/orderSSEBridge";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useEffect, useRef, useState } from "react";
 
 export interface OrderNotification {
     type: string;
-    // For new-order event
     data?: {
         orderId: string;
         totalAmount?: number;
@@ -17,7 +17,6 @@ export interface OrderNotification {
         restaurantName?: string;
         reason?: string;
     };
-    // For order-status-updated event (fields at root level)
     orderId?: string;
     status?: string;
     previousStatus?: string;
@@ -43,7 +42,6 @@ function parseSSEData(raw: string): OrderNotification | null {
     try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-        // If it's a flat payload from Java's ORDER_NOTIFICATION event
         if (parsed.orderId && parsed.status && !parsed.data) {
             return {
                 type: "ORDER_NOTIFICATION",
@@ -81,49 +79,94 @@ function parseSSEData(raw: string): OrderNotification | null {
     }
 }
 
-export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
+function dispatchNotification(
+    notification: OrderNotification,
+    onNewOrder?: (n: OrderNotification) => void,
+    onOrderStatusUpdate?: (n: OrderNotification) => void,
+) {
+    const status = (notification.status || notification.data?.status || "").toLowerCase();
+
+    if (status === "pending" || notification.type === "new-order" || notification.type === "NEW_ORDER") {
+        onNewOrder?.(notification);
+        return;
+    }
+
+    onOrderStatusUpdate?.(notification);
+}
+
+/**
+ * Customer order pages: subscribe to global useSSE bridge (no second EventSource).
+ * Merchant dashboards: direct EventSource on API gateway (merchants do not use SSEProvider).
+ */
+export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const esRef = useRef<EventSource | null>(null);
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const reconnectAttemptRef = useRef(0);
-    const isMountedRef = useRef(true);
+    const isMountedRef = useRef(false);
+    const onNewOrderRef = useRef(onNewOrder);
+    const onOrderStatusUpdateRef = useRef(onOrderStatusUpdate);
 
-    const onNewOrderRef = useRef<UseOrderSocketOptions["onNewOrder"]>(onNewOrder);
-    const onOrderStatusUpdateRef = useRef<UseOrderSocketOptions["onOrderStatusUpdate"]>(onOrderStatusUpdate);
+    onNewOrderRef.current = onNewOrder;
+    onOrderStatusUpdateRef.current = onOrderStatusUpdate;
 
+    const isMerchantSocket = Boolean(restaurantId);
+
+    // Customer: listen to shared SSE from SSEProvider / useSSE
     useEffect(() => {
-        onNewOrderRef.current = onNewOrder;
-    }, [onNewOrder]);
-
-    useEffect(() => {
-        onOrderStatusUpdateRef.current = onOrderStatusUpdate;
-    }, [onOrderStatusUpdate]);
-
-    useEffect(() => {
-        isMountedRef.current = true;
-        return () => {
-            isMountedRef.current = false;
-        };
-    }, []);
-
-    useEffect(() => {
-        // Chỉ kết nối SSE khi có userId (merchant đã đăng nhập)
-        if (!userId) {
-            setIsConnected(false);
+        if (isMerchantSocket || !userId) {
             return;
         }
 
-        const connect = () => {
-            if (!isMountedRef.current) return;
+        isMountedRef.current = true;
+        setIsConnected(true);
 
-            // Đóng kết nối cũ nếu còn
-            if (esRef.current) {
-                esRef.current.close();
-                esRef.current = null;
+        const handleStatus = (notification: OrderNotification) => {
+            if (!isMountedRef.current) return;
+            dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
+        };
+
+        const unsubStatus = subscribeOrderStatusUpdates(handleStatus);
+        const unsubNew = subscribeNewOrders((notification) => {
+            if (!isMountedRef.current) return;
+            onNewOrderRef.current?.(notification);
+        });
+
+        return () => {
+            isMountedRef.current = false;
+            unsubStatus();
+            unsubNew();
+            setIsConnected(false);
+        };
+    }, [isMerchantSocket, userId]);
+
+    // Merchant: dedicated EventSource (unchanged behavior)
+    useEffect(() => {
+        if (!isMerchantSocket || !userId) {
+            if (!userId) {
+                setIsConnected(false);
+            }
+            return;
+        }
+
+        isMountedRef.current = true;
+
+        const closeEventSource = () => {
+            const current = esRef.current;
+            if (!current) {
+                return;
+            }
+            esRef.current = null;
+            current.close();
+        };
+
+        const connect = () => {
+            if (!isMountedRef.current) {
+                return;
             }
 
-            // Lấy access token từ auth store để truyền qua query param
-            // vì EventSource không hỗ trợ custom Authorization header
+            closeEventSource();
+
             const accessToken = useAuthStore.getState().accessToken;
             const baseUrl = getApiBaseUrl().replace(/\/+$/, "");
             const sseUrl = accessToken
@@ -134,22 +177,19 @@ export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseO
             try {
                 es = new EventSource(sseUrl, { withCredentials: true });
             } catch {
-                // EventSource không khả dụng (SSR hoặc môi trường không hỗ trợ)
                 return;
             }
 
             esRef.current = es;
 
             es.onopen = () => {
-                if (!isMountedRef.current) return;
+                if (!isMountedRef.current) {
+                    return;
+                }
                 setIsConnected(true);
                 reconnectAttemptRef.current = 0;
-                if (process.env.NODE_ENV === "development") {
-                    console.info("[useOrderSocket] SSE connected for userId:", userId);
-                }
             };
 
-            // Lắng nghe event "new-order" từ notification-service
             es.addEventListener("new-order", (event: MessageEvent<string>) => {
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
@@ -158,20 +198,14 @@ export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseO
                 }
             });
 
-            // Lắng nghe event "ORDER_NOTIFICATION" từ Java SSEService
             es.addEventListener("ORDER_NOTIFICATION", (event: MessageEvent<string>) => {
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
                 if (notification) {
-                    if (notification.status === "PENDING" || notification.status === "pending") {
-                        onNewOrderRef.current?.(notification);
-                    } else {
-                        onOrderStatusUpdateRef.current?.(notification);
-                    }
+                    dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
                 }
             });
 
-            // Lắng nghe event "order-status-updated"
             es.addEventListener("order-status-updated", (event: MessageEvent<string>) => {
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
@@ -180,38 +214,42 @@ export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseO
                 }
             });
 
-            // Fallback: lắng nghe message chung (không có tên event cụ thể)
             es.onmessage = (event: MessageEvent<string>) => {
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
                 if (!notification) return;
 
-                if (notification.type === "new-order" || notification.type === "NEW_ORDER") {
-                    onNewOrderRef.current?.(notification);
-                } else if (
-                    notification.type === "order-status-updated" ||
-                    notification.type === "ORDER_STATUS_UPDATED"
-                ) {
-                    onOrderStatusUpdateRef.current?.(notification);
-                }
+                dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
             };
 
             es.onerror = () => {
-                if (!isMountedRef.current) return;
-                setIsConnected(false);
-                es.close();
-                esRef.current = null;
+                if (!isMountedRef.current || esRef.current !== es) {
+                    return;
+                }
+                if (es.readyState === EventSource.CONNECTING) {
+                    return;
+                }
 
-                // Tự động reconnect với exponential backoff
+                setIsConnected(false);
+                closeEventSource();
+
+                if (!isMountedRef.current) {
+                    return;
+                }
+
                 const delay = getReconnectDelay(reconnectAttemptRef.current);
                 reconnectAttemptRef.current += 1;
-                if (process.env.NODE_ENV === "development") {
-                    console.warn(
-                        `[useOrderSocket] SSE error, reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current})`,
-                    );
+                if (reconnectAttemptRef.current > 8) {
+                    return;
+                }
+                if (reconnectTimerRef.current !== null) {
+                    return;
                 }
                 reconnectTimerRef.current = setTimeout(() => {
-                    if (isMountedRef.current) connect();
+                    reconnectTimerRef.current = null;
+                    if (isMountedRef.current) {
+                        connect();
+                    }
                 }, delay);
             };
         };
@@ -220,23 +258,20 @@ export function useOrderSocket({ userId, onNewOrder, onOrderStatusUpdate }: UseO
 
         return () => {
             isMountedRef.current = false;
+
             if (reconnectTimerRef.current !== null) {
                 clearTimeout(reconnectTimerRef.current);
                 reconnectTimerRef.current = null;
             }
-            if (esRef.current) {
-                esRef.current.close();
-                esRef.current = null;
-            }
+
+            closeEventSource();
             setIsConnected(false);
-            // Reset mounted flag cho lần mount tiếp theo
-            isMountedRef.current = true;
+            reconnectAttemptRef.current = 0;
         };
-    }, [userId]);
+    }, [isMerchantSocket, userId, restaurantId]);
 
     return {
         isConnected,
-        /** @deprecated socket.io không còn dùng, luôn là null */
         socket: null,
     };
 }

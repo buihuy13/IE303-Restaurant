@@ -36,7 +36,6 @@ export default function NavActions() {
     const {
         user,
         isAuthenticated,
-        loading,
         logout,
         loginWithKeycloak,
     } = useAuthStore();
@@ -58,6 +57,8 @@ export default function NavActions() {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const showAuthenticatedUI = isAuthenticated && !!user;
 
     const handleLogout = async () => {
         if (isLoggingOut) return;
@@ -131,7 +132,7 @@ export default function NavActions() {
     return (
         <div className="flex items-center gap-3 lg:gap-4">
             {/* Browse foods */}
-            {isAuthenticated && user && !loading ? (
+            {showAuthenticatedUI ? (
                 <Link
                     href="/search"
                     className={`relative p-2 rounded-full transition-colors ${
@@ -174,7 +175,7 @@ export default function NavActions() {
             )}
 
             {/* Orders */}
-            {isAuthenticated && user && !loading && (
+            {showAuthenticatedUI && (
                 <Link
                     href="/orders"
                     className={`relative p-2 rounded-full transition-colors ${
@@ -200,7 +201,7 @@ export default function NavActions() {
             )}
 
             {/* Chat */}
-            {isAuthenticated && user && !loading && (
+            {showAuthenticatedUI && (
                 <Link
                     href="/chat"
                     className={`relative p-2 rounded-full transition-colors ${
@@ -234,17 +235,17 @@ export default function NavActions() {
             )}
 
             {/* Notifications */}
-            {isAuthenticated && user && !loading && (
+            {showAuthenticatedUI && (
                 <NotificationDropdown />
             )}
 
             {/* Cart */}
-            {isAuthenticated && user && !loading && (
+            {showAuthenticatedUI && (
                 <CartDropdown />
             )}
 
             {/* User Actions */}
-            {isAuthenticated && !loading ? (
+            {showAuthenticatedUI ? (
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger
                         asChild

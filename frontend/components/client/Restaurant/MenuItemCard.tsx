@@ -2,6 +2,7 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { getProductDetailHref } from "@/lib/utils/productNavigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Button } from "@/components/ui/Button";
@@ -115,10 +116,13 @@ export const MenuItemCard = memo(
         );
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+        const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
+
+        const productHref = getProductDetailHref(item) ?? "/search?type=foods";
 
         return (
             <Link
-                href={`/food/${item.slug}`}
+                href={productHref}
                 className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 hover:-translate-y-1 hover:border-brand-orange/30"
             >
                 {/* Image Section - Improved design */}
@@ -159,7 +163,7 @@ export const MenuItemCard = memo(
                     <div className="flex justify-between items-center mt-auto pt-2">
                         <p className="font-bold text-lg md:text-xl text-brand-orange">
                             {hasMultipleSizes && displayPrice ? "From " : ""}
-                            {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
+                            {displayPrice ? formatPriceVND(displayPrice) : "N/A"}
                         </p>
                         <Button
                             onClick={handleAddToCart}

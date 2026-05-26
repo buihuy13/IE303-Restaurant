@@ -1,7 +1,6 @@
 import { Order, OrderStatus } from "@/types/order.type";
 import { AxiosError } from "axios";
 import api, { getApiBaseUrl } from "../axios";
-import { restaurantApi } from "./restaurantApi";
 import { withOrderServiceBase } from "./serviceBaseConfig";
 
 /** Forces gateway base URL at request time (matches `NEXT_PUBLIC_API_URL` / `API_INTERNAL_URL` on SSR). */
@@ -257,13 +256,21 @@ function normalizeOrderDto(raw: unknown): Order {
     }
     const r = raw as Record<string, unknown>;
 
-    const orderId =
-        idStr(r.orderId) ||
+    const orderIdRaw =
+        idStr(r.orderId).trim() ||
+        idStr((r as { order_id?: unknown }).order_id).trim() ||
+        idStr((r as { Id?: unknown }).Id).trim();
+    const idRaw = idStr(r.id).trim() || idStr(r._id).trim();
+    const canonicalIdFromId =
         coerceOrderUuidFromUnknown(r.id) ||
-        idStr((r as { Id?: unknown }).Id) ||
-        idStr(r._id) ||
-        idStr((r as { order_id?: unknown }).order_id);
-    const slug = idStr(r.slug) || orderId;
+        coerceOrderUuidFromUnknown(r._id) ||
+        normalizeUuidLikeForPayment(idRaw);
+    const canonicalIdFromOrderId = normalizeUuidLikeForPayment(orderIdRaw);
+    const orderId = canonicalIdFromId || canonicalIdFromOrderId || orderIdRaw || idRaw;
+
+    // `/orders/[slug]` currently resolves via GET /order/{id}, so keep slug only when it is UUID-like.
+    const rawSlug = idStr(r.slug).trim();
+    const slug = normalizeUuidLikeForPayment(rawSlug) || orderId;
     const userId = idStr(r.userId);
 
     const restaurant =
@@ -747,29 +754,6 @@ export const orderApi = {
         }
     },
 
-    // Get all orders (Admin only)
-    getAllOrders: async (params?: {
-        page?: number;
-        limit?: number;
-        status?: string;
-    }): Promise<{ orders: Order[]; pagination?: Pagination }> => {
-        const search = new URLSearchParams();
-        if (params?.page) search.append("page", params.page.toString());
-        if (params?.limit) search.append("limit", params.limit.toString());
-        if (params?.status) search.append("status", params.status);
-
-        const response = await api.get<{
-            status: string;
-            message: string;
-            data: { orders: Order[]; pagination?: Pagination };
-        }>(`/orders${search.toString() ? `?${search.toString()}` : ""}`, withOrderApiBaseUrl());
-
-        return {
-            orders: response.data.data.orders,
-            pagination: response.data.data.pagination,
-        };
-    },
-
     // Admin API (new order-service contract): GET /api/orders/admin
     getAdminOrders: async (params?: {
         page?: number;
@@ -848,13 +832,32 @@ export const orderApi = {
             return { orders: [], pagination: undefined };
         }
         try {
+            const requestedUserId = userId.trim();
             const page = Math.max(options?.page ?? 0, 0);
             const size = Math.min(Math.max(options?.size ?? 50, 1), 200);
             const query = new URLSearchParams();
             query.set("page", String(page));
             query.set("size", String(size));
             const response = await api.get<unknown>(`${ORDER_BASE_PATH}?${query.toString()}`, withOrderApiBaseUrl());
-            return parseUserOrdersPayload(response.data);
+            const parsed = parseUserOrdersPayload(response.data);
+
+            // Defense-in-depth: if gateway returns cross-user data, keep only the requested user's orders.
+            // "__self__" is intentionally skipped because backend should resolve it from auth context.
+            if (requestedUserId === "__self__") {
+                return parsed;
+            }
+            const requestedUserIdLower = requestedUserId.toLowerCase();
+            const filteredOrders = parsed.orders.filter(
+                (order) => typeof order.userId === "string" && order.userId.trim().toLowerCase() === requestedUserIdLower,
+            );
+            if (process.env.NODE_ENV === "development" && filteredOrders.length !== parsed.orders.length) {
+                console.warn("[orderApi] Filtered out orders from other users", {
+                    requestedUserId,
+                    before: parsed.orders.length,
+                    after: filteredOrders.length,
+                });
+            }
+            return { ...parsed, orders: filteredOrders };
         } catch (error: unknown) {
             const status =
                 error instanceof AxiosError
@@ -864,32 +867,6 @@ export const orderApi = {
                 return { orders: [], pagination: undefined };
             }
             throw error;
-        }
-    },
-
-    // Get orders by merchant
-    getOrdersByMerchant: async (merchantId: string): Promise<Order[]> => {
-        try {
-            // Business rule: 1 merchant = 1 restaurant
-            const restaurantsResponse = await restaurantApi.getRestaurantByMerchantId(merchantId);
-            const data = restaurantsResponse.data;
-            const restaurants = Array.isArray(data) ? data : data ? [data] : [];
-
-            const firstRestaurant = restaurants[0] as { id?: string; _id?: string } | undefined;
-            const restaurantId = firstRestaurant?.id || firstRestaurant?._id;
-
-            if (!restaurantId) return [];
-
-            const { orders } = await orderApi.getOrdersByRestaurant(restaurantId, merchantId);
-
-            return orders.sort((a: Order, b: Order) => {
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return dateB - dateA;
-            });
-        } catch (error) {
-            console.error("Failed to get orders by merchant:", error);
-            return [];
         }
     },
 
@@ -935,7 +912,7 @@ export const orderApi = {
         const encodedOrderId = encodeURIComponent(orderId.trim());
         const response = await api.put<unknown>(
             `${ORDER_BASE_PATH}/${encodedOrderId}/cancel`,
-            undefined,
+            { reason: reason.trim() },
             withOrderApiBaseUrl(),
         );
         return parseSingleOrderPayload(response.data);
@@ -964,27 +941,4 @@ export const orderApi = {
         return parseSingleOrderPayload(response.data);
     },
 
-    // Merchant: Get restaurant orders
-    getRestaurantOrders: async (
-        restaurantId: string,
-        filters?: { status?: string; page?: number; limit?: number },
-    ): Promise<{ orders: Order[]; pagination?: Pagination }> => {
-        const params = new URLSearchParams();
-        if (filters?.status?.trim()) params.append("status", toBackendOrderStatus(filters.status));
-        if (filters?.page) params.append("page", String(Math.max(filters.page - 1, 0)));
-        if (filters?.limit) params.append("size", filters.limit.toString());
-        const encodedRestaurantId = encodeURIComponent(restaurantId.trim());
-
-        const response = await api.get<unknown>(
-            `${ORDER_BASE_PATH}/restaurant/${encodedRestaurantId}${params.toString() ? `?${params.toString()}` : ""}`,
-            withOrderApiBaseUrl(),
-        );
-
-        const rawPayload = unwrapOrderPayload(response.data);
-        const rawOrders = Array.isArray(rawPayload) ? rawPayload : [];
-        return {
-            orders: rawOrders.map(normalizeOrderDto),
-            pagination: undefined,
-        };
-    },
 };

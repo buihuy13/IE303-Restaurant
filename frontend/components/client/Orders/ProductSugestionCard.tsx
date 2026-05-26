@@ -23,6 +23,7 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
     const { user, loginWithKeycloak } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const formatPriceVND = (amount: number) => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
     // Ensure component is mounted (client-side only)
     useEffect(() => {
@@ -89,7 +90,7 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
                     {product.rating} ({product.reviewCount})
                 </span>
             </div>
-            <p className="font-extrabold text-xl mb-4">${product.price.toFixed(2)}</p>
+            <p className="font-extrabold text-xl mb-4">{formatPriceVND(product.price)}</p>
             {isMounted ? (
                 <button
                     onClick={handleAddToCart}

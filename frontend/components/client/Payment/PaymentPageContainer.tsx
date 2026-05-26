@@ -4,7 +4,8 @@ import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { Button } from "@/components/ui/Button";
 import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Input } from "@/components/ui/Input";
-import { authApi } from "@/lib/api/authApi";
+import { useAddressStore } from "@/stores/addressStore";
+import { useLocationStore } from "@/stores/useLocationStore";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
 import { clearCheckoutSelection, loadCheckoutSelection, type CheckoutSelection } from "@/lib/checkoutSelection";
@@ -12,7 +13,6 @@ import { useGeolocation } from "@/lib/userLocation";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { Address } from "@/types";
 import { ArrowLeft, Edit2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,12 +22,8 @@ import toast from "react-hot-toast";
 
 const SHIPPING_FEE = 0; // Free shipping
 
-// Format price to USD
-const formatPriceUSD = (priceUSD: number): string => {
-    return priceUSD.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+const formatPriceVND = (price: number): string => {
+    return `${Math.round(price).toLocaleString("vi-VN")} đ`;
 };
 
 export default function PaymentPageClient() {
@@ -35,13 +31,13 @@ export default function PaymentPageClient() {
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
 
-    const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } =
-        useCartStore();
+    const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading } = useCartStore();
     const { user, loading: authLoading, isAuthenticated, loginWithKeycloak } = useAuthStore();
     const { coords, error: locationError } = useGeolocation();
-    const [cartFetched, setCartFetched] = useState(false);
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [loadingAddresses, setLoadingAddresses] = useState(false);
+    const addresses = useAddressStore((state) => state.addresses);
+    const loadingAddresses = useAddressStore((state) => state.loading);
+    const currentAddress = useLocationStore((state) => state.currentAddress);
+    const setCurrentAddress = useLocationStore((state) => state.setCurrentAddress);
     const [checkoutSelection, setCheckoutSelection] = useState<CheckoutSelection | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +48,9 @@ export default function PaymentPageClient() {
 
     // PayOS redirect after order is created
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
+    const [checkoutStage, setCheckoutStage] = useState<"idle" | "creating" | "confirming" | "payos" | "redirecting">("idle");
     const payosReturnHandledRef = useRef(false);
+    const submittingLockRef = useRef(false);
     const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -111,7 +109,42 @@ export default function PaymentPageClient() {
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
     const isSubmitDisabled = isSubmitting || isProcessingCardPayment;
-    const submitLabel = isSubmitting ? "Placing order..." : "Place Order";
+    const submitLabel = isSubmitting ? "Đang xử lý..." : "Đặt hàng & thanh toán";
+    const checkoutSteps = [
+        { key: "cart", label: "Giỏ hàng" },
+        { key: "payment", label: "Thanh toán" },
+        { key: "confirm", label: "Xác nhận" },
+    ] as const;
+
+    const currentStageLabel = useMemo(() => {
+        switch (checkoutStage) {
+            case "creating":
+                return "Đang tạo đơn hàng";
+            case "confirming":
+                return "Đang xác nhận dữ liệu";
+            case "payos":
+                return "Đang tạo phiên PayOS";
+            case "redirecting":
+                return "Đang chuyển hướng sang PayOS";
+            default:
+                return "Đang xử lý";
+        }
+    }, [checkoutStage]);
+
+    const stageProgress = useMemo(() => {
+        switch (checkoutStage) {
+            case "creating":
+                return 25;
+            case "confirming":
+                return 45;
+            case "payos":
+                return 70;
+            case "redirecting":
+                return 95;
+            default:
+                return 10;
+        }
+    }, [checkoutStage]);
 
     const completeAfterPayOS = useCallback(
         async (orderIds: string[]) => {
@@ -167,6 +200,7 @@ export default function PaymentPageClient() {
             payosReturnHandledRef.current = true;
             toast.error("Payment cancelled");
             setIsProcessingCardPayment(false);
+                setCheckoutStage("idle");
             const rid = searchParams.get("restaurantId");
             router.replace(rid ? `/payment?restaurantId=${encodeURIComponent(rid)}` : "/payment");
             return;
@@ -192,47 +226,69 @@ export default function PaymentPageClient() {
             sessionStorage.removeItem("payos_pending_checkout");
             if (orderIds.length === 0) {
                 toast.error("Could not restore order after payment.");
+                setCheckoutStage("idle");
                 return;
             }
             void completeAfterPayOS(orderIds);
         }
     }, [searchParams, router, completeAfterPayOS]);
 
-    // Fetch user addresses
+    // Addresses hydrated by useAddressSync in ClientLayout
     useEffect(() => {
-        if (user?.id && isAuthenticated) {
-            setLoadingAddresses(true);
-            authApi
-                .getUserAddresses(user.id)
-                .then((data) => {
-                    if (Array.isArray(data) && data.length > 0) {
-                        setAddresses(data);
-                        const preferredLocation = (user as unknown as { defaultAddress?: string | null })
-                            ?.defaultAddress;
-                        const preferred =
-                            (preferredLocation ? data.find((a) => a.location === preferredLocation) : undefined) ||
-                            data[0];
+        if (!currentAddress) return;
 
-                        setSelectedAddressId(preferred.id);
-                        // Auto-fill form with preferred address
-                        const firstAddress = preferred;
-                        setFormData((prev) => ({
-                            ...prev,
-                            street: firstAddress.location || "",
-                        }));
-                    } else {
-                        setUseNewAddress(true);
-                    }
-                })
-                .catch((error) => {
-                    console.warn("Failed to fetch addresses:", error);
-                    setUseNewAddress(true);
-                })
-                .finally(() => {
-                    setLoadingAddresses(false);
-                });
+        const matchedSavedAddress = addresses.find(
+            (addr) =>
+                addr.id === currentAddress.id ||
+                (addr.location === currentAddress.address &&
+                    Math.abs(addr.latitude - currentAddress.lat) < 0.0001 &&
+                    Math.abs(addr.longitude - currentAddress.lng) < 0.0001),
+        );
+
+        if (matchedSavedAddress) {
+            setSelectedAddressId(matchedSavedAddress.id);
+            setUseNewAddress(false);
+            setNewAddressLat(null);
+            setNewAddressLon(null);
+            setFormData((prev) => ({
+                ...prev,
+                street: matchedSavedAddress.location || prev.street,
+            }));
+            return;
         }
-    }, [user, isAuthenticated]);
+
+        // Header selected a location that is not saved yet -> keep as one-time checkout address
+        if (currentAddress.address?.trim()) {
+            setUseNewAddress(true);
+            setSelectedAddressId(null);
+            setNewAddressLat(currentAddress.lat);
+            setNewAddressLon(currentAddress.lng);
+            setFormData((prev) => ({
+                ...prev,
+                street: currentAddress.address,
+            }));
+        }
+    }, [currentAddress, addresses]);
+
+    useEffect(() => {
+        if (currentAddress) return;
+        if (user?.id && isAuthenticated && addresses.length > 0) {
+            const preferredLocation = (user as unknown as { defaultAddress?: string | null })?.defaultAddress;
+            const preferred =
+                (preferredLocation ? addresses.find((a) => a.location === preferredLocation) : undefined) ||
+                addresses[0];
+
+            if (preferred && !selectedAddressId) {
+                setSelectedAddressId(preferred.id);
+                setFormData((prev) => ({
+                    ...prev,
+                    street: preferred.location || "",
+                }));
+            }
+        } else if (user?.id && isAuthenticated && !loadingAddresses && addresses.length === 0) {
+            setUseNewAddress(true);
+        }
+    }, [currentAddress, user, isAuthenticated, addresses, loadingAddresses, selectedAddressId]);
 
     // Auto-fill form from user profile
     useEffect(() => {
@@ -283,26 +339,6 @@ export default function PaymentPageClient() {
 
         if (user?.id && cartUserId !== user.id) {
             setUserId(user.id);
-            setCartFetched(false);
-            return;
-        }
-
-        if (user?.id && cartUserId === user.id && !cartFetched && !cartLoading) {
-            fetchCart()
-                .then(() => {
-                    setCartFetched(true);
-                })
-                .catch((error) => {
-                    const status = (error as { response?: { status?: number } })?.response?.status;
-                    if (status !== 404 && status !== 503) {
-                        console.warn("Failed to fetch cart:", error);
-                    }
-                    setCartFetched(true);
-                });
-        }
-
-        if (user?.id && cartUserId === user.id && !cartLoading && !cartFetched) {
-            setCartFetched(true);
         }
     }, [
         authLoading,
@@ -311,9 +347,7 @@ export default function PaymentPageClient() {
         restaurantId,
         items,
         cartUserId,
-        cartFetched,
         cartLoading,
-        fetchCart,
         setUserId,
         router,
         loginWithKeycloak,
@@ -321,7 +355,7 @@ export default function PaymentPageClient() {
 
     // Check if cart is empty (but skip if payment just succeeded to avoid redirect conflict)
     useEffect(() => {
-        if (!user || cartLoading || !cartFetched || isPaymentSuccess) return;
+        if (!user || cartLoading || isPaymentSuccess) return;
 
         const delay = 300;
         const checkTimer = setTimeout(() => {
@@ -333,7 +367,7 @@ export default function PaymentPageClient() {
         }, delay);
 
         return () => clearTimeout(checkTimer);
-    }, [user, orderItems, items, cartUserId, cartFetched, cartLoading, router, restaurantId, isPaymentSuccess]);
+    }, [user, orderItems, items, cartUserId, cartLoading, router, restaurantId, isPaymentSuccess]);
 
     useEffect(() => {
         if (locationError) {
@@ -358,6 +392,12 @@ export default function PaymentPageClient() {
         setNewAddressLon(null);
         const selectedAddress = addresses.find((addr) => addr.id === addressId);
         if (selectedAddress) {
+            setCurrentAddress({
+                id: selectedAddress.id,
+                address: selectedAddress.location,
+                lat: selectedAddress.latitude,
+                lng: selectedAddress.longitude,
+            });
             setFormData((prev) => ({
                 ...prev,
                 street: selectedAddress.location || "",
@@ -386,6 +426,12 @@ export default function PaymentPageClient() {
         ) {
             setNewAddressLat(latitude);
             setNewAddressLon(longitude);
+            setCurrentAddress({
+                id: `checkout-${Date.now()}`,
+                address,
+                lat: latitude,
+                lng: longitude,
+            });
         } else {
             // Typed manually without picking a suggestion — rely on saved-address coords or device geolocation.
             setNewAddressLat(null);
@@ -401,26 +447,30 @@ export default function PaymentPageClient() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (isSubmitting) {
+        if (isSubmitting || submittingLockRef.current) {
             return;
         }
+        submittingLockRef.current = true;
 
         if (!user?.id) {
             toast.error("Please login to place order");
             void loginWithKeycloak({
                 redirectPath: typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/payment",
             });
+            submittingLockRef.current = false;
             return;
         }
 
         if (!restaurantId) {
             toast.error("Please select a restaurant to checkout");
             router.push("/cart");
+            submittingLockRef.current = false;
             return;
         }
 
         if (orderItems.length === 0) {
             toast.error("Your cart is empty");
+            submittingLockRef.current = false;
             return;
         }
 
@@ -432,6 +482,7 @@ export default function PaymentPageClient() {
                 scrollToFirstVisibleField(["#desktop-phone", "#mobile-phone"]);
             }
             toast.error("Please fill in your name and phone number");
+                submittingLockRef.current = false;
             return;
         }
 
@@ -442,6 +493,7 @@ export default function PaymentPageClient() {
                 'input[placeholder^="Enter address"]',
             ]);
             toast.error("Please enter delivery address");
+            submittingLockRef.current = false;
             return;
         }
 
@@ -465,14 +517,32 @@ export default function PaymentPageClient() {
             toast.error(
                 "Unable to determine delivery coordinates. Please select an address from the suggestions or enable location services and try again.",
             );
+            submittingLockRef.current = false;
             return;
         }
 
         setIsSubmitting(true);
+        setCheckoutStage("creating");
 
         try {
+            // Refresh cart from backend first so checkout uses persisted cart state,
+            // not only the optimistic client-side store.
+            await useCartStore.getState().fetchCart({ forceUpdate: true });
+
+            const latestItems = useCartStore.getState().items;
+            const latestOrderItems = restaurantId ? latestItems.filter((item) => item.restaurantId === restaurantId) : latestItems;
+
+            // Apply checkout selection again on the fresh cart snapshot.
+            const freshOrderItems =
+                restaurantId &&
+                checkoutSelection &&
+                checkoutSelection.restaurantId === restaurantId &&
+                checkoutSelection.itemIds.length > 0
+                    ? latestOrderItems.filter((it) => new Set(checkoutSelection.itemIds).has(it.id))
+                    : latestOrderItems;
+
             // Filter out items with invalid restaurantId
-            const validOrderItems = orderItems.filter(
+            const validOrderItems = freshOrderItems.filter(
                 (item) => item.restaurantId && item.restaurantId.trim() !== "" && item.restaurantId !== "null" && item.restaurantId !== "undefined"
             );
 
@@ -552,6 +622,7 @@ export default function PaymentPageClient() {
 
             const order = await orderApi.createOrder(payload);
             // Wait for PayOS redirect — don't clear cart until payment success callback
+            setCheckoutStage("payos");
             setIsProcessingCardPayment(true);
             await handlePayOSRedirect(order);
         } catch (error: unknown) {
@@ -568,8 +639,10 @@ export default function PaymentPageClient() {
             } else {
                 toast.error(errorMessage);
             }
+            setCheckoutStage("idle");
         } finally {
             setIsSubmitting(false);
+            submittingLockRef.current = false;
         }
     };
 
@@ -591,6 +664,7 @@ export default function PaymentPageClient() {
         const loadingToast = toast.loading("Preparing payment...");
 
         try {
+            setCheckoutStage("confirming");
             const calculatedTotal = subtotal + shipping + tax;
             const origin = typeof window !== "undefined" ? window.location.origin : "";
             const rid = restaurantId || "";
@@ -602,6 +676,7 @@ export default function PaymentPageClient() {
                 JSON.stringify({ orderIds: [resolvedOrderId], restaurantId: rid || null }),
             );
 
+            setCheckoutStage("payos");
             const res = await paymentApi.createPayment({
                 orderId: resolvedOrderId,
                 userId: user.id,
@@ -616,6 +691,7 @@ export default function PaymentPageClient() {
             }
 
             toast.dismiss(loadingToast);
+            setCheckoutStage("redirecting");
             window.location.assign(res.checkoutUrl);
         } catch (error: unknown) {
             let errorMessage = "Unable to create payment. Please try again.";
@@ -631,10 +707,11 @@ export default function PaymentPageClient() {
             toast.dismiss(loadingToast);
             toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
+            setCheckoutStage("idle");
         }
     };
 
-    if (authLoading || cartLoading || !cartFetched || loadingAddresses) {
+    if (authLoading || cartLoading || loadingAddresses) {
         return <GlobalLoader label="Loading" sublabel="Setting up checkout" />;
     }
 
@@ -657,6 +734,77 @@ export default function PaymentPageClient() {
         return <GlobalLoader label="Redirecting" sublabel="Taking you to order tracking..." />;
     }
 
+    if (isSubmitting || isProcessingCardPayment) {
+        return (
+            <div className="custom-container py-8 sm:py-10 md:py-12">
+                <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
+                    <div className="mb-6 flex items-center justify-between gap-2">
+                        {checkoutSteps.map((step, idx) => {
+                            const active = idx <= 1;
+                            const done = idx === 0;
+                            return (
+                                <div key={step.key} className="flex flex-1 items-center gap-2">
+                                    <div
+                                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                                            done
+                                                ? "bg-brand-orange text-white"
+                                                : active
+                                                ? "border border-brand-orange text-brand-orange"
+                                                : "border border-gray-300 text-gray-400"
+                                        }`}
+                                    >
+                                        {done ? "✓" : idx + 1}
+                                    </div>
+                                    <span className={`text-xs sm:text-sm ${active ? "text-gray-800" : "text-gray-400"}`}>{step.label}</span>
+                                    {idx < checkoutSteps.length - 1 && <div className="h-px flex-1 bg-gray-200" />}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4">
+                        <p className="text-sm font-semibold text-gray-900">{currentStageLabel}</p>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
+                            <div
+                                className="h-full rounded-full bg-brand-orange transition-[width] duration-300"
+                                style={{ width: `${stageProgress}%` }}
+                            />
+                        </div>
+                        <p className="mt-2 text-xs text-gray-600">Vui lòng không tắt tab trong lúc hoàn tất thanh toán PayOS.</p>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-gray-200 p-4">
+                        <p className="text-sm font-semibold text-gray-900 mb-3">Tóm tắt đơn hàng</p>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {orderItems.map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between gap-3 text-sm">
+                                    <p className="truncate text-gray-700">
+                                        {item.name} <span className="text-gray-500">x{item.quantity}</span>
+                                    </p>
+                                    <p className="font-semibold text-gray-900">{formatPriceVND(item.price * item.quantity)}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-3 border-t pt-3 text-sm">
+                            <div className="flex justify-between text-gray-600">
+                                <span>Tạm tính</span>
+                                <span>{formatPriceVND(subtotal)}</span>
+                            </div>
+                            <div className="mt-1 flex justify-between text-gray-600">
+                                <span>Thuế (5%)</span>
+                                <span>{formatPriceVND(tax)}</span>
+                            </div>
+                            <div className="mt-2 flex justify-between text-base font-semibold text-gray-900">
+                                <span>Tổng cộng</span>
+                                <span className="text-brand-orange">{formatPriceVND(total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="custom-container py-8 sm:py-10 md:py-12">
             {/* Header with Back Button */}
@@ -669,6 +817,23 @@ export default function PaymentPageClient() {
                     <span className="text-sm font-medium">Back to Cart</span>
                 </Link>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Checkout</h1>
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                        {checkoutSteps.map((step, idx) => (
+                            <div key={step.key} className="flex flex-1 items-center gap-2">
+                                <div
+                                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                                        idx === 0 ? "bg-brand-orange text-white" : idx === 1 ? "border border-brand-orange text-brand-orange" : "border border-gray-300 text-gray-400"
+                                    }`}
+                                >
+                                    {idx === 0 ? "✓" : idx + 1}
+                                </div>
+                                <span className={`text-xs sm:text-sm ${idx <= 1 ? "text-gray-800" : "text-gray-400"}`}>{step.label}</span>
+                                {idx < checkoutSteps.length - 1 && <div className="h-px flex-1 bg-gray-200" />}
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Desktop: 2 Column Layout */}
@@ -815,7 +980,7 @@ export default function PaymentPageClient() {
                                     name="note"
                                     value={formData.note}
                                     onChange={handleChange}
-                                    rows={3}
+                                    rows={2}
                                     placeholder="Any special instructions..."
                                     className="w-full rounded-xl border border-gray-300 px-4 py-2.5 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
                                 />
@@ -853,11 +1018,11 @@ export default function PaymentPageClient() {
                                         <div className="flex-grow min-w-0">
                                             <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
                                             <p className="text-xs text-gray-500">
-                                                {item.quantity} x {formatPriceUSD(item.price)} $
+                                                {item.quantity} x {formatPriceVND(item.price)}
                                             </p>
                                         </div>
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {formatPriceUSD(item.price * item.quantity)} $
+                                            {formatPriceVND(item.price * item.quantity)}
                                         </p>
                                     </div>
                                 );
@@ -868,24 +1033,32 @@ export default function PaymentPageClient() {
                         <div className="space-y-2 mb-6 pt-4 border-t border-gray-200">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
+                                <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Shipping Fee</span>
                                 <span className="text-gray-900 font-medium">
-                                    {shipping === 0 ? "FREE" : `${formatPriceUSD(shipping)} $`}
+                                    {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Tax</span>
-                                <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
+                                <span className="text-gray-900 font-medium">{formatPriceVND(tax)}</span>
+                            </div>
+                            <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                <p className="text-xs font-semibold text-gray-900">Phương thức thanh toán</p>
+                                <p className="mt-1 text-sm text-gray-600">Thẻ nội địa / quốc tế / QR (PayOS)</p>
                             </div>
                         </div>
 
                         {/* Total */}
                         <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                             <span className="text-lg font-semibold text-gray-900">Total</span>
-                            <span className="text-2xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
+                            <span className="text-2xl font-bold text-brand-orange">{formatPriceVND(total)}</span>
+                        </div>
+
+                        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            Sau khi đặt, bạn sẽ được chuyển sang PayOS để hoàn tất thanh toán. Vui lòng không tắt tab.
                         </div>
 
                         <Button
@@ -897,34 +1070,6 @@ export default function PaymentPageClient() {
                         >
                             {submitLabel}
                         </Button>
-                    </div>
-
-                    {/* Block B: Payment Method */}
-                    <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]" data-payment-form>
-                        <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
-                        {isProcessingCardPayment ? (
-                            <div className="space-y-4">
-                                <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 p-5 text-sm text-gray-700">
-                                    <p className="font-semibold text-gray-900 mb-1">PayOS checkout</p>
-                                    <p className="text-gray-600">
-                                        Opening secure payment page. If nothing happens, allow pop-ups or try again.
-                                    </p>
-                                </div>
-                                <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm py-2">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
-                                    <span>Redirecting...</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4 text-sm text-gray-700">
-                                    <p className="font-semibold text-gray-900 mb-1">PayOS card payment</p>
-                                    <p className="text-gray-600">
-                                        Place your order from the summary panel. You will be redirected to PayOS immediately.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -1070,11 +1215,11 @@ export default function PaymentPageClient() {
                                     <div className="flex-grow min-w-0">
                                         <p className="text-xs font-medium text-gray-900 truncate">{item.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {item.quantity} x {formatPriceUSD(item.price)} $
+                                            {item.quantity} x {formatPriceVND(item.price)}
                                         </p>
                                     </div>
                                     <p className="text-xs font-semibold text-gray-900">
-                                        {formatPriceUSD(item.price * item.quantity)} $
+                                        {formatPriceVND(item.price * item.quantity)}
                                     </p>
                                 </div>
                             );
@@ -1085,51 +1230,32 @@ export default function PaymentPageClient() {
                     <div className="space-y-1.5 mb-4 pt-3 border-t border-gray-200">
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Subtotal</span>
-                            <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
+                            <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Shipping</span>
                             <span className="text-gray-900 font-medium">
-                                {shipping === 0 ? "FREE" : `${formatPriceUSD(shipping)} $`}
+                                {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
                             </span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Tax</span>
-                            <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
+                            <span className="text-gray-900 font-medium">{formatPriceVND(tax)}</span>
+                        </div>
+                        <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-2.5">
+                            <p className="text-[11px] font-semibold text-gray-900">Thanh toán qua PayOS</p>
+                            <p className="mt-0.5 text-[11px] text-gray-600">Thẻ nội địa / quốc tế / QR</p>
                         </div>
                     </div>
 
                     {/* Total */}
                     <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                         <span className="text-base font-semibold text-gray-900">Total</span>
-                        <span className="text-xl font-bold text-brand-orange">{formatPriceUSD(total)} $</span>
+                        <span className="text-xl font-bold text-brand-orange">{formatPriceVND(total)}</span>
                     </div>
-                </div>
-
-                {/* Payment Method */}
-                <div className="rounded-3xl border border-gray-200/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,0.07)]" data-payment-form>
-                    <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Payment Method</h2>
-                    {isProcessingCardPayment ? (
-                        <div className="space-y-4">
-                            <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 p-4 text-sm text-gray-700">
-                                <p className="font-semibold text-gray-900 mb-1">PayOS checkout</p>
-                                <p className="text-gray-600 text-xs">Redirecting to secure payment…</p>
-                            </div>
-                            <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm py-2">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-orange"></div>
-                                <span>Redirecting...</span>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4 text-sm text-gray-700">
-                                <p className="font-semibold text-gray-900 mb-1">PayOS card payment</p>
-                                <p className="text-gray-600 text-xs">
-                                    Tap the sticky Place Order button below to continue to secure payment.
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                    <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                        Sau khi đặt, bạn sẽ được chuyển sang PayOS để hoàn tất thanh toán. Không tắt tab.
+                    </div>
                 </div>
             </div>
 
@@ -1138,7 +1264,7 @@ export default function PaymentPageClient() {
                     <div className="mx-auto flex w-full max-w-screen-sm items-center gap-3">
                         <div className="min-w-0">
                             <p className="text-xs text-gray-500">Total</p>
-                            <p className="truncate text-base font-bold text-brand-orange">{formatPriceUSD(total)} $</p>
+                            <p className="truncate text-base font-bold text-brand-orange">{formatPriceVND(total)}</p>
                         </div>
                         <Button
                             type="submit"
