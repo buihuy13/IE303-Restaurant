@@ -832,13 +832,32 @@ export const orderApi = {
             return { orders: [], pagination: undefined };
         }
         try {
+            const requestedUserId = userId.trim();
             const page = Math.max(options?.page ?? 0, 0);
             const size = Math.min(Math.max(options?.size ?? 50, 1), 200);
             const query = new URLSearchParams();
             query.set("page", String(page));
             query.set("size", String(size));
             const response = await api.get<unknown>(`${ORDER_BASE_PATH}?${query.toString()}`, withOrderApiBaseUrl());
-            return parseUserOrdersPayload(response.data);
+            const parsed = parseUserOrdersPayload(response.data);
+
+            // Defense-in-depth: if gateway returns cross-user data, keep only the requested user's orders.
+            // "__self__" is intentionally skipped because backend should resolve it from auth context.
+            if (requestedUserId === "__self__") {
+                return parsed;
+            }
+            const requestedUserIdLower = requestedUserId.toLowerCase();
+            const filteredOrders = parsed.orders.filter(
+                (order) => typeof order.userId === "string" && order.userId.trim().toLowerCase() === requestedUserIdLower,
+            );
+            if (process.env.NODE_ENV === "development" && filteredOrders.length !== parsed.orders.length) {
+                console.warn("[orderApi] Filtered out orders from other users", {
+                    requestedUserId,
+                    before: parsed.orders.length,
+                    after: filteredOrders.length,
+                });
+            }
+            return { ...parsed, orders: filteredOrders };
         } catch (error: unknown) {
             const status =
                 error instanceof AxiosError
