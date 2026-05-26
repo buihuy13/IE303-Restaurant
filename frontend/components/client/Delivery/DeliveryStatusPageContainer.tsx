@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DeliveryStatusPageClientWrapper from "./DeliveryStatusPageClientWrapper";
 
-export default function OrderStatusPage({ params }: { params: { slug: string } }) {
+export default function OrderStatusPage({ slug }: { slug: string }) {
     const router = useRouter();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +17,7 @@ export default function OrderStatusPage({ params }: { params: { slug: string } }
 
         const fetchOrder = async () => {
             try {
-                const data = await orderApi.getOrderBySlug(params.slug, { cacheBust: true });
+                const data = await orderApi.getOrderBySlug(slug, { cacheBust: true });
                 if (!cancelled) {
                     setOrder(data);
                 }
@@ -36,7 +36,7 @@ export default function OrderStatusPage({ params }: { params: { slug: string } }
         return () => {
             cancelled = true;
         };
-    }, [params.slug, router]);
+    }, [slug, router]);
 
     if (isLoading) {
         return <GlobalLoader label="Loading order tracking" sublabel="Please wait a moment" />;
