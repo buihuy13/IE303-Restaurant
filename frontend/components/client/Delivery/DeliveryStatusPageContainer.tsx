@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DeliveryStatusPageClientWrapper from "./DeliveryStatusPageClientWrapper";
 
+const normalizeMatchKey = (value: unknown): string => String(value ?? "").trim().toLowerCase().replace(/-/g, "");
+
 export default function OrderStatusPage({ slug }: { slug: string }) {
     const router = useRouter();
     const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -38,7 +40,7 @@ export default function OrderStatusPage({ slug }: { slug: string }) {
                         }
 
                         const { orders } = await orderApi.getOrdersByUser(userId || "__self__", { size: 100 });
-                        const target = normalizeMatchKey(params.slug);
+                        const target = normalizeMatchKey(slug);
                         const matched =
                             orders.find(
                                 (o) =>
@@ -68,7 +70,7 @@ export default function OrderStatusPage({ slug }: { slug: string }) {
         return () => {
             cancelled = true;
         };
-    }, [slug, router]);
+    }, [authLoading, isAuthenticated, router, slug, userId]);
 
     if (isLoading) {
         return <GlobalLoader label="Loading order tracking" sublabel="Please wait a moment" />;
