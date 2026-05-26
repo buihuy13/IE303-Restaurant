@@ -8,7 +8,7 @@ import { queryApi } from "./queryApi";
  * Paginated nearby lists use query-service via {@link queryApi}.
  */
 
-/** Spring Data Page JSON for GET /query/restaurants */
+/** Spring Data Page JSON for GET /restaurants */
 export type RestaurantPageResponse = {
     content: Restaurant[];
     totalElements: number;
@@ -23,9 +23,6 @@ function mapCatalogCategory(c: CatalogCategoryDto): Category {
     return { id: String(c.id ?? c.cateId), cateName: c.cateName };
 }
 
-const DEFAULT_LIST_LAT = "10.9032198";
-const DEFAULT_LIST_LON = "106.7750317";
-
 /**
  * `GET /restaurant/merchant/{id}` returns a single {@link ResResponse} (see `ResController`),
  * not an array. Callers that need a list should use this helper.
@@ -38,12 +35,10 @@ export function merchantRestaurantsFromResponse(
 }
 
 /**
- * Loads every restaurant from paginated GET /query/restaurants (admin dashboards need the full list).
+ * Loads every restaurant from paginated GET /restaurants (admin dashboards need the full list).
  */
 export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise<Restaurant[]> {
     const base = new URLSearchParams(extra ? Array.from(extra.entries()) : []);
-    if (!base.has("lat")) base.set("lat", DEFAULT_LIST_LAT);
-    if (!base.has("lon")) base.set("lon", DEFAULT_LIST_LON);
 
     const all: Restaurant[] = [];
     let page = 0;
@@ -55,7 +50,7 @@ export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise
         params.set("page", String(page));
         params.set("size", String(pageSize));
 
-        const res = await queryApi.getRestaurants(buildRestaurantQueryParams(params));
+        const res = await api.get<RestaurantPageResponse>("/restaurants", { params });
         const data = res.data;
         const chunk = Array.isArray(data?.content) ? data.content : [];
         all.push(...chunk);
