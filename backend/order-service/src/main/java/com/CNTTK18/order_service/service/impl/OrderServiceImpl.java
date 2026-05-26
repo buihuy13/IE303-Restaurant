@@ -209,7 +209,8 @@ public class OrderServiceImpl implements OrderService {
 
     private boolean isRestaurantOwner(UUID restaurantId, UUID currentUserId) {
         try {
-            ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
+            ResClientResponse resInfo =
+                    restaurantClient.getRestaurant(restaurantId).block();
             return resInfo != null && currentUserId.equals(resInfo.getMerchantId());
         } catch (Exception e) {
             return false;
@@ -237,7 +238,8 @@ public class OrderServiceImpl implements OrderService {
         List<Order> newOrders = drafts.stream()
                 .map(draft -> buildOrder(userId, draft.restaurantId(), draft.resInfo(), draft.group(), request))
                 .toList();
-        List<CartRestaurantGroup> groupsToRemove = drafts.stream().map(RestaurantOrderDraft::group).toList();
+        List<CartRestaurantGroup> groupsToRemove =
+                drafts.stream().map(RestaurantOrderDraft::group).toList();
 
         return new CheckoutBuildResult(newOrders, groupsToRemove);
     }
@@ -312,7 +314,8 @@ public class OrderServiceImpl implements OrderService {
 
         UUID merchantId = saved.getMerchantId();
         if (merchantId == null) {
-            ResClientResponse resInfo = restaurantClient.getRestaurant(saved.getRestaurantId()).block();
+            ResClientResponse resInfo =
+                    restaurantClient.getRestaurant(saved.getRestaurantId()).block();
             if (resInfo == null || resInfo.getMerchantId() == null) {
                 throw new BadRequestException("Cannot resolve merchant owner for completed order");
             }

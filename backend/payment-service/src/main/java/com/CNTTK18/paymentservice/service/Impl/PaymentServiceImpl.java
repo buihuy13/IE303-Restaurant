@@ -7,14 +7,14 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.CNTTK18.Common.Event.PaymentStatusSyncContract;
@@ -47,6 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+
     @Value("${gateway.url}")
     private String gatewayUrl;
 
@@ -237,15 +238,15 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String readHttpResponse(String requestUrl) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) URI.create(requestUrl).toURL().openConnection();
+        HttpURLConnection connection =
+                (HttpURLConnection) URI.create(requestUrl).toURL().openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(2000);
         connection.setReadTimeout(2000);
 
         int responseCode = connection.getResponseCode();
         BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream()));
+                new InputStreamReader(responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream()));
         try (reader) {
             StringBuilder body = new StringBuilder();
             String line;
