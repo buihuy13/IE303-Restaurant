@@ -26,6 +26,18 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue paymentStatusQueue() {
+        return QueueBuilder.durable(PaymentStatusSyncContract.QUEUE).build();
+    }
+
+    @Bean
+    public Binding paymentStatusBinding() {
+        return BindingBuilder.bind(paymentStatusQueue())
+                .to(paymentStatusExchange())
+                .with(PaymentStatusSyncContract.ROUTING_KEY);
+    }
+
+    @Bean
     public TopicExchange merchantRevenueExchange() {
         return new TopicExchange(MerchantRevenueContract.EXCHANGE);
     }
