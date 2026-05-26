@@ -1,6 +1,7 @@
 package com.CNTTK18.notification_service.service;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,12 +77,6 @@ public class SSEService {
             return;
         }
 
-        String userId = event.getUserId().toString();
-        SseEmitter emitter = this.emitters.get(userId);
-        if (emitter == null) {
-            return;
-        }
-
         String status = event.getStatus() == null ? "UNKNOWN" : event.getStatus();
         Map<String, Object> payload = new HashMap<>();
         payload.put("orderId", event.getOrderId());
@@ -91,7 +86,18 @@ public class SSEService {
         payload.put("deliveryAddress", event.getDeliveryAddress());
         payload.put("message", buildStatusMessage(status, event.getRestaurantName()));
 
-        handleEmit(emitter, "ORDER_NOTIFICATION", payload, userId);
+        LinkedHashSet<String> recipientIds = new LinkedHashSet<>();
+        recipientIds.add(event.getUserId().toString());
+        if (event.getMerchantId() != null) {
+            recipientIds.add(event.getMerchantId().toString());
+        }
+
+        recipientIds.forEach(recipientId -> {
+            SseEmitter emitter = this.emitters.get(recipientId);
+            if (emitter != null) {
+                handleEmit(emitter, "ORDER_NOTIFICATION", payload, recipientId);
+            }
+        });
     }
 
     public void sendBlogMetrics(BlogMetricsEvent event) {

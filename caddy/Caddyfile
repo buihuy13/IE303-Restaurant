@@ -15,6 +15,10 @@ http://localhost:8443 {
         path /api/*
     }
 
+    @payment_webhook_route {
+        path /payment/payos-webhook
+    }
+
     @protected_routes {
         path /v3/api-docs/*
         path /api-docs/*
@@ -49,6 +53,10 @@ http://localhost:8443 {
     }
 
     handle @api_routes {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle @payment_webhook_route {
         reverse_proxy api-gateway:8080
     }
     
