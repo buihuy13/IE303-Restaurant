@@ -3,6 +3,8 @@ package com.CNTTK18.restaurant_service.service.Impl;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,6 +49,11 @@ public class ResServiceImpl implements ResService {
         Restaurants res =
                 resRepository.findBySlug(slug).orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         return resMapper.toResResponse(res);
+    }
+
+    @Override
+    public Page<ResResponse> getAllRestaurants(Pageable pageable) {
+        return resRepository.findAll(pageable).map(resMapper::toResResponse);
     }
 
     @Transactional
