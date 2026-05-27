@@ -23,16 +23,33 @@ ADMIN_USER_ID="00000000-0000-0000-0000-000000000002"
 RESTAURANT_ID_1="00000000-0000-0000-1000-000000000001"
 RESTAURANT_ID_2="00000000-0000-0000-1000-000000000002"
 RESTAURANT_ID_3="00000000-0000-0000-1000-000000000003"
+RESTAURANT_ID_4="00000000-0000-0000-1000-000000000004"
+RESTAURANT_ID_5="00000000-0000-0000-1000-000000000005"
+RESTAURANT_ID_6="00000000-0000-0000-1000-000000000006"
 
 PRODUCT_ID_1="00000000-0000-0000-2000-000000000001"
 PRODUCT_ID_2="00000000-0000-0000-2000-000000000002"
 PRODUCT_ID_3="00000000-0000-0000-2000-000000000003"
 PRODUCT_ID_4="00000000-0000-0000-2000-000000000004"
+PRODUCT_ID_5="00000000-0000-0000-2000-000000000005"
+PRODUCT_ID_6="00000000-0000-0000-2000-000000000006"
+PRODUCT_ID_7="00000000-0000-0000-2000-000000000007"
+PRODUCT_ID_8="00000000-0000-0000-2000-000000000008"
+PRODUCT_ID_9="00000000-0000-0000-2000-000000000009"
+PRODUCT_ID_10="00000000-0000-0000-2000-000000000010"
 
 REVIEW_ID_1="00000000-0000-0000-3000-000000000001"
 REVIEW_ID_2="00000000-0000-0000-3000-000000000002"
 REVIEW_ID_3="00000000-0000-0000-3000-000000000003"
 REVIEW_ID_4="00000000-0000-0000-3000-000000000004"
+REVIEW_ID_5="00000000-0000-0000-3000-000000000005"
+REVIEW_ID_6="00000000-0000-0000-3000-000000000006"
+REVIEW_ID_7="00000000-0000-0000-3000-000000000007"
+REVIEW_ID_8="00000000-0000-0000-3000-000000000008"
+REVIEW_ID_9="00000000-0000-0000-3000-000000000009"
+REVIEW_ID_10="00000000-0000-0000-3000-000000000010"
+REVIEW_ID_11="00000000-0000-0000-3000-000000000011"
+REVIEW_ID_12="00000000-0000-0000-3000-000000000012"
 
 ORDER_ID_1="00000000-0000-0000-5000-000000000001"
 ORDER_ID_2="00000000-0000-0000-5000-000000000002"
@@ -78,6 +95,10 @@ fetch_reference_ids() {
     CATEGORY_TRA_SUA_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Trà sữa' LIMIT 1;")
     CATEGORY_PIZZA_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Pizza' LIMIT 1;")
     CATEGORY_COM_TAM_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Cơm tấm' LIMIT 1;")
+    CATEGORY_BUN_BO_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Bún bò' LIMIT 1;")
+    CATEGORY_BANH_MI_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Bánh mì' LIMIT 1;")
+    CATEGORY_PHO_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Phở' LIMIT 1;")
+    CATEGORY_GOI_CUON_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM categories WHERE cate_name = 'Bánh cuốn' LIMIT 1;")
     SIZE_S_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM sizes WHERE name = 'S' LIMIT 1;")
     SIZE_M_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM sizes WHERE name = 'M' LIMIT 1;")
     SIZE_L_ID=$($PSQL -d catalog_service -tA -c "SELECT id FROM sizes WHERE name = 'L' LIMIT 1;")
@@ -100,26 +121,35 @@ SQL
 seed_restaurants() {
     echo "Seeding restaurants..."
     $PSQL -d restaurant_service >/dev/null 2>&1 <<SQL
-INSERT INTO restaurants (id, res_name, address, longitude, latitude, rating, opening_time, closing_time, phone, total_review, merchant_id, slug, enabled) VALUES
-('$RESTAURANT_ID_1', 'Merchant Bistro', '123 Nguyen Trai, Quan 1, HCMC', 106.660172, 10.762622, 4.8, '08:00:00', '22:00:00', '0900000000', 0, '$MERCHANT_USER_ID', 'merchant-bistro', true),
-('$RESTAURANT_ID_2', 'Tra Sua Ngon', '456 Hai Ba Trung, Quan 1, HCMC', 106.692403, 10.779769, 4.5, '09:00:00', '23:00:00', '0900000001', 0, '$MERCHANT_USER_ID', 'tra-sua-ngon', true),
-('$RESTAURANT_ID_3', 'Pizza Corner', '789 Le Loi, Quan 1, HCMC', 106.700981, 10.776889, 4.7, '10:00:00', '23:00:00', '0900000002', 0, '$MERCHANT_USER_ID', 'pizza-corner', true)
-ON CONFLICT (slug) DO UPDATE SET res_name = EXCLUDED.res_name, merchant_id = EXCLUDED.merchant_id;
+INSERT INTO restaurants (id, res_name, address, longitude, latitude, rating, opening_time, closing_time, phone, total_review, merchant_id, slug, enabled, image_url) VALUES
+('$RESTAURANT_ID_1', 'Merchant Bistro', '123 Nguyen Trai, Quan 1, HCMC', 106.660172, 10.762622, 4.8, '08:00:00', '22:00:00', '0900000000', 0, '$MERCHANT_USER_ID', 'merchant-bistro', true, 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'),
+('$RESTAURANT_ID_2', 'Tra Sua Ngon', '456 Hai Ba Trung, Quan 1, HCMC', 106.692403, 10.779769, 4.5, '09:00:00', '23:00:00', '0900000001', 0, '$MERCHANT_USER_ID', 'tra-sua-ngon', true, 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800'),
+('$RESTAURANT_ID_3', 'Pizza Corner', '789 Le Loi, Quan 1, HCMC', 106.700981, 10.776889, 4.7, '10:00:00', '23:00:00', '0900000002', 0, '$MERCHANT_USER_ID', 'pizza-corner', true, 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800'),
+('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', '321 Le Duan, Quan 1, HCMC', 106.681172, 10.772622, 4.6, '07:00:00', '21:00:00', '0900000003', 0, '$MERCHANT_USER_ID', 'bun-bo-hue-ngon', true, 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800'),
+('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', '555 Thu Khoa Huan, Quan 1, HCMC', 106.695403, 10.779769, 4.9, '06:00:00', '20:00:00', '0900000004', 0, '$MERCHANT_USER_ID', 'banh-mi-huynh-hoa', true, 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800'),
+('$RESTAURANT_ID_6', 'Pho 24', '888 Dong Khoi, Quan 1, HCMC', 106.700981, 10.770889, 4.7, '06:30:00', '22:00:00', '0900000005', 0, '$MERCHANT_USER_ID', 'pho-24', true, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800')
+ON CONFLICT (slug) DO UPDATE SET res_name = EXCLUDED.res_name, merchant_id = EXCLUDED.merchant_id, image_url = EXCLUDED.image_url;
 SQL
-    echo "✓ 3 restaurants seeded"
+    echo "✓ 6 restaurants seeded"
 }
 
 seed_products() {
     echo "Seeding products..."
     $PSQL -d product_service >/dev/null 2>&1 <<SQL
-INSERT INTO products (id, product_name, description, restaurant_id, category_id, slug, available, rating, total_review) VALUES
-('$PRODUCT_ID_1', 'Gà Chiên Mắm', 'Gà chiên nước mắm đậm đà', '$RESTAURANT_ID_1', '$CATEGORY_GA_ID', 'ga-chien-mam', true, 4.5, 0),
-('$PRODUCT_ID_2', 'Trà Sữa Trân Châu', 'Trà sữa đặc biệt', '$RESTAURANT_ID_2', '$CATEGORY_TRA_SUA_ID', 'tra-sua-tran-chau', true, 4.6, 0),
-('$PRODUCT_ID_3', 'Pizza Hải Sản', 'Pizza hải sản tươi ngon', '$RESTAURANT_ID_3', '$CATEGORY_PIZZA_ID', 'pizza-hai-san', true, 4.8, 0),
-('$PRODUCT_ID_4', 'Cơm Tấm Sườn Bì', 'Cơm tấm sườn bì chả', '$RESTAURANT_ID_1', '$CATEGORY_COM_TAM_ID', 'com-tam-suon-bi', true, 4.7, 0)
-ON CONFLICT (slug) DO UPDATE SET product_name = EXCLUDED.product_name, category_id = EXCLUDED.category_id;
+INSERT INTO products (id, product_name, description, restaurant_id, category_id, slug, available, rating, total_review, image_url) VALUES
+('$PRODUCT_ID_1', 'Gà Chiên Mắm', 'Gà chiên nước mắm đậm đà', '$RESTAURANT_ID_1', '$CATEGORY_GA_ID', 'ga-chien-mam', true, 4.5, 0, 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800'),
+('$PRODUCT_ID_2', 'Trà Sữa Trân Châu', 'Trà sữa đặc biệt', '$RESTAURANT_ID_2', '$CATEGORY_TRA_SUA_ID', 'tra-sua-tran-chau', true, 4.6, 0, 'https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?w=800'),
+('$PRODUCT_ID_3', 'Pizza Hải Sản', 'Pizza hải sản tươi ngon', '$RESTAURANT_ID_3', '$CATEGORY_PIZZA_ID', 'pizza-hai-san', true, 4.8, 0, 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800'),
+('$PRODUCT_ID_4', 'Cơm Tấm Sườn Bì', 'Cơm tấm sườn bì chả', '$RESTAURANT_ID_1', '$CATEGORY_COM_TAM_ID', 'com-tam-suon-bi', true, 4.7, 0, 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800'),
+('$PRODUCT_ID_5', 'Bún Bò Huế', 'Bún bò Huế đậm đà', '$RESTAURANT_ID_4', '$CATEGORY_BUN_BO_ID', 'bun-bo-hue', true, 4.6, 0, 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=800'),
+('$PRODUCT_ID_6', 'Bánh Mì Thịt', 'Bánh mì thịt đặc biệt', '$RESTAURANT_ID_5', '$CATEGORY_BANH_MI_ID', 'banh-mi-thit', true, 4.9, 0, 'https://images.unsplash.com/photo-1623246123320-0d6636755792?w=800'),
+('$PRODUCT_ID_7', 'Phở Bò Tái', 'Phở bò tái ngon', '$RESTAURANT_ID_6', '$CATEGORY_PHO_ID', 'pho-bo-tai', true, 4.7, 0, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800'),
+('$PRODUCT_ID_8', 'Bánh Cuốn Tôm Thịt', 'Bánh cuốn tôm thịt tươi ngon', '$RESTAURANT_ID_1', '$CATEGORY_GOI_CUON_ID', 'banh-cuon-tom-thit', true, 4.4, 0, 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800'),
+('$PRODUCT_ID_9', 'Gà Quay', 'Gà quay da giòn', '$RESTAURANT_ID_1', '$CATEGORY_GA_ID', 'ga-quay', true, 4.5, 0, 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800'),
+('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'Trà sữa matcha Nhật Bản', '$RESTAURANT_ID_2', '$CATEGORY_TRA_SUA_ID', 'tra-sua-matcha', true, 4.3, 0, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800')
+ON CONFLICT (slug) DO UPDATE SET product_name = EXCLUDED.product_name, category_id = EXCLUDED.category_id, image_url = EXCLUDED.image_url;
 SQL
-    echo "✓ 4 products seeded"
+    echo "✓ 10 products seeded"
 }
 
 seed_product_sizes() {
@@ -135,10 +165,23 @@ INSERT INTO product_sizes (id, product_id, size_id, price) VALUES
 ('00000000-0000-0000-4000-000000000007', '$PRODUCT_ID_3', '$SIZE_M_ID', 120000),
 ('00000000-0000-0000-4000-000000000008', '$PRODUCT_ID_3', '$SIZE_L_ID', 180000),
 ('00000000-0000-0000-4000-000000000009', '$PRODUCT_ID_4', '$SIZE_S_ID', 40000),
-('00000000-0000-0000-4000-000000000010', '$PRODUCT_ID_4', '$SIZE_M_ID', 50000)
+('00000000-0000-0000-4000-000000000010', '$PRODUCT_ID_4', '$SIZE_M_ID', 50000),
+('00000000-0000-0000-4000-000000000011', '$PRODUCT_ID_5', '$SIZE_M_ID', 45000),
+('00000000-0000-0000-4000-000000000012', '$PRODUCT_ID_5', '$SIZE_L_ID', 55000),
+('00000000-0000-0000-4000-000000000013', '$PRODUCT_ID_6', '$SIZE_S_ID', 35000),
+('00000000-0000-0000-4000-000000000014', '$PRODUCT_ID_6', '$SIZE_M_ID', 40000),
+('00000000-0000-0000-4000-000000000015', '$PRODUCT_ID_7', '$SIZE_M_ID', 50000),
+('00000000-0000-0000-4000-000000000016', '$PRODUCT_ID_7', '$SIZE_L_ID', 60000),
+('00000000-0000-0000-4000-000000000017', '$PRODUCT_ID_8', '$SIZE_S_ID', 25000),
+('00000000-0000-0000-4000-000000000018', '$PRODUCT_ID_8', '$SIZE_M_ID', 30000),
+('00000000-0000-0000-4000-000000000019', '$PRODUCT_ID_9', '$SIZE_S_ID', 48000),
+('00000000-0000-0000-4000-000000000020', '$PRODUCT_ID_9', '$SIZE_M_ID', 58000),
+('00000000-0000-0000-4000-000000000021', '$PRODUCT_ID_9', '$SIZE_L_ID', 68000),
+('00000000-0000-0000-4000-000000000022', '$PRODUCT_ID_10', '$SIZE_S_ID', 32000),
+('00000000-0000-0000-4000-000000000023', '$PRODUCT_ID_10', '$SIZE_M_ID', 37000)
 ON CONFLICT DO NOTHING;
 SQL
-    echo "✓ 10 product sizes seeded"
+    echo "✓ 23 product sizes seeded"
 }
 
 seed_query_service() {
@@ -149,37 +192,56 @@ TRUNCATE TABLE restaurant_read_model, product_read_model RESTART IDENTITY CASCAD
 
 -- Restaurants read model
 INSERT INTO restaurant_read_model (id, name, slug, address, phone, image_url, enabled, opening_time, closing_time, latitude, longitude, rating, review_count, merchant_id, created_at, updated_at) VALUES
-('$RESTAURANT_ID_1', 'Merchant Bistro', 'merchant-bistro', '123 Nguyen Trai, Quan 1, HCMC', '0900000000', NULL, true, '08:00:00', '22:00:00', 10.762622, 106.660172, 4.8, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_2', 'Tra Sua Ngon', 'tra-sua-ngon', '456 Hai Ba Trung, Quan 1, HCMC', '0900000001', NULL, true, '09:00:00', '23:00:00', 10.779769, 106.692403, 4.5, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_3', 'Pizza Corner', 'pizza-corner', '789 Le Loi, Quan 1, HCMC', '0900000002', NULL, true, '10:00:00', '23:00:00', 10.776889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW());
+('$RESTAURANT_ID_1', 'Merchant Bistro', 'merchant-bistro', '123 Nguyen Trai, Quan 1, HCMC', '0900000000', 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800', true, '08:00:00', '22:00:00', 10.762622, 106.660172, 4.8, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_2', 'Tra Sua Ngon', 'tra-sua-ngon', '456 Hai Ba Trung, Quan 1, HCMC', '0900000001', 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800', true, '09:00:00', '23:00:00', 10.779769, 106.692403, 4.5, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_3', 'Pizza Corner', 'pizza-corner', '789 Le Loi, Quan 1, HCMC', '0900000002', 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800', true, '10:00:00', '23:00:00', 10.776889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', 'bun-bo-hue-ngon', '321 Le Duan, Quan 1, HCMC', '0900000003', 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800', true, '07:00:00', '21:00:00', 10.772622, 106.681172, 4.6, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', 'banh-mi-huynh-hoa', '555 Thu Khoa Huan, Quan 1, HCMC', '0900000004', 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800', true, '06:00:00', '20:00:00', 10.779769, 106.695403, 4.9, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_6', 'Pho 24', 'pho-24', '888 Dong Khoi, Quan 1, HCMC', '0900000005', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', true, '06:30:00', '22:00:00', 10.770889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW());
 
 -- Update geometry for restaurants
 UPDATE restaurant_read_model SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
 
 -- Products read model
 INSERT INTO product_read_model (id, name, slug, description, image_url, available, category_id, category_name, restaurant_id, restaurant_name, restaurant_latitude, restaurant_longitude, min_price, max_price, rating, review_count, created_at, updated_at) VALUES
-('$PRODUCT_ID_1', 'Gà Chiên Mắm', 'ga-chien-mam', 'Gà chiên nước mắm đậm đà', NULL, true, '$CATEGORY_GA_ID', 'Gà', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 45000, 65000, 4.5, 0, NOW(), NOW()),
-('$PRODUCT_ID_2', 'Trà Sữa Trân Châu', 'tra-sua-tran-chau', 'Trà sữa đặc biệt', NULL, true, '$CATEGORY_TRA_SUA_ID', 'Trà sữa', '$RESTAURANT_ID_2', 'Tra Sua Ngon', 10.779769, 106.692403, 30000, 40000, 4.6, 0, NOW(), NOW()),
-('$PRODUCT_ID_3', 'Pizza Hải Sản', 'pizza-hai-san', 'Pizza hải sản tươi ngon', NULL, true, '$CATEGORY_PIZZA_ID', 'Pizza', '$RESTAURANT_ID_3', 'Pizza Corner', 10.776889, 106.700981, 120000, 180000, 4.8, 0, NOW(), NOW()),
-('$PRODUCT_ID_4', 'Cơm Tấm Sườn Bì', 'com-tam-suon-bi', 'Cơm tấm sườn bì chả', NULL, true, '$CATEGORY_COM_TAM_ID', 'Cơm tấm', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 40000, 50000, 4.7, 0, NOW(), NOW());
+('$PRODUCT_ID_1', 'Gà Chiên Mắm', 'ga-chien-mam', 'Gà chiên nước mắm đậm đà', 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800', true, '$CATEGORY_GA_ID', 'Gà', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 45000, 65000, 4.5, 0, NOW(), NOW()),
+('$PRODUCT_ID_2', 'Trà Sữa Trân Châu', 'tra-sua-tran-chau', 'Trà sữa đặc biệt', 'https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?w=800', true, '$CATEGORY_TRA_SUA_ID', 'Trà sữa', '$RESTAURANT_ID_2', 'Tra Sua Ngon', 10.779769, 106.692403, 30000, 40000, 4.6, 0, NOW(), NOW()),
+('$PRODUCT_ID_3', 'Pizza Hải Sản', 'pizza-hai-san', 'Pizza hải sản tươi ngon', 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800', true, '$CATEGORY_PIZZA_ID', 'Pizza', '$RESTAURANT_ID_3', 'Pizza Corner', 10.776889, 106.700981, 120000, 180000, 4.8, 0, NOW(), NOW()),
+('$PRODUCT_ID_4', 'Cơm Tấm Sườn Bì', 'com-tam-suon-bi', 'Cơm tấm sườn bì chả', 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800', true, '$CATEGORY_COM_TAM_ID', 'Cơm tấm', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 40000, 50000, 4.7, 0, NOW(), NOW()),
+('$PRODUCT_ID_5', 'Bún Bò Huế', 'bun-bo-hue', 'Bún bò Huế đậm đà', 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=800', true, '$CATEGORY_BUN_BO_ID', 'Bún bò', '$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', 10.772622, 106.681172, 45000, 55000, 4.6, 0, NOW(), NOW()),
+('$PRODUCT_ID_6', 'Bánh Mì Thịt', 'banh-mi-thit', 'Bánh mì thịt đặc biệt', 'https://images.unsplash.com/photo-1623246123320-0d6636755792?w=800', true, '$CATEGORY_BANH_MI_ID', 'Bánh mì', '$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', 10.779769, 106.695403, 35000, 40000, 4.9, 0, NOW(), NOW()),
+('$PRODUCT_ID_7', 'Phở Bò Tái', 'pho-bo-tai', 'Phở bò tái ngon', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', true, '$CATEGORY_PHO_ID', 'Phở', '$RESTAURANT_ID_6', 'Pho 24', 10.770889, 106.700981, 50000, 60000, 4.7, 0, NOW(), NOW()),
+('$PRODUCT_ID_8', 'Bánh Cuốn Tôm Thịt', 'banh-cuon-tom-thit', 'Bánh cuốn tôm thịt tươi ngon', 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800', true, '$CATEGORY_GOI_CUON_ID', 'Bánh cuốn', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 25000, 30000, 4.4, 0, NOW(), NOW()),
+('$PRODUCT_ID_9', 'Gà Quay', 'ga-quay', 'Gà quay da giòn', 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800', true, '$CATEGORY_GA_ID', 'Gà', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 48000, 68000, 4.5, 0, NOW(), NOW()),
+('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'tra-sua-matcha', 'Trà sữa matcha Nhật Bản', 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800', true, '$CATEGORY_TRA_SUA_ID', 'Trà sữa', '$RESTAURANT_ID_2', 'Tra Sua Ngon', 10.779769, 106.692403, 32000, 37000, 4.3, 0, NOW(), NOW());
 
 -- Update geometry for products
 UPDATE product_read_model SET geom = ST_SetSRID(ST_MakePoint(restaurant_longitude, restaurant_latitude), 4326);
 SQL
-    echo "✓ Query service seeded (3 restaurants, 4 products)"
+    echo "✓ Query service seeded (6 restaurants, 10 products)"
 }
 
 seed_reviews() {
     echo "Seeding reviews..."
     $PSQL -d review_service >/dev/null 2>&1 <<SQL
 INSERT INTO reviews (id, user_id, review_id, review_type, title, content, rating) VALUES
+-- Restaurant reviews
 ('$REVIEW_ID_1', '$CUSTOMER_USER_ID', '$RESTAURANT_ID_1', 'RESTAURANT', 'Quán rất ngon', 'Món ăn ngon, không gian thoải mái.', 4.8),
 ('$REVIEW_ID_2', '$ADMIN_USER_ID', '$RESTAURANT_ID_2', 'RESTAURANT', 'Tra sữa tuyệt vời', 'Trà sữa đậm đà, trân châu dai.', 4.5),
-('$REVIEW_ID_3', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà chiên giòn ngon', 'Gà chiên nước mắm đậm đà, vỏ giòn.', 4.5),
-('$REVIEW_ID_4', '$CUSTOMER_USER_ID', '$PRODUCT_ID_4', 'PRODUCT', 'Cơm tấm chuẩn vị', 'Cơm tấm sườn bì chả đầy đặn.', 4.7)
+('$REVIEW_ID_3', '$CUSTOMER_USER_ID', '$RESTAURANT_ID_3', 'RESTAURANT', 'Pizza ngon', 'Pizza nhiều topping, giá hợp lý.', 4.7),
+('$REVIEW_ID_4', '$ADMIN_USER_ID', '$RESTAURANT_ID_4', 'RESTAURANT', 'Bún bò đậm đà', 'Hương vị Huế chính gốc, rất hợp khẩu vị.', 4.6),
+('$REVIEW_ID_5', '$CUSTOMER_USER_ID', '$RESTAURANT_ID_5', 'RESTAURANT', 'Bánh mì đặc biệt', 'Bánh mì đầy topping, nhân generosity.', 4.9),
+('$REVIEW_ID_6', '$ADMIN_USER_ID', '$RESTAURANT_ID_6', 'RESTAURANT', 'Phở ngon', 'Nước dùng ngọt, thịt bò tươi.', 4.7),
+-- Product reviews
+('$REVIEW_ID_7', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà chiên giòn ngon', 'Gà chiên nước mắm đậm đà, vỏ giòn.', 4.5),
+('$REVIEW_ID_8', '$CUSTOMER_USER_ID', '$PRODUCT_ID_4', 'PRODUCT', 'Cơm tấm chuẩn vị', 'Cơm tấm sườn bì chả đầy đặn.', 4.7),
+('$REVIEW_ID_9', '$ADMIN_USER_ID', '$PRODUCT_ID_5', 'PRODUCT', 'Bún bòHuế tuyệt vời', 'Nước lèo đậm đà, thịt bò mềm.', 4.6),
+('$REVIEW_ID_10', '$CUSTOMER_USER_ID', '$PRODUCT_ID_6', 'PRODUCT', 'Bánh mì ngon nhất', 'Pate bơ thơm, đồ ăn tươi.', 4.9),
+('$REVIEW_ID_11', '$ADMIN_USER_ID', '$PRODUCT_ID_7', 'PRODUCT', 'Phở bò tươi', 'Nước dùng trong, thái bò mỏng.', 4.7),
+('$REVIEW_ID_12', '$CUSTOMER_USER_ID', '$PRODUCT_ID_9', 'PRODUCT', 'Gà quay giòn', 'Da giòn ruột mềm, nước chấm ngon.', 4.5)
 ON CONFLICT DO NOTHING;
 SQL
-    echo "✓ 4 reviews seeded"
+    echo "✓ 12 reviews seeded"
 }
 
 seed_order_service() {
@@ -223,7 +285,7 @@ db.carts.updateOne(
                             sizeName: 'M',
                             price: NumberDecimal('55000'),
                             quantity: 2,
-                            imageUrl: null
+                            imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800'
                         },
                         {
                             productId: product4Id,
@@ -232,7 +294,7 @@ db.carts.updateOne(
                             sizeName: 'S',
                             price: NumberDecimal('40000'),
                             quantity: 1,
-                            imageUrl: null
+                            imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800'
                         }
                     ]
                 },
@@ -247,7 +309,7 @@ db.carts.updateOne(
                             sizeName: 'M',
                             price: NumberDecimal('35000'),
                             quantity: 1,
-                            imageUrl: null
+                            imageUrl: 'https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?w=800'
                         }
                     ]
                 }
