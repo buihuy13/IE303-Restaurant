@@ -6,6 +6,7 @@ import java.util.UUID;
 public class OrderNotificationEvent {
     private UUID orderId;
     private UUID userId;
+    private UUID merchantId;
     private String userEmail;
     private String restaurantName;
     private BigDecimal totalPrice;
@@ -17,6 +18,7 @@ public class OrderNotificationEvent {
     public OrderNotificationEvent(
             UUID orderId,
             UUID userId,
+            UUID merchantId,
             String userEmail,
             String restaurantName,
             BigDecimal totalPrice,
@@ -24,6 +26,7 @@ public class OrderNotificationEvent {
             String deliveryAddress) {
         this.orderId = orderId;
         this.userId = userId;
+        this.merchantId = merchantId;
         this.userEmail = userEmail;
         this.restaurantName = restaurantName;
         this.totalPrice = totalPrice;
@@ -45,6 +48,14 @@ public class OrderNotificationEvent {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public UUID getMerchantId() {
+        return merchantId;
+    }
+
+    public void setMerchantId(UUID merchantId) {
+        this.merchantId = merchantId;
     }
 
     public String getUserEmail() {

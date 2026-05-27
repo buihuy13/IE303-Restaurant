@@ -1,12 +1,18 @@
 package com.CNTTK18.paymentservice.service.Impl;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -20,6 +26,8 @@ import com.CNTTK18.paymentservice.model.PaymentTransaction;
 import com.CNTTK18.paymentservice.model.data.PaymentStatus;
 import com.CNTTK18.paymentservice.repository.PaymentTransactionRepository;
 import com.CNTTK18.paymentservice.service.PaymentService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,11 +40,21 @@ import vn.payos.model.webhooks.WebhookData;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentServiceImpl implements PaymentService {
+    private static final String DEFAULT_WEBHOOK_PATH = "/payment/payos-webhook";
     private static final int PAYMENT_EVENT_MAX_RETRIES = 3;
 
     private final PayOS payOS;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
+
+    @Value("${gateway.url}")
+    private String gatewayUrl;
+
+    @Value("${payos.webhook-url:}")
+    private String configuredWebhookUrl;
+
+    private static final String NGROK_INSPECTOR_URL = "http://ngrok:4040/api/tunnels";
 
     @Override
     @Transactional
@@ -52,9 +70,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .orderCode(orderCode)
                 .status(PaymentStatus.PENDING)
                 .build();
-        paymentTransactionRepository.save(transaction);
+        paymentTransactionRepository.save(Objects.requireNonNull(transaction));
 
         try {
+            ensureWebhookConfirmed();
+
             // 3. Khởi tạo PaymentData theo chuẩn PayOS SDK và gọi API tạo Link
             String description = request.getDescription() != null ? request.getDescription() : "Thanh toan don hang";
             String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : "http://localhost:3000";
@@ -141,6 +161,102 @@ public class PaymentServiceImpl implements PaymentService {
         return true;
     }
 
+    private void ensureWebhookConfirmed() {
+        String webhookUrl = resolveWebhookUrl();
+        try {
+            payOS.webhooks().confirm(webhookUrl);
+            log.info("Đã confirm webhook PayOS: {}", webhookUrl);
+        } catch (Exception ex) {
+            // Không chặn tạo link thanh toán chỉ vì webhook chưa confirm được.
+            // Payment link vẫn cần tạo được để người dùng thanh toán; webhook có thể
+            // được cấu hình lại sau bằng PAYOS_WEBHOOK_URL public.
+            log.warn("Không thể confirm webhook PayOS: {}. Link vẫn sẽ được tạo.", webhookUrl, ex);
+        }
+    }
+
+    private String resolveWebhookUrl() {
+        String configured = configuredWebhookUrl != null ? configuredWebhookUrl.trim() : "";
+        if (!configured.isBlank() && !isLocalWebhookUrl(configured)) {
+            return configured;
+        }
+
+        String ngrokWebhookUrl = resolveNgrokWebhookUrl();
+        if (!ngrokWebhookUrl.isBlank()) {
+            return ngrokWebhookUrl;
+        }
+
+        String baseUrl = gatewayUrl != null ? gatewayUrl.trim() : "";
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + DEFAULT_WEBHOOK_PATH;
+    }
+
+    private String resolveNgrokWebhookUrl() {
+        try {
+            String inspectorResponse = readHttpResponse(NGROK_INSPECTOR_URL);
+            JsonNode rootNode = objectMapper.readTree(inspectorResponse);
+            JsonNode tunnelsNode = rootNode.path("tunnels");
+            if (!tunnelsNode.isArray()) {
+                return "";
+            }
+
+            String fallbackPublicUrl = "";
+            for (JsonNode tunnelNode : tunnelsNode) {
+                String publicUrl = asString(tunnelNode.get("public_url"));
+                if (publicUrl == null || publicUrl.isBlank()) {
+                    continue;
+                }
+
+                String proto = asString(tunnelNode.get("proto"));
+                if ("https".equalsIgnoreCase(proto)) {
+                    return appendWebhookPath(publicUrl);
+                }
+
+                if (fallbackPublicUrl.isBlank()) {
+                    fallbackPublicUrl = publicUrl;
+                }
+            }
+
+            return fallbackPublicUrl.isBlank() ? "" : appendWebhookPath(fallbackPublicUrl);
+        } catch (Exception ex) {
+            log.debug("Không lấy được public URL từ ngrok inspector: {}", ex.getMessage());
+            return "";
+        }
+    }
+
+    private String appendWebhookPath(String publicUrl) {
+        String normalized = publicUrl.endsWith("/") ? publicUrl.substring(0, publicUrl.length() - 1) : publicUrl;
+        return normalized + DEFAULT_WEBHOOK_PATH;
+    }
+
+    private boolean isLocalWebhookUrl(String webhookUrl) {
+        String normalized = webhookUrl.toLowerCase(Locale.ROOT);
+        return normalized.contains("localhost")
+                || normalized.contains("127.0.0.1")
+                || normalized.contains("host.docker.internal");
+    }
+
+    private String readHttpResponse(String requestUrl) throws Exception {
+        HttpURLConnection connection =
+                (HttpURLConnection) URI.create(requestUrl).toURL().openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(2000);
+        connection.setReadTimeout(2000);
+
+        int responseCode = connection.getResponseCode();
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream()));
+        try (reader) {
+            StringBuilder body = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                body.append(line);
+            }
+            return body.toString();
+        }
+    }
+
     private WebhookData verifyWebhook(Map<String, Object> webhookBody, String inputSignature) {
         if (webhookBody == null) {
             log.warn("Webhook body rỗng, bỏ qua xử lý");
@@ -223,6 +339,14 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String asString(Object value) {
-        return value == null ? null : value.toString();
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof JsonNode jsonNode) {
+            return jsonNode.isNull() ? null : jsonNode.asText();
+        }
+
+        return value.toString();
     }
 }

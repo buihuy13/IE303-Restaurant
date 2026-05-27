@@ -5,9 +5,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.CNTTK18.order_service.client.RestaurantClient;
@@ -35,12 +33,9 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final RestaurantClient restaurantClient;
     private final CartMapper cartMapper;
 
-    private static final String CART_CACHE_KEY_PREFIX = "cart:";
-    private static final long CART_CACHE_TTL = 7; // days
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Override
@@ -97,7 +92,6 @@ public class CartServiceImpl implements CartService {
             throw new NotFoundException("Item not found in cart");
         }
 
-        // Clean up empty restaurant groups
         cart.getRestaurants().removeIf(g -> g.getItems().isEmpty());
 
         return saveAndReturn(cart);
@@ -106,27 +100,18 @@ public class CartServiceImpl implements CartService {
     @Override
     public void clearCart(UUID userId) {
         cartRepository.deleteById(userId.toString());
-        redisTemplate.delete(CART_CACHE_KEY_PREFIX + userId);
     }
 
     private Cart getCartModel(UUID userId) {
-        String cacheKey = CART_CACHE_KEY_PREFIX + userId;
-        Cart cart = (Cart) redisTemplate.opsForValue().get(cacheKey);
-
-        if (cart == null) {
-            cart = cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder()
-                    .id(userId.toString())
-                    .userId(userId)
-                    .restaurants(new ArrayList<>())
-                    .build());
-            redisTemplate.opsForValue().set(cacheKey, cart, CART_CACHE_TTL, TimeUnit.DAYS);
-        }
-        return cart;
+        return cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder()
+                .id(userId.toString())
+                .userId(userId)
+                .restaurants(new ArrayList<>())
+                .build());
     }
 
     private CartResponse saveAndReturn(Cart cart) {
         cartRepository.save(cart);
-        redisTemplate.opsForValue().set(CART_CACHE_KEY_PREFIX + cart.getUserId(), cart, CART_CACHE_TTL, TimeUnit.DAYS);
         return cartMapper.toResponse(cart);
     }
 
@@ -166,11 +151,8 @@ public class CartServiceImpl implements CartService {
 
         boolean isOpen;
         if (open.isBefore(close)) {
-            // Case: 08:00 - 22:00 (Same day)
             isOpen = !now.isBefore(open) && !now.isAfter(close);
         } else {
-            // Case: 18:00 - 02:00 (Overnight)
-            // Open if now is after 18:00 OR before 02:00
             isOpen = !now.isBefore(open) || !now.isAfter(close);
         }
 

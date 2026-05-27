@@ -525,8 +525,24 @@ export default function PaymentPageClient() {
         setCheckoutStage("creating");
 
         try {
+            // Refresh cart from backend first so checkout uses persisted cart state,
+            // not only the optimistic client-side store.
+            await useCartStore.getState().fetchCart({ forceUpdate: true });
+
+            const latestItems = useCartStore.getState().items;
+            const latestOrderItems = restaurantId ? latestItems.filter((item) => item.restaurantId === restaurantId) : latestItems;
+
+            // Apply checkout selection again on the fresh cart snapshot.
+            const freshOrderItems =
+                restaurantId &&
+                checkoutSelection &&
+                checkoutSelection.restaurantId === restaurantId &&
+                checkoutSelection.itemIds.length > 0
+                    ? latestOrderItems.filter((it) => new Set(checkoutSelection.itemIds).has(it.id))
+                    : latestOrderItems;
+
             // Filter out items with invalid restaurantId
-            const validOrderItems = orderItems.filter(
+            const validOrderItems = freshOrderItems.filter(
                 (item) => item.restaurantId && item.restaurantId.trim() !== "" && item.restaurantId !== "null" && item.restaurantId !== "undefined"
             );
 

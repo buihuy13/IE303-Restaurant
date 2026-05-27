@@ -2,15 +2,12 @@ package com.CNTTK18.order_service.service.impl;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.CNTTK18.Common.Event.MerchantRevenueEvent;
@@ -37,6 +34,8 @@ import com.CNTTK18.order_service.repository.OrderRepository;
 import com.CNTTK18.order_service.service.OrderService;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -44,20 +43,15 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final OrderMapper orderMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final RestaurantClient restaurantClient;
     private final OrderNotificationPublisher notificationPublisher;
     private final MerchantRevenuePublisher merchantRevenuePublisher;
-
-    private static final String ORDERS_USER_CACHE_PREFIX = "orders:user:";
-    private static final String ORDERS_RES_CACHE_PREFIX = "orders:res:";
 
     @Override
     /**
      * Creates one order per selected restaurant from the current cart.
      *
-     * Flow: load cart -> validate/build orders -> persist orders and update cart ->
-     * invalidate caches.
+     * Flow: load cart -> validate/build orders -> persist orders and update cart.
      */
     public List<OrderResponse> checkout(UUID userId, CheckoutRequest request) {
         Cart cart = loadCartOrThrow(userId);
@@ -66,12 +60,10 @@ public class OrderServiceImpl implements OrderService {
         List<Order> savedOrders =
                 saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(), checkoutBuildResult.groupsToRemove());
 
-        invalidateCheckoutCaches(userId);
-
-        // Publish notification for each new order
         savedOrders.forEach(order -> notificationPublisher.publish(new OrderNotificationEvent(
                 order.getId(),
                 order.getUserId(),
+                order.getMerchantId(),
                 null,
                 order.getRestaurantName(),
                 order.getTotalPrice(),
@@ -82,43 +74,22 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<OrderResponse> getEmployeeOrders(UUID userId, int page, int size) {
-        String cacheKey = ORDERS_USER_CACHE_PREFIX + userId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached =
-                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
-
-        if (cached != null) return cached;
-
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByUserId(userId, pageable);
-        List<OrderResponse> responseList = orderMapper.toResponseList(orders.getContent());
-
-        redisTemplate.opsForValue().set(cacheKey, responseList, 5, TimeUnit.MINUTES);
-        return responseList;
+        return orderMapper.toResponseList(orders.getContent());
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<OrderResponse> getRestaurantOrders(
             UUID restaurantId, UUID currentUserId, String currentUserRole, int page, int size) {
-        // MERCHANT chỉ được xem đơn hàng của nhà hàng mình quản lý
         if (!"ADMIN".equals(currentUserRole)) {
             validateRestaurantOwnership(restaurantId, currentUserId);
         }
 
-        String cacheKey = ORDERS_RES_CACHE_PREFIX + restaurantId + ":page:" + page + ":size:" + size;
-        List<OrderResponse> cached =
-                (List<OrderResponse>) redisTemplate.opsForValue().get(cacheKey);
-
-        if (cached != null) return cached;
-
         Pageable pageable = PageRequest.of(page, size);
         Page<Order> orders = orderRepository.findByRestaurantId(restaurantId, pageable);
-        List<OrderResponse> responseList = orderMapper.toResponseList(orders.getContent());
-
-        redisTemplate.opsForValue().set(cacheKey, responseList, 2, TimeUnit.MINUTES);
-        return responseList;
+        return orderMapper.toResponseList(orders.getContent());
     }
 
     @Override
@@ -144,12 +115,10 @@ public class OrderServiceImpl implements OrderService {
             UUID orderId, UUID currentUserId, String currentUserRole, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
-        // MERCHANT chỉ được cập nhật đơn của nhà hàng mình
         if (!"ADMIN".equals(currentUserRole)) {
             validateRestaurantOwnership(order.getRestaurantId(), currentUserId);
         }
 
-        // Validation Rule: Can only set to COMPLETED if Paid
         if (request.getStatus() == OrderStatus.COMPLETED && order.getPaymentStatus() != PaymentStatus.PAID) {
             throw new BadRequestException("Order has not been paid yet");
         }
@@ -158,14 +127,10 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(request.getStatus());
         Order saved = orderRepository.save(order);
 
-        // Invalidate caches
-        clearRestaurantOrderCache(order.getRestaurantId());
-        clearUserOrderCache(order.getUserId());
-
-        // Publish notification
         notificationPublisher.publish(new OrderNotificationEvent(
                 saved.getId(),
                 saved.getUserId(),
+                saved.getMerchantId(),
                 null,
                 saved.getRestaurantName(),
                 saved.getTotalPrice(),
@@ -193,13 +158,10 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelReason(reason);
         Order saved = orderRepository.save(order);
 
-        clearUserOrderCache(userId);
-        clearRestaurantOrderCache(order.getRestaurantId());
-
-        // Publish notification
         notificationPublisher.publish(new OrderNotificationEvent(
                 saved.getId(),
                 saved.getUserId(),
+                saved.getMerchantId(),
                 null,
                 saved.getRestaurantName(),
                 saved.getTotalPrice(),
@@ -222,12 +184,11 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentLinkId(paymentLinkId);
 
         Order saved = orderRepository.save(order);
-        clearUserOrderCache(order.getUserId());
-        clearRestaurantOrderCache(order.getRestaurantId());
 
         notificationPublisher.publish(new OrderNotificationEvent(
                 saved.getId(),
                 saved.getUserId(),
+                saved.getMerchantId(),
                 null,
                 saved.getRestaurantName(),
                 saved.getTotalPrice(),
@@ -235,23 +196,6 @@ public class OrderServiceImpl implements OrderService {
                 saved.getDeliveryAddress()));
     }
 
-    private void clearUserOrderCache(UUID userId) {
-        String pattern = ORDERS_USER_CACHE_PREFIX + userId + ":*";
-        java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
-    }
-
-    private void clearRestaurantOrderCache(UUID restaurantId) {
-        String pattern = ORDERS_RES_CACHE_PREFIX + restaurantId + ":*";
-        java.util.Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
-    }
-
-    /**
-     * Fetches restaurant info and validates that currentUserId is its merchant
-     * owner.
-     * Throws ForbiddenException if not authorized.
-     */
     private void validateRestaurantOwnership(UUID restaurantId, UUID currentUserId) {
         ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
         if (resInfo == null) {
@@ -263,10 +207,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * Returns true if currentUserId is the merchant owner of the given restaurant.
-     * Used for non-throwing checks (e.g. getOrderById cross-role verification).
-     */
     private boolean isRestaurantOwner(UUID restaurantId, UUID currentUserId) {
         try {
             ResClientResponse resInfo =
@@ -277,35 +217,33 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /** Load user cart or fail fast when cart does not exist. */
     private Cart loadCartOrThrow(UUID userId) {
         return cartRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Cart not found"));
     }
 
-    /**
-     * Builds order entities and records the cart groups that should be removed
-     * after successful checkout.
-     */
     private CheckoutBuildResult buildOrdersAndGroupsToRemove(UUID userId, CheckoutRequest request, Cart cart) {
-        List<Order> newOrders = new ArrayList<>();
-        List<CartRestaurantGroup> groupsToRemove = new ArrayList<>();
+        List<RestaurantOrderDraft> drafts = Flux.fromIterable(request.getRestaurantIds())
+                .flatMapSequential(restaurantId -> {
+                    CartRestaurantGroup group = findRestaurantGroupInCartOrThrow(cart, restaurantId);
+                    return validateRestaurantAvailableForCheckout(restaurantId)
+                            .map(resInfo -> new RestaurantOrderDraft(restaurantId, resInfo, group));
+                })
+                .collectList()
+                .block();
 
-        for (UUID restaurantId : request.getRestaurantIds()) {
-            CartRestaurantGroup group = findRestaurantGroupInCartOrThrow(cart, restaurantId);
-            ResClientResponse resInfo = validateRestaurantAvailableForCheckout(restaurantId);
-
-            Order order = buildOrder(userId, restaurantId, resInfo, group, request);
-            newOrders.add(order);
-            groupsToRemove.add(group);
+        if (drafts == null) {
+            throw new BadRequestException("Unable to build checkout orders");
         }
+
+        List<Order> newOrders = drafts.stream()
+                .map(draft -> buildOrder(userId, draft.restaurantId(), draft.resInfo(), draft.group(), request))
+                .toList();
+        List<CartRestaurantGroup> groupsToRemove =
+                drafts.stream().map(RestaurantOrderDraft::group).toList();
 
         return new CheckoutBuildResult(newOrders, groupsToRemove);
     }
 
-    /**
-     * Locate the restaurant group in cart; throws if user did not select items from
-     * that restaurant.
-     */
     private CartRestaurantGroup findRestaurantGroupInCartOrThrow(Cart cart, UUID restaurantId) {
         return cart.getRestaurants().stream()
                 .filter(g -> g.getRestaurantId().equals(restaurantId))
@@ -313,23 +251,19 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new BadRequestException("Restaurant " + restaurantId + " not found in cart"));
     }
 
-    /**
-     * Re-validates restaurant status at checkout time to avoid creating invalid
-     * orders.
-     */
-    private ResClientResponse validateRestaurantAvailableForCheckout(UUID restaurantId) {
-        ResClientResponse resInfo = restaurantClient.getRestaurant(restaurantId).block();
-        if (resInfo == null || !resInfo.isEnabled()) {
-            throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
-                    + " is currently unavailable");
-        }
-        if (resInfo.getMerchantId() == null) {
-            throw new BadRequestException("Restaurant " + restaurantId + " does not have a merchant owner");
-        }
-        return resInfo;
+    private Mono<ResClientResponse> validateRestaurantAvailableForCheckout(UUID restaurantId) {
+        return restaurantClient.getRestaurant(restaurantId).map(resInfo -> {
+            if (resInfo == null || !resInfo.isEnabled()) {
+                throw new BadRequestException("Restaurant " + (resInfo != null ? resInfo.getResName() : restaurantId)
+                        + " is currently unavailable");
+            }
+            if (resInfo.getMerchantId() == null) {
+                throw new BadRequestException("Restaurant " + restaurantId + " does not have a merchant owner");
+            }
+            return resInfo;
+        });
     }
 
-    /** Convert one cart restaurant group into one pending, unpaid order entity. */
     private Order buildOrder(
             UUID userId,
             UUID restaurantId,
@@ -351,7 +285,6 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    /** Maps cart items to immutable order line items snapshot. */
     private List<OrderItem> mapToOrderItems(CartRestaurantGroup group) {
         return group.getItems().stream()
                 .map(item -> OrderItem.builder()
@@ -365,10 +298,6 @@ public class OrderServiceImpl implements OrderService {
                 .toList();
     }
 
-    /**
-     * Calculates total price as sum(price * quantity) for all items in a restaurant
-     * group.
-     */
     private BigDecimal calculateTotalPrice(CartRestaurantGroup group) {
         return group.getItems().stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
@@ -406,10 +335,6 @@ public class OrderServiceImpl implements OrderService {
         merchantRevenuePublisher.publish(event);
     }
 
-    /**
-     * Persists new orders, then removes checked-out groups from cart and saves cart
-     * state.
-     */
     private List<Order> saveOrdersAndUpdateCart(
             Cart cart, List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {
         List<Order> savedOrders = orderRepository.saveAll(newOrders);
@@ -418,11 +343,7 @@ public class OrderServiceImpl implements OrderService {
         return savedOrders;
     }
 
-    /** Clears cart and user-order list cache keys impacted by checkout. */
-    private void invalidateCheckoutCaches(UUID userId) {
-        redisTemplate.delete("cart:" + userId);
-        clearUserOrderCache(userId);
-    }
-
     private record CheckoutBuildResult(List<Order> newOrders, List<CartRestaurantGroup> groupsToRemove) {}
+
+    private record RestaurantOrderDraft(UUID restaurantId, ResClientResponse resInfo, CartRestaurantGroup group) {}
 }
