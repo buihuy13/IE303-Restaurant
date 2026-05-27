@@ -119,7 +119,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         return product.totalReview > 20 && product.rating >= 4.0;
     }, [product.totalReview, product.rating]);
 
-    // Show duration exactly from backend (no frontend fallback range).
+    // Route ETA in minutes (from query-service ORS seconds → rounded-up minutes in `queryMappers`).
     const deliveryTime = useMemo(() => {
         const duration = restaurant?.duration;
         if (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0) {
@@ -326,7 +326,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                                     }`}
                                 >
                                     <span>🕒</span>
-                                    <span>{deliveryTime} min</span>
+                                    <span>{deliveryTime} phút</span>
                                 </div>
                             )}
                         </div>
@@ -473,7 +473,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                                 }`}
                             >
                                 <span>🕒</span>
-                                <span>{deliveryTime} min</span>
+                                <span>{deliveryTime} phút</span>
                             </div>
                         )}
                     </div>

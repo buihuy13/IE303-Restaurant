@@ -1,4 +1,5 @@
 import type { Product, Restaurant } from "@/types";
+import { orsDurationSecondsToDisplayMinutes } from "@/lib/utils/routeDuration";
 import type { PageResponse } from "./productApi";
 
 /** Raw DTO from `GET /api/query/restaurants` (query-service). */
@@ -62,7 +63,7 @@ export function mapRestaurantQueryDto(dto: RestaurantQueryDto): Restaurant {
         enabled: Boolean(dto.enabled),
         totalReview: dto.totalReview ?? 0,
         distance: typeof dto.distance === "number" ? dto.distance : 0,
-        duration: typeof dto.duration === "number" ? dto.duration : 0,
+        duration: orsDurationSecondsToDisplayMinutes(dto.duration),
         products: [],
         cate: [],
         createdAt: dto.createdAt,
@@ -104,7 +105,7 @@ export function mapProductQueryDto(dto: ProductQueryDto): Product {
                   enabled: true,
                   totalReview: 0,
                   distance: typeof dto.distance === "number" ? dto.distance : 0,
-                  duration: typeof dto.duration === "number" ? dto.duration : 0,
+                  duration: orsDurationSecondsToDisplayMinutes(dto.duration),
                   products: [],
                   cate: [],
               }

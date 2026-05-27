@@ -101,7 +101,20 @@
         @apply inline-flex py-[15px] px-[35px] items-center justify-center gap-[10px] rounded-[6px] bg-brand-black;
     }
     .custom-container {
-        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+        @apply mx-auto w-full max-w-7xl min-w-0 px-4 sm:px-6 lg:px-8;
+    }
+
+    .checkout-two-col {
+        @apply hidden gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(280px,380px)];
+    }
+
+    .checkout-mobile-bottom-pad {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .checkout-fixed-bar {
+        @apply fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur;
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
     }
 
     /* Client theme (Midnight + Aurora) — scoped via wrapper class */

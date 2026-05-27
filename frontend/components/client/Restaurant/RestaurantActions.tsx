@@ -10,7 +10,7 @@ interface RestaurantActionsProps {
 export default function RestaurantActions({ restaurant }: RestaurantActionsProps) {
     const distanceMeters =
         typeof restaurant.distance === "number" && Number.isFinite(restaurant.distance) && restaurant.distance >= 0
-            ? Math.round(restaurant.distance * 1000)
+            ? Math.round(restaurant.distance)
             : null;
 
     return (
@@ -33,10 +33,10 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
                 </div>
             )}
 
-            {restaurant.duration != null && (
+            {restaurant.duration > 0 && (
                 <div className="mb-6 pb-4 border-b border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Delivery Time</h3>
-                    <p className="text-sm text-gray-600">{restaurant.duration} minutes</p>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Thời gian giao (ước tính)</h3>
+                    <p className="text-sm text-gray-600">{restaurant.duration} phút</p>
                 </div>
             )}
 

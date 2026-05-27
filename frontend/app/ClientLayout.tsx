@@ -42,9 +42,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 <SSEProvider>
                     <ChatProvider>
                         <ClientThemeProvider>
-                            <div className={clientScopeClass}>
+                            <div className={`${clientScopeClass} overflow-x-hidden`}>
                                 {showHeaderFooter && <Header />}
-                                <main className={mainClassName}>{children}</main>
+                                <main className={`${mainClassName} overflow-x-hidden`}>{children}</main>
                                 {showHeaderFooter && <Footer />}
                                 {showHeaderFooter && <CravingSuggestionCard />}
                             </div>

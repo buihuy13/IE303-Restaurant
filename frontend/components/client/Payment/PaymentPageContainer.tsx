@@ -6,6 +6,7 @@ import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Input } from "@/components/ui/Input";
 import { useAddressStore } from "@/stores/addressStore";
 import { useLocationStore } from "@/stores/useLocationStore";
+import { useShippingFeeQuote } from "@/lib/hooks/useShippingFeeQuote";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
 import { clearCheckoutSelection, loadCheckoutSelection, type CheckoutSelection } from "@/lib/checkoutSelection";
@@ -20,8 +21,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-const SHIPPING_FEE = 0; // Free shipping
-
 const formatPriceVND = (price: number): string => {
     return `${Math.round(price).toLocaleString("vi-VN")} đ`;
 };
@@ -30,6 +29,9 @@ export default function PaymentPageClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
+    /** PayOS full-page return: first paint runs before `useEffect` sets `isPaymentSuccess` — avoid empty-cart flash + `/cart` redirect. */
+    const payosReturn = searchParams.get("payos_return");
+    const isPayOsSuccessReturn = payosReturn === "success";
 
     const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading } = useCartStore();
     const { user, loading: authLoading, isAuthenticated, loginWithKeycloak } = useAuthStore();
@@ -105,9 +107,44 @@ export default function PaymentPageClient() {
         () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [orderItems],
     );
-    const shipping = SHIPPING_FEE; // Always delivery, no pickup
+
+    const selectedSavedAddressForQuote = useMemo(() => {
+        if (!selectedAddressId) return undefined;
+        return addresses.find((a) => a.id === selectedAddressId);
+    }, [addresses, selectedAddressId]);
+
+    const quoteCoordinates = useMemo(() => {
+        if (useNewAddress && typeof newAddressLat === "number" && typeof newAddressLon === "number") {
+            return { lat: newAddressLat, lon: newAddressLon };
+        }
+        if (!useNewAddress && selectedSavedAddressForQuote) {
+            const { latitude, longitude } = selectedSavedAddressForQuote;
+            if (typeof latitude === "number" && typeof longitude === "number") {
+                return { lat: latitude, lon: longitude };
+            }
+        }
+        if (coords?.latitude != null && coords?.longitude != null) {
+            return { lat: coords.latitude, lon: coords.longitude };
+        }
+        return { lat: null as number | null, lon: null as number | null };
+    }, [useNewAddress, newAddressLat, newAddressLon, selectedSavedAddressForQuote, coords?.latitude, coords?.longitude]);
+
+    const { feeVnd: shippingFromQuote, loading: shippingQuoteLoading } = useShippingFeeQuote({
+        restaurantId: restaurantId ?? undefined,
+        latitude: quoteCoordinates.lat,
+        longitude: quoteCoordinates.lon,
+    });
+
+    const shipping = shippingFromQuote;
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
+
+    const shippingDisplayLabel = useMemo(() => {
+        if (shippingQuoteLoading) return "Đang tính…";
+        if (quoteCoordinates.lat == null || quoteCoordinates.lon == null) return "Chưa xác định";
+        if (shipping <= 0) return "—";
+        return formatPriceVND(shipping);
+    }, [shippingQuoteLoading, quoteCoordinates.lat, quoteCoordinates.lon, shipping]);
     const isSubmitDisabled = isSubmitting || isProcessingCardPayment;
     const submitLabel = isSubmitting ? "Đang xử lý..." : "Đặt hàng & thanh toán";
     const checkoutSteps = [
@@ -355,7 +392,7 @@ export default function PaymentPageClient() {
 
     // Check if cart is empty (but skip if payment just succeeded to avoid redirect conflict)
     useEffect(() => {
-        if (!user || cartLoading || isPaymentSuccess) return;
+        if (!user || cartLoading || isPaymentSuccess || isPayOsSuccessReturn) return;
 
         const delay = 300;
         const checkTimer = setTimeout(() => {
@@ -367,7 +404,7 @@ export default function PaymentPageClient() {
         }, delay);
 
         return () => clearTimeout(checkTimer);
-    }, [user, orderItems, items, cartUserId, cartLoading, router, restaurantId, isPaymentSuccess]);
+    }, [user, orderItems, items, cartUserId, cartLoading, router, restaurantId, isPaymentSuccess, isPayOsSuccessReturn]);
 
     useEffect(() => {
         if (locationError) {
@@ -517,6 +554,12 @@ export default function PaymentPageClient() {
             toast.error(
                 "Unable to determine delivery coordinates. Please select an address from the suggestions or enable location services and try again.",
             );
+            submittingLockRef.current = false;
+            return;
+        }
+
+        if (shippingQuoteLoading) {
+            toast.error("Đang tính phí giao hàng, vui lòng chờ vài giây rồi thử lại.");
             submittingLockRef.current = false;
             return;
         }
@@ -715,6 +758,11 @@ export default function PaymentPageClient() {
         return <GlobalLoader label="Loading" sublabel="Setting up checkout" />;
     }
 
+    // Don't show cart empty while PayOS success return is being finalized (before `isPaymentSuccess` flips).
+    if (orderItems.length === 0 && !isPaymentSuccess && isPayOsSuccessReturn) {
+        return <GlobalLoader label="Đang hoàn tất thanh toán" sublabel="Đang chuyển tới trang theo dõi đơn hàng..." />;
+    }
+
     // Don't show cart empty message if payment was successful (redirect should happen)
     if (orderItems.length === 0 && !isPaymentSuccess) {
         return (
@@ -738,14 +786,14 @@ export default function PaymentPageClient() {
         return (
             <div className="custom-container py-8 sm:py-10 md:py-12">
                 <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
-                    <div className="mb-6 flex items-center justify-between gap-2">
+                    <div className="mb-6 flex items-center justify-between gap-1 sm:gap-2">
                         {checkoutSteps.map((step, idx) => {
                             const active = idx <= 1;
                             const done = idx === 0;
                             return (
-                                <div key={step.key} className="flex flex-1 items-center gap-2">
+                                <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
                                     <div
-                                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                                             done
                                                 ? "bg-brand-orange text-white"
                                                 : active
@@ -755,8 +803,12 @@ export default function PaymentPageClient() {
                                     >
                                         {done ? "✓" : idx + 1}
                                     </div>
-                                    <span className={`text-xs sm:text-sm ${active ? "text-gray-800" : "text-gray-400"}`}>{step.label}</span>
-                                    {idx < checkoutSteps.length - 1 && <div className="h-px flex-1 bg-gray-200" />}
+                                    <span
+                                        className={`hidden min-w-0 truncate text-xs sm:inline sm:text-sm ${active ? "text-gray-800" : "text-gray-400"}`}
+                                    >
+                                        {step.label}
+                                    </span>
+                                    {idx < checkoutSteps.length - 1 && <div className="mx-0.5 h-px min-w-[6px] flex-1 bg-gray-200" />}
                                 </div>
                             );
                         })}
@@ -817,19 +869,23 @@ export default function PaymentPageClient() {
                     <span className="text-sm font-medium">Back to Cart</span>
                 </Link>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Checkout</h1>
-                <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-4 py-3">
-                    <div className="flex items-center justify-between gap-2">
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-3 py-3 sm:px-4">
+                    <div className="flex items-center justify-between gap-1 sm:gap-2">
                         {checkoutSteps.map((step, idx) => (
-                            <div key={step.key} className="flex flex-1 items-center gap-2">
+                            <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
                                 <div
-                                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                                         idx === 0 ? "bg-brand-orange text-white" : idx === 1 ? "border border-brand-orange text-brand-orange" : "border border-gray-300 text-gray-400"
                                     }`}
                                 >
                                     {idx === 0 ? "✓" : idx + 1}
                                 </div>
-                                <span className={`text-xs sm:text-sm ${idx <= 1 ? "text-gray-800" : "text-gray-400"}`}>{step.label}</span>
-                                {idx < checkoutSteps.length - 1 && <div className="h-px flex-1 bg-gray-200" />}
+                                <span
+                                    className={`hidden min-w-0 truncate text-xs sm:inline sm:text-sm ${idx <= 1 ? "text-gray-800" : "text-gray-400"}`}
+                                >
+                                    {step.label}
+                                </span>
+                                {idx < checkoutSteps.length - 1 && <div className="mx-0.5 h-px min-w-[6px] flex-1 bg-gray-200" />}
                             </div>
                         ))}
                     </div>
@@ -837,7 +893,7 @@ export default function PaymentPageClient() {
             </div>
 
             {/* Desktop: 2 Column Layout */}
-            <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            <div className="checkout-two-col">
                 {/* Left Column: Delivery Details Only */}
                 <div className="space-y-6">
                     {/* Block A: Delivery Details */}
@@ -990,7 +1046,7 @@ export default function PaymentPageClient() {
                 </div>
 
                 {/* Right Column: Order Summary + Payment Method */}
-                <div className="h-fit space-y-6 lg:sticky lg:top-24">
+                <div className="h-fit space-y-6 xl:sticky xl:top-24">
                     {/* Block A: Order Summary */}
                     <div className="rounded-3xl border border-gray-200/90 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                         <h2 className="text-xl font-bold tracking-tight mb-4 text-gray-900">Order Summary</h2>
@@ -1021,7 +1077,7 @@ export default function PaymentPageClient() {
                                                 {item.quantity} x {formatPriceVND(item.price)}
                                             </p>
                                         </div>
-                                        <p className="text-sm font-semibold text-gray-900">
+                                        <p className="shrink-0 text-sm font-semibold text-gray-900">
                                             {formatPriceVND(item.price * item.quantity)}
                                         </p>
                                     </div>
@@ -1037,9 +1093,7 @@ export default function PaymentPageClient() {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Shipping Fee</span>
-                                <span className="text-gray-900 font-medium">
-                                    {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
-                                </span>
+                                <span className="text-gray-900 font-medium">{shippingDisplayLabel}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Tax</span>
@@ -1075,7 +1129,7 @@ export default function PaymentPageClient() {
             </div>
 
             {/* Mobile: Single Column */}
-            <div className="space-y-6 pb-24 lg:hidden">
+            <div className="checkout-mobile-bottom-pad space-y-6 xl:hidden">
                 {/* Delivery Details */}
                 <div className="rounded-3xl border border-gray-200/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     <h2 className="text-lg font-bold tracking-tight mb-4 text-gray-900">Delivery Details</h2>
@@ -1218,7 +1272,7 @@ export default function PaymentPageClient() {
                                             {item.quantity} x {formatPriceVND(item.price)}
                                         </p>
                                     </div>
-                                    <p className="text-xs font-semibold text-gray-900">
+                                    <p className="shrink-0 text-xs font-semibold text-gray-900">
                                         {formatPriceVND(item.price * item.quantity)}
                                     </p>
                                 </div>
@@ -1234,9 +1288,7 @@ export default function PaymentPageClient() {
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Shipping</span>
-                            <span className="text-gray-900 font-medium">
-                                {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
-                            </span>
+                            <span className="text-gray-900 font-medium">{shippingDisplayLabel}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Tax</span>
@@ -1260,9 +1312,9 @@ export default function PaymentPageClient() {
             </div>
 
             {!isPaymentSuccess && (
-                <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
-                    <div className="mx-auto flex w-full max-w-screen-sm items-center gap-3">
-                        <div className="min-w-0">
+                <div className="checkout-fixed-bar xl:hidden">
+                    <div className="custom-container flex w-full min-w-0 items-center gap-3 px-4 py-3 sm:px-6">
+                        <div className="min-w-0 shrink">
                             <p className="text-xs text-gray-500">Total</p>
                             <p className="truncate text-base font-bold text-brand-orange">{formatPriceVND(total)}</p>
                         </div>
@@ -1271,9 +1323,10 @@ export default function PaymentPageClient() {
                             onClick={handleSubmit}
                             disabled={isSubmitDisabled}
                             variant="brand"
-                            className="h-11 flex-1 rounded-full disabled:cursor-not-allowed disabled:opacity-50"
+                            className="h-11 min-w-0 flex-1 rounded-full px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-base"
                         >
-                            {submitLabel}
+                            <span className="sm:hidden">{isSubmitting ? "Đang xử lý..." : "Đặt hàng"}</span>
+                            <span className="hidden sm:inline">{submitLabel}</span>
                         </Button>
                     </div>
                 </div>

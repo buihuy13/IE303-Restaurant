@@ -19,6 +19,8 @@ export interface DeliveryAddress {
     city: string;
     state: string;
     zipCode: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface OrderRestaurantRef {

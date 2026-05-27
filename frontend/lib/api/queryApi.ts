@@ -35,6 +35,24 @@ export const queryApi = {
         });
         return { ...res, data: mapRestaurantQueryDto(res.data) };
     },
+
+    /**
+     * ORS `summary.duration` in **seconds** (raw DTO before UI mapping to whole minutes).
+     * Requires finite `lat`/`lon` (customer → restaurant route used by query-service).
+     */
+    getRestaurantRouteDurationSeconds: async (id: string, lat: number, lon: number): Promise<number | null> => {
+        const params = new URLSearchParams();
+        params.set("lat", String(lat));
+        params.set("lon", String(lon));
+        const res = await api.get<RestaurantQueryDto>(`/query/restaurants/${encodeURIComponent(id.trim())}`, {
+            params,
+        });
+        const sec = res.data?.duration;
+        if (typeof sec === "number" && Number.isFinite(sec) && sec > 0) {
+            return sec;
+        }
+        return null;
+    },
 };
 
 export type { RestaurantQueryDto, ProductQueryDto };

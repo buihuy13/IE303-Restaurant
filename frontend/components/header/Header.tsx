@@ -91,7 +91,10 @@ export default function Header() {
                                                                                 : "border-brand-orange/70 bg-white/80"
                                                                 }`}
                                                         >
-                                                                <Link href={dashboardPath}>{dashboardLabel}</Link>
+                                                                <Link href={dashboardPath}>
+                                                                    <span className="hidden xl:inline">{dashboardLabel}</span>
+                                                                    <span className="xl:hidden">Dashboard</span>
+                                                                </Link>
                                                         </Button>
                                                 )}
                                                 {/* Desktop: Show NavActions (icons + user dropdown) */}

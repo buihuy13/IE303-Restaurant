@@ -11,7 +11,7 @@ import { Product, ProductSize, Restaurant, Review } from "@/types";
 import { Check, ChevronRight, Home, MessageSquare, Minus, Plus, Star, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type FoodDetailClientProps = {
@@ -31,6 +31,34 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
     const [showAllReviews, setShowAllReviews] = useState(false);
 
     const [selectedSize, setSelectedSize] = useState<ProductSize | undefined>(foodItem.productSizes?.[0]);
+
+    /** Avoid infinite load/error loops with `next/image` (do not mutate `img.src` in `onError`). */
+    const primaryImageSrc = useMemo(
+        () => getImageUrl(foodItem.imageURL, "/default-food-image.png"),
+        [foodItem.imageURL],
+    );
+    type ImageLoadStage = "primary" | "local_placeholder" | "hidden";
+    const [imageStage, setImageStage] = useState<ImageLoadStage>("primary");
+
+    useEffect(() => {
+        setImageStage("primary");
+    }, [foodItem.id, primaryImageSrc]);
+
+    const handleProductImageError = useCallback(() => {
+        setImageStage((prev) => {
+            if (prev === "primary") return "local_placeholder";
+            if (prev === "local_placeholder") return "hidden";
+            return prev;
+        });
+    }, []);
+
+    const displayImageSrc =
+        imageStage === "primary" ? primaryImageSrc : imageStage === "local_placeholder" ? "/placeholder.png" : null;
+
+    const showImagePlaceholderOverlay =
+        imageStage !== "primary" ||
+        !foodItem.imageURL ||
+        primaryImageSrc === "/default-food-image.png";
 
     // Ensure component is mounted (client-side only)
     useEffect(() => {
@@ -209,26 +237,24 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                 {/* Image Section - ShopeeFood Style */}
                 <div className="relative">
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-md">
-                        <Image
-                            src={getImageUrl(foodItem.imageURL, "/default-food-image.png")}
-                            alt={foodItem.productName}
-                            fill
-                            className="w-full h-full object-cover"
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            unoptimized={
-                                !foodItem.imageURL ||
-                                getImageUrl(foodItem.imageURL, "/default-food-image.png") === "/default-food-image.png"
-                            }
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = "/placeholder.png";
-                            }}
-                        />
-                        {/* Placeholder overlay for broken images */}
-                        {(!foodItem.imageURL ||
-                            getImageUrl(foodItem.imageURL, "/default-food-image.png") ===
-                                "/default-food-image.png") && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                        {displayImageSrc ? (
+                            <Image
+                                src={displayImageSrc}
+                                alt={foodItem.productName}
+                                fill
+                                className="w-full h-full object-cover"
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                unoptimized={
+                                    imageStage !== "primary" ||
+                                    !foodItem.imageURL ||
+                                    primaryImageSrc === "/default-food-image.png" ||
+                                    displayImageSrc.startsWith("/")
+                                }
+                                onError={handleProductImageError}
+                            />
+                        ) : null}
+                        {showImagePlaceholderOverlay && (
+                            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
                                 <div className="text-center">
                                     <span className="text-6xl mb-3 block">🍽️</span>
                                     <span className="text-sm text-gray-600 font-medium">Preparing...</span>

@@ -229,7 +229,7 @@ export default function CartPageContainer() {
             </h1>
 
             {/* Desktop: 2 Column Layout */}
-            <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            <div className="checkout-two-col">
                 {/* Left Column: Cart Items */}
                 <div className="rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     {/* Header with Select All */}
@@ -277,7 +277,7 @@ export default function CartPageContainer() {
                 </div>
 
                 {/* Right Column: Order Summary (Sticky) */}
-                <div className="h-fit lg:sticky lg:top-24">
+                <div className="h-fit xl:sticky xl:top-24">
                     <OrderSummary
                         subtotal={selectedSubtotal}
                         selectedItems={selectedItemsList}
@@ -288,9 +288,9 @@ export default function CartPageContainer() {
             </div>
 
             {/* Mobile: Single Column + Fixed Bottom Bar */}
-            <div className="lg:hidden">
+            <div className="checkout-mobile-bottom-pad xl:hidden">
                 {/* Cart Items */}
-                <div className="mb-24 rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
+                <div className="rounded-3xl border border-gray-200/90 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.07)]">
                     {/* Header with Select All */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -332,8 +332,8 @@ export default function CartPageContainer() {
                 </div>
 
                 {/* Fixed Bottom Bar */}
-                <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/92 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
-                    <div className="custom-container py-3">
+                <div className="checkout-fixed-bar z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] xl:hidden">
+                    <div className="custom-container px-4 py-3 sm:px-6">
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>

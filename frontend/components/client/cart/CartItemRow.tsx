@@ -23,7 +23,8 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
     const itemTotal = item.price * item.quantity;
 
     return (
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
             {/* Checkbox */}
             <div className="flex-shrink-0 pt-1">
                 <input
@@ -113,10 +114,11 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                     </button>
                 </div>
             </div>
+            </div>
 
             {/* Total Item Price - Orange, Bold */}
-            <div className="flex-shrink-0 text-right">
-                <p className="font-bold text-lg text-brand-orange">{formatPriceVND(itemTotal)}</p>
+            <div className="flex-shrink-0 pl-9 text-left sm:pl-0 sm:text-right">
+                <p className="font-bold text-base text-brand-orange sm:text-lg">{formatPriceVND(itemTotal)}</p>
             </div>
         </div>
     );
