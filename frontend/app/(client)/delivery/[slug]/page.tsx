@@ -4,10 +4,11 @@ import DeliveryStatusPageContainer from "@/components/client/Delivery/DeliverySt
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default function DeliveryStatusPage({ params }: { params: { slug: string } }) {
+export default async function DeliveryStatusPage({ params }: { params: Promise<{ slug: string }> }) {
+        const { slug } = await params;
         return (
                 <section className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white">
-                        <DeliveryStatusPageContainer params={params} />
+                        <DeliveryStatusPageContainer slug={slug} />
                 </section>
         );
 }
