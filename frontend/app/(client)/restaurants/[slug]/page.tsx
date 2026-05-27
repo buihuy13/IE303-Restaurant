@@ -11,6 +11,7 @@ import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews"
 import { queryApi } from "@/lib/api/queryApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { looksLikeRestaurantUuid } from "@/lib/utils/restaurantNavigation";
+import { orsDurationSecondsToDisplayMinutes } from "@/lib/utils/routeDuration";
 import { productApi } from "@/lib/api/productApi";
 import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -100,7 +101,7 @@ export default function RestaurantDetailPage() {
                                     : restaurant.distance,
                             duration:
                                 typeof queryRes.data.duration === "number"
-                                    ? queryRes.data.duration
+                                    ? orsDurationSecondsToDisplayMinutes(queryRes.data.duration)
                                     : restaurant.duration,
                         };
                     } catch {

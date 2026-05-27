@@ -19,11 +19,14 @@ export const OrderStatusSidebar = ({
     orderId,
     canCancel,
     orderStatus,
+    etaLoading,
 }: {
     status: OrderStatus;
     orderId: string;
     canCancel: boolean;
     orderStatus?: string; // Order status from order object (e.g., "completed", "cancelled")
+    /** True while resolving ETA from query-service (no server `estimatedDeliveryTime` yet). */
+    etaLoading?: boolean;
     order?: Order; // Full order object to access paymentStatus and finalAmount
     onOrderUpdate?: () => void; // Callback to refresh order data after payment
 }) => {
@@ -76,7 +79,7 @@ export const OrderStatusSidebar = ({
                 <>
                     <div className="border border-gray-200 rounded-2xl bg-white p-6 mt-6 text-center shadow-sm">
                         <p className="text-gray-600 mb-2">Your Order Will Come In</p>
-                        {status.estimatedTime > 0 ? (
+                        {status.estimatedTime > 0 && !etaLoading ? (
                             <p className="text-4xl font-bold my-2 text-brand-orange">
                                 {status.estimatedTime} {status.estimatedTime === 1 ? "Minute" : "Minutes"}
                             </p>

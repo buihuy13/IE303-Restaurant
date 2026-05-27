@@ -1,8 +1,13 @@
 "use client";
 
 import { orderApi } from "@/lib/api/orderApi";
-import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
+import { queryApi } from "@/lib/api/queryApi";
+import {
+    computeRouteBasedEtaMinutes,
+    fallbackEtaMinutesWithoutRoute,
+} from "@/lib/delivery/computeRouteBasedEtaMinutes";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
+import { useOrdersVisibilityRefresh } from "@/lib/hooks/useOrdersVisibilityRefresh";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -65,6 +70,35 @@ type DisplayOrderItem = {
 
 const formatPriceVND = (amount: number): string => `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
 
+function getDeliveryCoords(o: Order): { lat: number; lon: number } | null {
+    const lat = o.deliveryAddress?.latitude;
+    const lon = o.deliveryAddress?.longitude;
+    if (typeof lat === "number" && typeof lon === "number" && Number.isFinite(lat) && Number.isFinite(lon)) {
+        return { lat, lon };
+    }
+    return null;
+}
+
+function readBrowserGeolocation(): Promise<{ lat: number; lon: number } | null> {
+    if (typeof window === "undefined" || typeof navigator === "undefined" || !navigator.geolocation) {
+        return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+        const timer = window.setTimeout(() => resolve(null), 8000);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                window.clearTimeout(timer);
+                resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+            },
+            () => {
+                window.clearTimeout(timer);
+                resolve(null);
+            },
+            { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8000 },
+        );
+    });
+}
+
 interface DeliveryStatusPageClientWrapperProps {
     initialOrder: Order;
 }
@@ -80,6 +114,9 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     const [order, setOrder] = useState<Order>(normalizedInitialOrder);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    /** Minutes: query-service route (seconds → min) + 15–20 prep; null if not resolved yet / inactive order. */
+    const [routeBasedEtaMinutes, setRouteBasedEtaMinutes] = useState<number | null>(null);
+    const [routeEtaLoading, setRouteEtaLoading] = useState(true);
     
     // Use ref to store current order to avoid stale closure in websocket callback
     const orderRef = useRef<Order>(normalizedInitialOrder);
@@ -117,6 +154,77 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 // Status already normalized in normalizedInitialOrder
             });
     }, [initialOrder.slug, initialOrder.orderId, isInitialLoad]);
+
+    // ETA from query-service: route duration (seconds) → minutes + preparation buffer
+    useEffect(() => {
+        let cancelled = false;
+        const normalized = (order.status || "").toLowerCase();
+        if (normalized === OrderStatus.COMPLETED || normalized === OrderStatus.CANCELLED) {
+            setRouteBasedEtaMinutes(null);
+            setRouteEtaLoading(false);
+            return;
+        }
+
+        const restaurantId = (order.restaurantId || order.restaurant?.id || "").trim();
+        if (!restaurantId || !order.orderId) {
+            setRouteBasedEtaMinutes(null);
+            setRouteEtaLoading(false);
+            return;
+        }
+
+        if (order.estimatedDeliveryTime) {
+            const t = new Date(order.estimatedDeliveryTime).getTime();
+            if (!Number.isNaN(t)) {
+                setRouteBasedEtaMinutes(null);
+                setRouteEtaLoading(false);
+                return;
+            }
+        }
+
+        setRouteEtaLoading(true);
+        setRouteBasedEtaMinutes(null);
+
+        void (async () => {
+            let coords = getDeliveryCoords(order);
+            if (!coords) {
+                coords = await readBrowserGeolocation();
+            }
+            if (cancelled) return;
+            if (!coords) {
+                setRouteBasedEtaMinutes(null);
+                setRouteEtaLoading(false);
+                return;
+            }
+            try {
+                const seconds = await queryApi.getRestaurantRouteDurationSeconds(
+                    restaurantId,
+                    coords.lat,
+                    coords.lon,
+                );
+                if (cancelled) return;
+                setRouteBasedEtaMinutes(computeRouteBasedEtaMinutes(seconds, order.orderId));
+            } catch (e) {
+                console.debug("[DeliveryStatusPage] query-service route ETA failed:", e);
+                if (!cancelled) {
+                    setRouteBasedEtaMinutes(fallbackEtaMinutesWithoutRoute(order.orderId));
+                }
+            } finally {
+                if (!cancelled) setRouteEtaLoading(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        order.orderId,
+        order.status,
+        order.restaurantId,
+        order.restaurant?.id,
+        order.estimatedDeliveryTime,
+        order.deliveryAddress?.latitude,
+        order.deliveryAddress?.longitude,
+    ]);
 
     // Listen for order status updates via WebSocket
     useOrderSocket({
@@ -337,29 +445,33 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             if (normalizedStatus === OrderStatus.COMPLETED || normalizedStatus === OrderStatus.CANCELLED) {
                 return 0;
             }
-            
-            if (!order.estimatedDeliveryTime) return 60; // Default to 1 hour if no estimated time
-            try {
-                // Handle different date formats from backend
-                const eta = new Date(order.estimatedDeliveryTime).getTime();
-                if (Number.isNaN(eta)) return 60; // Default to 1 hour if invalid date
 
-                const now = Date.now();
-                const diffMs = eta - now;
-                const diffMinutes = Math.round(diffMs / 60000);
-
-                // Cap at maximum 60 minutes (1 hour)
-                // If estimated time is in the past, negative, or exceeds 60 minutes, default to 60 minutes
-                if (diffMinutes < 0 || diffMinutes > 60) {
-                    return 60; // Default to 1 hour
+            const minutesUntilServerEta = (): number | null => {
+                if (!order.estimatedDeliveryTime) return null;
+                try {
+                    const eta = new Date(order.estimatedDeliveryTime).getTime();
+                    if (Number.isNaN(eta)) return null;
+                    const diffMinutes = Math.round((eta - Date.now()) / 60000);
+                    if (diffMinutes < 0) return 1;
+                    return Math.max(1, diffMinutes);
+                } catch (error) {
+                    console.error("Error calculating estimated time:", error, order.estimatedDeliveryTime);
+                    return null;
                 }
+            };
 
-                // Return calculated time (0-60 minutes)
-                return diffMinutes;
-            } catch (error) {
-                console.error("Error calculating estimated time:", error, order.estimatedDeliveryTime);
-                return 60; // Default to 1 hour on error
+            const serverMinutes = minutesUntilServerEta();
+            if (serverMinutes != null) {
+                return serverMinutes;
             }
+
+            if (routeBasedEtaMinutes != null) {
+                return routeBasedEtaMinutes;
+            }
+            if (routeEtaLoading) {
+                return 0;
+            }
+            return fallbackEtaMinutesWithoutRoute(order.orderId || "order");
         })();
 
         return {
@@ -472,6 +584,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                         orderId={order.orderId} 
                         canCancel={canCancel}
                         orderStatus={order.status}
+                        etaLoading={routeEtaLoading && !order.estimatedDeliveryTime}
                         order={order}
                         onOrderUpdate={async () => {
                             // Refresh order data after payment

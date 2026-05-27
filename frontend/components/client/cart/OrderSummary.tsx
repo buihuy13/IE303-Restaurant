@@ -1,14 +1,17 @@
 "use client";
 
 import { saveCheckoutSelection } from "@/lib/checkoutSelection";
+import { useShippingFeeQuote } from "@/lib/hooks/useShippingFeeQuote";
+import { useGeolocation } from "@/lib/userLocation";
 import { useAddressStore } from "@/stores/addressStore";
+import { useLocationStore } from "@/stores/useLocationStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CartItem } from "@/stores/cartStore";
 import { Edit2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 // Format price to VND
@@ -29,6 +32,8 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems
     const addresses = useAddressStore((state) => state.addresses);
     const loadingAddresses = useAddressStore((state) => state.loading);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const currentAddress = useLocationStore((s) => s.currentAddress);
+    const { coords } = useGeolocation();
 
     useEffect(() => {
         if (addresses.length > 0 && !selectedAddressId) {
@@ -40,7 +45,25 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems
     const deliveryAddress =
         selectedAddress?.location || (addresses.length > 0 ? addresses[0].location : "No address saved");
 
-    const shippingFee = 0; // Free shipping for now
+    const { quoteLat, quoteLon } = useMemo(() => {
+        if (selectedAddress && typeof selectedAddress.latitude === "number" && typeof selectedAddress.longitude === "number") {
+            return { quoteLat: selectedAddress.latitude, quoteLon: selectedAddress.longitude };
+        }
+        if (currentAddress) {
+            return { quoteLat: currentAddress.lat, quoteLon: currentAddress.lng };
+        }
+        if (coords?.latitude != null && coords?.longitude != null) {
+            return { quoteLat: coords.latitude, quoteLon: coords.longitude };
+        }
+        return { quoteLat: null as number | null, quoteLon: null as number | null };
+    }, [selectedAddress, currentAddress, coords?.latitude, coords?.longitude]);
+
+    const { feeVnd: shippingFee, distanceMeters, loading: shippingLoading, error: shippingError } = useShippingFeeQuote({
+        restaurantId,
+        latitude: quoteLat,
+        longitude: quoteLon,
+    });
+
     const tax = subtotal * 0.05; // 5% tax
     const total = subtotal + shippingFee + tax;
 
@@ -123,8 +146,26 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems
                 </div>
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping Fee</span>
-                    <span className="text-gray-900 font-medium">
-                        {shippingFee === 0 ? "FREE" : formatPriceVND(shippingFee)}
+                    <span className="text-gray-900 font-medium text-right">
+                        {shippingLoading ? (
+                            <span className="text-gray-400">Calculating…</span>
+                        ) : quoteLat == null || quoteLon == null ? (
+                            <span className="text-gray-400 text-xs font-normal">Set address / location</span>
+                        ) : shippingFee === 0 ? (
+                            <span className="text-gray-400 text-xs font-normal">—</span>
+                        ) : (
+                            <span>
+                                {formatPriceVND(shippingFee)}
+                                {distanceMeters != null && (
+                                    <span className="block text-[11px] font-normal text-gray-400">
+                                        ≈ {(distanceMeters / 1000).toFixed(1)} km (route)
+                                    </span>
+                                )}
+                                {shippingError && distanceMeters == null && (
+                                    <span className="block text-[11px] font-normal text-amber-600">Estimate fallback</span>
+                                )}
+                            </span>
+                        )}
                     </span>
                 </div>
                 <div className="flex justify-between text-sm">

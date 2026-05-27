@@ -6,6 +6,7 @@ import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Input } from "@/components/ui/Input";
 import { useAddressStore } from "@/stores/addressStore";
 import { useLocationStore } from "@/stores/useLocationStore";
+import { useShippingFeeQuote } from "@/lib/hooks/useShippingFeeQuote";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
 import { clearCheckoutSelection, loadCheckoutSelection, type CheckoutSelection } from "@/lib/checkoutSelection";
@@ -20,8 +21,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-const SHIPPING_FEE = 0; // Free shipping
-
 const formatPriceVND = (price: number): string => {
     return `${Math.round(price).toLocaleString("vi-VN")} đ`;
 };
@@ -30,6 +29,9 @@ export default function PaymentPageClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
+    /** PayOS full-page return: first paint runs before `useEffect` sets `isPaymentSuccess` — avoid empty-cart flash + `/cart` redirect. */
+    const payosReturn = searchParams.get("payos_return");
+    const isPayOsSuccessReturn = payosReturn === "success";
 
     const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading } = useCartStore();
     const { user, loading: authLoading, isAuthenticated, loginWithKeycloak } = useAuthStore();
@@ -105,9 +107,44 @@ export default function PaymentPageClient() {
         () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [orderItems],
     );
-    const shipping = SHIPPING_FEE; // Always delivery, no pickup
+
+    const selectedSavedAddressForQuote = useMemo(() => {
+        if (!selectedAddressId) return undefined;
+        return addresses.find((a) => a.id === selectedAddressId);
+    }, [addresses, selectedAddressId]);
+
+    const quoteCoordinates = useMemo(() => {
+        if (useNewAddress && typeof newAddressLat === "number" && typeof newAddressLon === "number") {
+            return { lat: newAddressLat, lon: newAddressLon };
+        }
+        if (!useNewAddress && selectedSavedAddressForQuote) {
+            const { latitude, longitude } = selectedSavedAddressForQuote;
+            if (typeof latitude === "number" && typeof longitude === "number") {
+                return { lat: latitude, lon: longitude };
+            }
+        }
+        if (coords?.latitude != null && coords?.longitude != null) {
+            return { lat: coords.latitude, lon: coords.longitude };
+        }
+        return { lat: null as number | null, lon: null as number | null };
+    }, [useNewAddress, newAddressLat, newAddressLon, selectedSavedAddressForQuote, coords?.latitude, coords?.longitude]);
+
+    const { feeVnd: shippingFromQuote, loading: shippingQuoteLoading } = useShippingFeeQuote({
+        restaurantId: restaurantId ?? undefined,
+        latitude: quoteCoordinates.lat,
+        longitude: quoteCoordinates.lon,
+    });
+
+    const shipping = shippingFromQuote;
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
+
+    const shippingDisplayLabel = useMemo(() => {
+        if (shippingQuoteLoading) return "Đang tính…";
+        if (quoteCoordinates.lat == null || quoteCoordinates.lon == null) return "Chưa xác định";
+        if (shipping <= 0) return "—";
+        return formatPriceVND(shipping);
+    }, [shippingQuoteLoading, quoteCoordinates.lat, quoteCoordinates.lon, shipping]);
     const isSubmitDisabled = isSubmitting || isProcessingCardPayment;
     const submitLabel = isSubmitting ? "Đang xử lý..." : "Đặt hàng & thanh toán";
     const checkoutSteps = [
@@ -355,7 +392,7 @@ export default function PaymentPageClient() {
 
     // Check if cart is empty (but skip if payment just succeeded to avoid redirect conflict)
     useEffect(() => {
-        if (!user || cartLoading || isPaymentSuccess) return;
+        if (!user || cartLoading || isPaymentSuccess || isPayOsSuccessReturn) return;
 
         const delay = 300;
         const checkTimer = setTimeout(() => {
@@ -367,7 +404,7 @@ export default function PaymentPageClient() {
         }, delay);
 
         return () => clearTimeout(checkTimer);
-    }, [user, orderItems, items, cartUserId, cartLoading, router, restaurantId, isPaymentSuccess]);
+    }, [user, orderItems, items, cartUserId, cartLoading, router, restaurantId, isPaymentSuccess, isPayOsSuccessReturn]);
 
     useEffect(() => {
         if (locationError) {
@@ -517,6 +554,12 @@ export default function PaymentPageClient() {
             toast.error(
                 "Unable to determine delivery coordinates. Please select an address from the suggestions or enable location services and try again.",
             );
+            submittingLockRef.current = false;
+            return;
+        }
+
+        if (shippingQuoteLoading) {
+            toast.error("Đang tính phí giao hàng, vui lòng chờ vài giây rồi thử lại.");
             submittingLockRef.current = false;
             return;
         }
@@ -713,6 +756,11 @@ export default function PaymentPageClient() {
 
     if (authLoading || cartLoading || loadingAddresses) {
         return <GlobalLoader label="Loading" sublabel="Setting up checkout" />;
+    }
+
+    // Don't show cart empty while PayOS success return is being finalized (before `isPaymentSuccess` flips).
+    if (orderItems.length === 0 && !isPaymentSuccess && isPayOsSuccessReturn) {
+        return <GlobalLoader label="Đang hoàn tất thanh toán" sublabel="Đang chuyển tới trang theo dõi đơn hàng..." />;
     }
 
     // Don't show cart empty message if payment was successful (redirect should happen)
@@ -1037,9 +1085,7 @@ export default function PaymentPageClient() {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Shipping Fee</span>
-                                <span className="text-gray-900 font-medium">
-                                    {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
-                                </span>
+                                <span className="text-gray-900 font-medium">{shippingDisplayLabel}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Tax</span>
@@ -1234,9 +1280,7 @@ export default function PaymentPageClient() {
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Shipping</span>
-                            <span className="text-gray-900 font-medium">
-                                {shipping === 0 ? "Miễn phí" : formatPriceVND(shipping)}
-                            </span>
+                            <span className="text-gray-900 font-medium">{shippingDisplayLabel}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Tax</span>

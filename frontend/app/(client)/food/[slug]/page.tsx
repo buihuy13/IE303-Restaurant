@@ -4,6 +4,10 @@ import FoodDetail from "@/components/client/Food/FoodDetail";
 import { Button } from "@/components/ui/Button";
 import { productApi } from "@/lib/api/productApi";
 import { reviewApi, type ReviewStatsResponse } from "@/lib/api/reviewApi";
+import {
+    enrichProductSizesWithCatalogNames,
+    normalizeProductSizesPayload,
+} from "@/lib/utils/productListDisplay";
 import { looksLikeProductUuid } from "@/lib/utils/productNavigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product, Restaurant, Review } from "@/types";
@@ -56,10 +60,35 @@ export default function FoodDetailPage() {
                 let foodItem: Product | null = null;
                 let canonicalSlug = slug;
 
+                const normalizeFoodDetail = (raw: unknown): Product | null => {
+                    if (!raw || typeof raw !== "object") return null;
+                    const dto = raw as Record<string, unknown>;
+
+                    const imageUrlCandidate =
+                        (typeof dto.imageURL === "string" ? dto.imageURL : null) ??
+                        (typeof dto.imageUrl === "string" ? dto.imageUrl : null) ??
+                        (typeof dto.image === "string" ? dto.image : null);
+
+                    const normalizedSizes = normalizeProductSizesPayload(dto.productSizes);
+                    const id = typeof dto.id === "string" ? dto.id : "";
+                    const slugValue = typeof dto.slug === "string" ? dto.slug : "";
+                    const productName = typeof dto.productName === "string" ? dto.productName : "";
+                    if (!id || !slugValue || !productName) return null;
+
+                    return {
+                        ...(dto as unknown as Product),
+                        id,
+                        slug: slugValue,
+                        productName,
+                        imageURL: imageUrlCandidate ?? null,
+                        productSizes: normalizedSizes,
+                    };
+                };
+
                 if (looksLikeProductUuid(slug)) {
                     try {
                         const legacy = await productApi.getProductById(slug);
-                        const data = legacy.data as Product | null;
+                        const data = normalizeFoodDetail(legacy.data);
                         if (data?.slug?.trim()) {
                             foodItem = data;
                             canonicalSlug = data.slug.trim();
@@ -70,7 +99,7 @@ export default function FoodDetailPage() {
                 } else {
                     try {
                         const res = await productApi.getProductBySlug(slug);
-                        foodItem = (res.data as Product | null) ?? null;
+                        foodItem = normalizeFoodDetail(res.data);
                     } catch {
                         // handled below
                     }
@@ -125,6 +154,22 @@ export default function FoodDetailPage() {
                     };
 
                     foodItem.restaurant = restaurant;
+                }
+
+                // Detail response may miss/flatten size names; fetch canonical sizes and enrich labels.
+                // Keep detail sizes as fallback if extra call fails.
+                try {
+                    const sizeRes = await productApi.getProductSizesByProductId(foodItem.id);
+                    const fromSizeEndpoint = normalizeProductSizesPayload(sizeRes.data);
+                    if (fromSizeEndpoint.length > 0) {
+                        foodItem.productSizes = await enrichProductSizesWithCatalogNames(fromSizeEndpoint);
+                    } else if ((foodItem.productSizes?.length ?? 0) > 0) {
+                        foodItem.productSizes = await enrichProductSizesWithCatalogNames(foodItem.productSizes);
+                    }
+                } catch {
+                    if ((foodItem.productSizes?.length ?? 0) > 0) {
+                        foodItem.productSizes = await enrichProductSizesWithCatalogNames(foodItem.productSizes);
+                    }
                 }
 
                 const [reviewStats, reviewSummary] = await Promise.all([

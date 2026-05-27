@@ -342,18 +342,89 @@ function normalizeOrderDto(raw: unknown): Order {
     const orderCodeNum = num(r.orderCode);
     const orderCode = orderCodeNum > 0 ? orderCodeNum : undefined;
 
-    let deliveryAddress = { street: "", city: "", state: "", zipCode: "" };
+    const parseCoord = (v: unknown): number | undefined => {
+        if (typeof v === "number" && Number.isFinite(v)) return v;
+        if (typeof v === "string" && v.trim() !== "") {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : undefined;
+        }
+        return undefined;
+    };
+
+    let deliveryAddress: Order["deliveryAddress"] = { street: "", city: "", state: "", zipCode: "" };
     if (r.deliveryAddress && typeof r.deliveryAddress === "object") {
         const d = r.deliveryAddress as Record<string, unknown>;
+        const lat =
+            parseCoord(d.latitude) ??
+            parseCoord(d.lat) ??
+            parseCoord((r as { userLat?: unknown }).userLat) ??
+            parseCoord((r as { deliveryLatitude?: unknown }).deliveryLatitude) ??
+            parseCoord((r as { userLatitude?: unknown }).userLatitude);
+        const lon =
+            parseCoord(d.longitude) ??
+            parseCoord(d.lng) ??
+            parseCoord(d.lon) ??
+            parseCoord((r as { userLon?: unknown }).userLon) ??
+            parseCoord((r as { deliveryLongitude?: unknown }).deliveryLongitude) ??
+            parseCoord((r as { userLongitude?: unknown }).userLongitude);
         deliveryAddress = {
             street: typeof d.street === "string" ? d.street : "",
             city: typeof d.city === "string" ? d.city : "",
             state: typeof d.state === "string" ? d.state : "",
             zipCode: typeof d.zipCode === "string" ? d.zipCode : typeof d.zip_code === "string" ? d.zip_code : "",
+            ...(lat !== undefined ? { latitude: lat } : {}),
+            ...(lon !== undefined ? { longitude: lon } : {}),
         };
     } else if (typeof r.deliveryAddress === "string" && r.deliveryAddress.trim() !== "") {
-        deliveryAddress = { street: r.deliveryAddress, city: "", state: "", zipCode: "" };
+        const lat =
+            parseCoord((r as { userLat?: unknown }).userLat) ??
+            parseCoord((r as { deliveryLatitude?: unknown }).deliveryLatitude) ??
+            parseCoord((r as { userLatitude?: unknown }).userLatitude);
+        const lon =
+            parseCoord((r as { userLon?: unknown }).userLon) ??
+            parseCoord((r as { deliveryLongitude?: unknown }).deliveryLongitude) ??
+            parseCoord((r as { userLongitude?: unknown }).userLongitude);
+        deliveryAddress = {
+            street: r.deliveryAddress,
+            city: "",
+            state: "",
+            zipCode: "",
+            ...(lat !== undefined ? { latitude: lat } : {}),
+            ...(lon !== undefined ? { longitude: lon } : {}),
+        };
+    } else {
+        const lat =
+            parseCoord((r as { userLat?: unknown }).userLat) ??
+            parseCoord((r as { deliveryLatitude?: unknown }).deliveryLatitude) ??
+            parseCoord((r as { userLatitude?: unknown }).userLatitude);
+        const lon =
+            parseCoord((r as { userLon?: unknown }).userLon) ??
+            parseCoord((r as { deliveryLongitude?: unknown }).deliveryLongitude) ??
+            parseCoord((r as { userLongitude?: unknown }).userLongitude);
+        if (lat !== undefined || lon !== undefined) {
+            deliveryAddress = {
+                street: "",
+                city: "",
+                state: "",
+                zipCode: "",
+                ...(lat !== undefined ? { latitude: lat } : {}),
+                ...(lon !== undefined ? { longitude: lon } : {}),
+            };
+        }
     }
+
+    const estimatedDeliveryTime =
+        typeof r.estimatedDeliveryTime === "string"
+            ? r.estimatedDeliveryTime
+            : typeof (r as { estimated_delivery_time?: unknown }).estimated_delivery_time === "string"
+              ? ((r as { estimated_delivery_time: string }).estimated_delivery_time)
+              : undefined;
+    const actualDeliveryTime =
+        typeof r.actualDeliveryTime === "string"
+            ? r.actualDeliveryTime
+            : typeof (r as { actual_delivery_time?: unknown }).actual_delivery_time === "string"
+              ? ((r as { actual_delivery_time: string }).actual_delivery_time)
+              : null;
 
     const createdAt =
         typeof r.createdAt === "string"
@@ -389,6 +460,8 @@ function normalizeOrderDto(raw: unknown): Order {
         status,
         paymentStatus,
         orderNote: typeof r.orderNote === "string" ? r.orderNote : typeof r.note === "string" ? r.note : undefined,
+        ...(estimatedDeliveryTime !== undefined ? { estimatedDeliveryTime } : {}),
+        ...(actualDeliveryTime !== undefined && actualDeliveryTime !== null ? { actualDeliveryTime } : {}),
         createdAt,
         updatedAt,
     };

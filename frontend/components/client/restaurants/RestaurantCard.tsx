@@ -19,7 +19,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
     const { theme } = useClientTheme();
     const distanceMeters =
         typeof restaurant.distance === "number" && Number.isFinite(restaurant.distance) && restaurant.distance >= 0
-            ? Math.round(restaurant.distance * 1000)
+            ? Math.round(restaurant.distance)
             : null;
     
     return (
@@ -109,14 +109,14 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
                             </span>
                         ) : null}
 
-                        {restaurant.duration != null ? (
+                        {restaurant.duration > 0 ? (
                             <span
                                 className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-1 ${
                                     theme === "dark" ? "border-white/15 bg-white/5" : "border-gray-200 bg-gray-50"
                                 }`}
                             >
                                 <Clock className={`h-3.5 w-3.5 ${theme === "dark" ? "text-white/60" : "text-gray-500"}`} />
-                                <span>{restaurant.duration} min</span>
+                                <span>{restaurant.duration} phút</span>
                             </span>
                         ) : null}
 

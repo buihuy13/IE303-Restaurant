@@ -26,7 +26,7 @@ export default function RestaurantHero({
         const bannerUrl = restaurant.imageURL || "/placeholder-banner.png";
         const distanceMeters =
             typeof restaurant.distance === "number" && Number.isFinite(restaurant.distance) && restaurant.distance >= 0
-                ? Math.round(restaurant.distance * 1000)
+                ? Math.round(restaurant.distance)
                 : null;
 
         return (
@@ -92,11 +92,11 @@ export default function RestaurantHero({
                                                                 </div>
 
                                                                 {/* Duration & Distance */}
-                                                                {restaurant.duration != null && distanceMeters != null && (
+                                                                {restaurant.duration > 0 && distanceMeters != null && (
                                                                         <>
                                                                                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-gray-200">
                                                                                         <Clock className="h-4 w-4 flex-shrink-0 text-gray-300" />
-                                                                                        <span className="font-medium">{restaurant.duration} min</span>
+                                                                                        <span className="font-medium">{restaurant.duration} phút</span>
                                                                                 </div>
                                                                                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-gray-200">
                                                                                         <MapPin className="h-4 w-4 flex-shrink-0 text-gray-300" />
