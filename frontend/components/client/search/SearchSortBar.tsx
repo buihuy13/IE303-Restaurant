@@ -32,8 +32,10 @@ export default function SearchSortBar({ searchType = "foods" }: { searchType?: "
             : sortOptions;
 
     return (
-        <div className={`flex-1 rounded-xl border p-2.5 ${theme === "dark" ? "bg-white/6 border-white/12" : "bg-gray-50 border-gray-200/80"}`}>
-            <div className="flex items-center gap-2 flex-wrap">
+        <div
+            className={`w-full min-w-0 rounded-xl border p-2.5 sm:flex-1 ${theme === "dark" ? "bg-white/6 border-white/12" : "bg-gray-50 border-gray-200/80"}`}
+        >
+            <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-sm font-medium ${theme === "dark" ? "text-white/78" : "text-gray-700"}`}>Sort by:</span>
                 {optionsToUse.map((option) => (
                     <Button

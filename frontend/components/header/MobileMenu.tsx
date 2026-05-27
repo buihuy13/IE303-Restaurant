@@ -84,7 +84,7 @@ export default function MobileMenu() {
                     onClick={() => setOpen(true)}
                     aria-label="Open menu"
                 >
-                    <Menu className="w-6 h-6 text-brand-black" />
+                    <Menu className={`w-6 h-6 ${theme === "dark" ? "text-white" : "text-brand-black"}`} />
                 </button>
             </div>
 
@@ -98,11 +98,11 @@ export default function MobileMenu() {
 
             {/* Mobile Menu Sidebar */}
             <div
-                className={`fixed top-0 right-0 h-full w-80 shadow-2xl z-[100] transform transition-transform duration-300 ease-in-out lg:hidden ${
-                    theme === "dark" ? "bg-[#12182b] border-l border-white/10" : "bg-brand-white"
-                } ${
-                    open ? "translate-x-0" : "translate-x-full"
-                }`}
+                className={`fixed top-0 right-0 z-[100] h-dvh w-[min(88vw,20rem)] border-l shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
+                    theme === "dark"
+                        ? "border-white/10 bg-slate-950 text-white supports-[backdrop-filter]:bg-slate-950/95 supports-[backdrop-filter]:backdrop-blur-xl"
+                        : "border-gray-200 bg-white text-brand-black"
+                } ${open ? "translate-x-0" : "translate-x-full"}`}
             >
                 <div className={`flex items-center justify-between p-6 border-b ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
                     <h2 className={`text-h5 font-roboto-serif ${theme === "dark" ? "text-white" : "text-brand-black"}`}>Menu</h2>

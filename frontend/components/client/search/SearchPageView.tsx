@@ -329,18 +329,19 @@ export function SearchPageView({
                                 onReset={onReset}
                             />
                             <ActiveFilterPills />
-                            <div className="mb-4 flex items-center justify-between gap-3">
+                            <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-between sm:gap-3">
                                 <SearchSortBar searchType={searchType} />
-                                <div className="flex items-center gap-2">
+                                <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                                     <Button
                                         type="button"
                                         variant="brandOutline"
                                         size="sm"
-                                        className="rounded-full"
+                                        className="max-w-full shrink-0 rounded-full px-3"
                                         onClick={onOpenMoodModal}
                                     >
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Gợi ý theo tâm trạng
+                                        <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                                        <span className="sm:hidden">Gợi ý tâm trạng</span>
+                                        <span className="hidden whitespace-nowrap sm:inline">Gợi ý theo tâm trạng</span>
                                     </Button>
                                     {searchType === "foods" && (
                                         <div className={`inline-flex shrink-0 rounded-full border p-1 ${theme === "dark" ? "border-white/14 bg-white/6" : "border-gray-200 bg-white"}`}>
