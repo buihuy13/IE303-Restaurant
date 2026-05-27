@@ -14,8 +14,6 @@ export default function UsersPageClient() {
         setSearchTerm,
         filterRole,
         setFilterRole,
-        filterStatus,
-        setFilterStatus,
         filteredUsers,
     } = useAdminUserFilters(users);
     const { handleDeleteUser } = useAdminUserActions(fetchUsers);
@@ -28,8 +26,6 @@ export default function UsersPageClient() {
                 onSearchChange={setSearchTerm}
                 filterRole={filterRole}
                 onFilterRoleChange={setFilterRole}
-                filterStatus={filterStatus}
-                onFilterStatusChange={setFilterStatus}
             />
             <UsersTable users={filteredUsers} loading={loading} onDelete={handleDeleteUser} />
         </div>

@@ -1,18 +1,7 @@
 "use client";
 
 import { Logo } from "@/constants";
-import {
-    ChevronDown,
-    Grid3x3,
-    Home,
-    LayoutDashboard,
-    Ruler,
-    Settings,
-    Users,
-    Utensils,
-    Wallet,
-    X
-} from "lucide-react";
+import { ChevronDown, Grid3x3, Home, LayoutDashboard, Ruler, Users, Utensils, Wallet, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,11 +44,6 @@ const menuItems: MenuItem[] = [
         label: "Wallet Payouts",
         icon: Wallet,
         href: "/admin/wallet",
-    },
-    {
-        label: "Settings",
-        icon: Settings,
-        href: "/admin/settings",
     },
 ];
 

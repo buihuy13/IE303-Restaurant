@@ -10,8 +10,7 @@ export function useAdminRestaurantsData() {
     const fetchRestaurants = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams({ lat: "10.9032198", lon: "106.7750317" });
-            const all = await fetchAllRestaurantsPages(params);
+            const all = await fetchAllRestaurantsPages();
             setRestaurants(all);
         } catch (error) {
             console.error("Failed to fetch restaurants:", error);

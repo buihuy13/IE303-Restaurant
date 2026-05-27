@@ -18,7 +18,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const settingsHref = user?.role === "MERCHANT" ? "/merchant/manage/settings" : "/admin/settings";
+    const settingsHref = user?.role === "MERCHANT" ? "/merchant/manage/settings" : null;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -82,14 +82,18 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
 
                         {dropdownOpen && (
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
-                                <Link
-                                    href={settingsHref}
-                                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    onClick={() => setDropdownOpen(false)}
-                                >
-                                    Settings
-                                </Link>
-                                <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                                {settingsHref && (
+                                    <>
+                                        <Link
+                                            href={settingsHref}
+                                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            onClick={() => setDropdownOpen(false)}
+                                        >
+                                            Settings
+                                        </Link>
+                                        <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                                    </>
+                                )}
                                 <Link
                                     href="/"
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-brand-orange hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20"
