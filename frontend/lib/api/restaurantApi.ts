@@ -42,7 +42,7 @@ export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise
 
     const all: Restaurant[] = [];
     let page = 0;
-    const pageSize = 100;
+    const pageSize = 20;
     const maxIterations = 50;
 
     while (page < maxIterations) {
