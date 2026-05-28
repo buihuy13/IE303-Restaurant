@@ -195,12 +195,20 @@ export default function SignUpPage() {
                 {/* Sign In Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Have an account?{" "}
-                    <Link
-                        href="/login"
+                    <button
+                        type="button"
+                        onClick={() =>
+                            loginWithKeycloak({
+                                redirectPath: "/",
+                            }).catch((err) => {
+                                const message = err instanceof Error ? err.message : "Unable to start Keycloak login.";
+                                toast.error(message);
+                            })
+                        }
                         className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline"
                     >
                         Sign In
-                    </Link>
+                    </button>
                 </p>
             </div>
         </section>

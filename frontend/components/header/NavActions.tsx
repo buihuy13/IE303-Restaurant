@@ -432,8 +432,22 @@ export default function NavActions() {
                 </DropdownMenu>
             ) : (
                 <div className="flex items-center gap-3">
-                    <Link
-                        href="/login"
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await loginWithKeycloak({
+                                    redirectPath: "/",
+                                });
+                            } catch (error) {
+                                const message =
+                                    error instanceof Error
+                                        ? error.message
+                                        : "Unable to start Keycloak sign in.";
+
+                                toast.error(message);
+                            }
+                        }}
                         className={`px-4 py-2 text-sm font-medium transition-colors ${
                             theme === "dark"
                                 ? "text-white/80 hover:text-white"
@@ -441,7 +455,7 @@ export default function NavActions() {
                         }`}
                     >
                         Sign in
-                    </Link>
+                    </button>
 
                     <Button
                         type="button"
