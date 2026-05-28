@@ -8,13 +8,17 @@
 
     <#if section = "header">
         <h1 id="kc-page-title">${msg("registerTitle")}</h1>
-        <p class="auth-subtitle">Create your account</p>
 
     <#elseif section = "form">
 
         <#if messagesPerField.existsError('global')>
             <div class="pf-v5-c-alert pf-m-danger alert-error" aria-live="polite">
-                ${kcSanitize(messagesPerField.get('global'))?no_esc}
+                ${kcSanitize(messagesPerField.getFirstError('global'))?no_esc}
+            </div>
+        <#elseif message?has_content>
+            <#assign messageType = (message.type == 'error')?then('danger', message.type)>
+            <div class="pf-v5-c-alert pf-m-${messageType} alert-${message.type}" aria-live="polite">
+                ${kcSanitize(message.summary)?no_esc}
             </div>
         </#if>
 

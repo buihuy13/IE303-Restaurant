@@ -3,6 +3,7 @@
 import { Logo } from "@/constants";
 import { authApi } from "@/lib/api/authApi";
 import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { Check, Eye, EyeOff, MapPin, Upload } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import toast from "react-hot-toast";
 
 export default function MerchantRegisterPageClient() {
     const router = useRouter();
+    const { loginWithKeycloak } = useAuthStore();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -532,12 +534,21 @@ export default function MerchantRegisterPageClient() {
 
                         <p className="text-center text-sm text-gray-600">
                             Already a partner?{" "}
-                            <Link
-                                href="/login"
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    loginWithKeycloak({
+                                        redirectPath: "/",
+                                    }).catch((err) => {
+                                        const message =
+                                            err instanceof Error ? err.message : "Unable to start Keycloak login.";
+                                        toast.error(message);
+                                    });
+                                }}
                                 className="font-semibold text-brand-orange hover:text-brand-orange/80 hover:underline"
                             >
                                 Sign In
-                            </Link>
+                            </button>
                         </p>
                     </form>
                 </div>

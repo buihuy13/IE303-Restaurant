@@ -14,7 +14,7 @@ export default function MobileMenu() {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const { isAuthenticated, user, logout, loading } = useAuthStore();
+    const { isAuthenticated, user, logout, loading, loginWithKeycloak } = useAuthStore();
     const { items: cartItems } = useCartStore();
     const pathname = usePathname();
 
@@ -41,6 +41,18 @@ export default function MobileMenu() {
             console.error("Logout error:", error);
         } finally {
             setTimeout(() => setIsLoggingOut(false), 500);
+        }
+    };
+
+    const handleSignIn = async () => {
+        setOpen(false);
+        try {
+            await loginWithKeycloak({
+                redirectPath: "/",
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Unable to start Keycloak sign in.";
+            toast.error(message, { duration: 3000 });
         }
     };
 
@@ -244,10 +256,9 @@ export default function MobileMenu() {
                     {mounted && !isAuthenticated && (
                         <>
                             <div className={`border-t pt-4 mt-4 space-y-2 ${theme === "dark" ? "border-white/10" : "border-gray-100"}`}>
-                                <Link
-                                    href="/login"
-                                    prefetch={true}
-                                    onClick={() => setOpen(false)}
+                                <button
+                                    type="button"
+                                    onClick={() => void handleSignIn()}
                                     className={`block text-center transition-colors font-manrope text-p2 font-medium py-3 px-4 rounded-lg ${
                                         theme === "dark"
                                             ? "text-white/88 hover:text-white hover:bg-white/10"
@@ -255,7 +266,7 @@ export default function MobileMenu() {
                                     }`}
                                 >
                                     Sign In
-                                </Link>
+                                </button>
                                 <Link
                                     href="/register"
                                     prefetch={true}

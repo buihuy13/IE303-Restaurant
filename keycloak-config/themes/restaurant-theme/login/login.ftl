@@ -17,7 +17,8 @@
                         ${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
                     </div>
                 <#elseif message?has_content>
-                    <div class="pf-v5-c-alert pf-m-${message.type} alert-${message.type}" aria-live="polite">
+                    <#assign messageType = (message.type == 'error')?then('danger', message.type)>
+                    <div class="pf-v5-c-alert pf-m-${messageType} alert-${message.type}" aria-live="polite">
                         ${kcSanitize(message.summary)?no_esc}
                     </div>
                 </#if>
@@ -158,7 +159,7 @@
         <#if realm.password && social?? && social.providers?has_content>
             <div id="kc-social-providers" class="kc-social-section">
                 <div class="kc-social-divider">
-                    <span>OR CONTINUE WITH</span>
+                    <span>${msg("identity-provider-login-label")}</span>
                 </div>
 
                 <ul class="kc-social-links">

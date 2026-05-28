@@ -79,6 +79,20 @@ export default function Header() {
         }
     };
 
+    const handleKeycloakSignIn = async (closeMobileMenu = false) => {
+        if (closeMobileMenu) {
+            setOpen(false);
+        }
+        try {
+            await loginWithKeycloak({
+                redirectPath: "/",
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Unable to start Keycloak sign in.";
+            toast.error(message);
+        }
+    };
+
     return (
         <header className="bg-brand-yellowlight px-6 py-4">
             <div className="custom-container">
@@ -227,14 +241,14 @@ export default function Header() {
                             </DropdownMenu>
                         ) : mounted && !isAuthenticated ? (
                             <>
-                                <Link href="/login" prefetch={true}>
-                                    <Button
-                                        variant="ghost"
-                                        className="hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
-                                    >
-                                        Sign In
-                                    </Button>
-                                </Link>
+                                <Button
+                                    type="button"
+                                    onClick={() => void handleKeycloakSignIn()}
+                                    variant="ghost"
+                                    className="hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
+                                >
+                                    Sign In
+                                </Button>
                                 <Button
                                     type="button"
                                     onClick={() => void handleKeycloakSignUp()}
@@ -350,14 +364,14 @@ export default function Header() {
                             )}
                             {mounted && !isAuthenticated && (
                                 <>
-                                    <Link href="/login" prefetch={true} className="w-full">
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full text-left hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
-                                        >
-                                            Sign In
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        type="button"
+                                        onClick={() => void handleKeycloakSignIn(true)}
+                                        variant="ghost"
+                                        className="w-full text-left hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
+                                    >
+                                        Sign In
+                                    </Button>
                                     <Button
                                         type="button"
                                         onClick={() => void handleKeycloakSignUp(true)}
