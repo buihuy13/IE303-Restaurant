@@ -57,3 +57,7 @@ backend/payment-service/docs/
 .claude
 
 .crush
+
+# Codex local artifacts
+.codex/
+.codex-run/

@@ -174,6 +174,31 @@ export default function NavActions() {
                 </Button>
             )}
 
+            {/* Blog */}
+            <Link
+                href="/blog"
+                className={`relative inline-flex h-9 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors ${
+                    theme === "dark"
+                        ? "hover:bg-white/10"
+                        : "hover:bg-gray-50"
+                } ${
+                    pathname.startsWith("/blog")
+                        ? "text-brand-orange"
+                        : theme === "dark"
+                        ? "text-white/75"
+                        : "text-gray-600"
+                }`}
+                aria-label="Read blog stories"
+                title="Read blog stories"
+            >
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden xl:inline">Blog</span>
+
+                {pathname.startsWith("/blog") && (
+                    <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
+                )}
+            </Link>
+
             {/* Orders */}
             {showAuthenticatedUI && (
                 <Link

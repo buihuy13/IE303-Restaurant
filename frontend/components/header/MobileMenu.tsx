@@ -62,6 +62,20 @@ export default function MobileMenu() {
                     />
                 </Link>
 
+                {/* Blog stories icon */}
+                <Link
+                    href="/blog"
+                    prefetch={true}
+                    className={`relative p-2 rounded-full transition-colors ${
+                        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                    }`}
+                    aria-label="Read blog stories"
+                >
+                    <BookOpen
+                        className={`w-5 h-5 ${pathname.startsWith("/blog") ? "text-brand-orange" : theme === "dark" ? "text-white/75" : "text-brand-grey"}`}
+                    />
+                </Link>
+
                 {/* Cart Icon */}
                 {isAuthenticated && user && !loading && (
                     <Link href="/cart" prefetch={true} className="relative group">
@@ -116,6 +130,33 @@ export default function MobileMenu() {
                 </div>
 
                 <nav className="flex flex-col p-4 space-y-1">
+                    <Link
+                        href="/search"
+                        prefetch={true}
+                        onClick={() => setOpen(false)}
+                        className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                            theme === "dark"
+                                ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                        }`}
+                    >
+                        <UtensilsCrossed className="w-5 h-5" />
+                        Explore foods
+                    </Link>
+                    <Link
+                        href="/blog"
+                        prefetch={true}
+                        onClick={() => setOpen(false)}
+                        className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                            theme === "dark"
+                                ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                        }`}
+                    >
+                        <BookOpen className="w-5 h-5" />
+                        Blog stories
+                    </Link>
+
                     {/* Main actions - authenticated only */}
                     {mounted && isAuthenticated && user && (
                         <>
@@ -144,19 +185,6 @@ export default function MobileMenu() {
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 Messages
-                            </Link>
-                            <Link
-                                href="/blog"
-                                prefetch={true}
-                                onClick={() => setOpen(false)}
-                                className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
-                                    theme === "dark"
-                                        ? "text-white/88 hover:bg-white/10 hover:text-white"
-                                        : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
-                                }`}
-                            >
-                                <BookOpen className="w-5 h-5" />
-                                Blog
                             </Link>
                         </>
                     )}
