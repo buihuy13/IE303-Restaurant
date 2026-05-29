@@ -8,31 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// Category icons with diverse emojis
-const categoryIcons: { [key: string]: string } = {
-    Burger: "🍔",
-    Pizza: "🍕",
-    Sandwiches: "🥪",
-    Wings: "🍗",
-    Coffee: "☕",
-    Tea: "🧋",
-    Indian: "🍛",
-    Chinese: "🥡",
-    Thai: "🍜",
-    American: "🍔",
-    Mexican: "🌮",
-    Japanese: "🍣",
-    Korean: "🍲",
-    Dessert: "🍰",
-    Bakery: "🥖",
-    FastFood: "🍟",
-    Seafood: "🦐",
-    Vegetarian: "🥗",
-    Vietnamese: "🍜",
-    Com: "🍚",
-    "Bubble Tea": "🧋",
-};
-
 export default function HeroSearchSection() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -160,7 +135,6 @@ export default function HeroSearchSection() {
                                 !activeCategory ? "shadow-lg btn-primary" : "chip-glass",
                             )}
                         >
-                            <span>🍽️</span>
                             <span>All</span>
                         </Button>
 
@@ -168,8 +142,6 @@ export default function HeroSearchSection() {
                         {allCategories.map((cat) => {
                             const categoryName = cat.name;
                             const displayName = cat.displayName;
-                            const normalizedName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-                            const icon = categoryIcons[normalizedName] || categoryIcons[categoryName] || "🍽️";
                             const isActive = activeCategory === categoryName;
 
                             return (
@@ -183,7 +155,6 @@ export default function HeroSearchSection() {
                                         isActive ? "shadow-lg btn-primary" : "chip-glass",
                                     )}
                                 >
-                                    <span>{icon}</span>
                                     <span>{displayName}</span>
                                 </Button>
                             );
