@@ -37,11 +37,11 @@ function formatChartDate(dateLike: string): string {
 }
 
 function periodLabelFromPreset(preset: DashboardDateRangePreset): string {
-    if (preset === "7d") return "week";
-    if (preset === "30d") return "month";
-    if (preset === "90d") return "90-day (normalized to month)";
-    if (preset === "ytd") return "YTD (normalized to month)";
-    return "all-time (normalized to month)";
+    if (preset === "7d") return "Last 7 days";
+    if (preset === "30d") return "Last 30 days";
+    if (preset === "90d") return "Last 90 days";
+    if (preset === "ytd") return "Year to date";
+    return "All time";
 }
 
 const STATUS_COLORS = ["#EE4D2D", "#F59E0B", "#3B82F6", "#8B5CF6", "#10B981", "#6B7280"];
@@ -73,8 +73,8 @@ export default function DashboardPageClient() {
         ReturnType<typeof dashboardApi.getAdminRestaurantStats>
     > | null>(null);
 
-    const period = useMemo(() => dashboardApi.mapPresetToPeriod(rangePreset), [rangePreset]);
-    const comparePeriod = useMemo(() => dashboardApi.mapPeriodForCompare(period), [period]);
+    const rangeQuery = useMemo(() => dashboardApi.buildDateRangeQuery(rangePreset), [rangePreset]);
+    const selectedRangeLabel = useMemo(() => periodLabelFromPreset(rangePreset), [rangePreset]);
 
     useEffect(() => {
         const run = async () => {
@@ -92,13 +92,15 @@ export default function DashboardPageClient() {
                     nextUserStats,
                     nextRestaurantStats,
                 ] = await Promise.all([
-                    dashboardApi.getAdminOverview({ period }),
-                    dashboardApi.getAdminRevenue({ period }),
-                    dashboardApi.getAdminRevenueCompare({ period: comparePeriod }),
-                    dashboardApi.getAdminOrderStatus({ period }),
+                    dashboardApi.getAdminOverview(),
+                    dashboardApi.getAdminRevenue({ range: rangeQuery }),
+                    rangeQuery.allTime
+                        ? Promise.resolve(null)
+                        : dashboardApi.getAdminRevenueCompare({ range: rangeQuery }),
+                    dashboardApi.getAdminOrderStatus({ range: rangeQuery }),
                     dashboardApi.getAdminHourlyOrders(),
-                    dashboardApi.getAdminTopProducts({ period, limit: 6 }),
-                    dashboardApi.getAdminRevenueByRestaurant({ period, limit: 6 }),
+                    dashboardApi.getAdminTopProducts({ range: rangeQuery, limit: 6 }),
+                    dashboardApi.getAdminRevenueByRestaurant({ range: rangeQuery, limit: 6 }),
                     dashboardApi.getAdminRecentOrders({ limit: 8 }),
                     dashboardApi.getAdminUserStatsOverview(),
                     dashboardApi.getAdminRestaurantStats(),
@@ -123,7 +125,7 @@ export default function DashboardPageClient() {
         };
 
         run();
-    }, [comparePeriod, period]);
+    }, [rangeQuery]);
 
     const revenueSeries = useMemo(
         () =>
@@ -159,7 +161,8 @@ export default function DashboardPageClient() {
 
     const kpiCards = useMemo(() => {
         const totalOrders = orderStatus?.total ?? 0;
-        const completionRate = totalOrders > 0 ? ((orderStatus?.completed ?? 0) * 100) / totalOrders : 0;
+        const rawCompletionRate = totalOrders > 0 ? ((orderStatus?.completed ?? 0) * 100) / totalOrders : 0;
+        const completionRate = Math.min(rawCompletionRate, 100);
         const revenueTrend = revenueCompare?.revenueGrowthPercent ?? 0;
 
         return [
@@ -168,20 +171,20 @@ export default function DashboardPageClient() {
                 value: formatCurrency(overview?.revenueToday ?? 0),
                 icon: DollarSign,
                 hint: "Today",
-                trend: revenueTrend,
+                trend: 0,
             },
             {
-                title: "Revenue This Month",
-                value: formatCurrency(overview?.revenueThisMonth ?? 0),
+                title: "Period Revenue",
+                value: formatCurrency(revenue?.totalRevenue ?? 0),
                 icon: TrendingUp,
-                hint: `Period: ${periodLabelFromPreset(rangePreset)}`,
+                hint: selectedRangeLabel,
                 trend: revenueTrend,
             },
             {
-                title: "Orders Today",
-                value: formatNumber(overview?.ordersToday ?? 0),
+                title: "Period Orders",
+                value: formatNumber(revenue?.totalOrders ?? 0),
                 icon: ShoppingCart,
-                hint: "Daily throughput",
+                hint: "Revenue-generating orders",
                 trend: revenueCompare?.orderGrowthPercent ?? 0,
             },
             {
@@ -206,7 +209,7 @@ export default function DashboardPageClient() {
                 trend: completionRate,
             },
         ];
-    }, [orderStatus, overview, rangePreset, restaurantStats, revenueCompare, userStats]);
+    }, [orderStatus, overview, restaurantStats, revenue, revenueCompare, selectedRangeLabel, userStats]);
 
     return (
         <div className="space-y-6 font-manrope">
@@ -286,7 +289,7 @@ export default function DashboardPageClient() {
                             <p className="text-xs text-bodydark">Revenue and order trend over the selected period</p>
                         </div>
                         <span className="rounded-full bg-brand-yellowlight px-3 py-1 text-xs font-semibold text-brand-black">
-                            {period.toUpperCase()}
+                            {selectedRangeLabel}
                         </span>
                     </div>
                     <div className="h-[320px]">

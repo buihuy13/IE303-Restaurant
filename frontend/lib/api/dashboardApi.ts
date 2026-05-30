@@ -47,29 +47,32 @@ function toArray<T>(value: unknown): T[] {
 }
 
 function toISODateOnly(date: Date): string {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
+    const yyyy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(date.getUTCDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
 }
 
 export type DashboardDateRangePreset = "7d" | "30d" | "90d" | "ytd" | "all";
+export type DashboardRangeQuery = { startDate?: string; endDate?: string; allTime?: boolean };
+type DashboardRangeParams = { period?: DashboardPeriod; range?: DashboardRangeQuery };
 
-export function buildDateRangeQuery(preset: DashboardDateRangePreset): { startDate?: string; endDate?: string } {
-    if (preset === "all") return {};
+export function buildDateRangeQuery(preset: DashboardDateRangePreset): DashboardRangeQuery {
+    if (preset === "all") return { allTime: true };
 
     const now = new Date();
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     if (preset === "ytd") {
-        const start = new Date(now.getFullYear(), 0, 1);
-        return { startDate: toISODateOnly(start), endDate: toISODateOnly(now) };
+        const start = new Date(Date.UTC(end.getUTCFullYear(), 0, 1));
+        return { startDate: toISODateOnly(start), endDate: toISODateOnly(end) };
     }
 
     const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
-    const start = new Date(now);
-    start.setDate(now.getDate() - days + 1);
+    const start = new Date(end);
+    start.setUTCDate(end.getUTCDate() - days + 1);
 
-    return { startDate: toISODateOnly(start), endDate: toISODateOnly(now) };
+    return { startDate: toISODateOnly(start), endDate: toISODateOnly(end) };
 }
 
 export function presetToDashboardPeriod(preset: DashboardDateRangePreset): DashboardPeriod {
@@ -200,35 +203,54 @@ function toComparePeriod(period: DashboardPeriod): "week" | "month" {
     return period === "day" ? "week" : period;
 }
 
+function buildPeriodOrRangeParams(params?: DashboardRangeParams): Record<string, string | boolean> {
+    const range = params?.range;
+
+    if (range?.allTime) return { allTime: true };
+    if (range?.startDate && range?.endDate) {
+        return { startDate: range.startDate, endDate: range.endDate };
+    }
+
+    return { period: params?.period ?? "week" };
+}
+
+function buildCompareParams(params?: DashboardRangeParams): Record<string, string | boolean> {
+    const range = params?.range;
+
+    if (range?.allTime) return { allTime: true };
+    if (range?.startDate && range?.endDate) {
+        return { startDate: range.startDate, endDate: range.endDate };
+    }
+
+    return { period: toComparePeriod(params?.period ?? "week") };
+}
+
 export const dashboardApi = {
     // ===================== ADMIN (NEW CONTRACT) =====================
-    getAdminOverview: async (params?: { period?: DashboardPeriod }): Promise<DashboardOverviewResponse> => {
+    getAdminOverview: async (params?: DashboardRangeParams): Promise<DashboardOverviewResponse> => {
         const _period = params?.period;
         void _period;
         const response = await api.get<unknown>("/dashboard/overview");
         return mapOverviewResponse(unwrapData(response.data));
     },
 
-    getAdminRevenue: async (params?: { period?: DashboardPeriod }): Promise<DashboardRevenueResponse> => {
+    getAdminRevenue: async (params?: DashboardRangeParams): Promise<DashboardRevenueResponse> => {
         const response = await api.get<unknown>("/dashboard/revenue", {
-            params: { period: params?.period ?? "week" },
+            params: buildPeriodOrRangeParams(params),
         });
         return mapRevenueResponse(unwrapData(response.data));
     },
 
-    getAdminRevenueCompare: async (params?: {
-        period?: DashboardPeriod | "week" | "month";
-    }): Promise<DashboardRevenueCompareResponse> => {
-        const normalized = params?.period === "day" ? "week" : (params?.period ?? "week");
+    getAdminRevenueCompare: async (params?: DashboardRangeParams): Promise<DashboardRevenueCompareResponse> => {
         const response = await api.get<unknown>("/dashboard/revenue/compare", {
-            params: { period: normalized },
+            params: buildCompareParams(params),
         });
         return mapRevenueCompareResponse(unwrapData(response.data));
     },
 
-    getAdminOrderStatus: async (params?: { period?: DashboardPeriod }): Promise<DashboardOrderStatusResponse> => {
+    getAdminOrderStatus: async (params?: DashboardRangeParams): Promise<DashboardOrderStatusResponse> => {
         const response = await api.get<unknown>("/dashboard/orders/status", {
-            params: { period: params?.period ?? "week" },
+            params: buildPeriodOrRangeParams(params),
         });
         return mapOrderStatusResponse(unwrapData(response.data));
     },
@@ -254,11 +276,12 @@ export const dashboardApi = {
 
     getAdminTopProducts: async (params?: {
         period?: DashboardPeriod;
+        range?: DashboardRangeQuery;
         limit?: number;
     }): Promise<DashboardTopProductsResponse> => {
         const response = await api.get<unknown>("/dashboard/top-products", {
             params: {
-                period: params?.period ?? "week",
+                ...buildPeriodOrRangeParams(params),
                 limit: params?.limit ?? 5,
             },
         });
@@ -268,11 +291,12 @@ export const dashboardApi = {
 
     getAdminRevenueByRestaurant: async (params?: {
         period?: DashboardPeriod;
+        range?: DashboardRangeQuery;
         limit?: number;
     }): Promise<DashboardRevenueByRestaurantResponse> => {
         const response = await api.get<unknown>("/dashboard/revenue/by-restaurant", {
             params: {
-                period: params?.period ?? "week",
+                ...buildPeriodOrRangeParams(params),
                 limit: params?.limit ?? 10,
             },
         });
@@ -305,7 +329,7 @@ export const dashboardApi = {
     // ===================== MERCHANT (NEW CONTRACT) =====================
     getMerchantOverview: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod },
+        params?: DashboardRangeParams,
     ): Promise<DashboardOverviewResponse> => {
         const _period = params?.period;
         void _period;
@@ -317,12 +341,12 @@ export const dashboardApi = {
 
     getMerchantRevenue: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod },
+        params?: DashboardRangeParams,
     ): Promise<DashboardRevenueResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/revenue", {
             params: {
                 restaurantId,
-                period: params?.period ?? "week",
+                ...buildPeriodOrRangeParams(params),
             },
         });
         return mapRevenueResponse(unwrapData(response.data));
@@ -330,12 +354,12 @@ export const dashboardApi = {
 
     getMerchantOrderStatus: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod },
+        params?: DashboardRangeParams,
     ): Promise<DashboardOrderStatusResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/orders/status", {
             params: {
                 restaurantId,
-                period: params?.period ?? "week",
+                ...buildPeriodOrRangeParams(params),
             },
         });
         return mapOrderStatusResponse(unwrapData(response.data));
@@ -351,12 +375,12 @@ export const dashboardApi = {
 
     getMerchantTopProducts: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod; limit?: number },
+        params?: { period?: DashboardPeriod; range?: DashboardRangeQuery; limit?: number },
     ): Promise<DashboardTopProductsResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/top-products", {
             params: {
                 restaurantId,
-                period: params?.period ?? "week",
+                ...buildPeriodOrRangeParams(params),
                 limit: params?.limit ?? 5,
             },
         });
@@ -372,4 +396,6 @@ export const dashboardApi = {
     mapPresetToPeriod: presetToDashboardPeriod,
 
     mapPeriodForCompare: (period: DashboardPeriod): "week" | "month" => toComparePeriod(period),
+
+    buildDateRangeQuery,
 };

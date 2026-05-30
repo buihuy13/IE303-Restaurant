@@ -26,6 +26,14 @@ function formatChartDate(dateLike: string): string {
     return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
+function periodLabelFromPreset(preset: DashboardDateRangePreset): string {
+    if (preset === "7d") return "Last 7 days";
+    if (preset === "30d") return "Last 30 days";
+    if (preset === "90d") return "Last 90 days";
+    if (preset === "ytd") return "Year to date";
+    return "All time";
+}
+
 const STATUS_COLORS = ["#F59E0B", "#6366F1", "#8B5CF6", "#14B8A6", "#10B981", "#EF4444"];
 
 export default function MerchantDashboardPageClient() {
@@ -48,7 +56,8 @@ export default function MerchantDashboardPageClient() {
     >([]);
     const [liveOrders, setLiveOrders] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantLiveOrders>>>([]);
 
-    const period = useMemo(() => dashboardApi.mapPresetToPeriod(rangePreset), [rangePreset]);
+    const rangeQuery = useMemo(() => dashboardApi.buildDateRangeQuery(rangePreset), [rangePreset]);
+    const selectedRangeLabel = useMemo(() => periodLabelFromPreset(rangePreset), [rangePreset]);
 
     useEffect(() => {
         if (!user?.id) {
@@ -93,10 +102,10 @@ export default function MerchantDashboardPageClient() {
             try {
                 const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] = await Promise.all(
                     [
-                        dashboardApi.getMerchantOverview(restaurant.restaurantId, { period }),
-                        dashboardApi.getMerchantRevenue(restaurant.restaurantId, { period }),
-                        dashboardApi.getMerchantOrderStatus(restaurant.restaurantId, { period }),
-                        dashboardApi.getMerchantTopProducts(restaurant.restaurantId, { period, limit: 6 }),
+                        dashboardApi.getMerchantOverview(restaurant.restaurantId),
+                        dashboardApi.getMerchantRevenue(restaurant.restaurantId, { range: rangeQuery }),
+                        dashboardApi.getMerchantOrderStatus(restaurant.restaurantId, { range: rangeQuery }),
+                        dashboardApi.getMerchantTopProducts(restaurant.restaurantId, { range: rangeQuery, limit: 6 }),
                         dashboardApi.getMerchantLiveOrders(restaurant.restaurantId),
                     ],
                 );
@@ -115,7 +124,7 @@ export default function MerchantDashboardPageClient() {
         };
 
         run();
-    }, [period, restaurant?.restaurantId]);
+    }, [rangeQuery, restaurant?.restaurantId]);
 
     const revenueSeries = useMemo(
         () =>
@@ -141,8 +150,8 @@ export default function MerchantDashboardPageClient() {
     }, [orderStatus]);
 
     const kpis = useMemo(() => {
-        const totalOrders = orderStatus?.total ?? 0;
-        const averageOrderValue = totalOrders > 0 ? (revenue?.totalRevenue ?? 0) / totalOrders : 0;
+        const periodOrders = revenue?.totalOrders ?? 0;
+        const averageOrderValue = periodOrders > 0 ? (revenue?.totalRevenue ?? 0) / periodOrders : 0;
 
         return [
             {
@@ -152,31 +161,29 @@ export default function MerchantDashboardPageClient() {
                 hint: "Daily gross revenue",
             },
             {
-                title: "Revenue This Month",
-                value: formatCurrency(overview?.revenueThisMonth ?? 0),
+                title: "Period Revenue",
+                value: formatCurrency(revenue?.totalRevenue ?? 0),
                 icon: TrendingUp,
-                hint: `Total orders: ${formatNumber(revenue?.totalOrders ?? 0)}`,
+                hint: selectedRangeLabel,
             },
             {
-                title: "Orders Today",
-                value: formatNumber(overview?.ordersToday ?? 0),
+                title: "Period Orders",
+                value: formatNumber(periodOrders),
                 icon: ShoppingCart,
-                hint: "Real-time operational load",
+                hint: "Revenue-generating orders",
             },
             {
                 title: "Average Order",
                 value: formatCurrency(averageOrderValue),
                 icon: Activity,
-                hint: `${formatNumber(totalOrders)} orders in selected period`,
+                hint: `${formatNumber(periodOrders)} orders in selected period`,
             },
         ];
     }, [
-        orderStatus?.total,
-        overview?.ordersToday,
-        overview?.revenueThisMonth,
         overview?.revenueToday,
         revenue?.totalOrders,
         revenue?.totalRevenue,
+        selectedRangeLabel,
     ]);
 
     return (
