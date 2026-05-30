@@ -9,17 +9,41 @@ import com.CNTTK18.dashboard_service.dto.order.OrderResponse;
 public interface DashboardAnalyticsService {
     DashboardStatsDTO.OverviewResponse getOverview();
 
-    DashboardStatsDTO.RevenueResponse getRevenue(String period);
+    default DashboardStatsDTO.RevenueResponse getRevenue(String period) {
+        return getRevenue(period, null, null, false);
+    }
 
-    DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(String period);
+    DashboardStatsDTO.RevenueResponse getRevenue(String period, LocalDate startDate, LocalDate endDate, boolean allTime);
 
-    DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period);
+    default DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(String period) {
+        return getRevenueCompare(period, null, null, false);
+    }
+
+    DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime);
+
+    default DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period) {
+        return getOrderStatusSummary(period, null, null, false);
+    }
+
+    DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime);
 
     List<DashboardStatsDTO.HourlyOrderResponse> getHourlyOrders(LocalDate date);
 
-    DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit);
+    default DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit) {
+        return getTopProducts(period, limit, null, null, false);
+    }
 
-    DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(String period, int limit);
+    DashboardStatsDTO.TopProductsResponse getTopProducts(
+            String period, int limit, LocalDate startDate, LocalDate endDate, boolean allTime);
+
+    default DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(String period, int limit) {
+        return getRevenueByRestaurant(period, limit, null, null, false);
+    }
+
+    DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(
+            String period, int limit, LocalDate startDate, LocalDate endDate, boolean allTime);
 
     List<OrderResponse> getRecentOrders(int limit);
 }

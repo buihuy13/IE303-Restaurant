@@ -1,9 +1,7 @@
 package com.CNTTK18.dashboard_service.service.Impl;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +14,8 @@ import com.CNTTK18.dashboard_service.dto.dashboard.DashboardStatsDTO;
 import com.CNTTK18.dashboard_service.dto.order.OrderSummaryDTO;
 import com.CNTTK18.dashboard_service.exception.BadRequestException;
 import com.CNTTK18.dashboard_service.model.OrderStatus;
+import com.CNTTK18.dashboard_service.service.DashboardDateRangeResolver;
+import com.CNTTK18.dashboard_service.service.DashboardDateRangeResolver.DateRange;
 import com.CNTTK18.dashboard_service.service.MerchantDashboardAnalyticsService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,16 +25,14 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardAnalyticsService {
-    private static final ZoneOffset UTC = ZoneOffset.UTC;
-
     private final OrderDashboardDataClient orderDashboardDataClient;
 
     @Override
     public DashboardStatsDTO.OverviewResponse getMerchantOverview(UUID restaurantId) {
         validateRestaurantId(restaurantId);
 
-        DateRange dayRange = getRange("day");
-        DateRange monthRange = getRange("month");
+        DateRange dayRange = DashboardDateRangeResolver.resolve("day", null, null, false);
+        DateRange monthRange = DashboardDateRangeResolver.resolve("month", null, null, false);
 
         long ordersToday = orderDashboardDataClient.countByRestaurantCreatedBetween(
                 restaurantId, dayRange.start().toString(), dayRange.end().toString());
@@ -56,9 +54,10 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-    public DashboardStatsDTO.RevenueResponse getMerchantRevenue(UUID restaurantId, String period) {
+    public DashboardStatsDTO.RevenueResponse getMerchantRevenue(
+            UUID restaurantId, String period, LocalDate startDate, LocalDate endDate, boolean allTime) {
         validateRestaurantId(restaurantId);
-        DateRange range = getRange(period);
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         List<DashboardStatsDTO.RevenueByDate> breakdown =
                 orderDashboardDataClient
@@ -91,9 +90,10 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-    public DashboardStatsDTO.OrderStatusResponse getMerchantOrderStatus(UUID restaurantId, String period) {
+    public DashboardStatsDTO.OrderStatusResponse getMerchantOrderStatus(
+            UUID restaurantId, String period, LocalDate startDate, LocalDate endDate, boolean allTime) {
         validateRestaurantId(restaurantId);
-        DateRange range = getRange(period);
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         long pending = orderDashboardDataClient.countByRestaurantStatusBetween(
                 restaurantId,
@@ -141,10 +141,11 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-    public DashboardStatsDTO.TopProductsResponse getMerchantTopProducts(UUID restaurantId, String period, int limit) {
+    public DashboardStatsDTO.TopProductsResponse getMerchantTopProducts(
+            UUID restaurantId, String period, int limit, LocalDate startDate, LocalDate endDate, boolean allTime) {
         validateRestaurantId(restaurantId);
         int safeLimit = limit > 0 ? limit : 5;
-        DateRange range = getRange(period);
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         List<DashboardStatsDTO.TopProductItem> items = orderDashboardDataClient
                 .topProductsByRestaurant(
@@ -169,39 +170,9 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
         return orderDashboardDataClient.liveOrders(restaurantId);
     }
 
-    private DateRange getRange(String period) {
-        String normalizedPeriod = normalizePeriod(period);
-        LocalDate today = LocalDate.now(UTC);
-
-        return switch (normalizedPeriod) {
-            case "day" -> createRange(today, today);
-            case "week" -> createRange(today.minusDays(6), today);
-            case "month" -> createRange(today.withDayOfMonth(1), today);
-            default -> {
-                log.error("Invalid period received: {}", period);
-                throw new BadRequestException("period must be day, week or month");
-            }
-        };
-    }
-
     private void validateRestaurantId(UUID restaurantId) {
         if (restaurantId == null) {
             throw new BadRequestException("restaurantId is required");
         }
     }
-
-    private DateRange createRange(LocalDate startDate, LocalDate endDate) {
-        Instant start = startDate.atStartOfDay(UTC).toInstant();
-        Instant end = endDate.plusDays(1).atStartOfDay(UTC).minusNanos(1).toInstant();
-        return new DateRange(start, end);
-    }
-
-    private String normalizePeriod(String period) {
-        return Optional.ofNullable(period)
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .orElse("week");
-    }
-
-    private record DateRange(Instant start, Instant end) {}
 }

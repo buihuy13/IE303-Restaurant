@@ -3,7 +3,6 @@ package com.CNTTK18.dashboard_service.service.Impl;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,6 +20,8 @@ import com.CNTTK18.dashboard_service.dto.order.OrderResponse;
 import com.CNTTK18.dashboard_service.exception.BadRequestException;
 import com.CNTTK18.dashboard_service.model.OrderStatus;
 import com.CNTTK18.dashboard_service.service.DashboardAnalyticsService;
+import com.CNTTK18.dashboard_service.service.DashboardDateRangeResolver;
+import com.CNTTK18.dashboard_service.service.DashboardDateRangeResolver.DateRange;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +36,8 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
 
     @Override
     public DashboardStatsDTO.OverviewResponse getOverview() {
-        DateRange dayRange = getRange("day");
-        DateRange monthRange = getRange("month");
+        DateRange dayRange = DashboardDateRangeResolver.resolve("day", null, null, false);
+        DateRange monthRange = DashboardDateRangeResolver.resolve("month", null, null, false);
 
         long pendingOrders = orderDashboardDataClient.countByStatus(OrderStatus.PENDING);
         long completedOrders = orderDashboardDataClient.countByStatus(OrderStatus.COMPLETED);
@@ -58,19 +59,38 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.RevenueResponse getRevenue(String period) {
-        return buildRevenue(getRange(period));
+    public DashboardStatsDTO.RevenueResponse getRevenue(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime) {
+        return buildRevenue(DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime));
     }
 
     @Override
-    public DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(String period) {
-        String normalizedPeriod = normalizePeriod(period);
-        if (!"week".equals(normalizedPeriod) && !"month".equals(normalizedPeriod)) {
-            throw new BadRequestException("period must be week or month");
+    public DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime) {
+        DateRange currentRange = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
+        DashboardStatsDTO.RevenueResponse current = buildRevenue(currentRange);
+
+        if (currentRange.allTime()) {
+            return DashboardStatsDTO.RevenueCompareResponse.builder()
+                    .current(current)
+                    .previous(emptyRevenue())
+                    .revenueGrowthPercent(0D)
+                    .orderGrowthPercent(0D)
+                    .build();
         }
 
-        DashboardStatsDTO.RevenueResponse current = buildRevenue(getRange(normalizedPeriod));
-        DashboardStatsDTO.RevenueResponse previous = buildRevenue(getPreviousRange(normalizedPeriod));
+        DateRange previousRange;
+        if (startDate != null && endDate != null) {
+            previousRange = DashboardDateRangeResolver.previousSameLength(currentRange);
+        } else {
+            String normalizedPeriod = DashboardDateRangeResolver.normalizePeriod(period);
+            if (!"week".equals(normalizedPeriod) && !"month".equals(normalizedPeriod)) {
+                throw new BadRequestException("period must be week or month");
+            }
+            previousRange = DashboardDateRangeResolver.previousPeriod(normalizedPeriod);
+        }
+
+        DashboardStatsDTO.RevenueResponse previous = buildRevenue(previousRange);
 
         return DashboardStatsDTO.RevenueCompareResponse.builder()
                 .current(current)
@@ -81,8 +101,9 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period) {
-        DateRange range = getRange(period);
+    public DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime) {
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         long pending = orderDashboardDataClient.countByStatusBetween(
                 OrderStatus.PENDING, range.start().toString(), range.end().toString());
@@ -137,9 +158,10 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit) {
+    public DashboardStatsDTO.TopProductsResponse getTopProducts(
+            String period, int limit, LocalDate startDate, LocalDate endDate, boolean allTime) {
         int safeLimit = limit > 0 ? limit : 5;
-        DateRange range = getRange(period);
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         List<DashboardStatsDTO.TopProductItem> items =
                 orderDashboardDataClient
@@ -159,9 +181,10 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(String period, int limit) {
+    public DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(
+            String period, int limit, LocalDate startDate, LocalDate endDate, boolean allTime) {
         int safeLimit = limit > 0 ? limit : 10;
-        DateRange range = getRange(period);
+        DateRange range = DashboardDateRangeResolver.resolve(period, startDate, endDate, allTime);
 
         List<DashboardStatsDTO.RevenueByRestaurantItem> items =
                 orderDashboardDataClient
@@ -186,46 +209,6 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     public List<OrderResponse> getRecentOrders(int limit) {
         int safeLimit = limit > 0 ? limit : 10;
         return orderDashboardDataClient.recentOrders(safeLimit);
-    }
-
-    private DateRange getRange(String period) {
-        String normalizedPeriod = normalizePeriod(period);
-        LocalDate today = LocalDate.now(UTC);
-
-        return switch (normalizedPeriod) {
-            case "day" -> createRange(today, today);
-            case "week" -> createRange(today.minusDays(6), today);
-            case "month" -> createRange(today.withDayOfMonth(1), today);
-            default -> {
-                log.error("Invalid period received: {}", period);
-                throw new BadRequestException("period must be day, week or month");
-            }
-        };
-    }
-
-    private DateRange getPreviousRange(String period) {
-        String normalizedPeriod = normalizePeriod(period);
-        LocalDate today = LocalDate.now(UTC);
-
-        return switch (normalizedPeriod) {
-            case "day" -> {
-                LocalDate yesterday = today.minusDays(1);
-                yield createRange(yesterday, yesterday);
-            }
-            case "week" -> {
-                LocalDate previousEnd = today.minusDays(7);
-                LocalDate previousStart = previousEnd.minusDays(6);
-                yield createRange(previousStart, previousEnd);
-            }
-            case "month" -> {
-                YearMonth previousMonth = YearMonth.now(UTC).minusMonths(1);
-                yield createRange(previousMonth.atDay(1), previousMonth.atEndOfMonth());
-            }
-            default -> {
-                log.error("Invalid period for compare: {}", period);
-                throw new BadRequestException("period must be day, week or month");
-            }
-        };
     }
 
     private DashboardStatsDTO.RevenueResponse buildRevenue(DateRange range) {
@@ -257,17 +240,12 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
                 .build();
     }
 
-    private DateRange createRange(LocalDate startDate, LocalDate endDate) {
-        Instant start = startDate.atStartOfDay(UTC).toInstant();
-        Instant end = endDate.plusDays(1).atStartOfDay(UTC).minusNanos(1).toInstant();
-        return new DateRange(start, end);
-    }
-
-    private String normalizePeriod(String period) {
-        return Optional.ofNullable(period)
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .orElse("week");
+    private DashboardStatsDTO.RevenueResponse emptyRevenue() {
+        return DashboardStatsDTO.RevenueResponse.builder()
+                .totalRevenue(BigDecimal.ZERO)
+                .totalOrders(0)
+                .breakdown(List.of())
+                .build();
     }
 
     private double calculateGrowthPercent(BigDecimal current, BigDecimal previous) {
@@ -296,5 +274,4 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
                 .doubleValue();
     }
 
-    private record DateRange(Instant start, Instant end) {}
 }

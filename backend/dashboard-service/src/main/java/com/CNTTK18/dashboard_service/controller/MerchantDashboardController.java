@@ -1,8 +1,10 @@
 package com.CNTTK18.dashboard_service.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,8 +39,20 @@ public class MerchantDashboardController {
     public ResponseEntity<DashboardStatsDTO.RevenueResponse> getMerchantRevenue(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period));
+                    String period,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(
+                merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period, startDate, endDate, allTime));
     }
 
     @GetMapping("/orders/status")
@@ -46,8 +60,20 @@ public class MerchantDashboardController {
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getMerchantOrderStatus(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(restaurantId, period));
+                    String period,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(
+                restaurantId, period, startDate, endDate, allTime));
     }
 
     @GetMapping("/orders/live")
@@ -63,7 +89,19 @@ public class MerchantDashboardController {
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Maximum number of products") @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(restaurantId, period, limit));
+            @Parameter(description = "Maximum number of products") @RequestParam(defaultValue = "5") int limit,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(
+                restaurantId, period, limit, startDate, endDate, allTime));
     }
 }

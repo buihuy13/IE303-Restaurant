@@ -46,24 +46,57 @@ public class DashboardController {
     @Operation(summary = "Get revenue analytics by period")
     public ResponseEntity<DashboardStatsDTO.RevenueResponse> getRevenue(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getRevenue(period));
+                    String period,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getRevenue(period, startDate, endDate, allTime));
     }
 
     @GetMapping("/revenue/compare")
     @Operation(summary = "Compare revenue between current and previous period")
     public ResponseEntity<DashboardStatsDTO.RevenueCompareResponse> getRevenueCompare(
             @Parameter(description = "Supported values: week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getRevenueCompare(period));
+                    String period,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getRevenueCompare(period, startDate, endDate, allTime));
     }
 
     @GetMapping("/orders/status")
     @Operation(summary = "Get order status summary by period")
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getOrderStatus(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getOrderStatusSummary(period));
+                    String period,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getOrderStatusSummary(period, startDate, endDate, allTime));
     }
 
     @GetMapping("/orders/hourly")
@@ -88,8 +121,19 @@ public class DashboardController {
     public ResponseEntity<DashboardStatsDTO.TopProductsResponse> getTopProducts(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Number of products") @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getTopProducts(period, limit));
+            @Parameter(description = "Number of products") @RequestParam(defaultValue = "5") int limit,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getTopProducts(period, limit, startDate, endDate, allTime));
     }
 
     @GetMapping("/revenue/by-restaurant")
@@ -97,7 +141,19 @@ public class DashboardController {
     public ResponseEntity<DashboardStatsDTO.RevenueByRestaurantResponse> getRevenueByRestaurant(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Number of restaurants") @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getRevenueByRestaurant(period, limit));
+            @Parameter(description = "Number of restaurants") @RequestParam(defaultValue = "10") int limit,
+            @Parameter(description = "Start date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @Parameter(description = "End date in format YYYY-MM-DD")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @Parameter(description = "Use all records through today")
+                    @RequestParam(defaultValue = "false")
+                    boolean allTime) {
+        return ResponseEntity.ok(
+                dashboardAnalyticsService.getRevenueByRestaurant(period, limit, startDate, endDate, allTime));
     }
 }
