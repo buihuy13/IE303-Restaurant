@@ -70,6 +70,15 @@ const buildSemanticItemKey = (
 const getSemanticItemKey = (item: Pick<CartItem, "restaurantId" | "baseProductId" | "sizeId" | "customizations">) =>
     buildSemanticItemKey(item.restaurantId, item.baseProductId, item.sizeId, item.customizations);
 
+const buildLooseItemKey = (
+    restaurantId: string,
+    baseProductId: string,
+    customizations?: string,
+): string => [normalizeKeyPart(restaurantId), normalizeKeyPart(baseProductId), normalizeKeyPart(customizations)].join("::");
+
+const getLooseItemKey = (item: Pick<CartItem, "restaurantId" | "baseProductId" | "customizations">) =>
+    buildLooseItemKey(item.restaurantId, item.baseProductId, item.customizations);
+
 const getCartErrorMessage = (error: unknown): string | null => {
     const maybeError = error as {
         response?: { data?: unknown; status?: number };
@@ -128,6 +137,7 @@ const mergeWithPendingAdds = (
     const ttlMs = 30000;
 
     const backendKeys = new Set(backendItems.map((it) => getSemanticItemKey(it)));
+    const backendLooseKeys = new Set(backendItems.map((it) => getLooseItemKey(it)));
     const merged = [...backendItems];
 
     for (const localItem of currentItems) {
@@ -136,6 +146,27 @@ const mergeWithPendingAdds = (
         if (!pendingAt) continue;
         if (now - pendingAt > ttlMs) continue;
         if (backendKeys.has(key)) continue;
+
+        // Backend occasionally responds without size metadata for sized products.
+        // If that happens, keep a single row by reconciling with the backend row
+        // that matches restaurant + product + customizations.
+        const looseKey = getLooseItemKey(localItem);
+        if (localItem.sizeId && backendLooseKeys.has(looseKey)) {
+            const candidateIndex = merged.findIndex(
+                (item) => getLooseItemKey(item) === looseKey && !item.sizeId,
+            );
+            if (candidateIndex >= 0) {
+                const candidate = merged[candidateIndex];
+                merged[candidateIndex] = {
+                    ...candidate,
+                    id: localItem.id || candidate.id,
+                    sizeId: localItem.sizeId,
+                    sizeName: localItem.sizeName || candidate.sizeName,
+                };
+                continue;
+            }
+        }
+
         merged.push(localItem);
     }
 
