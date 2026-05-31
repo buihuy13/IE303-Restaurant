@@ -9,17 +9,18 @@ import com.CNTTK18.dashboard_service.dto.order.OrderResponse;
 public interface DashboardAnalyticsService {
     DashboardStatsDTO.OverviewResponse getOverview();
 
-    DashboardStatsDTO.RevenueResponse getRevenue(String period);
+    DashboardStatsDTO.RevenueResponse getRevenue(String period, LocalDate startDate, LocalDate endDate);
 
     DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(String period);
 
-    DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period);
+    DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period, LocalDate startDate, LocalDate endDate);
 
     List<DashboardStatsDTO.HourlyOrderResponse> getHourlyOrders(LocalDate date);
 
-    DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit);
+    DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit, LocalDate startDate, LocalDate endDate);
 
-    DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(String period, int limit);
+    DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(
+            String period, int limit, LocalDate startDate, LocalDate endDate);
 
     List<OrderResponse> getRecentOrders(int limit);
 }

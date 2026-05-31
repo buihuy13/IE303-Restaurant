@@ -58,8 +58,8 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.RevenueResponse getRevenue(String period) {
-        return buildRevenue(getRange(period));
+        public DashboardStatsDTO.RevenueResponse getRevenue(String period, LocalDate startDate, LocalDate endDate) {
+                return buildRevenue(resolveRange(period, startDate, endDate));
     }
 
     @Override
@@ -81,8 +81,9 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(String period) {
-        DateRange range = getRange(period);
+        public DashboardStatsDTO.OrderStatusResponse getOrderStatusSummary(
+                        String period, LocalDate startDate, LocalDate endDate) {
+                DateRange range = resolveRange(period, startDate, endDate);
 
         long pending = orderDashboardDataClient.countByStatusBetween(
                 OrderStatus.PENDING, range.start().toString(), range.end().toString());
@@ -137,9 +138,10 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.TopProductsResponse getTopProducts(String period, int limit) {
+        public DashboardStatsDTO.TopProductsResponse getTopProducts(
+                        String period, int limit, LocalDate startDate, LocalDate endDate) {
         int safeLimit = limit > 0 ? limit : 5;
-        DateRange range = getRange(period);
+                DateRange range = resolveRange(period, startDate, endDate);
 
         List<DashboardStatsDTO.TopProductItem> items =
                 orderDashboardDataClient
@@ -159,9 +161,10 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
     }
 
     @Override
-    public DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(String period, int limit) {
+        public DashboardStatsDTO.RevenueByRestaurantResponse getRevenueByRestaurant(
+                        String period, int limit, LocalDate startDate, LocalDate endDate) {
         int safeLimit = limit > 0 ? limit : 10;
-        DateRange range = getRange(period);
+                DateRange range = resolveRange(period, startDate, endDate);
 
         List<DashboardStatsDTO.RevenueByRestaurantItem> items =
                 orderDashboardDataClient
@@ -202,6 +205,20 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
             }
         };
     }
+
+        private DateRange resolveRange(String period, LocalDate startDate, LocalDate endDate) {
+                if (startDate != null || endDate != null) {
+                        if (startDate == null || endDate == null) {
+                                throw new BadRequestException("startDate and endDate must be provided together");
+                        }
+                        if (startDate.isAfter(endDate)) {
+                                throw new BadRequestException("startDate cannot be after endDate");
+                        }
+                        return createRange(startDate, endDate);
+                }
+
+                return getRange(period);
+        }
 
     private DateRange getPreviousRange(String period) {
         String normalizedPeriod = normalizePeriod(period);

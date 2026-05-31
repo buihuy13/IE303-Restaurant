@@ -63,7 +63,7 @@ export default function MerchantReportsPageClient() {
                 try {
                     const [nextOverview, nextRevenue, nextOrderStatus, nextTopProducts, nextLiveOrders] =
                         await Promise.all([
-                            dashboardApi.getMerchantOverview(restaurantInfo.restaurantId, { period }),
+                            dashboardApi.getMerchantOverview(restaurantInfo.restaurantId),
                             dashboardApi.getMerchantRevenue(restaurantInfo.restaurantId, { period }),
                             dashboardApi.getMerchantOrderStatus(restaurantInfo.restaurantId, { period }),
                             dashboardApi.getMerchantTopProducts(restaurantInfo.restaurantId, { period, limit: 8 }),
