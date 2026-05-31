@@ -74,10 +74,6 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
         void loadMoodOptions();
     }, [isMoodModalOpen, loadMoodOptions]);
 
-    useEffect(() => {
-        setIsMoodModalOpen(true);
-    }, []);
-
     const handleSelectMood = useCallback(
         async (mood: string) => {
             const lat = currentAddress?.lat ?? 10.7769;
@@ -174,7 +170,10 @@ export default function SearchPageClient({ initialCategories = [] }: SearchPageC
                 window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             moodModalOpen={isMoodModalOpen}
-            onOpenMoodModal={() => setIsMoodModalOpen(true)}
+            onOpenMoodModal={() => {
+                setMoodError(null);
+                setIsMoodModalOpen(true);
+            }}
             onCloseMoodModal={() => setIsMoodModalOpen(false)}
             moodOptions={moodOptions}
             moodOptionsLoading={isMoodOptionsLoading}

@@ -237,7 +237,7 @@ export default function CravingSuggestionCard() {
 
     return (
         <>
-            <div className="fixed bottom-24 right-3 z-50 sm:bottom-6 sm:right-6">
+            <div className="fixed bottom-5 right-3 z-50 sm:bottom-4 sm:right-6">
                 {!open && showMessagesAction && (
                     <div className="mb-2 flex justify-end">
                         <HeaderTooltip label="Messages" align="end">
@@ -411,6 +411,7 @@ export default function CravingSuggestionCard() {
                         type="button"
                         onClick={handleOpenPanel}
                         className="relative inline-flex h-14 items-center gap-2 rounded-full bg-brand-orange px-4 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(238,77,45,0.34)] transition hover:-translate-y-0.5 hover:bg-brand-orange/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35"
+                        aria-label="Mở AI gợi ý món ăn"
                     >
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/18">
                             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

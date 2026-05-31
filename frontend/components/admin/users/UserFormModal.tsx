@@ -24,6 +24,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
 
         const isEditMode = userToEdit !== null;
         const title = isEditMode ? "Edit User" : "Add New User";
+        const titleId = "user-form-modal-title";
 
         // 3. Effect to sync 'userToEdit' props into form state
         // When modal opens or user to edit changes -> update form
@@ -40,6 +41,19 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                         }
                 }
         }, [isOpen, userToEdit, isEditMode]);
+
+        useEffect(() => {
+                if (!isOpen) return;
+
+                const handleKeyDown = (event: KeyboardEvent) => {
+                        if (event.key === "Escape") {
+                                onClose();
+                        }
+                };
+
+                document.addEventListener("keydown", handleKeyDown);
+                return () => document.removeEventListener("keydown", handleKeyDown);
+        }, [isOpen, onClose]);
 
         // 4. Handle form submission
         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -77,10 +91,14 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                         <div
                                 onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
                                 className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-lg"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby={titleId}
                         >
                                 {/* Close Button (X) */}
                                 <button
                                         title="Close Modal"
+                                        aria-label="Close user form"
                                         onClick={onClose}
                                         className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
                                 >
@@ -88,7 +106,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                 </button>
 
                                 {/* Title */}
-                                <h2 className="text-2xl font-bold mb-6">{title}</h2>
+                                <h2 id={titleId} className="text-2xl font-bold mb-6">{title}</h2>
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="space-y-4">

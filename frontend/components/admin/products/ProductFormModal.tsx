@@ -34,6 +34,7 @@ export default function ProductFormModal({
     const [imagePreview, setImagePreview] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState<{ sizeId: string; price: number }[]>([]);
+    const titleId = "product-form-modal-title";
 
     useEffect(() => {
         if (product) {
@@ -59,6 +60,17 @@ export default function ProductFormModal({
             }
         }
     }, [product]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -97,10 +109,15 @@ export default function ProductFormModal({
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px] overflow-y-auto">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div
+                className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+            >
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">{product ? "Edit Product" : "Create Product"}</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                    <h2 id={titleId} className="text-2xl font-bold">{product ? "Edit Product" : "Create Product"}</h2>
+                    <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Close product form">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
