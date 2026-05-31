@@ -56,7 +56,9 @@ function toISODateOnly(date: Date): string {
 export type DashboardDateRangePreset = "7d" | "30d" | "90d" | "ytd" | "all";
 
 export function buildDateRangeQuery(preset: DashboardDateRangePreset): { startDate?: string; endDate?: string } {
-    if (preset === "all") return {};
+    if (preset === "all") {
+        return { startDate: "1970-01-01", endDate: toISODateOnly(new Date()) };
+    }
 
     const now = new Date();
 
@@ -200,18 +202,21 @@ function toComparePeriod(period: DashboardPeriod): "week" | "month" {
     return period === "day" ? "week" : period;
 }
 
+function buildRangeParams(preset?: DashboardDateRangePreset): Record<string, string> {
+    if (!preset) return {};
+    return buildDateRangeQuery(preset);
+}
+
 export const dashboardApi = {
     // ===================== ADMIN (NEW CONTRACT) =====================
-    getAdminOverview: async (params?: { period?: DashboardPeriod }): Promise<DashboardOverviewResponse> => {
-        const _period = params?.period;
-        void _period;
+    getAdminOverview: async (): Promise<DashboardOverviewResponse> => {
         const response = await api.get<unknown>("/dashboard/overview");
         return mapOverviewResponse(unwrapData(response.data));
     },
 
-    getAdminRevenue: async (params?: { period?: DashboardPeriod }): Promise<DashboardRevenueResponse> => {
+    getAdminRevenue: async (params?: { period?: DashboardPeriod; preset?: DashboardDateRangePreset }): Promise<DashboardRevenueResponse> => {
         const response = await api.get<unknown>("/dashboard/revenue", {
-            params: { period: params?.period ?? "week" },
+            params: { period: params?.period ?? "week", ...buildRangeParams(params?.preset) },
         });
         return mapRevenueResponse(unwrapData(response.data));
     },
@@ -226,9 +231,9 @@ export const dashboardApi = {
         return mapRevenueCompareResponse(unwrapData(response.data));
     },
 
-    getAdminOrderStatus: async (params?: { period?: DashboardPeriod }): Promise<DashboardOrderStatusResponse> => {
+    getAdminOrderStatus: async (params?: { period?: DashboardPeriod; preset?: DashboardDateRangePreset }): Promise<DashboardOrderStatusResponse> => {
         const response = await api.get<unknown>("/dashboard/orders/status", {
-            params: { period: params?.period ?? "week" },
+            params: { period: params?.period ?? "week", ...buildRangeParams(params?.preset) },
         });
         return mapOrderStatusResponse(unwrapData(response.data));
     },
@@ -255,11 +260,13 @@ export const dashboardApi = {
     getAdminTopProducts: async (params?: {
         period?: DashboardPeriod;
         limit?: number;
+        preset?: DashboardDateRangePreset;
     }): Promise<DashboardTopProductsResponse> => {
         const response = await api.get<unknown>("/dashboard/top-products", {
             params: {
                 period: params?.period ?? "week",
                 limit: params?.limit ?? 5,
+                ...buildRangeParams(params?.preset),
             },
         });
 
@@ -269,11 +276,13 @@ export const dashboardApi = {
     getAdminRevenueByRestaurant: async (params?: {
         period?: DashboardPeriod;
         limit?: number;
+        preset?: DashboardDateRangePreset;
     }): Promise<DashboardRevenueByRestaurantResponse> => {
         const response = await api.get<unknown>("/dashboard/revenue/by-restaurant", {
             params: {
                 period: params?.period ?? "week",
                 limit: params?.limit ?? 10,
+                ...buildRangeParams(params?.preset),
             },
         });
 
@@ -303,12 +312,7 @@ export const dashboardApi = {
     },
 
     // ===================== MERCHANT (NEW CONTRACT) =====================
-    getMerchantOverview: async (
-        restaurantId: string,
-        params?: { period?: DashboardPeriod },
-    ): Promise<DashboardOverviewResponse> => {
-        const _period = params?.period;
-        void _period;
+    getMerchantOverview: async (restaurantId: string): Promise<DashboardOverviewResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/overview", {
             params: { restaurantId },
         });
@@ -317,12 +321,13 @@ export const dashboardApi = {
 
     getMerchantRevenue: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod },
+        params?: { period?: DashboardPeriod; preset?: DashboardDateRangePreset },
     ): Promise<DashboardRevenueResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/revenue", {
             params: {
                 restaurantId,
                 period: params?.period ?? "week",
+                ...buildRangeParams(params?.preset),
             },
         });
         return mapRevenueResponse(unwrapData(response.data));
@@ -330,12 +335,13 @@ export const dashboardApi = {
 
     getMerchantOrderStatus: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod },
+        params?: { period?: DashboardPeriod; preset?: DashboardDateRangePreset },
     ): Promise<DashboardOrderStatusResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/orders/status", {
             params: {
                 restaurantId,
                 period: params?.period ?? "week",
+                ...buildRangeParams(params?.preset),
             },
         });
         return mapOrderStatusResponse(unwrapData(response.data));
@@ -351,13 +357,14 @@ export const dashboardApi = {
 
     getMerchantTopProducts: async (
         restaurantId: string,
-        params?: { period?: DashboardPeriod; limit?: number },
+        params?: { period?: DashboardPeriod; limit?: number; preset?: DashboardDateRangePreset },
     ): Promise<DashboardTopProductsResponse> => {
         const response = await api.get<unknown>("/merchant/dashboard/top-products", {
             params: {
                 restaurantId,
                 period: params?.period ?? "week",
                 limit: params?.limit ?? 5,
+                ...buildRangeParams(params?.preset),
             },
         });
 

@@ -6,29 +6,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-// Category icons with diverse emojis
-const categoryIcons: { [key: string]: string } = {
-        Burger: "🍔",
-        Pizza: "🍕",
-        Sandwiches: "🥪",
-        Wings: "🍗",
-        Coffee: "☕",
-        Tea: "🧋",
-        Indian: "🍛",
-        Chinese: "🥡",
-        Thai: "🍜",
-        American: "🍔",
-        Mexican: "🌮",
-        Japanese: "🍣",
-        Korean: "🍲",
-        Dessert: "🍰",
-        Bakery: "🥖",
-        FastFood: "🍟",
-        Seafood: "🦐",
-        Vegetarian: "🥗",
-        Vietnamese: "🍜",
-};
-
 // Category colors - different light background colors for each category
 const categoryColors: { [key: string]: { bg: string; activeBg: string; text: string } } = {
         Burger: { bg: "bg-orange-50", activeBg: "bg-orange-500", text: "text-orange-700" },
@@ -205,14 +182,11 @@ export default function FoodHero() {
                                                                                                 : "bg-gray-50 text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-200"
                                                                                 }`}
                                                                         >
-                                                                                <span className="text-lg lg:text-2xl">🍽️</span>
                                                                                 <span className="text-[10px] lg:text-xs font-semibold leading-tight">All</span>
                                                                         </button>
 
                                                                         {/* Other Categories */}
                                                                         {categories && categories.map((category: Category) => {
-                                                                                const normalizedName = category.cateName.charAt(0).toUpperCase() + category.cateName.slice(1);
-                                                                                const icon = categoryIcons[normalizedName] || "🍽️";
                                                                                 const isActive = activeCategory === category.cateName;
                                                                                 const colorClass = getCategoryColor(category.cateName, isActive);
 
@@ -222,7 +196,6 @@ export default function FoodHero() {
                                                                                                 onClick={() => handleCategoryClick(category.cateName)}
                                                                                                 className={`cursor-pointer flex flex-col items-center justify-center gap-1.5 flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20 text-center p-2 rounded-xl transition-all duration-300 transform hover:-translate-y-1 shadow-sm ${colorClass}`}
                                                                                         >
-                                                                                                <span className="text-lg lg:text-2xl">{icon}</span>
                                                                                                 <span className="text-[10px] lg:text-xs font-semibold leading-tight truncate w-full px-0.5">
                                                                                                         {category.cateName}
                                                                                                 </span>

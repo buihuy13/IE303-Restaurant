@@ -1,5 +1,6 @@
 package com.CNTTK18.dashboard_service.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,8 +38,11 @@ public class MerchantDashboardController {
     public ResponseEntity<DashboardStatsDTO.RevenueResponse> getMerchantRevenue(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period));
+                    String period,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(
+                merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period, startDate, endDate));
     }
 
     @GetMapping("/orders/status")
@@ -46,8 +50,11 @@ public class MerchantDashboardController {
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getMerchantOrderStatus(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(restaurantId, period));
+                    String period,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(
+                merchantDashboardAnalyticsService.getMerchantOrderStatus(restaurantId, period, startDate, endDate));
     }
 
     @GetMapping("/orders/live")
@@ -63,7 +70,10 @@ public class MerchantDashboardController {
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Maximum number of products") @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(restaurantId, period, limit));
+            @Parameter(description = "Maximum number of products") @RequestParam(defaultValue = "5") int limit,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(
+                restaurantId, period, limit, startDate, endDate));
     }
 }

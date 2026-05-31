@@ -38,10 +38,10 @@ function formatChartDate(dateLike: string): string {
 
 function periodLabelFromPreset(preset: DashboardDateRangePreset): string {
     if (preset === "7d") return "week";
-    if (preset === "30d") return "month";
-    if (preset === "90d") return "90-day (normalized to month)";
-    if (preset === "ytd") return "YTD (normalized to month)";
-    return "all-time (normalized to month)";
+    if (preset === "30d") return "30 days";
+    if (preset === "90d") return "90 days";
+    if (preset === "ytd") return "year to date";
+    return "all time";
 }
 
 const STATUS_COLORS = ["#EE4D2D", "#F59E0B", "#3B82F6", "#8B5CF6", "#10B981", "#6B7280"];
@@ -92,13 +92,13 @@ export default function DashboardPageClient() {
                     nextUserStats,
                     nextRestaurantStats,
                 ] = await Promise.all([
-                    dashboardApi.getAdminOverview({ period }),
-                    dashboardApi.getAdminRevenue({ period }),
+                    dashboardApi.getAdminOverview(),
+                    dashboardApi.getAdminRevenue({ period, preset: rangePreset }),
                     dashboardApi.getAdminRevenueCompare({ period: comparePeriod }),
-                    dashboardApi.getAdminOrderStatus({ period }),
+                    dashboardApi.getAdminOrderStatus({ period, preset: rangePreset }),
                     dashboardApi.getAdminHourlyOrders(),
-                    dashboardApi.getAdminTopProducts({ period, limit: 6 }),
-                    dashboardApi.getAdminRevenueByRestaurant({ period, limit: 6 }),
+                    dashboardApi.getAdminTopProducts({ period, limit: 6, preset: rangePreset }),
+                    dashboardApi.getAdminRevenueByRestaurant({ period, limit: 6, preset: rangePreset }),
                     dashboardApi.getAdminRecentOrders({ limit: 8 }),
                     dashboardApi.getAdminUserStatsOverview(),
                     dashboardApi.getAdminRestaurantStats(),
