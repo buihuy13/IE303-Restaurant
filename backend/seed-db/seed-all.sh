@@ -37,6 +37,11 @@ PRODUCT_ID_7="00000000-0000-0000-2000-000000000007"
 PRODUCT_ID_8="00000000-0000-0000-2000-000000000008"
 PRODUCT_ID_9="00000000-0000-0000-2000-000000000009"
 PRODUCT_ID_10="00000000-0000-0000-2000-000000000010"
+PRODUCT_ID_11="00000000-0000-0000-2000-000000000011"
+PRODUCT_ID_12="00000000-0000-0000-2000-000000000012"
+PRODUCT_ID_13="00000000-0000-0000-2000-000000000013"
+PRODUCT_ID_14="00000000-0000-0000-2000-000000000014"
+PRODUCT_ID_15="00000000-0000-0000-2000-000000000015"
 
 REVIEW_ID_1="00000000-0000-0000-3000-000000000001"
 REVIEW_ID_2="00000000-0000-0000-3000-000000000002"
@@ -50,6 +55,16 @@ REVIEW_ID_9="00000000-0000-0000-3000-000000000009"
 REVIEW_ID_10="00000000-0000-0000-3000-000000000010"
 REVIEW_ID_11="00000000-0000-0000-3000-000000000011"
 REVIEW_ID_12="00000000-0000-0000-3000-000000000012"
+REVIEW_ID_13="00000000-0000-0000-3000-000000000013"
+REVIEW_ID_14="00000000-0000-0000-3000-000000000014"
+REVIEW_ID_15="00000000-0000-0000-3000-000000000015"
+REVIEW_ID_16="00000000-0000-0000-3000-000000000016"
+REVIEW_ID_17="00000000-0000-0000-3000-000000000017"
+REVIEW_ID_18="00000000-0000-0000-3000-000000000018"
+REVIEW_ID_19="00000000-0000-0000-3000-000000000019"
+REVIEW_ID_20="00000000-0000-0000-3000-000000000020"
+REVIEW_ID_21="00000000-0000-0000-3000-000000000021"
+REVIEW_ID_22="00000000-0000-0000-3000-000000000022"
 
 ORDER_ID_1="00000000-0000-0000-5000-000000000001"
 ORDER_ID_2="00000000-0000-0000-5000-000000000002"
@@ -72,7 +87,7 @@ wait_for_postgres() {
 
 wait_for_databases() {
     echo "Waiting for databases..."
-    local dbs=("user_service" "catalog_service" "restaurant_service" "product_service" "review_service" "query_service")
+    local dbs=("user_service" "catalog_service" "restaurant_service" "product_service" "review_service" "query_service" "payment_service")
     for db in "${dbs[@]}"; do
         while ! $PSQL -lqt | cut -d \| -f 1 | grep -qw "$db"; do
             sleep 1
@@ -146,10 +161,15 @@ INSERT INTO products (id, product_name, description, restaurant_id, category_id,
 ('$PRODUCT_ID_7', 'Phở Bò Tái', 'Phở bò tái ngon', '$RESTAURANT_ID_6', '$CATEGORY_PHO_ID', 'pho-bo-tai', true, 4.7, 0, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800'),
 ('$PRODUCT_ID_8', 'Bánh Cuốn Tôm Thịt', 'Bánh cuốn tôm thịt tươi ngon', '$RESTAURANT_ID_1', '$CATEGORY_GOI_CUON_ID', 'banh-cuon-tom-thit', true, 4.4, 0, 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800'),
 ('$PRODUCT_ID_9', 'Gà Quay', 'Gà quay da giòn', '$RESTAURANT_ID_1', '$CATEGORY_GA_ID', 'ga-quay', true, 4.5, 0, 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800'),
-('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'Trà sữa matcha Nhật Bản', '$RESTAURANT_ID_2', '$CATEGORY_TRA_SUA_ID', 'tra-sua-matcha', true, 4.3, 0, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800')
+('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'Trà sữa matcha Nhật Bản', '$RESTAURANT_ID_2', '$CATEGORY_TRA_SUA_ID', 'tra-sua-matcha', true, 4.3, 0, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800'),
+('$PRODUCT_ID_11', 'Bún Riêu Cua', 'Bún riêu cua đồng tươi ngon', '$RESTAURANT_ID_1', '$CATEGORY_BUN_BO_ID', 'bun-rieu-cua', true, 4.6, 0, 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800'),
+('$PRODUCT_ID_12', 'Gỏi Cuốn Tôm Thịt', 'Gỏi cuốn tôm thịt tươi', '$RESTAURANT_ID_4', '$CATEGORY_BUN_BO_ID', 'goi-cuon-tom-thit', true, 4.7, 0, 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800'),
+('$PRODUCT_ID_13', 'Cơm Tấm Sườn Chả', 'Cơm tấm sườn chả đầy đặn', '$RESTAURANT_ID_1', '$CATEGORY_COM_TAM_ID', 'com-tam-suon-cha', true, 4.8, 0, 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800'),
+('$PRODUCT_ID_14', 'Phở Tái Chín', 'Phở bò tái chín đậm đà', '$RESTAURANT_ID_6', '$CATEGORY_PHO_ID', 'pho-tai-chin', true, 4.5, 0, 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800'),
+('$PRODUCT_ID_15', 'Pizza Bò Nướng', 'Pizza bò nướng Hàn Quốc', '$RESTAURANT_ID_3', '$CATEGORY_PIZZA_ID', 'pizza-bo-nuong', true, 4.9, 0, 'https://images.unsplash.com/photo-1520201163981-8cc95007dd2a?w=800')
 ON CONFLICT (slug) DO UPDATE SET product_name = EXCLUDED.product_name, category_id = EXCLUDED.category_id, image_url = EXCLUDED.image_url;
 SQL
-    echo "✓ 10 products seeded"
+    echo "✓ 15 products seeded"
 }
 
 seed_product_sizes() {
@@ -178,10 +198,20 @@ INSERT INTO product_sizes (id, product_id, size_id, price) VALUES
 ('00000000-0000-0000-4000-000000000020', '$PRODUCT_ID_9', '$SIZE_M_ID', 58000),
 ('00000000-0000-0000-4000-000000000021', '$PRODUCT_ID_9', '$SIZE_L_ID', 68000),
 ('00000000-0000-0000-4000-000000000022', '$PRODUCT_ID_10', '$SIZE_S_ID', 32000),
-('00000000-0000-0000-4000-000000000023', '$PRODUCT_ID_10', '$SIZE_M_ID', 37000)
+('00000000-0000-0000-4000-000000000023', '$PRODUCT_ID_10', '$SIZE_M_ID', 37000),
+('00000000-0000-0000-4000-000000000024', '$PRODUCT_ID_11', '$SIZE_M_ID', 42000),
+('00000000-0000-0000-4000-000000000025', '$PRODUCT_ID_11', '$SIZE_L_ID', 52000),
+('00000000-0000-0000-4000-000000000026', '$PRODUCT_ID_12', '$SIZE_S_ID', 28000),
+('00000000-0000-0000-4000-000000000027', '$PRODUCT_ID_12', '$SIZE_M_ID', 32000),
+('00000000-0000-0000-4000-000000000028', '$PRODUCT_ID_13', '$SIZE_S_ID', 45000),
+('00000000-0000-0000-4000-000000000029', '$PRODUCT_ID_13', '$SIZE_M_ID', 55000),
+('00000000-0000-0000-4000-000000000030', '$PRODUCT_ID_14', '$SIZE_M_ID', 48000),
+('00000000-0000-0000-4000-000000000031', '$PRODUCT_ID_14', '$SIZE_L_ID', 58000),
+('00000000-0000-0000-4000-000000000032', '$PRODUCT_ID_15', '$SIZE_M_ID', 150000),
+('00000000-0000-0000-4000-000000000033', '$PRODUCT_ID_15', '$SIZE_L_ID', 220000)
 ON CONFLICT DO NOTHING;
 SQL
-    echo "✓ 23 product sizes seeded"
+    echo "✓ 33 product sizes seeded"
 }
 
 seed_query_service() {
@@ -213,12 +243,17 @@ INSERT INTO product_read_model (id, name, slug, description, image_url, availabl
 ('$PRODUCT_ID_7', 'Phở Bò Tái', 'pho-bo-tai', 'Phở bò tái ngon', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', true, '$CATEGORY_PHO_ID', 'Phở', '$RESTAURANT_ID_6', 'Pho 24', 10.770889, 106.700981, 50000, 60000, 4.7, 0, NOW(), NOW()),
 ('$PRODUCT_ID_8', 'Bánh Cuốn Tôm Thịt', 'banh-cuon-tom-thit', 'Bánh cuốn tôm thịt tươi ngon', 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800', true, '$CATEGORY_GOI_CUON_ID', 'Bánh cuốn', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 25000, 30000, 4.4, 0, NOW(), NOW()),
 ('$PRODUCT_ID_9', 'Gà Quay', 'ga-quay', 'Gà quay da giòn', 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800', true, '$CATEGORY_GA_ID', 'Gà', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 48000, 68000, 4.5, 0, NOW(), NOW()),
-('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'tra-sua-matcha', 'Trà sữa matcha Nhật Bản', 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800', true, '$CATEGORY_TRA_SUA_ID', 'Trà sữa', '$RESTAURANT_ID_2', 'Tra Sua Ngon', 10.779769, 106.692403, 32000, 37000, 4.3, 0, NOW(), NOW());
+('$PRODUCT_ID_10', 'Trà Sữa Matcha', 'tra-sua-matcha', 'Trà sữa matcha Nhật Bản', 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800', true, '$CATEGORY_TRA_SUA_ID', 'Trà sữa', '$RESTAURANT_ID_2', 'Tra Sua Ngon', 10.779769, 106.692403, 32000, 37000, 4.3, 0, NOW(), NOW()),
+('$PRODUCT_ID_11', 'Bún Riêu Cua', 'bun-rieu-cua', 'Bún riêu cua đồng tươi ngon', 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800', true, '$CATEGORY_BUN_BO_ID', 'Bún bò', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 42000, 52000, 4.6, 0, NOW(), NOW()),
+('$PRODUCT_ID_12', 'Gỏi Cuốn Tôm Thịt', 'goi-cuon-tom-thit', 'Gỏi cuốn tôm thịt tươi', 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800', true, '$CATEGORY_BUN_BO_ID', 'Bún bò', '$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', 10.772622, 106.681172, 28000, 32000, 4.7, 0, NOW(), NOW()),
+('$PRODUCT_ID_13', 'Cơm Tấm Sườn Chả', 'com-tam-suon-cha', 'Cơm tấm sườn chả đầy đặn', 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800', true, '$CATEGORY_COM_TAM_ID', 'Cơm tấm', '$RESTAURANT_ID_1', 'Merchant Bistro', 10.762622, 106.660172, 45000, 55000, 4.8, 0, NOW(), NOW()),
+('$PRODUCT_ID_14', 'Phở Tái Chín', 'pho-tai-chin', 'Phở bò tái chín đậm đà', 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800', true, '$CATEGORY_PHO_ID', 'Phở', '$RESTAURANT_ID_6', 'Pho 24', 10.770889, 106.700981, 48000, 58000, 4.5, 0, NOW(), NOW()),
+('$PRODUCT_ID_15', 'Pizza Bò Nướng', 'pizza-bo-nuong', 'Pizza bò nướng Hàn Quốc', 'https://images.unsplash.com/photo-1520201163981-8cc95007dd2a?w=800', true, '$CATEGORY_PIZZA_ID', 'Pizza', '$RESTAURANT_ID_3', 'Pizza Corner', 10.776889, 106.700981, 150000, 220000, 4.9, 0, NOW(), NOW());
 
 -- Update geometry for products
 UPDATE product_read_model SET geom = ST_SetSRID(ST_MakePoint(restaurant_longitude, restaurant_latitude), 4326);
 SQL
-    echo "✓ Query service seeded (6 restaurants, 10 products)"
+    echo "✓ Query service seeded (6 restaurants, 15 products)"
 }
 
 seed_reviews() {
@@ -238,10 +273,21 @@ INSERT INTO reviews (id, user_id, review_id, review_type, title, content, rating
 ('$REVIEW_ID_9', '$ADMIN_USER_ID', '$PRODUCT_ID_5', 'PRODUCT', 'Bún bòHuế tuyệt vời', 'Nước lèo đậm đà, thịt bò mềm.', 4.6),
 ('$REVIEW_ID_10', '$CUSTOMER_USER_ID', '$PRODUCT_ID_6', 'PRODUCT', 'Bánh mì ngon nhất', 'Pate bơ thơm, đồ ăn tươi.', 4.9),
 ('$REVIEW_ID_11', '$ADMIN_USER_ID', '$PRODUCT_ID_7', 'PRODUCT', 'Phở bò tươi', 'Nước dùng trong, thái bò mỏng.', 4.7),
-('$REVIEW_ID_12', '$CUSTOMER_USER_ID', '$PRODUCT_ID_9', 'PRODUCT', 'Gà quay giòn', 'Da giòn ruột mềm, nước chấm ngon.', 4.5)
+('$REVIEW_ID_12', '$CUSTOMER_USER_ID', '$PRODUCT_ID_9', 'PRODUCT', 'Gà quay giòn', 'Da giòn ruột mềm, nước chấm ngon.', 4.5),
+-- More reviews for PRODUCT_ID_1 (Gà Chiên Mắm)
+('$REVIEW_ID_13', '$CUSTOMER_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà chiên ngon tuyệt', 'Món gà chiên nước mắm rất đậm đà, thịt mềm.', 5.0),
+('$REVIEW_ID_14', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Hương vị tuyệt vời', 'Nước mắm vừa phải, gà không bị khô.', 4.5),
+('$REVIEW_ID_15', '$CUSTOMER_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Sẽ order lại', 'Món này rất hợp với cơm trắng.', 4.8),
+('$REVIEW_ID_16', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà tươi ngon', 'Gà tươi, chiên giòn, nước mắm đậm đà.', 4.7),
+('$REVIEW_ID_17', '$CUSTOMER_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Quá ngon!', 'Món ăn tuyệt vời, phục vụ nhanh.', 5.0),
+('$REVIEW_ID_18', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Đáng thử', 'Hương vị độc đáo, giá hợp lý.', 4.4),
+('$REVIEW_ID_19', '$CUSTOMER_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà chiên nước mắm', 'Món ăn truyền thống được làm rất tốt.', 4.6),
+('$REVIEW_ID_20', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Ngon lắm', 'Thịt gà mềm, nước mắm đậm đà.', 4.8),
+('$REVIEW_ID_21', '$CUSTOMER_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Khuyến nghị', 'Món này rất ngon, nên thử!', 4.9),
+('$REVIEW_ID_22', '$ADMIN_USER_ID', '$PRODUCT_ID_1', 'PRODUCT', 'Gà chiên', 'Chiên giòn, không bị ngấy.', 4.5)
 ON CONFLICT DO NOTHING;
 SQL
-    echo "✓ 12 reviews seeded"
+    echo "✓ 22 reviews seeded (10 for PRODUCT_ID_1)"
 }
 
 seed_order_service() {
@@ -423,6 +469,17 @@ MONGO
         echo "✓ Order service seeded"
 }
 
+seed_payment_service() {
+    echo "Seeding payment service..."
+    $PSQL -d payment_service >/dev/null 2>&1 <<SQL
+INSERT INTO payment_transactions (id, user_id, order_id, order_code, amount, status, payment_link_id, created_at, updated_at) VALUES
+('00000000-0000-0000-6000-000000000001', '$CUSTOMER_USER_ID', '$ORDER_ID_1', 100000000001, 95000, 'PAID', 'pay_100000000001', NOW() - INTERVAL '1 hour', NOW()),
+('00000000-0000-0000-6000-000000000002', '$ADMIN_USER_ID', '$ORDER_ID_3', 100000000003, 180000, 'PAID', 'pay_100000000003', NOW() - INTERVAL '30 minutes', NOW())
+ON CONFLICT (order_code) DO NOTHING;
+SQL
+    echo "✓ 2 payment transactions seeded"
+}
+
 main() {
     echo "=========================================="
     echo "Database Seeding"
@@ -440,6 +497,7 @@ main() {
     seed_query_service
     seed_reviews
     seed_order_service
+    seed_payment_service
 
     echo ""
     echo "=========================================="
