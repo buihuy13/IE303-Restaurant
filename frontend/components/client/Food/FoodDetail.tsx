@@ -371,6 +371,7 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                             <div className="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden bg-white flex-shrink-0">
                                 <button
                                     title="Decrease quantity"
+                                    aria-label="Decrease quantity"
                                     onClick={handleDecrement}
                                     className="p-3 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     disabled={quantity <= 1}
@@ -382,6 +383,7 @@ export default function FoodDetail({ foodItem, restaurant, reviewStats, reviews 
                                 </span>
                                 <button
                                     title="Increase quantity"
+                                    aria-label="Increase quantity"
                                     onClick={handleIncrement}
                                     className="p-3 text-gray-600 hover:bg-gray-100 transition-colors"
                                 >
