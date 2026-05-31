@@ -27,7 +27,6 @@ public final class OrderDataDTO {
     @AllArgsConstructor
     public static class TopProductItem {
         private UUID productId;
-        private UUID productSizeId;
         private String productName;
         private String sizeName;
         private long totalQuantitySold;

@@ -46,8 +46,10 @@ public class DashboardController {
     @Operation(summary = "Get revenue analytics by period")
     public ResponseEntity<DashboardStatsDTO.RevenueResponse> getRevenue(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getRevenue(period));
+                    String period,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getRevenue(period, startDate, endDate));
     }
 
     @GetMapping("/revenue/compare")
@@ -62,8 +64,10 @@ public class DashboardController {
     @Operation(summary = "Get order status summary by period")
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getOrderStatus(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                    String period) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getOrderStatusSummary(period));
+                    String period,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getOrderStatusSummary(period, startDate, endDate));
     }
 
     @GetMapping("/orders/hourly")
@@ -88,8 +92,10 @@ public class DashboardController {
     public ResponseEntity<DashboardStatsDTO.TopProductsResponse> getTopProducts(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Number of products") @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getTopProducts(period, limit));
+            @Parameter(description = "Number of products") @RequestParam(defaultValue = "5") int limit,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getTopProducts(period, limit, startDate, endDate));
     }
 
     @GetMapping("/revenue/by-restaurant")
@@ -97,7 +103,9 @@ public class DashboardController {
     public ResponseEntity<DashboardStatsDTO.RevenueByRestaurantResponse> getRevenueByRestaurant(
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
                     String period,
-            @Parameter(description = "Number of restaurants") @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(dashboardAnalyticsService.getRevenueByRestaurant(period, limit));
+            @Parameter(description = "Number of restaurants") @RequestParam(defaultValue = "10") int limit,
+            @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(dashboardAnalyticsService.getRevenueByRestaurant(period, limit, startDate, endDate));
     }
 }
