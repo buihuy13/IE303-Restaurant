@@ -86,6 +86,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                     <div className="flex items-center border border-gray-300 rounded-full overflow-hidden bg-white shadow-sm">
                         <button
                             title="Decrease item"
+                            aria-label={`Decrease quantity for ${item.name}`}
                             onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity - 1)}
                             className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={item.quantity <= 1}
@@ -97,6 +98,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                         </span>
                         <button
                             title="Increase item"
+                            aria-label={`Increase quantity for ${item.name}`}
                             onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity + 1)}
                             className="p-2 hover:bg-brand-orange/10 hover:text-brand-orange transition-colors"
                         >
@@ -107,6 +109,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                     {/* Delete Button */}
                     <button
                         title="Remove item"
+                        aria-label={`Remove ${item.name} from cart`}
                         onClick={() => removeItem(item.id, item.restaurantId)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     >

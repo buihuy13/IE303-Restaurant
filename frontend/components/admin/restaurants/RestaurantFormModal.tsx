@@ -31,6 +31,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
 
     const isEditMode = restaurantToEdit !== null;
     const title = isEditMode ? "Edit Restaurant" : "Add New Restaurant";
+    const titleId = "restaurant-form-modal-title";
 
     // Effect to load data (keep as is)
     useEffect(() => {
@@ -62,6 +63,19 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
             }
         }
     }, [isOpen, restaurantToEdit, isEditMode]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose]);
 
     // Handle when selecting image file (keep as is)
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,16 +128,20 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
             <div
                 onClick={(e) => e.stopPropagation()}
                 className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
             >
                 {/* Close button (X) */}
                 <button
                     title="Close"
+                    aria-label="Close restaurant form"
                     onClick={onClose}
                     className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
                 >
                     <X className="w-6 h-6" />
                 </button>
-                <h2 className="text-2xl font-bold mb-6">{title}</h2>
+                <h2 id={titleId} className="text-2xl font-bold mb-6">{title}</h2>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">

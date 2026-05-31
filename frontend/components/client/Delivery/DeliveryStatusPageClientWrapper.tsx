@@ -117,6 +117,13 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     /** Minutes: query-service route (seconds → min) + 15–20 prep; null if not resolved yet / inactive order. */
     const [routeBasedEtaMinutes, setRouteBasedEtaMinutes] = useState<number | null>(null);
     const [routeEtaLoading, setRouteEtaLoading] = useState(true);
+    const orderId = order.orderId;
+    const orderStatus = order.status;
+    const restaurantId = order.restaurantId;
+    const fallbackRestaurantId = order.restaurant?.id;
+    const estimatedDeliveryTime = order.estimatedDeliveryTime;
+    const deliveryLatitude = order.deliveryAddress?.latitude;
+    const deliveryLongitude = order.deliveryAddress?.longitude;
     
     // Use ref to store current order to avoid stale closure in websocket callback
     const orderRef = useRef<Order>(normalizedInitialOrder);
@@ -158,22 +165,22 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     // ETA from query-service: route duration (seconds) → minutes + preparation buffer
     useEffect(() => {
         let cancelled = false;
-        const normalized = (order.status || "").toLowerCase();
+        const normalized = (orderStatus || "").toLowerCase();
         if (normalized === OrderStatus.COMPLETED || normalized === OrderStatus.CANCELLED) {
             setRouteBasedEtaMinutes(null);
             setRouteEtaLoading(false);
             return;
         }
 
-        const restaurantId = (order.restaurantId || order.restaurant?.id || "").trim();
-        if (!restaurantId || !order.orderId) {
+        const resolvedRestaurantId = (restaurantId || fallbackRestaurantId || "").trim();
+        if (!resolvedRestaurantId || !orderId) {
             setRouteBasedEtaMinutes(null);
             setRouteEtaLoading(false);
             return;
         }
 
-        if (order.estimatedDeliveryTime) {
-            const t = new Date(order.estimatedDeliveryTime).getTime();
+        if (estimatedDeliveryTime) {
+            const t = new Date(estimatedDeliveryTime).getTime();
             if (!Number.isNaN(t)) {
                 setRouteBasedEtaMinutes(null);
                 setRouteEtaLoading(false);
@@ -197,16 +204,16 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             }
             try {
                 const seconds = await queryApi.getRestaurantRouteDurationSeconds(
-                    restaurantId,
+                    resolvedRestaurantId,
                     coords.lat,
                     coords.lon,
                 );
                 if (cancelled) return;
-                setRouteBasedEtaMinutes(computeRouteBasedEtaMinutes(seconds, order.orderId));
+                setRouteBasedEtaMinutes(computeRouteBasedEtaMinutes(seconds, orderId));
             } catch (e) {
                 console.debug("[DeliveryStatusPage] query-service route ETA failed:", e);
                 if (!cancelled) {
-                    setRouteBasedEtaMinutes(fallbackEtaMinutesWithoutRoute(order.orderId));
+                    setRouteBasedEtaMinutes(fallbackEtaMinutesWithoutRoute(orderId));
                 }
             } finally {
                 if (!cancelled) setRouteEtaLoading(false);
@@ -217,13 +224,14 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             cancelled = true;
         };
     }, [
-        order.orderId,
-        order.status,
-        order.restaurantId,
-        order.restaurant?.id,
-        order.estimatedDeliveryTime,
-        order.deliveryAddress?.latitude,
-        order.deliveryAddress?.longitude,
+        order,
+        orderId,
+        orderStatus,
+        restaurantId,
+        fallbackRestaurantId,
+        estimatedDeliveryTime,
+        deliveryLatitude,
+        deliveryLongitude,
     ]);
 
     // Listen for order status updates via WebSocket
