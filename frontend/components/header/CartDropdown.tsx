@@ -8,6 +8,7 @@ import { ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import HeaderTooltip from "./HeaderTooltip";
 
 export default function CartDropdown() {
     const { theme } = useClientTheme();
@@ -37,23 +38,24 @@ export default function CartDropdown() {
     }, [isOpen]);
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative flex items-center" ref={dropdownRef}>
             {/* Cart Icon Button */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`relative p-2 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
-                    theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
-                }`}
-                aria-label="Shopping cart"
-                title="Shopping cart"
-            >
-                <ShoppingCart className={`w-5 h-5 transition-colors ${theme === "dark" ? "text-white/75 hover:text-white" : "text-gray-700 hover:text-brand-orange"}`} />
-                {cartItemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-xs font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-md">
-                        {cartItemCount > 99 ? "99+" : cartItemCount}
-                    </span>
-                )}
-            </button>
+            <HeaderTooltip label="Shopping cart">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
+                        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                    }`}
+                    aria-label="Shopping cart"
+                >
+                    <ShoppingCart className={`w-5 h-5 transition-colors ${theme === "dark" ? "text-white/75 hover:text-white" : "text-gray-700 hover:text-brand-orange"}`} />
+                    {cartItemCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-xs font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center shadow-md">
+                            {cartItemCount > 99 ? "99+" : cartItemCount}
+                        </span>
+                    )}
+                </button>
+            </HeaderTooltip>
 
             {/* Dropdown */}
             {isOpen && (

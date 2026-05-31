@@ -2,6 +2,9 @@
 
 import { isRecommendationUnauthorizedError, recommendationApi } from "@/lib/api/recommendationApi";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
+import HeaderTooltip from "@/components/header/HeaderTooltip";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useChatStore } from "@/stores/useChatStore";
 import { AxiosError } from "axios";
 import {
     Bot,
@@ -9,14 +12,14 @@ import {
     Copy,
     Expand,
     Loader2,
+    MessageCircle,
     Minimize2,
-    Moon,
     SendHorizontal,
     Sparkles,
-    Sun,
     UserRound,
     X,
 } from "lucide-react";
+import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import toast from "react-hot-toast";
@@ -24,7 +27,9 @@ import toast from "react-hot-toast";
 const quickPrompts = ["Cay, có nước", "Ăn tối nhẹ bụng", "Nhiều protein", "Món ngọt mát"];
 
 export default function CravingSuggestionCard() {
-    const { theme, toggleTheme } = useClientTheme();
+    const { theme } = useClientTheme();
+    const { isAuthenticated, user } = useAuthStore();
+    const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const [open, setOpen] = useState(false);
     const [context, setContext] = useState("");
     const [lastPrompt, setLastPrompt] = useState("");
@@ -36,6 +41,8 @@ export default function CravingSuggestionCard() {
     const panelOpenRef = useRef(false);
     const inFlightSuggestRef = useRef<AbortController | null>(null);
     const requestSeqRef = useRef(0);
+    const chatUnreadCount = Object.values(unreadCountMap).reduce((sum, count) => sum + (count || 0), 0);
+    const showMessagesAction = isAuthenticated && !!user;
 
     const zoomTypographyClass =
         readingMode === "comfortable"
@@ -126,20 +133,26 @@ export default function CravingSuggestionCard() {
     return (
         <>
             <div className="fixed bottom-24 right-3 z-50 sm:bottom-6 sm:right-6">
-                {!open && (
+                {!open && showMessagesAction && (
                     <div className="mb-2 flex justify-end">
-                        <button
-                            type="button"
-                            onClick={toggleTheme}
-                            aria-label="Toggle theme"
-                            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35 ${
-                                theme === "dark"
-                                    ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
-                                    : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
-                            }`}
-                        >
-                            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                        </button>
+                        <HeaderTooltip label="Messages" align="end">
+                            <Link
+                                href="/chat"
+                                aria-label="Messages"
+                                className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/35 ${
+                                    theme === "dark"
+                                        ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
+                                        : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                                }`}
+                            >
+                                <MessageCircle className="h-5 w-5" />
+                                {chatUnreadCount > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-xs font-bold text-white shadow-md">
+                                        {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                                    </span>
+                                )}
+                            </Link>
+                        </HeaderTooltip>
                     </div>
                 )}
 
@@ -159,14 +172,6 @@ export default function CravingSuggestionCard() {
                                 </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
-                                <button
-                                    type="button"
-                                    onClick={toggleTheme}
-                                    aria-label="Toggle theme"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-                                >
-                                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                                </button>
                                 <button
                                     type="button"
                                     onClick={() => setPanelOpen(false)}
