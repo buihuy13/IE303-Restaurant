@@ -50,8 +50,7 @@ class MerchantDashboardAnalyticsServiceImplTest {
                 RESTAURANT_ID, "month", LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 30), false);
 
         verify(orderDashboardDataClient).countByRestaurantCreatedBetween(RESTAURANT_ID, START, END);
-        verify(orderDashboardDataClient)
-                .countByRestaurantStatusBetween(RESTAURANT_ID, OrderStatus.PENDING, START, END);
+        verify(orderDashboardDataClient).countByRestaurantStatusBetween(RESTAURANT_ID, OrderStatus.PENDING, START, END);
         verify(orderDashboardDataClient)
                 .countByRestaurantStatusBetween(RESTAURANT_ID, OrderStatus.COMPLETED, START, END);
     }

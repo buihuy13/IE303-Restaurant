@@ -13,7 +13,8 @@ public interface DashboardAnalyticsService {
         return getRevenue(period, null, null, false);
     }
 
-    DashboardStatsDTO.RevenueResponse getRevenue(String period, LocalDate startDate, LocalDate endDate, boolean allTime);
+    DashboardStatsDTO.RevenueResponse getRevenue(
+            String period, LocalDate startDate, LocalDate endDate, boolean allTime);
 
     default DashboardStatsDTO.RevenueCompareResponse getRevenueCompare(String period) {
         return getRevenueCompare(period, null, null, false);

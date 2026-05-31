@@ -55,8 +55,7 @@ public class DashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(dashboardAnalyticsService.getRevenue(period, startDate, endDate, allTime));
     }
@@ -74,8 +73,7 @@ public class DashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(dashboardAnalyticsService.getRevenueCompare(period, startDate, endDate, allTime));
     }
@@ -93,8 +91,7 @@ public class DashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(dashboardAnalyticsService.getOrderStatusSummary(period, startDate, endDate, allTime));
     }
@@ -130,8 +127,7 @@ public class DashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(dashboardAnalyticsService.getTopProducts(period, limit, startDate, endDate, allTime));
     }
@@ -150,8 +146,7 @@ public class DashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(
                 dashboardAnalyticsService.getRevenueByRestaurant(period, limit, startDate, endDate, allTime));

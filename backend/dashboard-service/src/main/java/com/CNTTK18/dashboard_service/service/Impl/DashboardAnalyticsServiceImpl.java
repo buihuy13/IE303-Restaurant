@@ -273,5 +273,4 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
                 .divide(BigDecimal.valueOf(previous), 2, java.math.RoundingMode.HALF_UP)
                 .doubleValue();
     }
-
 }

@@ -66,8 +66,7 @@ class DashboardAnalyticsServiceImplTest {
         when(orderDashboardDataClient.revenueByDay(previousStart, previousEnd))
                 .thenReturn(List.of(revenuePoint("2026-05-09", "100000", 2)));
 
-        var result = service.getRevenueCompare(
-                "week", LocalDate.of(2026, 5, 10), LocalDate.of(2026, 5, 16), false);
+        var result = service.getRevenueCompare("week", LocalDate.of(2026, 5, 10), LocalDate.of(2026, 5, 16), false);
 
         assertThat(result.getRevenueGrowthPercent()).isEqualTo(100D);
         assertThat(result.getOrderGrowthPercent()).isEqualTo(100D);

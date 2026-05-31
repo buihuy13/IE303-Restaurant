@@ -19,8 +19,7 @@ public final class DashboardDateRangeResolver {
         return resolve(period, startDate, endDate, allTime, LocalDate.now(UTC));
     }
 
-    static DateRange resolve(
-            String period, LocalDate startDate, LocalDate endDate, boolean allTime, LocalDate today) {
+    static DateRange resolve(String period, LocalDate startDate, LocalDate endDate, boolean allTime, LocalDate today) {
         boolean hasStartDate = startDate != null;
         boolean hasEndDate = endDate != null;
 

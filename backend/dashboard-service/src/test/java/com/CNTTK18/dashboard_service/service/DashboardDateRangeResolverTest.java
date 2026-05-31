@@ -39,8 +39,8 @@ class DashboardDateRangeResolverTest {
 
     @Test
     void rejectsPartialExplicitRange() {
-        assertThatThrownBy(() -> DashboardDateRangeResolver.resolve(
-                        "week", LocalDate.of(2026, 5, 1), null, false, TODAY))
+        assertThatThrownBy(
+                        () -> DashboardDateRangeResolver.resolve("week", LocalDate.of(2026, 5, 1), null, false, TODAY))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("startDate and endDate");
     }

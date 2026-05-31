@@ -48,11 +48,10 @@ public class MerchantDashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
-        return ResponseEntity.ok(
-                merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period, startDate, endDate, allTime));
+        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantRevenue(
+                restaurantId, period, startDate, endDate, allTime));
     }
 
     @GetMapping("/orders/status")
@@ -69,8 +68,7 @@ public class MerchantDashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(
                 restaurantId, period, startDate, endDate, allTime));
@@ -98,8 +96,7 @@ public class MerchantDashboardController {
                     @RequestParam(required = false)
                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate endDate,
-            @Parameter(description = "Use all records through today")
-                    @RequestParam(defaultValue = "false")
+            @Parameter(description = "Use all records through today") @RequestParam(defaultValue = "false")
                     boolean allTime) {
         return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantTopProducts(
                 restaurantId, period, limit, startDate, endDate, allTime));
