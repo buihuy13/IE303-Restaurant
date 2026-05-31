@@ -1,7 +1,7 @@
 package com.CNTTK18.dashboard_service.controller;
 
-import java.util.List;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -41,7 +41,8 @@ public class MerchantDashboardController {
                     String period,
             @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period, startDate, endDate));
+        return ResponseEntity.ok(
+                merchantDashboardAnalyticsService.getMerchantRevenue(restaurantId, period, startDate, endDate));
     }
 
     @GetMapping("/orders/status")
@@ -49,11 +50,11 @@ public class MerchantDashboardController {
     public ResponseEntity<DashboardStatsDTO.OrderStatusResponse> getMerchantOrderStatus(
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Supported values: day, week, month") @RequestParam(defaultValue = "week")
-                String period,
+                    String period,
             @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam(required = false) LocalDate endDate) {
-        return ResponseEntity.ok(merchantDashboardAnalyticsService.getMerchantOrderStatus(
-            restaurantId, period, startDate, endDate));
+        return ResponseEntity.ok(
+                merchantDashboardAnalyticsService.getMerchantOrderStatus(restaurantId, period, startDate, endDate));
     }
 
     @GetMapping("/orders/live")

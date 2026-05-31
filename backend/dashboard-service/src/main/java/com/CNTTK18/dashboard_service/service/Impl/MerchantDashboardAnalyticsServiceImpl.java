@@ -41,8 +41,10 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
         long completedOrders = orderDashboardDataClient.countByRestaurantStatus(restaurantId, OrderStatus.COMPLETED);
         long cancelledOrders = orderDashboardDataClient.countByRestaurantStatus(restaurantId, OrderStatus.CANCELLED);
 
-        BigDecimal revenueToday = getMerchantRevenue(restaurantId, "day", null, null).getTotalRevenue();
-        BigDecimal revenueThisMonth = getMerchantRevenue(restaurantId, "month", null, null).getTotalRevenue();
+        BigDecimal revenueToday =
+                getMerchantRevenue(restaurantId, "day", null, null).getTotalRevenue();
+        BigDecimal revenueThisMonth =
+                getMerchantRevenue(restaurantId, "month", null, null).getTotalRevenue();
 
         return DashboardStatsDTO.OverviewResponse.builder()
                 .revenueToday(revenueToday)
@@ -55,10 +57,10 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-        public DashboardStatsDTO.RevenueResponse getMerchantRevenue(
-                        UUID restaurantId, String period, LocalDate startDate, LocalDate endDate) {
+    public DashboardStatsDTO.RevenueResponse getMerchantRevenue(
+            UUID restaurantId, String period, LocalDate startDate, LocalDate endDate) {
         validateRestaurantId(restaurantId);
-                DateRange range = resolveRange(period, startDate, endDate);
+        DateRange range = resolveRange(period, startDate, endDate);
 
         List<DashboardStatsDTO.RevenueByDate> breakdown =
                 orderDashboardDataClient
@@ -91,10 +93,10 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-        public DashboardStatsDTO.OrderStatusResponse getMerchantOrderStatus(
-                        UUID restaurantId, String period, LocalDate startDate, LocalDate endDate) {
+    public DashboardStatsDTO.OrderStatusResponse getMerchantOrderStatus(
+            UUID restaurantId, String period, LocalDate startDate, LocalDate endDate) {
         validateRestaurantId(restaurantId);
-                DateRange range = resolveRange(period, startDate, endDate);
+        DateRange range = resolveRange(period, startDate, endDate);
 
         long pending = orderDashboardDataClient.countByRestaurantStatusBetween(
                 restaurantId,
@@ -142,11 +144,11 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
     }
 
     @Override
-        public DashboardStatsDTO.TopProductsResponse getMerchantTopProducts(
-                        UUID restaurantId, String period, int limit, LocalDate startDate, LocalDate endDate) {
+    public DashboardStatsDTO.TopProductsResponse getMerchantTopProducts(
+            UUID restaurantId, String period, int limit, LocalDate startDate, LocalDate endDate) {
         validateRestaurantId(restaurantId);
         int safeLimit = limit > 0 ? limit : 5;
-                DateRange range = resolveRange(period, startDate, endDate);
+        DateRange range = resolveRange(period, startDate, endDate);
 
         List<DashboardStatsDTO.TopProductItem> items = orderDashboardDataClient
                 .topProductsByRestaurant(
@@ -186,19 +188,19 @@ public class MerchantDashboardAnalyticsServiceImpl implements MerchantDashboardA
         };
     }
 
-        private DateRange resolveRange(String period, LocalDate startDate, LocalDate endDate) {
-                if (startDate != null || endDate != null) {
-                        if (startDate == null || endDate == null) {
-                                throw new BadRequestException("startDate and endDate must be provided together");
-                        }
-                        if (startDate.isAfter(endDate)) {
-                                throw new BadRequestException("startDate cannot be after endDate");
-                        }
-                        return createRange(startDate, endDate);
-                }
-
-                return getRange(period);
+    private DateRange resolveRange(String period, LocalDate startDate, LocalDate endDate) {
+        if (startDate != null || endDate != null) {
+            if (startDate == null || endDate == null) {
+                throw new BadRequestException("startDate and endDate must be provided together");
+            }
+            if (startDate.isAfter(endDate)) {
+                throw new BadRequestException("startDate cannot be after endDate");
+            }
+            return createRange(startDate, endDate);
         }
+
+        return getRange(period);
+    }
 
     private void validateRestaurantId(UUID restaurantId) {
         if (restaurantId == null) {
