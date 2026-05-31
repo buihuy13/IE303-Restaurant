@@ -10,21 +10,86 @@ import {
     Bot,
     ChefHat,
     Copy,
-    Expand,
     Loader2,
     MessageCircle,
-    Minimize2,
     SendHorizontal,
     Sparkles,
     UserRound,
     X,
 } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentProps, type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import toast from "react-hot-toast";
 
 const quickPrompts = ["Cay, có nước", "Ăn tối nhẹ bụng", "Nhiều protein", "Món ngọt mát"];
+const MAX_CONTEXT_HISTORY_MESSAGES = 6;
+const MAX_CONTEXT_HISTORY_CHARS = 4000;
+
+type AssistantMessageRole = "user" | "assistant";
+
+interface AssistantMessage {
+    id: number;
+    role: AssistantMessageRole;
+    content: string;
+    isError?: boolean;
+}
+
+const assistantMarkdownComponents: NonNullable<ComponentProps<typeof ReactMarkdown>["components"]> = {
+    h1: ({ children }) => <h1 className="my-2 text-sm font-semibold leading-6">{children}</h1>,
+    h2: ({ children }) => <h2 className="my-2 text-sm font-semibold leading-6">{children}</h2>,
+    h3: ({ children }) => <h3 className="my-2 text-sm font-semibold leading-6">{children}</h3>,
+    h4: ({ children }) => <h4 className="my-2 text-sm font-semibold leading-6">{children}</h4>,
+    h5: ({ children }) => <h5 className="my-2 text-sm font-semibold leading-6">{children}</h5>,
+    h6: ({ children }) => <h6 className="my-2 text-sm font-semibold leading-6">{children}</h6>,
+    p: ({ children }) => <p className="my-1.5 text-sm leading-6 last:mb-0">{children}</p>,
+    ul: ({ children }) => <ul className="my-1.5 list-disc space-y-1 pl-5 text-sm leading-6">{children}</ul>,
+    ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-1 pl-5 text-sm leading-6">{children}</ol>,
+    li: ({ children }) => <li className="text-sm leading-6">{children}</li>,
+    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+    blockquote: ({ children }) => (
+        <blockquote className="my-2 border-l-2 border-brand-orange/40 pl-3 text-sm leading-6 text-gray-600">
+            {children}
+        </blockquote>
+    ),
+    code: ({ children }) => <code className="rounded bg-gray-100 px-1 py-0.5 text-sm leading-6">{children}</code>,
+    pre: ({ children }) => (
+        <pre className="my-2 overflow-x-auto rounded-lg bg-gray-100 p-2 text-sm leading-6">{children}</pre>
+    ),
+    a: ({ children, href }) => (
+        <a href={href} className="text-sm font-medium text-brand-orange underline underline-offset-2">
+            {children}
+        </a>
+    ),
+};
+
+const buildConversationContext = (messages: AssistantMessage[], prompt: string) => {
+    const recentMessages = messages
+        .filter((message) => !message.isError)
+        .slice(-MAX_CONTEXT_HISTORY_MESSAGES)
+        .map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.content}`);
+    const includedHistory: string[] = [];
+    let remainingChars = MAX_CONTEXT_HISTORY_CHARS;
+
+    for (let index = recentMessages.length - 1; index >= 0; index -= 1) {
+        const entry = recentMessages[index];
+        const separatorLength = includedHistory.length > 0 ? 2 : 0;
+        const availableChars = remainingChars - separatorLength;
+        if (availableChars <= 0) break;
+
+        if (entry.length > availableChars) {
+            if (includedHistory.length === 0) {
+                includedHistory.unshift(entry.slice(-availableChars));
+            }
+            break;
+        }
+
+        includedHistory.unshift(entry);
+        remainingChars -= entry.length + separatorLength;
+    }
+
+    return [...includedHistory, `User: ${prompt}`].join("\n\n");
+};
 
 export default function CravingSuggestionCard() {
     const { theme } = useClientTheme();
@@ -32,22 +97,41 @@ export default function CravingSuggestionCard() {
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const [open, setOpen] = useState(false);
     const [context, setContext] = useState("");
-    const [lastPrompt, setLastPrompt] = useState("");
     const [loading, setLoading] = useState(false);
-    const [suggestion, setSuggestion] = useState("");
+    const [messages, setMessages] = useState<AssistantMessage[]>([]);
     const [hasUnreadResult, setHasUnreadResult] = useState(false);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [readingMode, setReadingMode] = useState<"compact" | "comfortable">("comfortable");
     const panelOpenRef = useRef(false);
     const inFlightSuggestRef = useRef<AbortController | null>(null);
     const requestSeqRef = useRef(0);
+    const messageSeqRef = useRef(0);
+    const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+    const composerComposingRef = useRef(false);
     const chatUnreadCount = Object.values(unreadCountMap).reduce((sum, count) => sum + (count || 0), 0);
     const showMessagesAction = isAuthenticated && !!user;
 
-    const zoomTypographyClass =
-        readingMode === "comfortable"
-            ? "prose prose-lg max-w-none text-[18px] leading-8 text-gray-800 prose-headings:mt-6 prose-headings:mb-3 prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-gray-900 prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-p:my-3 prose-p:leading-8 prose-li:my-2 prose-li:leading-8 prose-strong:font-semibold prose-strong:text-gray-900 prose-hr:my-6 prose-hr:border-orange-200"
-            : "prose prose-base max-w-none text-[16px] leading-7 text-gray-800 prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold prose-headings:text-gray-900 prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:my-2 prose-p:leading-7 prose-li:my-1 prose-li:leading-7 prose-strong:font-semibold prose-strong:text-gray-900 prose-hr:my-4 prose-hr:border-orange-200";
+    const createMessage = (role: AssistantMessageRole, content: string, isError = false): AssistantMessage => {
+        messageSeqRef.current += 1;
+        return {
+            id: messageSeqRef.current,
+            role,
+            content,
+            isError,
+        };
+    };
+
+    useEffect(() => {
+        if (!open) return;
+
+        const frameId = window.requestAnimationFrame(() => {
+            const scrollContainer = messagesScrollRef.current;
+            scrollContainer?.scrollTo({
+                top: scrollContainer.scrollHeight,
+                behavior: "smooth",
+            });
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [loading, messages, open]);
 
     const setPanelOpen = (nextOpen: boolean) => {
         panelOpenRef.current = nextOpen;
@@ -72,29 +156,43 @@ export default function CravingSuggestionCard() {
         inFlightSuggestRef.current = controller;
         const seq = requestSeqRef.current + 1;
         requestSeqRef.current = seq;
+        const conversationContext = buildConversationContext(messages, trimmed);
 
         setLoading(true);
         setPanelOpen(true);
-        setLastPrompt(trimmed);
         setContext("");
-        setSuggestion("");
+        setMessages((currentMessages) => [...currentMessages, createMessage("user", trimmed)]);
         setHasUnreadResult(false);
         try {
-            const result = await recommendationApi.suggestFoodByCraving(trimmed, { signal: controller.signal });
+            const result = await recommendationApi.suggestFoodByCraving(conversationContext, { signal: controller.signal });
             // Ignore stale responses when a newer request has already started.
             if (seq !== requestSeqRef.current) return;
-            setSuggestion(result.response || "Chưa có gợi ý phù hợp.");
+            setMessages((currentMessages) => [
+                ...currentMessages,
+                createMessage("assistant", result.response || "Chưa có gợi ý phù hợp."),
+            ]);
             setHasUnreadResult(!panelOpenRef.current);
             toast.success("AI đã có gợi ý mới.");
         } catch (error) {
             if (error instanceof AxiosError && error.code === "ERR_CANCELED") {
                 return;
             }
+            if (seq !== requestSeqRef.current) return;
             if (isRecommendationUnauthorizedError(error)) {
+                setMessages((currentMessages) => [
+                    ...currentMessages,
+                    createMessage("assistant", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dùng AI.", true),
+                ]);
+                setHasUnreadResult(!panelOpenRef.current);
                 toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dùng AI.");
                 return;
             }
             console.error("Suggest food failed:", error);
+            setMessages((currentMessages) => [
+                ...currentMessages,
+                createMessage("assistant", "Mình chưa thể gợi ý món ăn lúc này. Bạn vui lòng thử lại sau nhé.", true),
+            ]);
+            setHasUnreadResult(!panelOpenRef.current);
             toast.error("Chưa thể gợi ý món ăn. Vui lòng thử lại.");
         } finally {
             if (seq === requestSeqRef.current) {
@@ -111,12 +209,19 @@ export default function CravingSuggestionCard() {
 
     const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
+            if (event.nativeEvent.isComposing || composerComposingRef.current || event.keyCode === 229) {
+                return;
+            }
+            if (event.repeat) {
+                event.preventDefault();
+                return;
+            }
             event.preventDefault();
             void handleSuggest();
         }
     };
 
-    const handleCopySuggestion = async () => {
+    const handleCopySuggestion = async (suggestion: string) => {
         if (!suggestion.trim()) return;
         try {
             await navigator.clipboard.writeText(suggestion);
@@ -184,6 +289,7 @@ export default function CravingSuggestionCard() {
                         </div>
 
                         <div
+                            ref={messagesScrollRef}
                             className={`flex-1 overflow-y-auto px-4 py-4 ${
                                 theme === "dark" ? "bg-white/5" : "bg-gradient-to-b from-orange-50/80 via-white to-white"
                             }`}
@@ -198,28 +304,65 @@ export default function CravingSuggestionCard() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2 pl-10">
-                                    {quickPrompts.map((prompt) => (
-                                        <button
-                                            key={prompt}
-                                            type="button"
-                                            onClick={() => setContext(prompt)}
-                                            className="rounded-full border border-orange-200 bg-white px-3 py-1.5 text-xs font-medium text-orange-700 transition hover:border-brand-orange/60 hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
-                                        >
-                                            {prompt}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {lastPrompt && (
-                                    <div className="flex items-start justify-end gap-2.5">
-                                        <div className="max-w-[82%] rounded-2xl rounded-tr-md bg-brand-orange px-3.5 py-3 text-sm font-medium leading-6 text-white shadow-sm">
-                                            {lastPrompt}
-                                        </div>
-                                        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white">
-                                            <UserRound className="h-4 w-4" aria-hidden="true" />
-                                        </div>
+                                {messages.length === 0 && !loading && (
+                                    <div className="flex flex-wrap gap-2 pl-10">
+                                        {quickPrompts.map((prompt) => (
+                                            <button
+                                                key={prompt}
+                                                type="button"
+                                                onClick={() => setContext(prompt)}
+                                                className="rounded-full border border-orange-200 bg-white px-3 py-1.5 text-xs font-medium text-orange-700 transition hover:border-brand-orange/60 hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
+                                            >
+                                                {prompt}
+                                            </button>
+                                        ))}
                                     </div>
+                                )}
+
+                                {messages.map((message) =>
+                                    message.role === "user" ? (
+                                        <div key={message.id} className="flex items-start justify-end gap-2.5">
+                                            <div className="max-w-[82%] rounded-2xl rounded-tr-md bg-brand-orange px-3.5 py-3 text-sm font-medium leading-6 text-white shadow-sm">
+                                                {message.content}
+                                            </div>
+                                            <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white">
+                                                <UserRound className="h-4 w-4" aria-hidden="true" />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div key={message.id} className="flex items-start gap-2.5">
+                                            <div
+                                                className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                                    message.isError
+                                                        ? "bg-red-50 text-red-600"
+                                                        : "bg-brand-orange/10 text-brand-orange"
+                                                }`}
+                                            >
+                                                <Bot className="h-4 w-4" aria-hidden="true" />
+                                            </div>
+                                            <div
+                                                className={`relative max-w-[88%] rounded-2xl rounded-tl-md border px-3.5 py-3 text-sm leading-6 shadow-sm ${
+                                                    message.isError
+                                                        ? "border-red-100 bg-red-50 pr-3.5 text-red-700"
+                                                        : "border-orange-100 bg-white pr-10 text-gray-800"
+                                                }`}
+                                            >
+                                                <ReactMarkdown components={assistantMarkdownComponents}>
+                                                    {message.content}
+                                                </ReactMarkdown>
+                                                {!message.isError && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleCopySuggestion(message.content)}
+                                                        className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-orange-700 transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
+                                                        aria-label="Copy gợi ý AI"
+                                                    >
+                                                        <Copy className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ),
                                 )}
 
                                 {loading && (
@@ -233,45 +376,6 @@ export default function CravingSuggestionCard() {
                                         </div>
                                     </div>
                                 )}
-
-                                {suggestion && !loading && (
-                                    <div className="flex items-start gap-2.5">
-                                        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange">
-                                            <Bot className="h-4 w-4" aria-hidden="true" />
-                                        </div>
-                                        <div className="max-w-[88%] overflow-hidden rounded-2xl rounded-tl-md border border-orange-100 bg-white shadow-sm">
-                                            <div className="flex items-center justify-between gap-2 border-b border-orange-100 px-3.5 py-2.5">
-                                                <div className="inline-flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wide text-orange-700">
-                                                    <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                                                    <span className="truncate">Gợi ý từ AI</span>
-                                                </div>
-                                                <div className="flex shrink-0 items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsZoomed(true)}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-orange-700 transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
-                                                        aria-label="Phóng to gợi ý AI"
-                                                    >
-                                                        <Expand className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleCopySuggestion}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-orange-700 transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30"
-                                                        aria-label="Copy gợi ý AI"
-                                                    >
-                                                        <Copy className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="max-h-[34vh] overflow-y-auto px-3.5 py-3">
-                                                <div className="prose prose-sm max-w-none text-gray-800 prose-headings:my-2 prose-headings:text-gray-900 prose-h1:text-2xl prose-h1:font-semibold prose-h2:text-xl prose-h2:font-semibold prose-h3:text-lg prose-h3:font-semibold prose-p:my-1.5 prose-p:leading-relaxed prose-li:my-0.5 prose-strong:text-gray-900">
-                                                    <ReactMarkdown>{suggestion}</ReactMarkdown>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -281,6 +385,12 @@ export default function CravingSuggestionCard() {
                                     value={context}
                                     onChange={(event) => setContext(event.target.value)}
                                     onKeyDown={handleComposerKeyDown}
+                                    onCompositionStart={() => {
+                                        composerComposingRef.current = true;
+                                    }}
+                                    onCompositionEnd={() => {
+                                        composerComposingRef.current = false;
+                                    }}
                                     placeholder="Bạn đang thèm món gì?"
                                     rows={1}
                                     className="max-h-24 min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2.5 text-sm leading-5 text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0"
@@ -316,63 +426,6 @@ export default function CravingSuggestionCard() {
                 )}
             </div>
 
-            {isZoomed && suggestion && (
-                <div
-                    className="fixed inset-0 z-[60] bg-black/45 p-3 sm:p-6"
-                    onClick={() => setIsZoomed(false)}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Kết quả gợi ý AI"
-                >
-                    <div
-                        className="mx-auto flex h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-5">
-                            <p className="text-sm font-semibold text-gray-900 sm:text-base">Kết quả AI</p>
-                            <div className="flex items-center gap-2">
-                                <div className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setReadingMode("compact")}
-                                        className={`rounded px-2 py-1 text-xs font-medium ${
-                                            readingMode === "compact"
-                                                ? "bg-white text-gray-900 shadow-sm"
-                                                : "text-gray-600 hover:text-gray-800"
-                                        }`}
-                                    >
-                                        Compact
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setReadingMode("comfortable")}
-                                        className={`rounded px-2 py-1 text-xs font-medium ${
-                                            readingMode === "comfortable"
-                                                ? "bg-white text-gray-900 shadow-sm"
-                                                : "text-gray-600 hover:text-gray-800"
-                                        }`}
-                                    >
-                                        Comfortable
-                                    </button>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsZoomed(false)}
-                                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                >
-                                    <Minimize2 className="h-3.5 w-3.5" />
-                                    Thu nhỏ
-                                </button>
-                            </div>
-                        </div>
-                        <div className="h-full overflow-y-auto bg-orange-50/60 px-4 py-5 sm:px-8">
-                            <div className={zoomTypographyClass}>
-                                <ReactMarkdown>{suggestion}</ReactMarkdown>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }
