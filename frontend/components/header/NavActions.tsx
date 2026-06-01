@@ -18,7 +18,9 @@ import {
     BookOpen,
     LogOut,
     MessageCircle,
+    Moon,
     Package,
+    Sun,
     User,
     UtensilsCrossed
 } from "lucide-react";
@@ -28,10 +30,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import CartDropdown from "./CartDropdown";
+import HeaderTooltip from "./HeaderTooltip";
 import NotificationDropdown from "./NotificationDropdown";
 
 export default function NavActions() {
-    const { theme } = useClientTheme();
+    const { theme, toggleTheme } = useClientTheme();
 
     const {
         user,
@@ -133,28 +136,29 @@ export default function NavActions() {
         <div className="flex items-center gap-3 lg:gap-4">
             {/* Browse foods */}
             {showAuthenticatedUI ? (
-                <Link
-                    href="/search"
-                    className={`relative p-2 rounded-full transition-colors ${
-                        theme === "dark"
-                            ? "hover:bg-white/10"
-                            : "hover:bg-gray-50"
-                    } ${
-                        pathname === "/search"
-                            ? "text-brand-orange"
-                            : theme === "dark"
-                            ? "text-white/75"
-                            : "text-gray-600"
-                    }`}
-                    aria-label="Explore foods"
-                    title="Explore foods"
-                >
-                    <UtensilsCrossed className="w-5 h-5" />
+                <HeaderTooltip label="Explore foods">
+                    <Link
+                        href="/search"
+                        className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            theme === "dark"
+                                ? "hover:bg-white/10"
+                                : "hover:bg-gray-50"
+                        } ${
+                            pathname === "/search"
+                                ? "text-brand-orange"
+                                : theme === "dark"
+                                ? "text-white/75"
+                                : "text-gray-600"
+                        }`}
+                        aria-label="Explore foods"
+                    >
+                        <UtensilsCrossed className="w-5 h-5" />
 
-                    {pathname === "/search" && (
-                        <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
-                    )}
-                </Link>
+                        {pathname === "/search" && (
+                            <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
+                        )}
+                    </Link>
+                </HeaderTooltip>
             ) : (
                 <Button
                     asChild
@@ -176,63 +180,55 @@ export default function NavActions() {
 
             {/* Orders */}
             {showAuthenticatedUI && (
+                <HeaderTooltip label="My orders">
+                    <Link
+                        href="/orders"
+                        className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            theme === "dark"
+                                ? "hover:bg-white/10"
+                                : "hover:bg-gray-50"
+                        } ${
+                            pathname === "/orders"
+                                ? "text-brand-orange"
+                                : theme === "dark"
+                                ? "text-white/75"
+                                : "text-gray-600"
+                        }`}
+                        aria-label="My orders"
+                    >
+                        <Package className="w-5 h-5" />
+
+                        {pathname === "/orders" && (
+                            <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
+                        )}
+                    </Link>
+                </HeaderTooltip>
+            )}
+
+            {/* Blog */}
+            <HeaderTooltip label="Blog">
                 <Link
-                    href="/orders"
-                    className={`relative p-2 rounded-full transition-colors ${
+                    href="/blog"
+                    className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
                         theme === "dark"
                             ? "hover:bg-white/10"
                             : "hover:bg-gray-50"
                     } ${
-                        pathname === "/orders"
+                        pathname === "/blog" || pathname.startsWith("/blog/")
                             ? "text-brand-orange"
                             : theme === "dark"
                             ? "text-white/75"
                             : "text-gray-600"
                     }`}
-                    aria-label="My orders"
-                    title="My orders"
+                    aria-label="Blog"
                 >
-                    <Package className="w-5 h-5" />
+                    <BookOpen className="w-5 h-5" />
 
-                    {pathname === "/orders" && (
+                    {(pathname === "/blog" || pathname.startsWith("/blog/")) && (
                         <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
                     )}
                 </Link>
-            )}
-
-            {/* Chat */}
-            {showAuthenticatedUI && (
-                <Link
-                    href="/chat"
-                    className={`relative p-2 rounded-full transition-colors ${
-                        theme === "dark"
-                            ? "hover:bg-white/10"
-                            : "hover:bg-gray-50"
-                    } ${
-                        pathname === "/chat"
-                            ? "text-brand-orange"
-                            : theme === "dark"
-                            ? "text-white/75"
-                            : "text-gray-600"
-                    }`}
-                    aria-label="Messages"
-                    title="Messages"
-                >
-                    <MessageCircle className="w-5 h-5" />
-
-                    {chatUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
-                            {chatUnreadCount > 99
-                                ? "99+"
-                                : chatUnreadCount}
-                        </span>
-                    )}
-
-                    {pathname === "/chat" && (
-                        <span className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-brand-orange" />
-                    )}
-                </Link>
-            )}
+            </HeaderTooltip>
 
             {/* Notifications */}
             {showAuthenticatedUI && (
@@ -247,38 +243,39 @@ export default function NavActions() {
             {/* User Actions */}
             {showAuthenticatedUI ? (
                 <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger
-                        asChild
-                        className="focus:outline-none"
-                    >
-                        <button
-                            className={`flex items-center gap-2 cursor-pointer rounded-full p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
-                                theme === "dark"
-                                    ? "hover:bg-white/10"
-                                    : "hover:bg-gray-50"
-                            }`}
-                            aria-label="Account menu"
-                            title="Account menu"
+                    <HeaderTooltip label="Account menu" align="end">
+                        <DropdownMenuTrigger
+                            asChild
+                            className="focus:outline-none"
                         >
-                            {getAvatarContent()}
-
-                            <span
-                                className={`hidden lg:inline text-sm font-medium ${
+                            <button
+                                className={`inline-flex items-center gap-2 cursor-pointer rounded-full p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
                                     theme === "dark"
-                                        ? "text-white/90"
-                                        : "text-brand-black"
+                                        ? "hover:bg-white/10"
+                                        : "hover:bg-gray-50"
                                 }`}
+                                aria-label="Account menu"
                             >
-                                {user?.username || "User"}
-                            </span>
-                        </button>
-                    </DropdownMenuTrigger>
+                                {getAvatarContent()}
+
+                                <span
+                                    className={`hidden lg:inline text-sm font-medium ${
+                                        theme === "dark"
+                                            ? "text-white/90"
+                                            : "text-brand-black"
+                                    }`}
+                                >
+                                    {user?.username || "User"}
+                                </span>
+                            </button>
+                        </DropdownMenuTrigger>
+                    </HeaderTooltip>
 
                     <DropdownMenuContent
                         align="end"
                         alignOffset={0}
                         sideOffset={8}
-                        className={`w-56 min-w-[14rem] max-w-[14rem] shadow-lg border ${
+                        className={`account-dropdown-content w-56 min-w-[14rem] max-w-[14rem] shadow-lg border ${
                             theme === "dark"
                                 ? "bg-[#12182b] border-white/12 text-white"
                                 : "border-gray-200"
@@ -409,6 +406,43 @@ export default function NavActions() {
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                toggleTheme();
+                            }}
+                            aria-pressed={theme === "dark"}
+                            className={`flex items-center justify-between py-2.5 px-3 transition-colors cursor-pointer ${
+                                theme === "dark"
+                                    ? "hover:bg-white/10"
+                                    : "hover:bg-gray-50"
+                            }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                {theme === "dark" ? (
+                                    <Moon className="h-4 w-4 text-white/70" />
+                                ) : (
+                                    <Sun className="h-4 w-4 text-gray-600" />
+                                )}
+                                <span className="text-sm">Dark mode</span>
+                            </div>
+
+                            <span
+                                aria-hidden="true"
+                                className={`relative h-5 w-9 rounded-full transition-colors ${
+                                    theme === "dark" ? "bg-brand-orange" : "bg-gray-300"
+                                }`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                                        theme === "dark" ? "translate-x-[18px]" : "translate-x-0.5"
+                                    }`}
+                                />
+                            </span>
+                        </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
 

@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import HeaderTooltip from "./HeaderTooltip";
 
 // Format time ago (e.g., "2 minutes ago", "1 hour ago")
 const formatTimeAgo = (date: Date): string => {
@@ -133,33 +134,34 @@ export default function NotificationDropdown() {
     }
 
     return (
-        <div className="relative">
+        <div className="relative flex items-center">
             {/* Trigger Button */}
-            <button
-                ref={triggerRef}
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => {
-                    // Delay closing to allow moving to dropdown
-                    setTimeout(() => {
-                        if (!dropdownRef.current?.matches(":hover")) {
-                            setIsHovering(false);
-                        }
-                    }, 100);
-                }}
-                onClick={() => setIsOpen(!isOpen)}
-                className={`relative p-2 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
-                    theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
-                }`}
-                aria-label="Notifications"
-                title="Notifications"
-            >
-                <Bell className={`w-5 h-5 ${theme === "dark" ? "text-white/75" : "text-gray-600"}`} />
-                {unread > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
-                        {unread > 99 ? "99+" : unread}
-                    </span>
-                )}
-            </button>
+            <HeaderTooltip label="Notifications">
+                <button
+                    ref={triggerRef}
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => {
+                        // Delay closing to allow moving to dropdown
+                        setTimeout(() => {
+                            if (!dropdownRef.current?.matches(":hover")) {
+                                setIsHovering(false);
+                            }
+                        }, 100);
+                    }}
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
+                        theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-50"
+                    }`}
+                    aria-label="Notifications"
+                >
+                    <Bell className={`w-5 h-5 ${theme === "dark" ? "text-white/75" : "text-gray-600"}`} />
+                    {unread > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 min-w-5 bg-brand-orange text-white text-xs rounded-full px-1.5 flex items-center justify-center font-bold shadow-md">
+                            {unread > 99 ? "99+" : unread}
+                        </span>
+                    )}
+                </button>
+            </HeaderTooltip>
 
             {/* Dropdown */}
             {(isOpen || isHovering) && (
@@ -319,4 +321,3 @@ export default function NotificationDropdown() {
         </div>
     );
 }
-

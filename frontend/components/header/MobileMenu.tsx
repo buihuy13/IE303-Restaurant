@@ -3,14 +3,14 @@
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useClientTheme } from "@/components/providers/ClientThemeProvider";
-import { BookOpen, Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
+import { BookOpen, Menu, MessageCircle, Moon, Package, ShoppingCart, Sun, User, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function MobileMenu() {
-    const { theme } = useClientTheme();
+    const { theme, toggleTheme } = useClientTheme();
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -128,6 +128,20 @@ export default function MobileMenu() {
                 </div>
 
                 <nav className="flex flex-col p-4 space-y-1">
+                    <Link
+                        href="/blog"
+                        prefetch={true}
+                        onClick={() => setOpen(false)}
+                        className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
+                            theme === "dark"
+                                ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                        }`}
+                    >
+                        <BookOpen className="w-5 h-5" />
+                        Blog
+                    </Link>
+
                     {/* Main actions - authenticated only */}
                     {mounted && isAuthenticated && user && (
                         <>
@@ -156,19 +170,6 @@ export default function MobileMenu() {
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 Messages
-                            </Link>
-                            <Link
-                                href="/blog"
-                                prefetch={true}
-                                onClick={() => setOpen(false)}
-                                className={`text-p2 font-manrope font-medium py-3 px-4 rounded-lg transition-colors flex items-center gap-2 ${
-                                    theme === "dark"
-                                        ? "text-white/88 hover:bg-white/10 hover:text-white"
-                                        : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
-                                }`}
-                            >
-                                <BookOpen className="w-5 h-5" />
-                                Blog
                             </Link>
                         </>
                     )}
@@ -212,6 +213,33 @@ export default function MobileMenu() {
                                 >
                                     Delivery addresses
                                 </Link>
+                                <button
+                                    type="button"
+                                    onClick={toggleTheme}
+                                    aria-pressed={theme === "dark"}
+                                    className={`flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-p2 font-medium font-manrope transition-colors ${
+                                        theme === "dark"
+                                            ? "text-white/88 hover:bg-white/10 hover:text-white"
+                                            : "text-brand-black hover:bg-brand-yellowlight hover:text-brand-orange"
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                                        Dark mode
+                                    </span>
+                                    <span
+                                        aria-hidden="true"
+                                        className={`relative h-5 w-9 rounded-full transition-colors ${
+                                            theme === "dark" ? "bg-brand-orange" : "bg-gray-300"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                                                theme === "dark" ? "translate-x-[18px]" : "translate-x-0.5"
+                                            }`}
+                                        />
+                                    </span>
+                                </button>
                                 {user?.role === "ADMIN" && (
                                     <Link
                                         href="/admin"

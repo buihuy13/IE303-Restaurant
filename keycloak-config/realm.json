@@ -2,7 +2,7 @@
   "id": "restaurant-realm",
   "realm": "restaurant-realm",
   "displayName": "Restaurant Keycloak System",
-  "sslRequired": "external",
+  "sslRequired": "none",
   "enabled": true,
   "verifyEmail": true,
   "smtpServer": {
