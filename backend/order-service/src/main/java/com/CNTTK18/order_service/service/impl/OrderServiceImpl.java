@@ -60,15 +60,7 @@ public class OrderServiceImpl implements OrderService {
         List<Order> savedOrders =
                 saveOrdersAndUpdateCart(cart, checkoutBuildResult.newOrders(), checkoutBuildResult.groupsToRemove());
 
-        savedOrders.forEach(order -> notificationPublisher.publish(new OrderNotificationEvent(
-                order.getId(),
-                order.getUserId(),
-                order.getMerchantId(),
-                null,
-                order.getRestaurantName(),
-                order.getTotalPrice(),
-                order.getStatus().name(),
-                order.getDeliveryAddress())));
+        savedOrders.forEach(this::publishOrderStatusNotification);
 
         return orderMapper.toResponseList(savedOrders);
     }
@@ -127,15 +119,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(request.getStatus());
         Order saved = orderRepository.save(order);
 
-        notificationPublisher.publish(new OrderNotificationEvent(
-                saved.getId(),
-                saved.getUserId(),
-                saved.getMerchantId(),
-                null,
-                saved.getRestaurantName(),
-                saved.getTotalPrice(),
-                saved.getStatus().name(),
-                saved.getDeliveryAddress()));
+        publishOrderStatusNotification(saved);
 
         publishMerchantRevenueIfCompleted(previousStatus, saved);
 
@@ -158,15 +142,7 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelReason(reason);
         Order saved = orderRepository.save(order);
 
-        notificationPublisher.publish(new OrderNotificationEvent(
-                saved.getId(),
-                saved.getUserId(),
-                saved.getMerchantId(),
-                null,
-                saved.getRestaurantName(),
-                saved.getTotalPrice(),
-                saved.getStatus().name(),
-                saved.getDeliveryAddress()));
+        publishOrderStatusNotification(saved);
 
         return orderMapper.toResponse(saved);
     }
@@ -185,15 +161,36 @@ public class OrderServiceImpl implements OrderService {
 
         Order saved = orderRepository.save(order);
 
+        publishPaymentStatusNotification(saved);
+    }
+
+    private void publishOrderStatusNotification(Order order) {
+        publishNotification(
+                order,
+                OrderNotificationEvent.EVENT_TYPE_ORDER_STATUS,
+                order.getStatus().name());
+    }
+
+    private void publishPaymentStatusNotification(Order order) {
+        publishNotification(
+                order,
+                OrderNotificationEvent.EVENT_TYPE_PAYMENT_STATUS,
+                order.getPaymentStatus().name());
+    }
+
+    private void publishNotification(Order order, String eventType, String changedStatus) {
         notificationPublisher.publish(new OrderNotificationEvent(
-                saved.getId(),
-                saved.getUserId(),
-                saved.getMerchantId(),
+                order.getId(),
+                order.getUserId(),
+                order.getMerchantId(),
                 null,
-                saved.getRestaurantName(),
-                saved.getTotalPrice(),
-                saved.getPaymentStatus().name(),
-                saved.getDeliveryAddress()));
+                order.getRestaurantName(),
+                order.getTotalPrice(),
+                changedStatus,
+                order.getDeliveryAddress(),
+                eventType,
+                order.getStatus().name(),
+                order.getPaymentStatus().name()));
     }
 
     private void validateRestaurantOwnership(UUID restaurantId, UUID currentUserId) {

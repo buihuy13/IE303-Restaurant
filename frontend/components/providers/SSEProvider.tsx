@@ -21,7 +21,8 @@ export default function SSEProvider({ children }: SSEProviderProps) {
 
     const isDashboardRoute =
         pathname.startsWith("/admin") || pathname.startsWith("/merchant") || pathname.startsWith("/manager");
-    const shouldConnect = isAuthenticated && !!user?.id && user?.role === "USER" && !isDashboardRoute;
+    const canReceiveCustomerOrderNotifications = user?.role === "USER" || user?.role === "MERCHANT";
+    const shouldConnect = isAuthenticated && !!user?.id && canReceiveCustomerOrderNotifications && !isDashboardRoute;
 
     // Connect SSE only for customer routes to avoid unnecessary dashboard traffic.
     useSSE({

@@ -137,12 +137,12 @@ seed_restaurants() {
     echo "Seeding restaurants..."
     $PSQL -d restaurant_service >/dev/null 2>&1 <<SQL
 INSERT INTO restaurants (id, res_name, address, longitude, latitude, rating, opening_time, closing_time, phone, total_review, merchant_id, slug, enabled, image_url) VALUES
-('$RESTAURANT_ID_1', 'Merchant Bistro', '123 Nguyen Trai, Quan 1, HCMC', 106.660172, 10.762622, 4.8, '08:00:00', '22:00:00', '0900000000', 0, '$MERCHANT_USER_ID', 'merchant-bistro', true, 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'),
-('$RESTAURANT_ID_2', 'Tra Sua Ngon', '456 Hai Ba Trung, Quan 1, HCMC', 106.692403, 10.779769, 4.5, '09:00:00', '23:00:00', '0900000001', 0, '$MERCHANT_USER_ID', 'tra-sua-ngon', true, 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800'),
-('$RESTAURANT_ID_3', 'Pizza Corner', '789 Le Loi, Quan 1, HCMC', 106.700981, 10.776889, 4.7, '10:00:00', '23:00:00', '0900000002', 0, '$MERCHANT_USER_ID', 'pizza-corner', true, 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800'),
-('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', '321 Le Duan, Quan 1, HCMC', 106.681172, 10.772622, 4.6, '07:00:00', '21:00:00', '0900000003', 0, '$MERCHANT_USER_ID', 'bun-bo-hue-ngon', true, 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800'),
-('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', '555 Thu Khoa Huan, Quan 1, HCMC', 106.695403, 10.779769, 4.9, '06:00:00', '20:00:00', '0900000004', 0, '$MERCHANT_USER_ID', 'banh-mi-huynh-hoa', true, 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800'),
-('$RESTAURANT_ID_6', 'Pho 24', '888 Dong Khoi, Quan 1, HCMC', 106.700981, 10.770889, 4.7, '06:30:00', '22:00:00', '0900000005', 0, '$MERCHANT_USER_ID', 'pho-24', true, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800')
+('$RESTAURANT_ID_1', 'Merchant Bistro', '123 Nguyen Trai, Quan 1, HCMC', 106.660172, 10.762622, 4.8, '00:01:00', '23:59:00', '0900000000', 0, '$MERCHANT_USER_ID', 'merchant-bistro', true, 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'),
+('$RESTAURANT_ID_2', 'Tra Sua Ngon', '456 Hai Ba Trung, Quan 1, HCMC', 106.692403, 10.779769, 4.5, '00:01:00', '23:59:00', '0900000001', 0, '$MERCHANT_USER_ID', 'tra-sua-ngon', true, 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800'),
+('$RESTAURANT_ID_3', 'Pizza Corner', '789 Le Loi, Quan 1, HCMC', 106.700981, 10.776889, 4.7, '00:01:00', '23:59:00', '0900000002', 0, '$MERCHANT_USER_ID', 'pizza-corner', true, 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800'),
+('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', '321 Le Duan, Quan 1, HCMC', 106.681172, 10.772622, 4.6, '00:01:00', '23:59:00', '0900000003', 0, '$MERCHANT_USER_ID', 'bun-bo-hue-ngon', true, 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800'),
+('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', '555 Thu Khoa Huan, Quan 1, HCMC', 106.695403, 10.779769, 4.9, '00:01:00', '23:59:00', '0900000004', 0, '$MERCHANT_USER_ID', 'banh-mi-huynh-hoa', true, 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800'),
+('$RESTAURANT_ID_6', 'Pho 24', '888 Dong Khoi, Quan 1, HCMC', 106.700981, 10.770889, 4.7, '00:01:00', '23:59:00', '0900000005', 0, '$MERCHANT_USER_ID', 'pho-24', true, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800')
 ON CONFLICT (slug) DO UPDATE SET res_name = EXCLUDED.res_name, merchant_id = EXCLUDED.merchant_id, image_url = EXCLUDED.image_url;
 SQL
     echo "✓ 6 restaurants seeded"
@@ -222,12 +222,12 @@ TRUNCATE TABLE restaurant_read_model, product_read_model RESTART IDENTITY CASCAD
 
 -- Restaurants read model
 INSERT INTO restaurant_read_model (id, name, slug, address, phone, image_url, enabled, opening_time, closing_time, latitude, longitude, rating, review_count, merchant_id, created_at, updated_at) VALUES
-('$RESTAURANT_ID_1', 'Merchant Bistro', 'merchant-bistro', '123 Nguyen Trai, Quan 1, HCMC', '0900000000', 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800', true, '08:00:00', '22:00:00', 10.762622, 106.660172, 4.8, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_2', 'Tra Sua Ngon', 'tra-sua-ngon', '456 Hai Ba Trung, Quan 1, HCMC', '0900000001', 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800', true, '09:00:00', '23:00:00', 10.779769, 106.692403, 4.5, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_3', 'Pizza Corner', 'pizza-corner', '789 Le Loi, Quan 1, HCMC', '0900000002', 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800', true, '10:00:00', '23:00:00', 10.776889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', 'bun-bo-hue-ngon', '321 Le Duan, Quan 1, HCMC', '0900000003', 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800', true, '07:00:00', '21:00:00', 10.772622, 106.681172, 4.6, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', 'banh-mi-huynh-hoa', '555 Thu Khoa Huan, Quan 1, HCMC', '0900000004', 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800', true, '06:00:00', '20:00:00', 10.779769, 106.695403, 4.9, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
-('$RESTAURANT_ID_6', 'Pho 24', 'pho-24', '888 Dong Khoi, Quan 1, HCMC', '0900000005', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', true, '06:30:00', '22:00:00', 10.770889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW());
+('$RESTAURANT_ID_1', 'Merchant Bistro', 'merchant-bistro', '123 Nguyen Trai, Quan 1, HCMC', '0900000000', 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800', true, '00:01:00', '23:59:00', 10.762622, 106.660172, 4.8, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_2', 'Tra Sua Ngon', 'tra-sua-ngon', '456 Hai Ba Trung, Quan 1, HCMC', '0900000001', 'https://images.unsplash.com/photo-1558857563-b37103326038?w=800', true, '00:01:00', '23:59:00', 10.779769, 106.692403, 4.5, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_3', 'Pizza Corner', 'pizza-corner', '789 Le Loi, Quan 1, HCMC', '0900000002', 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800', true, '00:01:00', '23:59:00', 10.776889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_4', 'Bun Bo Hue Ngon', 'bun-bo-hue-ngon', '321 Le Duan, Quan 1, HCMC', '0900000003', 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800', true, '00:01:00', '23:59:00', 10.772622, 106.681172, 4.6, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_5', 'Banh Mi Huynh Hoa', 'banh-mi-huynh-hoa', '555 Thu Khoa Huan, Quan 1, HCMC', '0900000004', 'https://images.unsplash.com/photo-1563245836-60d4b910c67a?w=800', true, '00:01:00', '23:59:00', 10.779769, 106.695403, 4.9, 0, '$MERCHANT_USER_ID', NOW(), NOW()),
+('$RESTAURANT_ID_6', 'Pho 24', 'pho-24', '888 Dong Khoi, Quan 1, HCMC', '0900000005', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', true, '00:01:00', '23:59:00', 10.770889, 106.700981, 4.7, 0, '$MERCHANT_USER_ID', NOW(), NOW());
 
 -- Update geometry for restaurants
 UPDATE restaurant_read_model SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
