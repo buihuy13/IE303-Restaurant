@@ -325,6 +325,11 @@ export default function MerchantOrdersPageClient() {
                 return next;
             });
         },
+        onPaymentStatusUpdate: () => {
+            fetchOrders({ background: true }).catch(() => {
+                // Ignore background refresh failures
+            });
+        },
     });
 
     // Poll as a fallback if sockets are unavailable.

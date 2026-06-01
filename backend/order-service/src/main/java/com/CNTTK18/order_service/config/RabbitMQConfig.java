@@ -44,18 +44,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue orderNotificationQueue() {
-        return QueueBuilder.durable(OrderNotificationContract.QUEUE).build();
-    }
-
-    @Bean
-    public Binding orderNotificationBinding() {
-        return BindingBuilder.bind(orderNotificationQueue())
-                .to(orderNotificationExchange())
-                .with(OrderNotificationContract.ROUTING_KEY);
-    }
-
-    @Bean
     public TopicExchange merchantRevenueExchange() {
         return new TopicExchange(MerchantRevenueContract.EXCHANGE);
     }
