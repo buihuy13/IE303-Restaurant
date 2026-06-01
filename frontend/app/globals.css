@@ -171,11 +171,11 @@
     }
 
     [data-slot="dropdown-menu-content"].account-dropdown-content[data-state="open"] {
-        animation: account-dropdown-fade-in 140ms ease-out both;
+        animation: none !important;
     }
 
     [data-slot="dropdown-menu-content"].account-dropdown-content[data-state="closed"] {
-        animation: account-dropdown-fade-out 120ms ease-in forwards;
+        animation: none !important;
         pointer-events: none;
     }
 

@@ -59,7 +59,7 @@ export default function CartDropdown() {
 
             {/* Dropdown */}
             {isOpen && (
-                <div className={`absolute right-0 mt-2 w-96 rounded-2xl shadow-2xl border z-50 max-h-[600px] flex flex-col overflow-hidden ${
+                <div className={`absolute right-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl border z-[80] max-h-[600px] flex flex-col overflow-hidden ${
                     theme === "dark" ? "bg-[#12182b] border-white/12 text-white" : "bg-white border-gray-200/80"
                 }`}>
                     {/* Header */}

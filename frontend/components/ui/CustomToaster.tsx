@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, Bell, CheckCircle2, Info, Loader2, MessageCircle } from "lucide-react";
 import { ToastBar, Toaster, toast } from "react-hot-toast";
 
 export default function CustomToaster() {
@@ -24,14 +24,22 @@ export default function CustomToaster() {
                 <ToastBar toast={t}>
                     {({ icon, message }) => (
                         <div className="flex items-center gap-2 w-full">
-                            {t.type === "success" ? (
+                            {t.icon === "💬" ? (
+                                <MessageCircle className="h-5 w-5 text-brand-orange" />
+                            ) : t.icon === "🔔" ? (
+                                <Bell className="h-5 w-5 text-brand-orange" />
+                            ) : t.icon === "✅" ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            ) : t.icon === "❌" || t.icon === "⚠️" ? (
+                                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                            ) : t.type === "success" ? (
                                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                             ) : t.type === "error" ? (
                                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                             ) : t.type === "loading" ? (
                                 <Loader2 className="h-5 w-5 animate-spin text-gray-600 dark:text-gray-300" />
                             ) : (
-                                icon
+                                icon ?? <Info className="h-5 w-5 text-brand-orange" />
                             )}
                             {message}
                             <button
