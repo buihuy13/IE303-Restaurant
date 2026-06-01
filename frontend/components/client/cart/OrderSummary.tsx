@@ -1,0 +1,226 @@
+"use client";
+
+import { saveCheckoutSelection } from "@/lib/checkoutSelection";
+import { useShippingFeeQuote } from "@/lib/hooks/useShippingFeeQuote";
+import { useGeolocation } from "@/lib/userLocation";
+import { useAddressStore } from "@/stores/addressStore";
+import { useLocationStore } from "@/stores/useLocationStore";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { CartItem } from "@/stores/cartStore";
+import { Edit2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+
+// Format price to VND
+const formatPriceVND = (amount: number): string => {
+    return `${Math.round(amount).toLocaleString("vi-VN")} ₫`;
+};
+
+interface OrderSummaryProps {
+    subtotal: number;
+    selectedItems: CartItem[]; // Kept for future use (e.g., displaying selected items list)
+    restaurantId?: string;
+    totalItems: number;
+}
+
+export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems }: OrderSummaryProps) => {
+    const router = useRouter();
+    const [voucherCode, setVoucherCode] = useState("");
+    const addresses = useAddressStore((state) => state.addresses);
+    const loadingAddresses = useAddressStore((state) => state.loading);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const currentAddress = useLocationStore((s) => s.currentAddress);
+    const { coords } = useGeolocation();
+
+    useEffect(() => {
+        if (addresses.length > 0 && !selectedAddressId) {
+            setSelectedAddressId(addresses[0].id);
+        }
+    }, [addresses, selectedAddressId]);
+
+    const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
+    const deliveryAddress =
+        selectedAddress?.location || (addresses.length > 0 ? addresses[0].location : "No address saved");
+
+    const { quoteLat, quoteLon } = useMemo(() => {
+        if (selectedAddress && typeof selectedAddress.latitude === "number" && typeof selectedAddress.longitude === "number") {
+            return { quoteLat: selectedAddress.latitude, quoteLon: selectedAddress.longitude };
+        }
+        if (currentAddress) {
+            return { quoteLat: currentAddress.lat, quoteLon: currentAddress.lng };
+        }
+        if (coords?.latitude != null && coords?.longitude != null) {
+            return { quoteLat: coords.latitude, quoteLon: coords.longitude };
+        }
+        return { quoteLat: null as number | null, quoteLon: null as number | null };
+    }, [selectedAddress, currentAddress, coords?.latitude, coords?.longitude]);
+
+    const { feeVnd: shippingFee, distanceMeters, loading: shippingLoading, error: shippingError } = useShippingFeeQuote({
+        restaurantId,
+        latitude: quoteLat,
+        longitude: quoteLon,
+    });
+
+    const tax = subtotal * 0.05; // 5% tax
+    const total = subtotal + shippingFee + tax;
+
+    const handleCheckout = () => {
+        if (totalItems <= 0 || selectedItems.length === 0) {
+            toast.error("Please select items to checkout");
+            return;
+        }
+
+        if (!restaurantId) {
+            toast.error("Please select items from only one restaurant to checkout");
+            return;
+        }
+
+        saveCheckoutSelection({
+            restaurantId,
+            itemIds: selectedItems.map((it) => it.id),
+        });
+        router.push(`/payment?restaurantId=${restaurantId}`);
+    };
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            {/* Location */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-brand-orange flex-shrink-0 mt-0.5" />
+                    <div className="flex-grow min-w-0">
+                        <p className="text-xs text-gray-500 mb-1">Deliver to</p>
+                        {loadingAddresses ? (
+                            <p className="text-sm text-gray-400">Loading address...</p>
+                        ) : addresses.length > 0 ? (
+                            <>
+                                {addresses.length > 1 ? (
+                                    <select
+                                        value={selectedAddressId || ""}
+                                        onChange={(e) => setSelectedAddressId(e.target.value)}
+                                        aria-label="Select delivery address"
+                                        title="Select delivery address"
+                                        className="w-full text-sm font-medium text-gray-900 border border-gray-300 rounded-2xl px-3 py-2 mb-1 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/60 bg-white"
+                                    >
+                                        {addresses.map((addr) => (
+                                            <option key={addr.id} value={addr.id}>
+                                                {addr.location}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <p className="text-sm font-medium text-gray-900 line-clamp-2">{deliveryAddress}</p>
+                                )}
+                                <Link
+                                    href="/account/addresses"
+                                    className="text-xs text-brand-orange hover:text-brand-orange/80 mt-1 flex items-center gap-1"
+                                >
+                                    <Edit2 className="w-3 h-3" />
+                                    <span>Edit</span>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-gray-400 italic">No address saved</p>
+                                <Link
+                                    href="/account/addresses"
+                                    className="text-xs text-brand-orange hover:text-brand-orange/80 mt-1 flex items-center gap-1"
+                                >
+                                    <Edit2 className="w-3 h-3" />
+                                    <span>Add Address</span>
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Bill Details */}
+            <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Shipping Fee</span>
+                    <span className="text-gray-900 font-medium text-right">
+                        {shippingLoading ? (
+                            <span className="text-gray-400">Calculating…</span>
+                        ) : quoteLat == null || quoteLon == null ? (
+                            <span className="text-gray-400 text-xs font-normal">Set address / location</span>
+                        ) : shippingFee === 0 ? (
+                            <span className="text-gray-400 text-xs font-normal">—</span>
+                        ) : (
+                            <span>
+                                {formatPriceVND(shippingFee)}
+                                {distanceMeters != null && (
+                                    <span className="block text-[11px] font-normal text-gray-400">
+                                        ≈ {(distanceMeters / 1000).toFixed(1)} km (route)
+                                    </span>
+                                )}
+                                {shippingError && distanceMeters == null && (
+                                    <span className="block text-[11px] font-normal text-amber-600">Estimate fallback</span>
+                                )}
+                            </span>
+                        )}
+                    </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tax</span>
+                    <span className="text-gray-900 font-medium">{formatPriceVND(tax)}</span>
+                </div>
+            </div>
+
+            {/* Voucher Input */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+                <p className="text-xs text-gray-500 mb-2">
+                    Vouchers are not available yet (waiting for backend support).
+                </p>
+                <div className="flex gap-2">
+                    <Input
+                        type="text"
+                        placeholder="Enter voucher code"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        disabled
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-2xl text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                    />
+                    <Button
+                        onClick={() => toast("Voucher feature coming soon")}
+                        disabled
+                        variant="secondary"
+                        size="sm"
+                        className="px-4 cursor-not-allowed rounded-full"
+                    >
+                        Apply
+                    </Button>
+                </div>
+            </div>
+
+            {/* Total */}
+            <div className="mb-6">
+                <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-2xl font-bold text-brand-orange">{formatPriceVND(total)}</span>
+                </div>
+            </div>
+
+            {/* Checkout Button */}
+            <Button
+                type="button"
+                onClick={handleCheckout}
+                disabled={totalItems <= 0 || !restaurantId}
+                variant="brand"
+                className="w-full h-12 rounded-full shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-white"
+            >
+                Checkout ({totalItems})
+            </Button>
+            {totalItems > 0 && !restaurantId && (
+                <p className="mt-2 text-xs text-red-500">Please select items from only one restaurant to checkout.</p>
+            )}
+        </div>
+    );
+};

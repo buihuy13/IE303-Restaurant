@@ -1,0 +1,149 @@
+import type { Category, Restaurant, RestaurantData } from "@/types";
+import { buildRestaurantQueryParams, type RestaurantSearchSort } from "@/lib/api/backendQueryParams";
+import api from "../axios";
+import { queryApi } from "./queryApi";
+
+/**
+ * restaurant-service (`/restaurant`), catalog (`/catalog/category`), review (`/review`).
+ * Paginated nearby lists use query-service via {@link queryApi}.
+ */
+
+/** Spring Data Page JSON for GET /restaurants */
+export type RestaurantPageResponse = {
+    content: Restaurant[];
+    totalElements: number;
+    totalPages: number;
+    size?: number;
+    number?: number;
+};
+
+type CatalogCategoryDto = { id: string; cateName: string; cateId?: string };
+
+function mapCatalogCategory(c: CatalogCategoryDto): Category {
+    return { id: String(c.id ?? c.cateId), cateName: c.cateName };
+}
+
+/**
+ * `GET /restaurant/merchant/{id}` returns a single {@link ResResponse} (see `ResController`),
+ * not an array. Callers that need a list should use this helper.
+ */
+export function merchantRestaurantsFromResponse(
+    data: Restaurant | Restaurant[] | null | undefined,
+): Restaurant[] {
+    if (data == null) return [];
+    return Array.isArray(data) ? data : [data];
+}
+
+/**
+ * Loads every restaurant from paginated GET /restaurants (admin dashboards need the full list).
+ */
+export async function fetchAllRestaurantsPages(extra?: URLSearchParams): Promise<Restaurant[]> {
+    const base = new URLSearchParams(extra ? Array.from(extra.entries()) : []);
+
+    const all: Restaurant[] = [];
+    let page = 0;
+    const pageSize = 20;
+    const maxIterations = 50;
+
+    while (page < maxIterations) {
+        const params = new URLSearchParams(base);
+        params.set("page", String(page));
+        params.set("size", String(pageSize));
+
+        const res = await api.get<RestaurantPageResponse>("/restaurant", { params });
+        const data = res.data;
+        const chunk = Array.isArray(data?.content) ? data.content : [];
+        all.push(...chunk);
+
+        const totalPages = typeof data?.totalPages === "number" ? data.totalPages : chunk.length === 0 ? 0 : 1;
+        page += 1;
+        if (page >= totalPages || chunk.length === 0) break;
+    }
+
+    return all;
+}
+
+// Helper to build FormData in the exact format the backend expects
+function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: File): FormData {
+    const formData = new FormData();
+
+    // Important:
+    // 1) Create a JSON Blob
+    // 2) Mark it as 'application/json'
+    const jsonBlob = new Blob([JSON.stringify(restaurantData)], { type: "application/json" });
+
+    // 3) Append the JSON Blob under the 'restaurant' key.
+    // The server can now parse that part as JSON.
+    formData.append("restaurant", jsonBlob);
+
+    // Add image file if provided (browser will set its content type)
+    if (imageFile) {
+        formData.append("image", imageFile);
+    }
+
+    return formData;
+}
+
+function decodeRestaurantSegment(segment: string): string {
+    let clean = segment.trim();
+    if (!clean.includes("%")) return clean;
+    try {
+        const decoded = decodeURIComponent(clean);
+        if (decoded !== clean) clean = decoded;
+    } catch {
+        // keep original segment
+    }
+    return clean;
+}
+
+export const restaurantApi = {
+    /** Public detail — `GET /restaurant/{slug}` (slug only; UUID returns 404 from restaurant-service). */
+    getByRestaurantSlug: (slug: string) => {
+        const cleanSlug = decodeRestaurantSegment(slug);
+        return api.get<Restaurant>(`/restaurant/${encodeURIComponent(cleanSlug)}`);
+    },
+    /** Admin / internal — `GET /restaurant/admin/{id}` */
+    getByRestaurantId: (restaurantId: string) => {
+        return api.get<Restaurant>(`/restaurant/admin/${encodeURIComponent(restaurantId.trim())}`);
+    },
+    /** Single restaurant for this merchant (backend: `ResController#getRestaurantByMerchantId`). */
+    getRestaurantByMerchantId: (merchantId: string) => {
+        return api.get<Restaurant>(`/restaurant/merchant/${merchantId}`);
+    },
+    getAllRestaurants: (params: URLSearchParams, sort: RestaurantSearchSort = "relevance") => {
+        const sortValue = (params.get("sort") as RestaurantSearchSort | null) ?? sort;
+        return queryApi.getRestaurants(buildRestaurantQueryParams(params, sortValue));
+    },
+    createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
+        // Use new helper function
+        const formData = buildRestaurantFormData(restaurantData, imageFile);
+
+        // Still REMOVE header! Axios will automatically add Content-Type + boundary
+        return api.post<Restaurant>("/restaurant", formData);
+    },
+    updateRestaurant: (restaurantId: string, restaurantData: RestaurantData, imageFile?: File) => {
+        // Use new helper function
+        const formData = buildRestaurantFormData(restaurantData, imageFile);
+
+        // Still REMOVE header!
+        return api.put<Restaurant>(`/restaurant/${restaurantId}`, formData);
+    },
+    updateRestaurantStatus: (restaurantId: string) => {
+        return api.put<{ message: string }>(`/restaurant/enable/${restaurantId}`);
+    },
+    deleteRestaurant: (restaurantId: string) => {
+        return api.delete(`/restaurant/${restaurantId}`);
+    },
+    deleteRestaurantImage: (restaurantId: string) => {
+        return api.delete(`/restaurant/image/${restaurantId}`);
+    },
+    getAllCategories: async () => {
+        const res = await api.get<CatalogCategoryDto[]>(`/catalog/category`);
+        const data = res.data.map(mapCatalogCategory);
+        return { ...res, data };
+    },
+    /** `GET /review/restaurant/{id}` */
+    getAllReviews: (restaurantId: string) => {
+        return api.get<import("@/types").ReviewListResponse>(`/review/restaurant/${restaurantId}`);
+    },
+};

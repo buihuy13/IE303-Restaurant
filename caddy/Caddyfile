@@ -1,0 +1,74 @@
+{
+    email buiquochuytd@gmail.com
+    debug
+}
+
+http://localhost:8443 {
+
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+
+    @api_routes {
+        path /api/*
+    }
+
+    @payment_webhook_route {
+        path /payment/payos-webhook
+    }
+
+    @protected_routes {
+        path /v3/api-docs/*
+        path /api-docs/*
+        path /eureka*
+    }
+
+    @ws_routes {
+        path /ws*
+    }
+
+    @keycloak_route {
+        path /auth*
+    }
+
+    @grafana_route {
+        path /monitoring*
+    }
+
+    handle @ws_routes {
+        reverse_proxy api-gateway:8080 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    handle @protected_routes {
+        basicauth {
+            admin {env.CADDY_HASH_PASSWORD}
+        }
+        reverse_proxy api-gateway:8080
+    }
+
+    handle @api_routes {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle @payment_webhook_route {
+        reverse_proxy api-gateway:8080
+    }
+    
+    handle @keycloak_route {
+        reverse_proxy keycloak:9091
+    }
+
+    handle @grafana_route {
+        reverse_proxy grafana:3000
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

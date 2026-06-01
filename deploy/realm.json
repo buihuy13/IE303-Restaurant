@@ -1,0 +1,208 @@
+{
+  "id": "restaurant-realm",
+  "realm": "restaurant-realm",
+  "displayName": "Restaurant Keycloak System",
+  "sslRequired": "external",
+  "enabled": true,
+  "verifyEmail": true,
+  "smtpServer": {
+    "host": "smtp.gmail.com",
+    "port": "587",
+    "from": "SMTP_FROM_PLACEHOLDER",
+    "fromDisplayName": "Restaurant Admin",
+    "starttls": "true",
+    "auth": "true",
+    "user": "SMTP_FROM_PLACEHOLDER",
+    "password": "SMTP_PASSWORD_PLACEHOLDER"
+  },
+  "identityProviders": [
+    {
+      "alias": "google",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "missing",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "GOOGLE_CLIENT_ID_PLACEHOLDER",
+        "clientSecret": "GOOGLE_CLIENT_SECRET_PLACEHOLDER",
+        "useJwksUrl": "true" 
+      }
+    },
+    {
+      "alias": "facebook",
+      "providerId": "facebook",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "missing",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "FACEBOOK_CLIENT_ID_PLACEHOLDER",
+        "clientSecret": "FACEBOOK_CLIENT_SECRET_PLACEHOLDER",
+        "useJwksUrl": "true" 
+      }
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  },
+  "loginTheme": "restaurant-theme",
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": true,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 10,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Quản lý toàn bộ trang web"
+      },
+      {
+        "name": "USER",
+        "description": "Người sử dụng trang web"
+      },
+      {
+        "name": "MERCHANT",
+        "description": "Người quản lý nhà hàng"
+      }
+    ]
+  },
+  "defaultRoles": ["USER"],
+  
+  "clients": [
+    {
+      "clientId": "restaurant-frontend",
+      "name": "Restaurant frontend",
+      "description": "Frontend communication client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "rootUrl": "https://20.205.208.223",
+      "redirectUris": [
+        "https://20.205.208.223/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "my-backend-service",
+      "name": "Spring Boot Backend",
+      "description": "Client dành cho Backend giao tiếp (Service Account)",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "BACKEND_CLIENT_SECRET_PLACEHOLDER",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "webOrigins": ["+"],
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "realm roles",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "username": "test_user",
+      "enabled": true,
+      "email": "testuser@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "USER_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "USER" ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000002",
+      "username": "admin_manager",
+      "enabled": true,
+      "email": "manager@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ADMIN_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "ADMIN" ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000003",
+      "username": "merchant",
+      "enabled": true,
+      "email": "merchant@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "MERCHANT_PASSWORD_PLACEHOLDER",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "MERCHANT" ]
+    }
+  ]
+}

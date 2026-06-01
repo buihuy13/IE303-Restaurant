@@ -1,0 +1,37 @@
+import CustomToaster from "@/components/ui/CustomToaster";
+import type { Metadata } from "next";
+import { Manrope, Roboto_Serif } from "next/font/google";
+import ClientLayout from "./ClientLayout";
+import "./globals.css";
+
+const robotoSerif = Roboto_Serif({
+        subsets: ["latin"],
+        variable: "--font-roboto-serif",
+        weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+});
+
+const manrope = Manrope({
+        subsets: ["latin"],
+        variable: "--font-manrope",
+        weight: ["200", "300", "400", "500", "600", "700", "800"],
+});
+
+export const metadata: Metadata = {
+        title: "FoodEats - Order Food Fast",
+        description: "Order food from nearby restaurants with fast delivery on FoodEats.",
+};
+
+export default function RootLayout({
+        children,
+}: Readonly<{
+        children: React.ReactNode;
+}>) {
+        return (
+                <html lang="en">
+                        <body className={`${robotoSerif.variable} ${manrope.variable}`}>
+                                <ClientLayout>{children}</ClientLayout>
+                                <CustomToaster />
+                        </body>
+                </html>
+        );
+}

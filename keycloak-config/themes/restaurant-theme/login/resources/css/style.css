@@ -1,0 +1,657 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+    --primary: #f97316;
+    --primary-hover: #ea580c;
+    --text-main: #0f172a;
+    --text-muted: #334155;
+    --border: #e5e7eb;
+    --bg: #f1f5f9;
+    --card-bg: #ffffff;
+    --focus-ring: rgba(249, 115, 22, 0.2);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+    width: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: "Inter", "Manrope", Arial, sans-serif !important;
+    color: var(--text-main);
+    /* Match frontend's soft light gradient background */
+    background:
+        radial-gradient(circle at top left, rgba(251, 191, 36, 0.2) 0%, transparent 48%),
+        radial-gradient(circle at bottom right, rgba(251, 146, 60, 0.16) 0%, transparent 52%),
+        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 65%, #eef2ff 100%) !important;
+}
+
+/* Clear default dark background / pattern from parent theme */
+body::before,
+.login-pf::before,
+.login-pf-page::before,
+#kc-page-background {
+    background: none !important;
+    box-shadow: none !important;
+}
+
+#kc-header,
+#kc-header-wrapper {
+    display: none !important;
+}
+
+.pf-v5-c-login,
+.login-pf-page {
+    min-height: 100vh;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    background: transparent !important;
+    margin: 0 auto !important;
+}
+
+#kc-content {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+#kc-content-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Soft glowing blob behind card for extra depth */
+.pf-v5-c-login::before,
+.login-pf-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: 480px;
+    height: 480px;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at center, rgba(249, 115, 22, 0.15) 0%, transparent 68%);
+    filter: blur(42px);
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.pf-v5-c-login__container,
+.login-pf-page .card-pf {
+    width: min(100%, 470px);
+    max-width: 470px !important;
+    margin: 0 auto !important;
+}
+
+.pf-v5-c-login__main,
+.login-pf-page .card-pf {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 24px !important;
+    box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.1),
+        0 2px 10px rgba(15, 23, 42, 0.04) !important;
+    overflow: hidden;
+    position: relative;
+    animation: kc-card-in 0.35s ease-out;
+}
+
+.pf-v5-c-login__main-header {
+    text-align: center !important;
+    padding: 28px 32px 8px !important;
+}
+
+.pf-v5-c-login__main-header::before {
+    content: "";
+    display: block;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    box-shadow:
+        0 10px 20px rgba(249, 115, 22, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.pf-v5-c-login__main-header::after {
+    content: "FE";
+    position: absolute;
+    top: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+}
+
+.pf-v5-c-title.pf-m-3xl,
+#kc-page-title {
+    margin: 0 !important;
+    color: var(--text-main) !important;
+    font-size: 26px !important;
+    line-height: 1.1 !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+}
+
+/* Optional subtitle under auth titles (used on register) */
+.auth-subtitle {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.auth-note {
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+.auth-actions {
+    margin-top: 14px;
+}
+
+/* Verify email page helpers */
+.auth-card {
+    width: 100%;
+}
+
+.auth-content {
+    max-width: 420px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.auth-icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: #ff5a3c;
+}
+
+.auth-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--text-main);
+}
+
+.resend-email-btn {
+    width: 100%;
+    margin-top: 12px;
+}
+
+/* Prevent double-submit UX */
+#kc-form-buttons [data-submit].is-loading,
+#kc-form-buttons [data-submit][aria-busy="true"],
+#kc-form-buttons [data-submit]:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.pf-v5-c-login__main-body,
+#kc-content-wrapper {
+    padding: 8px 32px 30px !important;
+}
+
+.pf-v5-c-form__group,
+.pf-c-form__group,
+.form-group {
+    margin-bottom: 20px !important;
+}
+
+/* Input wrapper with SVG icons */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input-wrapper input {
+    width: 100%;
+    flex: 1 1 auto;
+    padding-left: 42px !important;
+    padding-right: 42px !important;
+}
+
+/* Keep text from overlapping left/right icons in all states */
+.input-wrapper > .pf-v5-c-form-control,
+.input-wrapper > .pf-c-form-control,
+.input-wrapper > input[type="text"],
+.input-wrapper > input[type="password"],
+.input-wrapper > input[type="email"] {
+    padding-left: 44px !important;
+    padding-right: 44px !important;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.2s ease;
+}
+
+/* While typing/focusing, icon should not look like placeholder text */
+.input-wrapper:focus-within .input-icon {
+    opacity: 0.45;
+}
+
+.input-wrapper svg {
+    width: 18px;
+    height: 18px;
+}
+
+.pf-v5-c-form__label-text,
+.pf-c-form__label-text,
+label {
+    color: var(--text-muted) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.pf-v5-c-form-control,
+.pf-c-form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    width: 100%;
+    height: 52px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    background: #f9fafb !important;
+    color: var(--text-main) !important;
+    font-size: 15px !important;
+    padding: 0 14px !important;
+    box-shadow:
+        inset 0 1px 1px rgba(15, 23, 42, 0.02),
+        0 1px 2px rgba(15, 23, 42, 0.03);
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease,
+        transform 0.12s ease;
+}
+
+.pf-v5-c-form-control::placeholder,
+.pf-c-form-control::placeholder,
+input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Soft hover state for inputs */
+.pf-v5-c-form-control:hover,
+.pf-c-form-control:hover,
+input[type="text"]:hover,
+input[type="password"]:hover,
+input[type="email"]:hover {
+    background: #fefefe !important;
+    border-color: #d1d5db !important;
+    box-shadow:
+        inset 0 1px 1px rgba(15, 23, 42, 0.02),
+        0 4px 10px rgba(148, 163, 184, 0.18);
+}
+
+.pf-v5-c-form-control:focus,
+.pf-c-form-control:focus,
+.pf-v5-c-form-control:focus-visible,
+.pf-c-form-control:focus-visible,
+input:focus,
+input:focus-visible {
+    outline: none !important;
+    border-color: var(--primary) !important;
+    background: #ffffff !important;
+    box-shadow:
+        0 0 0 3px var(--focus-ring) !important;
+}
+
+.pf-c-input-group,
+.pf-v5-c-input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.pf-c-input-group .pf-c-form-control,
+.pf-v5-c-input-group .pf-v5-c-form-control {
+    border-radius: 12px 0 0 12px !important;
+}
+
+.pf-v5-c-button.pf-m-control,
+.pf-c-button.pf-m-control {
+    width: 50px;
+    min-width: 50px;
+    height: 50px;
+    border: 1px solid var(--border) !important;
+    border-left: 1px solid #e5e7eb !important;
+    border-radius: 0 12px 12px 0 !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    transition: all 0.2s ease;
+}
+
+.pf-v5-c-button.pf-m-control:hover,
+.pf-c-button.pf-m-control:hover {
+    background: #e2e8f0 !important;
+}
+
+/* Password toggle button inside input */
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.toggle-password:hover {
+    color: #64748b;
+}
+
+.toggle-password:active {
+    transform: translateY(-50%) scale(0.96);
+}
+
+.toggle-password-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Eye / eye-off states: use slash overlay for clarity */
+.toggle-password .icon-eye-off {
+    display: none !important; /* we use a CSS slash instead */
+}
+
+.toggle-password::after {
+    content: "";
+    position: absolute;
+    width: 2px;
+    height: 18px;
+    border-radius: 999px;
+    background-color: transparent;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none;
+}
+
+.toggle-password.is-visible::after {
+    background-color: currentColor; /* visible = show slash */
+}
+
+#kc-form-options,
+.login-pf-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 6px 0 4px !important;
+}
+
+#kc-form-options a,
+.login-pf-settings a,
+#kc-registration a,
+#kc-info a {
+    color: var(--primary) !important;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+#kc-form-options a:hover,
+.login-pf-settings a:hover,
+#kc-registration a:hover,
+#kc-info a:hover {
+    color: var(--primary-hover) !important;
+    text-decoration: underline !important;
+}
+
+.pf-v5-c-button.pf-m-primary,
+.pf-c-button.pf-m-primary,
+#kc-login {
+    width: 100%;
+    height: 52px;
+    margin-top: 14px;
+    border: none !important;
+    border-radius: 13px !important;
+    color: #fff !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
+    box-shadow: 0 10px 24px rgba(249, 115, 22, 0.28);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-c-button.pf-m-primary:hover,
+#kc-login:hover {
+    transform: translateY(-2px) scale(1.01);
+    filter: brightness(1.02);
+    box-shadow: 0 14px 30px rgba(249, 115, 22, 0.34);
+}
+
+.pf-v5-c-button.pf-m-primary:active,
+.pf-c-button.pf-m-primary:active,
+#kc-login:active {
+    transform: translateY(0) scale(0.99);
+    box-shadow: 0 6px 14px rgba(249, 115, 22, 0.24);
+}
+
+#kc-social-providers {
+    margin-top: 26px;
+}
+
+/* Modern divider */
+.kc-social-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 22px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.kc-social-divider::before,
+.kc-social-divider::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.6);
+}
+
+.pf-v5-c-login__main-footer,
+.login-pf-signup {
+    padding: 0 32px 28px !important;
+    background: transparent !important;
+    border-top: none !important;
+}
+
+#kc-info,
+#kc-registration {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+#kc-info .pf-v5-c-button,
+#kc-info .pf-c-button {
+    margin-top: 0;
+}
+
+.pf-v5-c-alert,
+.alert {
+    border-radius: 12px !important;
+    margin-bottom: 14px !important;
+    border: 1px solid transparent !important;
+    border-left-width: 4px !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+}
+
+.pf-v5-c-alert.pf-m-danger,
+.alert-error {
+    border-color: #fca5a5 !important;
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+}
+
+.pf-v5-c-alert.pf-m-warning,
+.alert-warning {
+    border-color: #fcd34d !important;
+    background: #fffbeb !important;
+    color: #92400e !important;
+}
+
+.pf-v5-c-alert.pf-m-success,
+.alert-success {
+    border-color: #86efac !important;
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+}
+
+.pf-v5-c-alert.pf-m-info,
+.alert-info {
+    border-color: #93c5fd !important;
+    background: #eff6ff !important;
+    color: #1e3a8a !important;
+}
+
+.pf-v5-c-form__helper-text.pf-m-error,
+.pf-c-form__helper-text.pf-m-error {
+    color: #dc2626 !important;
+    font-size: 12px !important;
+    margin-top: 6px !important;
+    font-weight: 500;
+}
+
+.pf-v5-c-form__helper-text,
+.pf-c-form__helper-text,
+[id^="input-error-"] {
+    color: #dc2626 !important;
+    font-size: 12px !important;
+    margin-top: 6px !important;
+}
+
+#kc-content-wrapper ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+#kc-content-wrapper li {
+    margin-bottom: 4px;
+}
+
+/* Force neutral card tone for social buttons */
+#kc-social-providers .pf-v5-c-button,
+#kc-social-providers .pf-c-button {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+#kc-social-providers .pf-v5-c-button:hover,
+#kc-social-providers .pf-c-button:hover {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Card entrance animation */
+@keyframes kc-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.99);
+        box-shadow: 0 0 0 rgba(15, 23, 42, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        box-shadow:
+            0 20px 50px rgba(15, 23, 42, 0.15),
+            0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+}
+
+@media (max-width: 640px) {
+    .pf-v5-c-login,
+    .login-pf-page {
+        padding: 16px 12px;
+    }
+
+    .pf-v5-c-login__container,
+    .login-pf-page .card-pf {
+        width: 100%;
+    }
+
+    .pf-v5-c-login__main-header {
+        padding: 20px 18px 6px !important;
+    }
+
+    .pf-v5-c-login__main-body,
+    #kc-content-wrapper,
+    .pf-v5-c-login__main-footer,
+    .login-pf-signup {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+        padding-bottom: 18px !important;
+    }
+
+    .pf-v5-c-title.pf-m-3xl,
+    #kc-page-title {
+        font-size: 24px !important;
+    }
+
+    .pf-v5-c-form-control,
+    .pf-c-form-control,
+    .pf-v5-c-button.pf-m-control,
+    .pf-c-button.pf-m-control,
+    .pf-v5-c-button.pf-m-primary,
+    .pf-c-button.pf-m-primary,
+    #kc-login {
+        height: 48px;
+    }
+}

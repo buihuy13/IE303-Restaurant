@@ -1,0 +1,35 @@
+"use client";
+
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+
+const DeliveryStatusNotFound = () => {
+        const router = useRouter();
+
+        return (
+                <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-50 to-white flex items-center justify-center p-6">
+                        <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center">
+                                <div className="text-5xl mb-3">📦</div>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">
+                                        Order not found
+                                </h1>
+                                <p className="text-sm text-gray-600">
+                                        We couldn&apos;t find that order. It may have expired, been removed, or the link is incorrect.
+                                </p>
+                                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                        <Button type="button" variant="secondary" className="rounded-full" onClick={() => router.back()}>
+                                                Go back
+                                        </Button>
+                                        <Button type="button" variant="brandOutline" className="rounded-full" onClick={() => router.push("/orders")}>
+                                                View orders
+                                        </Button>
+                                        <Button type="button" variant="brand" className="rounded-full" onClick={() => router.push("/")}>
+                                                Back to home
+                                        </Button>
+                                </div>
+                        </div>
+                </div>
+        );
+};
+
+export default DeliveryStatusNotFound;

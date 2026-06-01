@@ -1,0 +1,7 @@
+datasources:
+  - name: Prometheus
+    type: prometheus
+    # Sử dụng proxy thì grafana server sẽ fetch data từ prometheus (prometheus có thể ở private network)
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true

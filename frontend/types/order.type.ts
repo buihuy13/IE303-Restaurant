@@ -1,0 +1,69 @@
+// Mirrors back-end `orderResponseDTO` (order-service)
+export enum OrderStatus {
+    PENDING = "pending",
+    CONFIRMED = "confirmed",
+    PREPARING = "preparing",
+    /** Legacy / pickup-style step; live API uses DELIVERING for out-for-delivery. */
+    READY = "ready",
+    DELIVERING = "delivering",
+    COMPLETED = "completed",
+    CANCELLED = "cancelled",
+}
+
+export type PaymentMethod = "cash" | "card" | "wallet";
+
+export type PaymentStatus = "pending" | "paid" | "completed" | "failed" | "refunded";
+
+export interface DeliveryAddress {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    latitude?: number;
+    longitude?: number;
+}
+
+export interface OrderRestaurantRef {
+    id: string;
+    name: string;
+}
+
+export interface OrderItem {
+    productId: string;
+    sizeId?: string;
+    sizeName?: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    customizations?: string;
+    imageURL?: string; // Product image URL from order
+    cartItemImage?: string; // Alternative image field name
+}
+
+export interface Order {
+    orderId: string;
+    /** Human-friendly code from order-service (`OrderResponse.orderCode`). */
+    orderCode?: number;
+    slug: string;
+    userId: string;
+    restaurant: OrderRestaurantRef;
+    restaurantId?: string; // Backend may return restaurantId directly
+    merchantId?: string; // Backend returns merchantId from restaurant
+    items: OrderItem[];
+    deliveryAddress: DeliveryAddress;
+    totalAmount: number;
+    discount: number;
+    deliveryFee: number;
+    tax: number;
+    finalAmount: number;
+    paymentMethod: PaymentMethod;
+    status: OrderStatus;
+    paymentStatus: PaymentStatus;
+    estimatedDeliveryTime?: string;
+    actualDeliveryTime?: string | null;
+    orderNote?: string;
+    rating?: number | null;
+    review?: string;
+    createdAt: string;
+    updatedAt: string;
+}

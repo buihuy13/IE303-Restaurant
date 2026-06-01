@@ -1,0 +1,430 @@
+services:
+    zipkin:
+        image: openzipkin/zipkin
+    rabbitmq:
+        image: "rabbitmq:3-management"
+        environment:
+            - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+        volumes:
+            - rabbitmq-data:/var/lib/rabbitmq
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+            interval: 10s
+            timeout: 10s
+            retries: 10
+            start_period: 90s
+    redis:
+        image: "redis:7-alpine"
+        container_name: redis
+        environment:
+            - REDIS_PASSWORD=${REDIS_PASSWORD}
+        command: sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s # Check mỗi 10s
+            timeout: 3s # Không response sau 3s thì timeout
+            retries: 5 # Thử lại 5 lần trước khi mark là unhealthy
+            start_period: 10s # Cho 10s bắt đầu trước khi healthcheck
+
+    keycloak:
+        image: quay.io/keycloak/keycloak:24.0.0
+        #override entrypoint để chạy script init.sh
+        entrypoint: ["/bin/bash"]
+        command: ["/tmp/init.sh"]
+        env_file:
+            - ./.env
+        environment:
+            - KC_DB=postgres
+            - KC_HEALTH_ENABLED=true
+            - KC_METRICS_ENABLED=true
+            - KC_HTTP_PORT=9091
+            - KC_HOSTNAME=${KC_HOSTNAME}
+            - KC_HOSTNAME_PATH=/auth
+            - KC_PROXY=edge
+            - KC_HOSTNAME_STRICT=false
+            - KC_HTTP_RELATIVE_PATH=/auth
+        expose:
+            - "9091"
+        volumes:
+            - ./keycloak-config/realm.json:/tmp/realm.json:ro
+            - ./keycloak-config/init.sh:/tmp/init.sh:ro
+            - ./keycloak-config/themes:/opt/keycloak/themes
+        depends_on:
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: "prometheus"
+        restart: "unless-stopped"
+        volumes:
+            - ./monitoring:/etc/prometheus
+            - prometheus-data:/prometheus
+        command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+        healthcheck:
+            test: ["CMD", "nc", "-z", "localhost", "9090"]
+    grafana:
+        image: grafana/grafana:latest
+        environment:
+            - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/monitoring
+            - GF_SERVER_SERVE_FROM_SUB_PATH=true
+        env_file:
+            - ./.env
+        container_name: grafana
+        restart: "unless-stopped"
+        expose:
+            - "3000"
+        volumes:
+            - grafana-data:/var/lib/grafana #Lưu dashboard lại khi restart container
+            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+        depends_on:
+            - prometheus
+        healthcheck:
+            test: ["CMD", "nc", "-z", "localhost", "3000"]
+    caddy:
+        image: caddy:2-alpine
+        container_name: caddy
+        restart: unless-stopped
+        env_file:
+            - ./.env
+        ports:
+            - "8443:8443"
+        volumes:
+            - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
+        depends_on:
+            - api-gateway
+            - frontend
+            - keycloak
+            - grafana
+    postgres:
+        image: imresamu/postgis:16-3.4 # PostgreSQL + PostGIS
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: postgres
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./backend/seed-db/seed-db.sh:/docker-entrypoint-initdb.d/00_seed_db.sh
+            - ./backend/seed-db/user_service.sql:/docker-entrypoint-initdb.d/user_service.sql
+            - ./backend/seed-db/blog_service.sql:/docker-entrypoint-initdb.d/blog_service.sql
+            - ./backend/seed-db/chat_service.sql:/docker-entrypoint-initdb.d/chat_service.sql
+            - ./backend/seed-db/payment_service.sql:/docker-entrypoint-initdb.d/payment_service.sql
+            - ./backend/seed-db/restaurant_service.sql:/docker-entrypoint-initdb.d/restaurant_service.sql
+            - ./backend/seed-db/product_service.sql:/docker-entrypoint-initdb.d/product_service.sql
+            - ./backend/seed-db/catalog_service.sql:/docker-entrypoint-initdb.d/catalog_service.sql
+            - ./backend/seed-db/catalog_service_data.sql:/docker-entrypoint-initdb.d/catalog_service_data.sql
+            - ./backend/seed-db/review_service.sql:/docker-entrypoint-initdb.d/review_service.sql
+            - ./backend/seed-db/query_service.sql:/docker-entrypoint-initdb.d/query_service.sql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 60s
+    service-discovery:
+        build:
+            context: ./backend
+            dockerfile: ./service-discovery/Dockerfile
+            args:
+                MODULE_PATH: service-discovery
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${SERVICE_DISCOVERY_PORT}
+        healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health | grep UP || exit 1"]
+            interval: 10s
+            timeout: 10s
+            retries: 10
+            start_period: 60s
+    api-gateway:
+        build:
+            context: ./backend
+            dockerfile: ./api-gateway/Dockerfile
+            args:
+                MODULE_PATH: api-gateway
+        expose:
+            - "8080"
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${API_GATEWAY_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    user-service:
+        build:
+            context: ./backend
+            dockerfile: ./user-service/Dockerfile
+            args:
+                MODULE_PATH: user-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${USER_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    notification-service:
+        build:
+            context: ./backend
+            dockerfile: ./notification-service/Dockerfile
+            args:
+                MODULE_PATH: notification-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${NOTIFICATION_PORT}
+            - PASSWORD=${SMTP_PASSWORD}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    chat-service:
+        build:
+            context: ./backend
+            dockerfile: ./chat-service/Dockerfile
+            args:
+                - MODULE_PATH=chat-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${CHAT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+            redis:
+                condition: service_healthy
+    recommendation-service:
+        build:
+            context: ./backend
+            dockerfile: ./recommendation-service/Dockerfile
+            args:
+                - MODULE_PATH=recommendation-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${RECOMMENDATION_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+            product-service:
+                condition: service_started
+            review-service:
+                condition: service_started
+    product-service:
+        build:
+            context: ./backend
+            dockerfile: ./product-service/Dockerfile
+            args:
+                MODULE_PATH: product-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${PRODUCT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+            catalog-service:
+                condition: service_started
+            image-service:
+                condition: service_started
+    catalog-service:
+        build:
+            context: ./backend
+            dockerfile: ./catalog-service/Dockerfile
+            args:
+                MODULE_PATH: catalog-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${CATALOG_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    review-service:
+        build:
+            context: ./backend
+            dockerfile: ./review-service/Dockerfile
+            args:
+                MODULE_PATH: review-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${REVIEW_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    image-service:
+        build:
+            context: ./backend
+            dockerfile: ./image-service/Dockerfile
+            args:
+                MODULE_PATH: image-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${IMAGE_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    query-service:
+        build:
+            context: ./backend
+            dockerfile: ./query-service/Dockerfile
+            args:
+                MODULE_PATH: query-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${QUERY_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    restaurant-service:
+        build:
+            context: ./backend
+            dockerfile: ./restaurant-service/Dockerfile
+            args:
+                MODULE_PATH: restaurant-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${RESTAURANT_PORT}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    frontend:
+        expose:
+            - "3000"
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            args:
+                NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+                NEXT_PUBLIC_BACKEND_ORIGIN: ${NEXT_PUBLIC_BACKEND_ORIGIN}
+                NEXT_PUBLIC_KEYCLOAK_BASE_URL: ${NEXT_PUBLIC_KEYCLOAK_BASE_URL}
+                NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM}
+                NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}
+        container_name: frontend
+        env_file:
+            - ./.env
+        restart: unless-stopped
+
+    mongodb:
+        image: mongo:7
+        container_name: mongodb
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+        volumes:
+            - mongo_data:/data/db
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    order-service:
+        build:
+            context: ./backend
+            dockerfile: ./order-service/Dockerfile
+            args:
+                MODULE_PATH: order-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${ORDER_PORT}
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            service-discovery:
+                condition: service_started
+    dashboard-service:
+        build:
+            context: ./backend
+            dockerfile: ./dashboard-service/Dockerfile
+            args:
+                MODULE_PATH: dashboard-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${DASHBOARD_PORT}
+        depends_on:
+            redis:
+                condition: service_started
+            service-discovery:
+                condition: service_started
+    blog-service:
+        build:
+            context: ./backend
+            dockerfile: ./blog-service/Dockerfile
+            args:
+                MODULE_PATH: blog-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${BLOG_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    payment-service:
+        build:
+            context: ./backend
+            dockerfile: ./payment-service/Dockerfile
+            args:
+                MODULE_PATH: payment-service
+        env_file:
+            - ./.env
+        environment:
+            - PORT=${PAYMENT_PORT}
+        depends_on:
+            service-discovery:
+                condition: service_started
+    ngrok:
+        image: ngrok/ngrok:latest
+        restart: unless-stopped
+        environment:
+            - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+        command:
+            - "http"
+            - "payment-service:8087"
+        ports:
+            - "4040:4040"
+        depends_on:
+            - payment-service
+
+volumes:
+    rabbitmq-data:
+    grafana-data:
+    prometheus-data:
+    caddy_data:
+    caddy_config:
+    postgres_data:
+    mongo_data:

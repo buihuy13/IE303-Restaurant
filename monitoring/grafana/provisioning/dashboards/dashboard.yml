@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: 'Prometheus'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    editable: true
+    # Grafana scan folder để tìm file JSON mới/updated mỗi 300 giây
+    updateIntervalSeconds: 300
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards

@@ -1,0 +1,45 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+        reactStrictMode: false, // Disable Strict Mode to avoid double re-render in development
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "placehold.co",
+            },
+            {
+                protocol: "https",
+                hostname: "res.cloudinary.com",
+            },
+            {
+                protocol: "https",
+                hostname: "images.unsplash.com",
+            }
+        ],
+        formats: ["image/avif", "image/webp"],
+        deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+        imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+        dangerouslyAllowSVG: true,
+        contentDispositionType: "attachment",
+        contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+        // Fix for reverse proxy (Caddy) - ensure images work correctly
+        // If images still don't work, set DISABLE_IMAGE_OPTIMIZATION=true in production
+        unoptimized: process.env.DISABLE_IMAGE_OPTIMIZATION === "true",
+        // Ensure Next.js can fetch images from Cloudinary (fixes CORS/network issues)
+        minimumCacheTTL: 60,
+    },
+    // Enable experimental features for better performance
+    experimental: {
+        // Optimize package imports
+        optimizePackageImports: ["lucide-react"],
+    },
+    // Enable compression
+    compress: true,
+    // Reduce bundle size
+    compiler: {
+        removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+    },
+};
+
+export default nextConfig;

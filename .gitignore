@@ -1,0 +1,59 @@
+# Environment
+.env
+*.env.local
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# ============================================
+# BACKEND - Build outputs
+# ============================================
+# Ignore build folders ở MỌI CẤP trong backend
+backend/**/build/
+backend/**/out/
+backend/**/bin/
+backend/**/target/
+
+# Gradle
+backend/**/.gradle/
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# Spring Boot
+backend/**/HELP.md
+backend/**/.springBeans
+backend/**/.sts4-cache
+
+# IDE - IntelliJ IDEA
+backend/**/.idea/
+backend/**/*.iws
+backend/**/*.iml
+backend/**/*.ipr
+
+# IDE - Eclipse
+backend/**/.apt_generated
+backend/**/.classpath
+backend/**/.factorypath
+backend/**/.project
+backend/**/.settings/
+
+# IDE - NetBeans
+backend/**/nbproject/private/
+backend/**/nbbuild/
+backend/**/nbdist/
+backend/**/.nb-gradle/
+
+#deploy key
+*.pem
+backend/payment-service/docs/
+
+.claude
+
+.crush
