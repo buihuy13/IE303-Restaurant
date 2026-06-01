@@ -18,6 +18,10 @@ public class OrderNotificationPublisher {
 
     public void publish(OrderNotificationEvent event) {
         rabbitTemplate.convertAndSend(OrderNotificationContract.EXCHANGE, OrderNotificationContract.ROUTING_KEY, event);
-        log.info("[OrderNotification] Published: orderId={}, status={}", event.getOrderId(), event.getStatus());
+        log.info(
+                "[OrderNotification] Published: orderId={}, eventType={}, status={}",
+                event.getOrderId(),
+                event.getEventType(),
+                event.getStatus());
     }
 }

@@ -5,8 +5,12 @@ import { subscribeNewOrders, subscribeOrderStatusUpdates } from "@/lib/orderSSEB
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useRef, useState } from "react";
 
+const ORDER_LIFECYCLE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "delivering", "completed", "cancelled"]);
+const PAYMENT_STATUSES = new Set(["unpaid", "pending", "paid", "completed", "failed", "refunded"]);
+
 export interface OrderNotification {
     type: string;
+    eventType?: string;
     data?: {
         orderId: string;
         totalAmount?: number;
@@ -14,6 +18,7 @@ export interface OrderNotification {
         customerNote?: string;
         createdAt?: string;
         status?: string;
+        paymentStatus?: string;
         restaurantName?: string;
         reason?: string;
     };
@@ -31,6 +36,7 @@ interface UseOrderSocketOptions {
     userId?: string | null;
     onNewOrder?: (notification: OrderNotification) => void;
     onOrderStatusUpdate?: (notification: OrderNotification) => void;
+    onPaymentStatusUpdate?: (notification: OrderNotification) => void;
 }
 
 /** Reconnect delay: starts at 2s, caps at 30s */
@@ -41,34 +47,45 @@ function getReconnectDelay(attempt: number): number {
 function parseSSEData(raw: string): OrderNotification | null {
     try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const eventType = typeof parsed.eventType === "string" ? parsed.eventType : undefined;
+        const rawStatus = typeof parsed.status === "string" ? parsed.status : undefined;
+        const isPaymentEvent = eventType?.toUpperCase() === "PAYMENT_STATUS";
+        const orderStatus =
+            typeof parsed.orderStatus === "string" ? parsed.orderStatus : isPaymentEvent ? undefined : rawStatus;
+        const paymentStatus =
+            typeof parsed.paymentStatus === "string" ? parsed.paymentStatus : isPaymentEvent ? rawStatus : undefined;
 
         if (parsed.orderId && parsed.status && !parsed.data) {
             return {
                 type: "ORDER_NOTIFICATION",
+                eventType,
                 data: {
                     orderId: String(parsed.orderId),
                     totalAmount: typeof parsed.totalPrice === "number" ? parsed.totalPrice : Number(parsed.totalPrice || 0),
                     itemCount: typeof parsed.itemCount === "number" ? parsed.itemCount : 1,
-                    status: String(parsed.status),
+                    status: orderStatus,
+                    paymentStatus,
                     restaurantName: String(parsed.restaurantName || ""),
                     createdAt: typeof parsed.timestamp === "string" ? parsed.timestamp : new Date().toISOString(),
                 },
                 orderId: String(parsed.orderId),
-                status: String(parsed.status),
+                status: orderStatus,
+                paymentStatus,
                 timestamp: parsed.timestamp ? new Date(parsed.timestamp as string) : new Date(),
             };
         }
 
         return {
             type: typeof parsed.type === "string" ? parsed.type : "unknown",
+            eventType,
             data:
                 parsed.data && typeof parsed.data === "object"
                     ? (parsed.data as OrderNotification["data"])
                     : undefined,
             orderId: typeof parsed.orderId === "string" ? parsed.orderId : undefined,
-            status: typeof parsed.status === "string" ? parsed.status : undefined,
+            status: orderStatus,
             previousStatus: typeof parsed.previousStatus === "string" ? parsed.previousStatus : undefined,
-            paymentStatus: typeof parsed.paymentStatus === "string" ? parsed.paymentStatus : undefined,
+            paymentStatus,
             cancellationReason:
                 typeof parsed.cancellationReason === "string" ? parsed.cancellationReason : undefined,
             timestamp: parsed.timestamp ? new Date(parsed.timestamp as string) : new Date(),
@@ -83,8 +100,22 @@ function dispatchNotification(
     notification: OrderNotification,
     onNewOrder?: (n: OrderNotification) => void,
     onOrderStatusUpdate?: (n: OrderNotification) => void,
+    onPaymentStatusUpdate?: (n: OrderNotification) => void,
 ) {
     const status = (notification.status || notification.data?.status || "").toLowerCase();
+    const paymentStatus = (notification.paymentStatus || notification.data?.paymentStatus || status).toLowerCase();
+
+    if (
+        notification.eventType?.toUpperCase() === "PAYMENT_STATUS" ||
+        (!ORDER_LIFECYCLE_STATUSES.has(status) && PAYMENT_STATUSES.has(paymentStatus))
+    ) {
+        onPaymentStatusUpdate?.(notification);
+        return;
+    }
+
+    if (!ORDER_LIFECYCLE_STATUSES.has(status)) {
+        return;
+    }
 
     if (status === "pending" || notification.type === "new-order" || notification.type === "NEW_ORDER") {
         onNewOrder?.(notification);
@@ -98,7 +129,13 @@ function dispatchNotification(
  * Customer order pages: subscribe to global useSSE bridge (no second EventSource).
  * Merchant dashboards: direct EventSource on API gateway (merchants do not use SSEProvider).
  */
-export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
+export function useOrderSocket({
+    restaurantId,
+    userId,
+    onNewOrder,
+    onOrderStatusUpdate,
+    onPaymentStatusUpdate,
+}: UseOrderSocketOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const esRef = useRef<EventSource | null>(null);
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,9 +143,11 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
     const isMountedRef = useRef(false);
     const onNewOrderRef = useRef(onNewOrder);
     const onOrderStatusUpdateRef = useRef(onOrderStatusUpdate);
+    const onPaymentStatusUpdateRef = useRef(onPaymentStatusUpdate);
 
     onNewOrderRef.current = onNewOrder;
     onOrderStatusUpdateRef.current = onOrderStatusUpdate;
+    onPaymentStatusUpdateRef.current = onPaymentStatusUpdate;
 
     const isMerchantSocket = Boolean(restaurantId);
 
@@ -123,7 +162,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
 
         const handleStatus = (notification: OrderNotification) => {
             if (!isMountedRef.current) return;
-            dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
+            dispatchNotification(
+                notification,
+                onNewOrderRef.current,
+                onOrderStatusUpdateRef.current,
+                onPaymentStatusUpdateRef.current,
+            );
         };
 
         const unsubStatus = subscribeOrderStatusUpdates(handleStatus);
@@ -202,7 +246,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
                 if (notification) {
-                    dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
+                    dispatchNotification(
+                        notification,
+                        onNewOrderRef.current,
+                        onOrderStatusUpdateRef.current,
+                        onPaymentStatusUpdateRef.current,
+                    );
                 }
             });
 
@@ -210,7 +259,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                 if (!isMountedRef.current) return;
                 const notification = parseSSEData(event.data);
                 if (notification) {
-                    onOrderStatusUpdateRef.current?.(notification);
+                    dispatchNotification(
+                        notification,
+                        onNewOrderRef.current,
+                        onOrderStatusUpdateRef.current,
+                        onPaymentStatusUpdateRef.current,
+                    );
                 }
             });
 
@@ -219,7 +273,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                 const notification = parseSSEData(event.data);
                 if (!notification) return;
 
-                dispatchNotification(notification, onNewOrderRef.current, onOrderStatusUpdateRef.current);
+                dispatchNotification(
+                    notification,
+                    onNewOrderRef.current,
+                    onOrderStatusUpdateRef.current,
+                    onPaymentStatusUpdateRef.current,
+                );
             };
 
             es.onerror = () => {

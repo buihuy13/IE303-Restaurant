@@ -8,6 +8,16 @@ import { NOTIFICATION_SSE_ORIGIN } from "../config/publicRuntime";
 
 const NOTIFICATION_URL = NOTIFICATION_SSE_ORIGIN;
 const MAX_RETRY_ATTEMPTS = 5;
+const ORDER_LIFECYCLE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "delivering", "completed", "cancelled"]);
+const LEGACY_ORDER_EVENT_NAMES = new Set([
+    "order successfully",
+    "order_accepted",
+    "order_confirmed",
+    "order failed",
+    "order_rejected",
+    "order_completed",
+    "order_status_updated",
+]);
 
 interface UseSSEOptions {
     userId: string | null;
@@ -41,9 +51,9 @@ const parsePayload = (rawData: string): NotificationEventPayload => {
 const resolveOrderNotificationType = (eventName: string, payload: NotificationEventPayload) => {
     const normalizedEvent = eventName.toLowerCase();
     const normalizedType = normalizeText(payload.type).toLowerCase();
-    const normalizedStatus = normalizeText(payload.status).toLowerCase();
+    const normalizedStatus = normalizeText(payload.orderStatus || payload.status).toLowerCase();
 
-    const matched = [normalizedType, normalizedStatus, normalizedEvent].find(Boolean) ?? "";
+    const matched = [normalizedStatus, normalizedType, normalizedEvent].find(Boolean) ?? "";
 
     if (matched.includes("reject") || matched.includes("cancel") || matched.includes("fail")) {
         return {
@@ -83,6 +93,15 @@ const resolveOrderNotificationType = (eventName: string, payload: NotificationEv
         toastType: "success" as const,
         fallbackMessage: "Your order has been accepted.",
     };
+};
+
+const isOrderLifecyclePayload = (eventName: string, payload: NotificationEventPayload): boolean => {
+    if (normalizeText(payload.eventType).toUpperCase() === "PAYMENT_STATUS") {
+        return false;
+    }
+
+    const normalizedStatus = normalizeText(payload.orderStatus || payload.status).toLowerCase();
+    return ORDER_LIFECYCLE_STATUSES.has(normalizedStatus) || LEGACY_ORDER_EVENT_NAMES.has(eventName.toLowerCase());
 };
 
 /**
@@ -218,13 +237,24 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                     }
 
                     const payload = parsePayload(data);
+                    if (!isOrderLifecyclePayload(eventName, payload)) {
+                        log("ignore non-order-status event", payload);
+                        return;
+                    }
+
                     const config = resolveOrderNotificationType(eventName, payload);
                     const fallbackMessage = normalizeText(payload.message) || config.fallbackMessage;
                     const resolvedMessage = payload.orderId
                         ? `Order ${payload.orderId}: ${fallbackMessage}`
                         : fallbackMessage;
 
-                    const dedupeKey = `${config.type}-${payload.orderId ?? "unknown"}-${resolvedMessage}`;
+                    const dedupeKey = [
+                        normalizeText(payload.eventType) || "LEGACY",
+                        payload.orderId ?? "unknown",
+                        normalizeText(payload.orderStatus),
+                        normalizeText(payload.paymentStatus),
+                        normalizeText(payload.status),
+                    ].join("-");
                     if (processedEventKeysRef.current.has(dedupeKey)) {
                         return;
                     }
@@ -259,6 +289,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                     "ORDER_REJECTED",
                     "ORDER_COMPLETED",
                     "ORDER_STATUS_UPDATED",
+                    "ORDER_NOTIFICATION",
                 ].forEach((eventName) => {
                     eventSource.addEventListener(eventName, (event) => {
                         log(eventName, event.data);

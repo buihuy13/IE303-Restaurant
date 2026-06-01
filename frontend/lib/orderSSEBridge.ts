@@ -10,7 +10,10 @@ export type OrderSSEPayload = {
     title?: string;
     message?: string;
     type?: string;
+    eventType?: string;
     status?: string;
+    orderStatus?: string;
+    paymentStatus?: string;
     orderId?: string;
     restaurantName?: string;
     reason?: string;
@@ -39,21 +42,24 @@ export function orderNotificationFromSSEPayload(
     payload: OrderSSEPayload,
     eventName = "message",
 ): OrderNotification {
-    const status = (payload.status || payload.type || eventName || "").trim();
+    const status = (payload.orderStatus || payload.status || payload.type || eventName || "").trim();
     const orderId = payload.orderId?.trim() || undefined;
 
     return {
         type: "ORDER_NOTIFICATION",
+        eventType: payload.eventType,
         data: orderId
             ? {
                   orderId,
                   status,
+                  paymentStatus: payload.paymentStatus,
                   restaurantName: payload.restaurantName || "",
                   createdAt: new Date().toISOString(),
               }
             : undefined,
         orderId,
         status,
+        paymentStatus: payload.paymentStatus,
         timestamp: new Date(),
     };
 }
