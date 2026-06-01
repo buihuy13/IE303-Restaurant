@@ -249,7 +249,7 @@ export default function NavActions() {
                             className="focus:outline-none"
                         >
                             <button
-                                className={`inline-flex items-center gap-2 cursor-pointer rounded-full p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
+                                className={`inline-flex h-10 items-center gap-2 cursor-pointer rounded-full pl-0 pr-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/30 ${
                                     theme === "dark"
                                         ? "hover:bg-white/10"
                                         : "hover:bg-gray-50"
@@ -275,7 +275,7 @@ export default function NavActions() {
                         align="end"
                         alignOffset={0}
                         sideOffset={8}
-                        className={`account-dropdown-content w-56 min-w-[14rem] max-w-[14rem] shadow-lg border ${
+                        className={`account-dropdown-content z-[90] w-56 min-w-[14rem] max-w-[14rem] shadow-lg border data-[state=open]:animate-none data-[state=closed]:animate-none data-[side=bottom]:slide-in-from-top-0 ${
                             theme === "dark"
                                 ? "bg-[#12182b] border-white/12 text-white"
                                 : "border-gray-200"
