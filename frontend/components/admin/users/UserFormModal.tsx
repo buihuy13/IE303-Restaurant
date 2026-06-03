@@ -1,6 +1,7 @@
 "use client";
 
 import { User } from "@/types";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -42,19 +43,6 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                 }
         }, [isOpen, userToEdit, isEditMode]);
 
-        useEffect(() => {
-                if (!isOpen) return;
-
-                const handleKeyDown = (event: KeyboardEvent) => {
-                        if (event.key === "Escape") {
-                                onClose();
-                        }
-                };
-
-                document.addEventListener("keydown", handleKeyDown);
-                return () => document.removeEventListener("keydown", handleKeyDown);
-        }, [isOpen, onClose]);
-
         // 4. Handle form submission
         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
@@ -75,38 +63,20 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                 }
         };
 
-        // 5. If modal is not open (isOpen=false) -> render nothing
-        if (!isOpen) {
-                return null;
-        }
-
-        // 6. Render Modal UI
         return (
-                // Backdrop
-                <div
-                        onClick={onClose}
-                        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center transition-opacity"
-                >
-                        {/* Modal Content */}
-                        <div
-                                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
-                                className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-lg"
-                                role="dialog"
-                                aria-modal="true"
-                                aria-labelledby={titleId}
-                        >
-                                {/* Close Button (X) */}
-                                <button
-                                        title="Close Modal"
-                                        aria-label="Close user form"
-                                        onClick={onClose}
-                                        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-                                >
-                                        <X className="w-6 h-6" />
-                                </button>
+                <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+                        <Dialog.Portal>
+                                <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity" />
+                                <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white p-6 shadow-xl outline-none">
+                                        <Dialog.Close
+                                                title="Close Modal"
+                                                aria-label="Close user form"
+                                                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                                        >
+                                                <X className="w-6 h-6" />
+                                        </Dialog.Close>
 
-                                {/* Title */}
-                                <h2 id={titleId} className="text-2xl font-bold mb-6">{title}</h2>
+                                <Dialog.Title id={titleId} className="text-2xl font-bold mb-6">{title}</Dialog.Title>
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,7 +89,10 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                 </label>
                                                 <input
                                                         id="username"
+                                                        name="username"
                                                         type="text"
+                                                        autoComplete="username"
+                                                        spellCheck={false}
                                                         value={username}
                                                         onChange={(e) => setUsername(e.target.value)}
                                                         className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-50 disabled:bg-gray-100"
@@ -137,7 +110,9 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                 </label>
                                                 <input
                                                         id="phone"
+                                                        name="phone"
                                                         type="tel"
+                                                        autoComplete="tel"
                                                         value={phone}
                                                         onChange={(e) => setPhone(e.target.value)}
                                                         className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-50 disabled:bg-gray-100"
@@ -158,7 +133,9 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                                 </label>
                                                                 <input
                                                                         id="email"
+                                                                        name="email"
                                                                         type="email"
+                                                                        autoComplete="email"
                                                                         value={userToEdit.email}
                                                                         className="mt-1 w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
                                                                         disabled
@@ -178,6 +155,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                                 </label>
                                                                 <input
                                                                         id="role"
+                                                                        name="role"
                                                                         type="text"
                                                                         value={userToEdit.role}
                                                                         className="mt-1 w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
@@ -217,7 +195,8 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                 </button>
                                         </div>
                                 </form>
-                        </div>
-                </div>
+                                </Dialog.Content>
+                        </Dialog.Portal>
+                </Dialog.Root>
         );
 }
