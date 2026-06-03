@@ -123,7 +123,7 @@ export default function DashboardPageClient() {
         };
 
         run();
-    }, [comparePeriod, period]);
+    }, [comparePeriod, period, rangePreset]);
 
     const revenueSeries = useMemo(
         () =>
