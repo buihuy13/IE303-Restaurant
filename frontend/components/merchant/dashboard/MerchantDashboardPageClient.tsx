@@ -122,7 +122,7 @@ export default function MerchantDashboardPageClient() {
         };
 
         run();
-    }, [period, restaurant?.restaurantId]);
+    }, [period, rangePreset, restaurant?.restaurantId]);
 
     const revenueSeries = useMemo(
         () =>
