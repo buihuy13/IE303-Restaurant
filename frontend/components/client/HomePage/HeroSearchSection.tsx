@@ -98,6 +98,9 @@ export default function HeroSearchSection() {
                     <div className="relative surface-glass rounded-full p-1.5">
                         <Input
                             type="text"
+                            name="heroSearch"
+                            aria-label="Search for dishes, drinks, or restaurants"
+                            spellCheck={false}
                             placeholder="Search for beef noodle soup, bubble tea, fried chicken..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -107,7 +110,7 @@ export default function HeroSearchSection() {
                                 "focus-visible:ring-[color:var(--ring)] focus-visible:border-white/20",
                             )}
                         />
-                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                        <Search aria-hidden="true" className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
                         <Button
                             type="submit"
                             variant="brand"

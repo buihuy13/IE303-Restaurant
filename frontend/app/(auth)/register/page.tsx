@@ -97,6 +97,9 @@ export default function SignUpPage() {
                         <input
                             type="text"
                             id="username"
+                            name="username"
+                            autoComplete="username"
+                            spellCheck={false}
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
@@ -112,6 +115,9 @@ export default function SignUpPage() {
                         <input
                             type="email"
                             id="email"
+                            name="email"
+                            autoComplete="email"
+                            spellCheck={false}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -127,6 +133,8 @@ export default function SignUpPage() {
                         <input
                             type="tel"
                             id="phone"
+                            name="phone"
+                            autoComplete="tel"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                             required
@@ -143,6 +151,8 @@ export default function SignUpPage() {
                             <input
                                 type={showPassword ? "text" : "password"}
                                 id="password"
+                                name="password"
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -168,6 +178,8 @@ export default function SignUpPage() {
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 id="confirmPassword"
+                                name="confirmPassword"
+                                autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required

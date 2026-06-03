@@ -215,6 +215,9 @@ export default function SearchBar() {
                 <div className="relative w-full">
                     <Input
                         type="text"
+                        name="headerSearch"
+                        aria-label="Search for food and drinks"
+                        spellCheck={false}
                         placeholder="Search for food, drinks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -231,6 +234,7 @@ export default function SearchBar() {
                         }`}
                     />
                     <Search
+                        aria-hidden="true"
                         className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
                             theme === "dark" ? "text-white/55" : "text-gray-400"
                         }`}
