@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Loader2, X } from "lucide-react";
 
 interface MoodRecommendationModalProps {
@@ -24,40 +25,35 @@ export function MoodRecommendationModal({
     onClose,
     onSelectMood,
 }: MoodRecommendationModalProps) {
-    if (!open) return null;
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen && !submitting) {
+            onClose();
+        }
+    };
 
     return (
-        <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 px-4"
-            onClick={() => {
-                if (!submitting) onClose();
-            }}
-            role="presentation"
-        >
-            <div
-                className="w-full max-w-xl rounded-3xl border border-gray-200 bg-white p-5 shadow-2xl md:p-6"
-                onClick={(e) => e.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-                aria-label="Choose your mood"
-            >
+        <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+            <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-[120] bg-black/45" />
+                <Dialog.Content className="fixed left-1/2 top-1/2 z-[121] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-gray-200 bg-white p-5 shadow-2xl outline-none md:p-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight text-gray-900">Bạn đang muốn ăn theo tâm trạng nào?</h2>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <Dialog.Title className="text-xl font-bold tracking-tight text-gray-900">Bạn đang muốn ăn theo tâm trạng nào?</Dialog.Title>
+                        <Dialog.Description className="mt-1 text-sm text-gray-600">
                             Chọn 1 tâm trạng để nhận gợi ý món ăn. Bạn có thể bỏ qua.
-                        </p>
+                        </Dialog.Description>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={submitting}
-                        className="rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                        title="Close"
-                        aria-label="Close"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
+                    <Dialog.Close asChild>
+                        <button
+                            type="button"
+                            disabled={submitting}
+                            className="rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Close"
+                            aria-label="Close mood picker"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </Dialog.Close>
                 </div>
 
                 {loading ? (
@@ -95,7 +91,7 @@ export function MoodRecommendationModal({
 
                 {submitting && (
                     <div className="mt-4 flex items-center gap-2 rounded-xl border border-brand-orange/25 bg-brand-orange/5 px-3 py-2 text-sm text-brand-orange">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                         <span>
                             Đang lấy gợi ý món ăn
                             {selectedMood ? ` cho tâm trạng "${selectedMood}"` : ""}...
@@ -108,8 +104,8 @@ export function MoodRecommendationModal({
                         Bỏ qua
                     </Button>
                 </div>
-            </div>
-        </div>
+                </Dialog.Content>
+            </Dialog.Portal>
+        </Dialog.Root>
     );
 }
-

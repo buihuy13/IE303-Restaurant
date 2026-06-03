@@ -1,6 +1,7 @@
 "use client";
 
 import { Size, SizeData } from "@/types";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -30,19 +31,6 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 		}
 	}, [isOpen, size, isEditMode]);
 
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				onClose();
-			}
-		};
-
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [isOpen, onClose]);
-
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -61,29 +49,20 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 		}
 	};
 
-	if (!isOpen) {
-		return null;
-	}
-
 	return (
-		<div onClick={onClose} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center transition-opacity">
-			<div
-				onClick={(e) => e.stopPropagation()}
-				className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby={titleId}
-			>
-				<button
-					title="Close"
-					aria-label="Close size form"
-					onClick={onClose}
-					className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-				>
-					<X className="w-6 h-6" />
-				</button>
+		<Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+			<Dialog.Portal>
+				<Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity" />
+				<Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white p-6 shadow-xl outline-none dark:bg-gray-800">
+					<Dialog.Close
+						title="Close"
+						aria-label="Close size form"
+						className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+					>
+						<X className="w-6 h-6" />
+					</Dialog.Close>
 
-				<h2 id={titleId} className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{title}</h2>
+				<Dialog.Title id={titleId} className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{title}</Dialog.Title>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
@@ -127,7 +106,8 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 						</button>
 					</div>
 				</form>
-			</div>
-		</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 	);
 }

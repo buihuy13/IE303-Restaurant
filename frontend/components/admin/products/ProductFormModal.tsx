@@ -1,6 +1,7 @@
 "use client";
 
 import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
+import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -61,17 +62,6 @@ export default function ProductFormModal({
         }
     }, [product]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                onClose();
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [onClose]);
-
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -108,26 +98,28 @@ export default function ProductFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px] overflow-y-auto">
-            <div
-                className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby={titleId}
-            >
+        <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
+            <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px]" />
+                <Dialog.Content className="fixed left-1/2 top-1/2 z-[61] max-h-[90vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white outline-none">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                    <h2 id={titleId} className="text-2xl font-bold">{product ? "Edit Product" : "Create Product"}</h2>
-                    <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Close product form">
-                        <X className="w-6 h-6" />
-                    </button>
+                    <Dialog.Title id={titleId} className="text-2xl font-bold">{product ? "Edit Product" : "Create Product"}</Dialog.Title>
+                    <Dialog.Close asChild>
+                        <button type="button" className="text-gray-500 hover:text-gray-700" aria-label="Close product form">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </Dialog.Close>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Product Name *</label>
+                        <label htmlFor="productName" className="block text-sm font-medium mb-1">Product Name *</label>
                         <input
+                            id="productName"
+                            name="productName"
                             type="text"
                             required
+                            spellCheck={false}
                             value={formData.productName}
                             onChange={(e) =>
                                 setFormData({
@@ -140,9 +132,12 @@ export default function ProductFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Description *</label>
+                        <label htmlFor="productDescription" className="block text-sm font-medium mb-1">Description *</label>
                         <textarea
+                            id="productDescription"
+                            name="description"
                             required
+                            spellCheck={false}
                             value={formData.description}
                             onChange={(e) =>
                                 setFormData({
@@ -157,8 +152,10 @@ export default function ProductFormModal({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1">Category *</label>
+                            <label htmlFor="productCategory" className="block text-sm font-medium mb-1">Category *</label>
                             <select
+                                id="productCategory"
+                                name="categoryId"
                                 required
                                 value={formData.categoryId}
                                 onChange={(e) =>
@@ -179,8 +176,10 @@ export default function ProductFormModal({
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-1">Restaurant *</label>
+                            <label htmlFor="productRestaurant" className="block text-sm font-medium mb-1">Restaurant *</label>
                             <select
+                                id="productRestaurant"
+                                name="restaurantId"
                                 required
                                 value={formData.restaurantId}
                                 onChange={(e) =>
@@ -207,19 +206,27 @@ export default function ProductFormModal({
                             {sizes.map((size) => {
                                 const selectedSize = selectedSizes.find((s) => s.sizeId === size.id);
                                 const isSelected = !!selectedSize;
+                                const checkboxId = `product-size-${size.id}`;
+                                const priceId = `product-size-price-${size.id}`;
 
                                 return (
                                     <div key={size.id} className="flex items-center gap-3 p-3 border rounded-lg">
                                         <input
+                                            id={checkboxId}
+                                            name="sizeIds"
                                             type="checkbox"
+                                            value={size.id}
                                             checked={isSelected}
                                             onChange={() => handleSizeToggle(size.id)}
                                             className="w-4 h-4"
                                         />
-                                        <span className="font-medium flex-1">{size.name}</span>
+                                        <label htmlFor={checkboxId} className="font-medium flex-1">{size.name}</label>
                                         {isSelected && (
                                             <input
+                                                id={priceId}
+                                                name={`price-${size.id}`}
                                                 type="number"
+                                                aria-label={`Price for ${size.name}`}
                                                 required
                                                 min="0"
                                                 step="0.01"
@@ -238,6 +245,7 @@ export default function ProductFormModal({
                     <div>
                         <label className="flex items-center gap-2">
                             <input
+                                name="available"
                                 type="checkbox"
                                 checked={formData.available}
                                 onChange={(e) =>
@@ -253,8 +261,10 @@ export default function ProductFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Product Image</label>
+                        <label htmlFor="productImage" className="block text-sm font-medium mb-1">Product Image</label>
                         <input
+                            id="productImage"
+                            name="productImage"
                             type="file"
                             accept="image/*"
                             onChange={handleImageChange}
@@ -284,7 +294,8 @@ export default function ProductFormModal({
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+                </Dialog.Content>
+            </Dialog.Portal>
+        </Dialog.Root>
     );
 }
