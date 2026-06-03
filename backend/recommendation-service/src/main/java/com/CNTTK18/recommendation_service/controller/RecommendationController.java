@@ -41,7 +41,6 @@ public class RecommendationController {
     @Tag(name = "GET")
     @Operation(summary = "Get food recommendations")
     @GetMapping("/emotions")
-    @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
     public ResponseEntity<List<String>> getEmotions() {
         List<String> response = recommendationService.recommendEmotions();
         return ResponseEntity.ok(response);
@@ -50,7 +49,6 @@ public class RecommendationController {
     @Tag(name = "POST")
     @Operation(summary = "Get mood-based food recommendations")
     @PostMapping("/food/mood")
-    @PreAuthorize("hasAnyRole('USER', 'MERCHANT')")
     public ResponseEntity<MessageResponse> getMoodBasedFoodRecommendations(
             @Valid @RequestBody MoodFoodRecommendationRequest request) {
         MessageResponse response = recommendationService.recommendFoodByMood(request);
