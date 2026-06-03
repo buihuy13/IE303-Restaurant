@@ -9,7 +9,8 @@ export default function CustomToaster() {
             position="top-right"
             toastOptions={{
                 duration: 3000,
-                className: "rounded-xl border bg-white text-gray-900 shadow-xl dark:bg-gray-900 dark:text-gray-100",
+                className:
+                    "mt-16 max-w-[calc(100vw-24px)] rounded-xl border bg-white text-gray-900 shadow-xl dark:bg-gray-900 dark:text-gray-100 sm:mt-0 sm:max-w-md",
                 style: {
                     padding: "12px 14px",
                 },
