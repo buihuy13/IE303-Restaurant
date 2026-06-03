@@ -86,9 +86,11 @@ public class SecurityConfig {
             // blog-service
             RouteRule.authenticated(HttpMethod.GET, "/api/blogs/drafts", "/api/blogs/archived"),
             RouteRule.anyRole(HttpMethod.GET, "/api/blogs/comments", Roles.ADMIN.name(), Roles.MERCHANT.name()),
-            RouteRule.anyRole(HttpMethod.PATCH, "/api/blogs/comments/*/status", Roles.ADMIN.name(), Roles.MERCHANT.name()),
+            RouteRule.anyRole(
+                    HttpMethod.PATCH, "/api/blogs/comments/*/status", Roles.ADMIN.name(), Roles.MERCHANT.name()),
             RouteRule.permit(HttpMethod.GET, "/api/blogs/**"),
-            RouteRule.anyRole(HttpMethod.POST, "/api/blogs/editorial-templates/**", Roles.ADMIN.name(), Roles.MERCHANT.name()),
+            RouteRule.anyRole(
+                    HttpMethod.POST, "/api/blogs/editorial-templates/**", Roles.ADMIN.name(), Roles.MERCHANT.name()),
             RouteRule.permit(HttpMethod.POST, "/api/blogs/*/views"),
             RouteRule.authenticated(HttpMethod.POST, "/api/blogs/*/comments"),
             RouteRule.authenticated(HttpMethod.POST, "/api/blogs/*/likes"),
@@ -110,7 +112,8 @@ public class SecurityConfig {
             RouteRule.anyRole(HttpMethod.GET, "/api/order/restaurant/**", Roles.MERCHANT.name(), Roles.ADMIN.name()),
             RouteRule.anyRole(HttpMethod.PUT, "/api/order/*/status", Roles.MERCHANT.name(), Roles.ADMIN.name()),
             // order-service: xem chi tiết đơn (ownership check ở service layer)
-            RouteRule.anyRole(HttpMethod.GET, "/api/order/*", Roles.USER.name(), Roles.MERCHANT.name(), Roles.ADMIN.name()),
+            RouteRule.anyRole(
+                    HttpMethod.GET, "/api/order/*", Roles.USER.name(), Roles.MERCHANT.name(), Roles.ADMIN.name()),
             // order-service: payment sync - chỉ nội bộ (admin)
             RouteRule.role(HttpMethod.PUT, "/api/order/*/payment", Roles.ADMIN.name()));
 
