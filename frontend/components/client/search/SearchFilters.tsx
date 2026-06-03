@@ -262,6 +262,8 @@ export default function SearchFilters({
                 <div className="space-y-3">
                     <Input
                         type="range"
+                        name="nearbyMeters"
+                        aria-label="Search radius in meters"
                         min={sliderMin}
                         max={sliderMax}
                         step={100}
