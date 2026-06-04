@@ -264,6 +264,9 @@ export default function MerchantRegisterPageClient() {
                                     <input
                                         type="text"
                                         id="username"
+                                        name="username"
+                                        autoComplete="username"
+                                        spellCheck={false}
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         required
@@ -279,6 +282,9 @@ export default function MerchantRegisterPageClient() {
                                     <input
                                         type="email"
                                         id="email"
+                                        name="email"
+                                        autoComplete="email"
+                                        spellCheck={false}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
@@ -297,6 +303,8 @@ export default function MerchantRegisterPageClient() {
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             id="password"
+                                            name="password"
+                                            autoComplete="new-password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
@@ -306,6 +314,7 @@ export default function MerchantRegisterPageClient() {
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
                                             className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
                                         >
                                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -324,6 +333,8 @@ export default function MerchantRegisterPageClient() {
                                         <input
                                             type={showConfirmPassword ? "text" : "password"}
                                             id="confirmPassword"
+                                            name="confirmPassword"
+                                            autoComplete="new-password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             required
@@ -333,6 +344,7 @@ export default function MerchantRegisterPageClient() {
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                                             className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
                                         >
                                             {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -354,6 +366,9 @@ export default function MerchantRegisterPageClient() {
                                 <input
                                     type="text"
                                     id="resName"
+                                    name="restaurantName"
+                                    autoComplete="organization"
+                                    spellCheck={false}
                                     value={resName}
                                     onChange={(e) => setResName(e.target.value)}
                                     required
@@ -369,6 +384,9 @@ export default function MerchantRegisterPageClient() {
                                 <input
                                     type="text"
                                     id="address"
+                                    name="address"
+                                    autoComplete="street-address"
+                                    spellCheck={false}
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     required
@@ -389,6 +407,7 @@ export default function MerchantRegisterPageClient() {
                                         <input
                                             type="number"
                                             id="latitude"
+                                            name="latitude"
                                             value={latitude || ""}
                                             onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
                                             required
@@ -404,6 +423,7 @@ export default function MerchantRegisterPageClient() {
                                         <input
                                             type="number"
                                             id="longitude"
+                                            name="longitude"
                                             value={longitude || ""}
                                             onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
                                             required
@@ -430,6 +450,7 @@ export default function MerchantRegisterPageClient() {
                                     <input
                                         type="time"
                                         id="openingTime"
+                                        name="openingTime"
                                         value={openingTime}
                                         onChange={(e) => setOpeningTime(e.target.value)}
                                         required
@@ -446,6 +467,7 @@ export default function MerchantRegisterPageClient() {
                                     <input
                                         type="time"
                                         id="closingTime"
+                                        name="closingTime"
                                         value={closingTime}
                                         onChange={(e) => setClosingTime(e.target.value)}
                                         required
@@ -461,6 +483,8 @@ export default function MerchantRegisterPageClient() {
                                 <input
                                     type="tel"
                                     id="phone"
+                                    name="phone"
+                                    autoComplete="tel"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     required
@@ -486,6 +510,7 @@ export default function MerchantRegisterPageClient() {
                                         <input
                                             type="file"
                                             id="restaurantImage"
+                                            name="restaurantImage"
                                             accept="image/*"
                                             onChange={handleImageChange}
                                             className="hidden"
@@ -504,6 +529,7 @@ export default function MerchantRegisterPageClient() {
                                                 onClick={() => {
                                                     setImagePreview(null);
                                                 }}
+                                                aria-label="Remove restaurant image preview"
                                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
                                             >
                                                 ×
@@ -556,4 +582,3 @@ export default function MerchantRegisterPageClient() {
         </div>
     );
 }
-
